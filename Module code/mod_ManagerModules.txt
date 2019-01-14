@@ -1,0 +1,290 @@
+Attribute VB_Name = "ManagerModules"
+Option Compare Database
+Public Function AccountingCHK()
+
+'If username = "howie" Or username = "matthewalston" Or username = "andrew" Or username = "carrie" Or username = "charlene" Or username = "sharissedelvecchio" Or username = "matt" Or username = "rachel" Or username = "allison" Then
+Dim rs As RecordSet
+Dim VYesNo As Integer
+
+Set rs = CurrentDb.OpenRecordset("AccountingmenuQRY", dbOpenSnapshot)
+rs.MoveFirst
+
+Do While Not rs.EOF
+If username = rs!Login Then
+VYesNo = 1
+End If
+rs.MoveNext
+Loop
+
+rs.Close
+
+If VYesNo = 0 Then
+MsgBox ("Can not Access Accounting Menu.")
+Exit Function
+End If
+
+
+End Function
+Public Function RegisterCHK()
+
+'If username = "howie" Or username = "matthewalston" Or username = "andrew" Or username = "carrie" Or username = "charlene" Or username = "sharissedelvecchio" Or username = "matt" Or username = "rachel" Or username = "allison" Then
+Dim rs As RecordSet
+Dim VYesNo As Integer
+
+Set rs = CurrentDb.OpenRecordset("RegistermenuQRY", dbOpenSnapshot)
+rs.MoveFirst
+
+Do While Not rs.EOF
+If username = rs!Login Then
+VYesNo = 1
+End If
+rs.MoveNext
+Loop
+
+rs.Close
+
+If VYesNo = 0 Then
+MsgBox ("Can not Access Register Menu.")
+Exit Function
+End If
+
+
+End Function
+
+
+Public Function TeamLeadCHK()
+
+'If username = "howie" Or username = "matthewalston" Or username = "andrew" Or username = "carrie" Or username = "charlene" Or username = "sharissedelvecchio" Or username = "matt" Or username = "rachel" Or username = "allison" Then
+Dim rs As RecordSet
+Dim VYesNo As Integer
+
+Set rs = CurrentDb.OpenRecordset("ManagerMenuQRY", dbOpenSnapshot)
+rs.MoveFirst
+'matthewalston was not in viewforfc table 6/2/15
+Do While Not rs.EOF
+If username = rs!Login Or username = "automation" Or username = "matthewalston" Then
+VYesNo = 1
+End If
+rs.MoveNext
+Loop
+
+rs.Close
+
+If VYesNo = 0 Then
+MsgBox ("Can not Access Manager's Menu.")
+Exit Function
+End If
+
+
+End Function
+Public Function StepOwnership()
+Dim VPrintChk As String
+Dim AppName As String
+'AppName = SysCmd(acSysCmdAccessDir) & "msaccess.exe f:\workload_step_own.mdb /x PrtCheck"
+AppName = SysCmd(acSysCmdAccessDir) & "msaccess.exe f:\workload_step_own.mdb"
+
+Call Shell(AppName)
+End Function
+Public Function ClientAnnRpts()
+
+Dim VSel
+VSel = InputBox("1. Open Announcements" & vbCr & "2. Completed Announcements" & vbCr & vbCr & "enter 1 or 2")
+
+If VSel = 1 Then
+
+ExcelSaveAsQRY ("ClientAnnouncementOpen")
+
+ElseIf VSel = 2 Then
+ExcelSaveAsQRY ("ClientAnnouncementClosed")
+
+End If
+
+
+
+
+End Function
+Public Function TrusteePassword()
+Dim Psswd As String
+Dim VTr As String
+Dim VTrSel
+
+VTrSel = 0
+
+Do While VTrSel = 0
+
+'VTrSel = InputBox("Update Trustee Drop Down Box: " & vbCr & vbCr & "1. Carrie M. Ward" & vbCr & "2. Jacob Geesing" & vbCr & "3. Howard N. Bierman" & vbCr & "4. 6 Trustees" & vbCr & "5. 9 Trustees" & vbCr & vbCr & "Please enter 1-5")
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+VTrSel = InputBox("Update Trustee Drop Down Box: " & vbCr & vbCr & "1. Howard N. Biermand and Carrie M. Ward" & vbCr & "2. Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Jason T. Kutcher, Joshua P. Coleman and Joseph A. Delozier" & vbCr & "3. Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Jason T. Kutcher, Joshua P. Coleman, Joseph A. Delozier, Andrew Brenner and Angela Dawkins" & vbCr & vbCr & "Please enter 1, 2 or 3")
+Else
+VTrSel = InputBox("Update Trustee Drop Down Box: " & vbCr & vbCr & "1. Carrie M. Ward" & vbCr & "2. Jacob Geesing" & vbCr & "3. Howard N. Bierman" & vbCr & "4. 6 Trustees" & vbCr & "5. 9 Trustees" & vbCr & "6. 10 Trustees" & vbCr & "7. 12 Trustees" & vbCr & vbCr & "Please enter 1-6")
+End If
+
+
+
+If VTrSel = 1 Then
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+VTr = "2 TrusteesDC"
+Else
+VTr = "Carrie M. Ward"
+End If
+
+ElseIf VTrSel = 2 Then
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+VTr = "6 TrusteesDC"
+Else
+VTr = "Jacob Geesing"
+End If
+
+ElseIf VTrSel = 3 Then
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+VTr = "8 TrusteesDC"
+Else
+VTr = "Howard N. Bierman"
+End If
+
+ElseIf VTrSel = 4 Then
+VTr = "6 Trustees"
+ElseIf VTrSel = 5 Then
+VTr = "9 Trustees"
+ElseIf VTrSel = 6 Then
+VTr = "10 Trustees"
+ElseIf VTrSel = 7 Then
+VTr = "12 Trustees"
+Else
+VTr = 0
+MsgBox ("Incorrect selection")
+End If
+
+Loop
+
+Psswd = InputBox("You have selected " & VTr & ".  If this is correct please enter Password to update drop down box on Foreclosure Database Screen")
+
+If Psswd = "Trustees" Then
+Forms![foreclosure database screen]!AttorneyCAPFIELD = VTr
+
+MsgBox ("Change has been made Trustee drop down will now be: " & vbCr & VTr)
+
+mySendKeys ("{F9}"), True ': DoEvents
+
+'Exit Function
+
+Else
+
+MsgBox ("Incorrect password, reverting back to previous caption.")
+Forms![foreclosure database screen]!AttorneyCAPFIELD = gblCaption
+mySendKeys ("{F9}"), True ': DoEvents
+
+End If
+
+
+End Function
+
+Public Function BillingAuditUser()
+
+ExcelSaveAsQRY ("Billing-AuditUserTRACKING")
+
+End Function
+Public Function BillingClientTotalsSS()
+VPssword = InputBox("Enter Password:")
+If VPssword = "Evan" Then
+
+
+ExcelSaveAsQRY ("BillsTotalsClientByCategory")
+Else
+MsgBox ("Incorrect Password")
+
+End If
+
+End Function
+Public Function BillingProcTotalsSS()
+VPssword = InputBox("Enter Password:")
+If VPssword = "Evan" Then
+
+
+
+ExcelSaveAsQRY ("BillsTotalsClientByInitialsCategoryState")
+Else
+MsgBox ("Incorrect Password")
+
+End If
+
+End Function
+Public Function BillingAuditChanges()
+CurrentDb.Execute "DELETE * FROM billaudit;", dbFailOnError
+DoCmd.OpenQuery ("billing-audittracking")
+DoCmd.OpenQuery ("billauditupdatediff")
+DoCmd.OpenQuery ("BillAuditUpdateBillPaid")
+DoCmd.OpenQuery ("BillAuditAppendNewBill")
+
+
+ExcelSaveAsQRY ("BillAuditUpdates")
+
+End Function
+Public Function VAMissingSaleExcel()
+
+ExcelSaveAsQRY ("Missing Sale Date Query-EXCEL")
+End Function
+Public Function VAFHACertBlank()
+ExcelSaveAsQRY ("FHACertBlank")
+End Function
+Public Function AffsUpdated()
+'AffDates-AuditTracking
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_AffsUpdated.xls"
+
+ExcelSaveAsQRY ("AffDates-AuditTracking")
+End Function
+Public Function CityScreen()
+Dim VPsswd
+VPsswd = InputBox("Password Required")
+If VPsswd = "reese" Then
+DoCmd.OpenForm "City Addresses"
+End If
+End Function
+
+Public Function AuditLog()
+
+
+Dim VPsswd
+VPsswd = InputBox("Password Required")
+If VPsswd = "auditlog" Then
+DoCmd.OpenQuery "AuditADDTemp"
+DoCmd.OpenQuery "LogADDTemp"
+
+DoCmd.OpenForm "Audit/Log"
+End If
+End Function
+Public Function CheckLienholders()
+Dim VPsswd
+VPsswd = InputBox("Enter Password")
+If VPsswd = "reese" Then
+DoCmd.OpenReport "Check Lienholder", acViewPreview
+End If
+
+End Function
+Public Function DocketsQuery()
+Dim VPsswd
+VPsswd = InputBox("Enter Password")
+If VPsswd = "rachel" Then
+ExcelSaveAsQRY ("QryDocketsNoSaleDate")
+End If
+
+End Function
+Public Function RestoreResume()
+
+Dim VPsswd
+VPsswd = InputBox("Enter Password: Remember you need the RESUME ID (you get this on the Previous Sale Screen for the file (make sure you are in the correct file!))")
+If VPsswd = "becca" Then
+DoCmd.OpenQuery ("ResumeRESTORE")
+MsgBox ("YOU will now be asked for the Resume ID for the deletion of the resume record.  It will no longer be in the previous sale screen.")
+DoCmd.OpenQuery ("ResumeRESTOREDelete")
+End If
+
+End Function
+Public Function DeleteSaleTimes()
+Dim VPsswd
+VPsswd = InputBox("Enter Password:")
+If VPsswd = "becca" Then
+DoCmd.OpenQuery ("DeleteSaleTimes")
+End If
+
+End Function

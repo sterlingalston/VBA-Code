@@ -1,0 +1,2304 @@
+Attribute VB_Name = "VAAccountingMODULE"
+Option Compare Database
+Public Function CommCheck()
+Dim strsql As String
+Dim rscheck As RecordSet
+strsql = "select * from billing where filenum = " & Forms![foreclosure database screen]!filenum & " and d_audfee > 0;"
+Set rscheck = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rscheck.EOF Then
+MsgBox ("No Bill has been sent with a Commissioner's Fee")
+Else
+DoCmd.OpenForm ("Commissioner Checks")
+End If
+
+End Function
+Public Function CertTransferSign()
+
+Dim VCert
+Do While VCert <> 1 And VCert <> 2 And VCert <> 3
+
+VCert = InputBox("1. Org Lender to Secured" & vbCr & "2. MERS to Secured" & vbCr & "3. Type in Name of Assignor" & vbCr & "enter 1, 2 or 3")
+
+If VCert = 1 Then
+CertTransferSign = [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![OrgLender]
+ElseIf VCert = 2 Then
+CertTransferSign = "Mortgage Electronic Registration Systems, Inc. as nominee for " & [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![OrgLender] & ", its successors and assigns"
+ElseIf VCert = 3 Then
+CertTransferSign = InputBox("Enter Name of Assignor")
+Else
+MsgBox ("Please enter correct 1, 2 or 3")
+End If
+
+Loop
+
+
+
+
+End Function
+Public Function VASigns()
+
+Dim VSig
+
+VSig = getEmployeeInitials(Environ("username"))
+
+Dim VMn
+Dim strsql
+Dim rs As RecordSet
+
+strsql = "select * from employees where employeeid = " & """" & VSig & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+
+If rs!signs_accounting = 0 Or IsNull(rs!signs_accounting) Then
+MsgBox ("Employee database has to be updated so you can sign the accounting.")
+
+Else
+
+If IsNull(rs!MiddleName) Then
+VMn = ""
+Else
+VMn = " " & rs!MiddleName
+End If
+
+
+VASigns = rs!FirstName & VMn & " " & rs!LastName & ", " & rs!ET_Title
+
+
+End If
+End If
+
+
+End Function
+Public Function VARetCommFees()
+ 
+
+DoCmd.OpenQuery ("CommFeesCreate")
+DoCmd.OpenQuery ("CommFeesRETCreate")
+DoCmd.OpenQuery ("CommFeeUpdateTbl")
+
+ExcelSaveAsQRY ("CommFeeNoRET")
+
+
+End Function
+Public Function ETDom()
+VSel = "1. Equity Trustees" & vbCr & "2. Dominion"
+If VSel = 1 Then
+ETDom = "Equity Trustee"
+Else
+ETDom = "Dominion"
+End If
+
+'ETDom = "2020 N. 14th Street, Suite 750, Arlington, VA 22201"
+End Function
+Public Function AttorneyAssigned()
+Dim strsql As String
+Dim rs As RecordSet
+Dim vatt
+
+strsql = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+If IsNull(rs!assigned_att_va) Then
+MsgBox (Forms![foreclosure database screen]!Propertycounty & " has no Attorney assigned so Supplemental Letter will not print out.  Please close Supplemental Screen/Form then go to Jurisdiction Screen to this county and select which Attorney is assigned to this county.")
+Exit Function
+Else
+vatt = rs!assigned_att_va
+End If
+strsql = ""
+rs.Close
+
+strsql = "SELECT Employees.FirstName, Employees.MiddleName, Employees.emailname, Employees.LastName, Employees.WorkPhone," _
+& " Employees.Emp_Fax FROM Employees where Employees.EmployeeID = " & """" & vatt & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+Dim VFax
+If rs!LastName = "Bierman" Then
+VFax = "703.483.4021"
+Else
+VFax = rs!Emp_Fax
+End If
+
+If IsNull(rs!MiddleName) Then
+AttorneyAssigned = rs!FirstName & " " & rs!LastName & " at " & rs!WorkPhone & ", email " & rs!EmailName & ", fax " & VFax & " or finalaccountings@equity-trustees.com."
+Else
+AttorneyAssigned = rs!FirstName & " " & rs!MiddleName & " " & rs!LastName & " at " & rs!WorkPhone & ", email " & rs!EmailName & ", fax " & VFax & " or finalaccountings@equity-trustees.com."
+End If
+
+
+rs.Close
+
+End Function
+Public Function treasurer()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & "VA" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+treasurer = rs!treasurer
+
+rs.Close
+
+End Function
+Public Function treasurer_add()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & "VA" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+VSndSup = InputBox("1. Regular Mail" & vbCr & "2. Overnight Mail")
+
+If rs!treasurer_add = "" And rs!treasurer_add_On = "" Then
+MsgBox ("NO Treasurer Addresses Input!")
+treasurer_add = ""
+Else
+
+If VSndSup = 1 Then
+treasurer_add = rs!treasurer_add
+ElseIf VSndSup = 2 Then
+treasurer_add = rs!treasurer_add_On
+Else
+treasurer_add = ""
+End If
+End If
+
+rs.Close
+
+End Function
+Public Function treasurer_add2()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & "VA" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+If VSndSup = 1 Then
+treasurer_add2 = rs!treasurer_add2
+Else
+treasurer_add2 = ""
+End If
+
+
+rs.Close
+End Function
+Public Function treasurer_csz()
+
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & "VA" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+'If rs!TREASURER_CSZ = "" And rs!treasurer_csz_on = "" Then
+'TREASURER_CSZ = ""
+'E'lse
+
+If VSndSup = 1 Then
+treasurer_csz = rs!treasurer_csz
+ElseIf VSndSup = 2 Then
+treasurer_csz = rs!treasurer_csz_ON
+'Else
+'TREASURER_CSZ = ""
+End If
+'End If
+
+rs.Close
+End Function
+Public Function towntaxes()
+
+vtaxnote = "Must check town taxes as well as county taxes: " & vbCr
+
+If Forms![foreclosure database screen]!propzip Like "20158*" Or _
+Forms![foreclosure database screen]!propzip Like "20159*" Then
+towntaxes = MsgBox(vtaxnote & "Hamilton Town Taxes" & vbCr & "Treasurer: Lori Kyte" & vbCr & _
+"hamilton.treas@comcast.net <mailto:hamilton.treas@comcast.net>" & vbCr & _
+"PO Box 130" & vbCr & "Hamilton, VA 20159-0130" & vbCr & "(540) 338-2811")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "22630*" Then
+towntaxes = MsgBox(vtaxnote & "Town of Front Royal, Virginia" & vbCr & "Front Royal Finance Office" & _
+vbCr & "PO Box 1560" & vbCr & "Front Royal, VA 22630" & vbCr & "(540) 635-7799" & vbCr & _
+"Fax: (540) 635-2298")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23310*" Then
+towntaxes = MsgBox(vtaxnote & "Town of Cape Charles, Virginia")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "24592*" Then
+towntaxes = MsgBox(vtaxnote & "Town of South Boston, Virginia" & vbCr & "Finance Office" & _
+vbCr & "PO Box 482" & vbCr & "South Boston, VA 24592" & vbCr & "(434) 575-4210")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "20180*" Then
+towntaxes = MsgBox(vtaxnote & "Town of Lovettsville, Virginia" & vbCr & "Treasurer: Lance Gladstone" & _
+vbCr & "6 East Pennsylvania Avenue" & "PO Box 209" & vbCr & "Lovettsville, VA 20180" & vbCr & "(540) 822-5788" & vbCr & _
+"Fax: (540) 822-5788" & vbCr & "M-F 9:00am - 3:00pm")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "22560*" Then
+towntaxes = MsgBox(vtaxnote & "Town of Tappahannock, Virginia" & vbCr & "Treasurer: Anne L. Taylor" & _
+vbCr & "P.O. Box 489" & vbCr & "Tappahannock, VA 22560" & vbCr & "804)443-4371" & vbCr & _
+ vbCr & "Website: http://www.essex-virginia.org/taxes.htm")
+
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Halifax" Then
+towntaxes = MsgBox(vtaxnote & "Town of Halifax, Virginia" & vbCr & "Town of Halifax Treasurer" & _
+vbCr & "Phone: (434) 476-3318" & vbCr & "Address: 1030 Cowford Road., Halifax, VA 24558-3100")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "20175*" Or _
+Forms![foreclosure database screen]!propzip Like "20176*" Or _
+Forms![foreclosure database screen]!propzip Like "20177*" Or _
+Forms![foreclosure database screen]!propzip Like "20178*" Then
+towntaxes = MsgBox(vtaxnote & "Real Estate Tax" & vbCr & "Denise Hyde" & vbCr & "703-771-2723" & vbCr & _
+"Town of Leesburg, Virginia" & vbCr & "25 West Market Street" & vbCr & "P.O.Box 88" & vbCr & _
+"Leesburg, VA 20178" & vbCr & "Phone: (703) 777-2420" & vbCr & "Fax: (703) 771-2727")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "20132*" Or _
+Forms![foreclosure database screen]!propzip Like "20134*" Then
+towntaxes = MsgBox(vtaxnote & "Purcellville Town Taxes" & vbCr & "Town of Purcellville, Virginia" & vbCr & _
+"Finance Department" & vbCr & "Elizabeth Krens, Director" & vbCr & "130 E.Main Street" & vbCr & _
+"Purcellville, VA  20132" & vbCr & "540-338-7093" & vbCr & "Fax: 540-338-6205")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23301*" Then
+towntaxes = MsgBox(vtaxnote & "Brooks E. Allen" & vbCr & "23353 Sand Cove Rd." & vbCr & _
+"PO Box 21" & vbCr & "Accomac, VA 23301" & vbCr & "757-787-4062 (HOME)" & vbCr & "757-787-2623 (OFFICE)" & vbCr & "Fax: 757-787-5171")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23350*" Then
+towntaxes = MsgBox(vtaxnote & "Marion F. Long" & vbCr & "PO Box 607" & vbCr & _
+"Exmore, VA 23350" & vbCr & "757-422-7189 (HOME)" & vbCr & "757-678-6234 (CELL)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23308*" Then
+towntaxes = MsgBox(vtaxnote & "Wayne J. Fincen, Jr." & vbCr & "PO Box 282" & vbCr & _
+"Bloxom, VA 23308" & vbCr & "757-336-6519 (HOME)" & vbCr & "757-336-1965 (OFFICE)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23336*" Then
+towntaxes = MsgBox(vtaxnote & "John H. Tarr" & vbCr & "6454 Howard Drive" & vbCr & _
+"Chincoteague, VA 23336" & vbCr & "757-665-4249 (HOME)" & vbCr & "757-665-4315 (OFFICE)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23359*" Then
+towntaxes = MsgBox(vtaxnote & "Kevin T. (Tim) Raynor" & vbCr & "PO Box 5" & vbCr & _
+"Hallwood, VA 23359" & vbCr & "757-824-3885 (HOME)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23401*" Then
+towntaxes = MsgBox(vtaxnote & "Thomas M. Carrick" & vbCr & "PO Box 307" & vbCr & _
+"Keller, VA 23401" & vbCr & "757-787-1533 (HOME)" & vbCr & "757-387-7792 (CELL)" & vbCr & "757-787-2352 (FAX)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23410*" Then
+towntaxes = MsgBox(vtaxnote & "Denise Bendick" & vbCr & "PO Box 428" & vbCr & _
+"Melfa, VA 23410" & vbCr & "757-787-7264 (OFFICE)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23417*" Then
+towntaxes = MsgBox(vtaxnote & "Bruce Paone" & vbCr & "32 Meadville Drive" & vbCr & _
+"Onancock, VA 23417" & vbCr & "757-787-4566 (OFFICE)" & vbCr & "757-787-3363")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23418*" Then
+towntaxes = MsgBox(vtaxnote & "Billye D. Custis" & vbCr & "PO Box 25" & vbCr & _
+"Onley, VA 23418" & vbCr & "757-787-3985 (WORK)" & vbCr & "757-787-5661 (FAX)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23420*" Then
+towntaxes = MsgBox(vtaxnote & "Connie W. Campbell" & vbCr & "PO Box 251" & vbCr & _
+"Painter, VA 23420" & vbCr & "757-442-4427 (HOME)" & vbCr & "757-789-0749 (OFFICE)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23421*" Then
+towntaxes = MsgBox(vtaxnote & "Rick Chase" & vbCr & "PO Box 27" & vbCr & _
+"Parksley, VA 23421" & vbCr & "757-665-4672 (HOME)" & vbCr & "757-665-1976 (FAX)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23427*" Then
+towntaxes = MsgBox(vtaxnote & "Charles E. Tull" & vbCr & "PO Box 7" & vbCr & _
+"Saxis, VA 23427" & vbCr & "757-824-5631 (OFFICE)" & vbCr & "757-824-4792 (FAX)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23440*" Then
+towntaxes = MsgBox(vtaxnote & "James " & """" & "Ooker" & """" & " Eskridge" & vbCr & "PO Box 143" & vbCr & _
+"Tangier, VA 23440" & vbCr & "757-891-2438 (OFFICE)" & vbCr & "757-891-2438 (HOME)" & vbCr & "757-891-2404 (FAX)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23480*" Then
+towntaxes = MsgBox(vtaxnote & "Debbie K. Moon" & vbCr & "PO Box 242" & vbCr & _
+"Wachapreague, VA 23480" & vbCr & "757-787-7515 (HOME)")
+
+ElseIf Forms![foreclosure database screen]!propzip Like "23930*" Then
+towntaxes = MsgBox(vtaxnote & "Treasurer" & vbCr & "125 E. Carolina Avenue" & vbCr & _
+"Crewe, VA 23930" & vbCr & "434-645-9453 (HOME)")
+
+Else
+towntaxes = ""
+
+End If
+
+
+End Function
+Public Function VAAccountingSuppLtr()
+Dim rs As RecordSet, rsA As RecordSet
+Dim strsql As String
+
+strsql = "select * from vasupp where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rsA = CurrentDb.OpenRecordset("vasupp", dbOpenDynaset, dbSeeChanges)
+With rsA
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+rs.Close
+End If
+
+DoCmd.OpenForm ("VAAccounting SuppLtr")
+
+End Function
+Public Function CommFileNo()
+Dim rs As RecordSet
+Dim strsql
+strsql = "select * from virginiaaccounting where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+If rs.EOF Then
+CommFileNo = Null
+Else
+CommFileNo = rs!comm_fileno
+End If
+End Function
+
+Public Function VADoaRecd()
+Dim rs As RecordSet
+Dim strsql
+strsql = "select * from virginiaaccounting where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+If rs.EOF Then
+VADoaRecd = Null
+Else
+VADoaRecd = rs!doarec
+End If
+
+End Function
+Public Function CheckDatesPrep()
+Dim rs As RecordSet
+Dim strsql
+strsql = "select * from postsale where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+If rs.EOF Then
+CheckDatesPrep = "YES"
+Else
+If rs!accounting_completed <= Date - 183 Or rs!accounting_prepared <= Date - 183 Then
+CheckDatesPrep = "NO"
+Else
+CheckDatesPrep = "YES"
+End If
+
+End If
+
+rs.Close
+
+
+End Function
+Public Function Auditor_Add1()
+
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor) And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor <> 0 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor <> "" Then
+VAssigned = Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor
+Else
+VAssigned = AcctComm()
+End If
+
+If VAssigned = "" Then
+
+MsgBox ("NO Commissioner Input!!")
+Exit Function
+
+Else
+
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from dba_court_auditors where auditorid = " & VAssigned
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+If IsNull([Forms]![vaaccmain]![vaaccounting].[Form]![overnight]) Or _
+[Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = 1 Or _
+[Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = 0 Or _
+IsNull([Forms]![vaaccmain]![vaaccounting].[Form]![overnight]) Or _
+[Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = -1 Then
+
+If IsNull(rs!Auditor_Add1) Or rs!Auditor_Add1 = "" Then
+MsgBox ("There is no Overnight Express Address for this Commissioner.")
+Auditor_Add1 = rs!mailingadd
+Else
+Auditor_Add1 = rs!Auditor_Add1
+End If
+
+ElseIf [Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = 2 Then
+
+If IsNull(rs![mailingadd]) Then
+MsgBox ("NO Regular Mailing Address Input")
+Auditor_Add1 = rs!Auditor_Add1
+Else
+Auditor_Add1 = rs![mailingadd]
+End If
+
+End If
+
+rs.Close
+End If
+
+End Function
+Public Function Auditor_add2()
+
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor) And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor <> "" Then
+VAssigned = Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor
+Else
+VAssigned = AcctComm()
+End If
+
+If VAssigned = "" Then
+MsgBox ("NO Commissioner Input!!")
+Exit Function
+
+Else
+
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from dba_court_auditors where auditorid = " & VAssigned
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+
+If IsNull([Forms]![vaaccmain]![vaaccounting].[Form]![overnight]) Or _
+[Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = 1 Or _
+[Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = 0 Or _
+IsNull([Forms]![vaaccmain]![vaaccounting].[Form]![overnight]) Or _
+[Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = -1 Then
+
+If IsNull(rs!Auditor_add2) Or rs!Auditor_add2 = "" Then
+'Auditor_add2 = rs![Mailing CSZ] & "  " & zip
+Auditor_add2 = ""
+ElseIf rs!Auditor_add2 <> "" Then
+Auditor_add2 = rs!Auditor_add2
+Else
+Auditor_add2 = ""
+End If
+
+ElseIf [Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = 2 Then
+
+If IsNull(rs![mailingadd]) Then
+MsgBox ("NO Regular Mailing Address Input")
+Auditor_add2 = rs!Auditor_add2
+'ElseIf rs![Mailing CSZ] <> "" Then
+'Auditor_add2 = rs![Mailing CSZ]
+Else
+Auditor_add2 = ""
+
+End If
+
+End If
+
+rs.Close
+
+End If
+
+End Function
+Public Function Auditor_AddSUP()
+
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor) And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor <> "" Then
+VAssigned = Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor
+Else
+VAssigned = AcctComm()
+End If
+
+Dim strsql As String, strsqlSUP As String
+
+Dim rs As RecordSet, rsSUP As RecordSet
+VSndSup = ""
+
+
+strsql = "select * from dba_court_auditors where auditorid = " & VAssigned
+Set rs = CurrentDb.OpenRecordset(strsql)
+strsqlSUP = "select * from virginiaaccounting where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsSUP = CurrentDb.OpenRecordset(strsqlSUP)
+
+If rs.EOF Then
+MsgBox ("No Auditor Input")
+
+Else
+
+VSndSup = InputBox("1. Send Overnight Express" & vbCr & "2. Send Regular Mail")
+
+If VSndSup = 1 Or VSndSup = "" Then
+
+If IsNull(rs!Auditor_Add1) Or rs!Auditor_Add1 = "" Then
+MsgBox ("There is no Overnight Express Address for this Commissioner.")
+Auditor_AddSUP = rs!mailingadd
+Else
+Auditor_AddSUP = rs!Auditor_Add1 & "  " & rs!Auditor_add2
+End If
+
+ElseIf VSndSup = 2 Then
+'MsgBox (rs!mailingadd)
+
+If IsNull(rs![mailingadd]) Then
+MsgBox ("NO Regular Mailing Address Input")
+Auditor_AddSUP = rs!Auditor_Add1 & "  " & rs!Auditor_add2
+Else
+Auditor_AddSUP = rs![mailingadd]
+
+End If
+
+End If
+
+rs.Close
+rsSUP.Close
+
+End If
+
+End Function
+Public Function Auditor_CSZ()
+
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor) And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor <> "" Then
+VAssigned = Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor
+Else
+VAssigned = AcctComm()
+End If
+
+If VAssigned = "" Then
+
+MsgBox ("NO Commissioner Input!!")
+Exit Function
+
+Else
+
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from dba_court_auditors where auditorid = " & VAssigned
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+
+If [Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = 1 Or _
+[Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = 0 Or _
+IsNull([Forms]![vaaccmain]![vaaccounting].[Form]![overnight]) Or _
+[Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = -1 Then
+
+If IsNull(rs!Auditor_Add1) Or rs!Auditor_Add1 = "" Then
+MsgBox ("There is no Overnight Express Address for this Commissioner.")
+Auditor_CSZ = ""
+Else
+Auditor_CSZ = rs!Auditor_CSZ & "  " & rs!zip
+End If
+
+ElseIf [Forms]![vaaccmain]![vaaccounting].[Form]![overnight] = 2 Then
+
+If Not IsNull(rs![mailingadd]) Then
+Auditor_CSZ = ""
+Else
+Auditor_CSZ = rs!Auditor_CSZ & " " & rs!zip
+
+End If
+
+End If
+
+rs.Close
+
+End If
+
+
+End Function
+Public Function Auditor_cszSUP()
+
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor) And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor <> "" Then
+VAssigned = Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor
+Else
+VAssigned = AcctComm()
+End If
+
+Dim strsql As String, strsqlSUP As String
+
+Dim rs As RecordSet, rsSUP As RecordSet
+
+
+strsql = "select * from dba_court_auditors where auditorid = " & VAssigned
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+strsqlSUP = "select * from virginiaaccounting where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsSUP = CurrentDb.OpenRecordset(strsqlSUP)
+
+If rs.EOF Then
+Else
+
+If VSndSup = 1 Or VSndSup = "" Then
+If IsNull(rs!Auditor_Add1) Or rs!Auditor_Add1 = "" Then
+MsgBox ("There is no Overnight Express Address for this Commissioner.")
+Auditor_cszSUP = rs![Mailing CSZ]
+Else
+Auditor_cszSUP = rs!Auditor_CSZ & "  " & rs!zip
+End If
+
+ElseIf VSndSup = 2 Then
+
+If Not IsNull(rs![mailingadd]) Then
+Auditor_cszSUP = rs![Mailing CSZ]
+Else
+Auditor_cszSUP = rs!Auditor_CSZ & " " & rs!zip
+
+End If
+
+End If
+
+rsSUP.Close
+rs.Close
+End If
+
+End Function
+Public Function CommSUPP()
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor) And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor <> "" Then
+VAssigned = Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor
+Else
+VAssigned = AcctComm()
+End If
+
+Dim strsql As String, strsqlSUP As String
+
+Dim rs As RecordSet, rsSUP As RecordSet
+
+
+strsql = "select * from dba_court_auditors where auditorid = " & VAssigned
+Set rs = CurrentDb.OpenRecordset(strsql)
+If rs.EOF Then
+
+Else
+If IsNull(rs![Auditor_jriii]) Then
+CommSUPP = rs!Auditor_first & " " & rs!Auditor_last
+Else
+CommSUPP = rs!Auditor_first & " " & rs!Auditor_last & ", " & rs![Auditor_jriii]
+End If
+
+End If
+
+rs.Close
+End Function
+Public Function CommSuppLast()
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor) And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor <> "" Then
+VAssigned = Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor
+Else
+VAssigned = AcctComm()
+End If
+
+Dim strsql As String, strsqlSUP As String
+
+Dim rs As RecordSet, rsSUP As RecordSet
+
+
+strsql = "select * from dba_court_auditors where auditorid = " & VAssigned
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+If rs.EOF Then
+CommSuppLast = ""
+Else
+CommSuppLast = rs!Auditor_last
+End If
+
+
+rs.Close
+End Function
+Public Function PrinBalUPB()
+Dim rs As RecordSet
+Dim strsql
+
+strsql = "select * from affdebt where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+PrinBalUPB = "PRINT"
+Else
+If rs!mism11 > Forms![foreclosure database screen]!ForeclosureSubForm.Form!upb Then
+PrinBalUPB = "DO NOT PRINT"
+Else
+PrinBalUPB = "PRINT"
+End If
+End If
+rs.Close
+
+End Function
+Public Function MissingAFFPUB()
+CurrentDb.Execute "Delete * from VAAffPub;", dbFailOnError
+DoCmd.OpenQuery ("VAMissingVoucherAFFPUBMDTbl")
+DoCmd.OpenQuery ("VAMissingAffPubACCT")
+End Function
+Public Function MissingOrgNote()
+CurrentDb.Execute "Delete * from VAAffPub;", dbFailOnError
+DoCmd.OpenQuery ("VAMissingVoucherOrgNoteMkTbl")
+DoCmd.OpenQuery ("VAMissingOrgNoteACCT")
+End Function
+Public Function OpenSupLtr()
+
+
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor) And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor <> "" Then
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor = AcctComm()
+End If
+
+DoCmd.OpenForm ("VAAccounting SuppLtr")
+
+End Function
+Public Function VACommFeeBill()
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!LoanDocsReceived) Then
+VACommFeeBill = VACommFee + 150 + 3
+Else
+VACommFeeBill = VACommFee + 3
+End If
+
+'MsgBox (VACommFee & " " & VACommFeeBill)
+
+End Function
+Public Function VACommFee()
+
+Dim VSprice As Double, VP1 As Double, VP2 As Double, VP3 As Double
+
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 0 And _
+Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+VSprice = Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice
+
+
+If Forms![foreclosure database screen]!Propertycounty = "Fauquier" Then
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 900000 Then
+VACommFee = 1000#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 750000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 900000 Then
+VACommFee = 900#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 600000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 750000 Then
+VACommFee = 750#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 450000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 600000 Then
+VACommFee = 600#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 300000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 450000 Then
+VACommFee = 450#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 100000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 300000 Then
+VACommFee = 300#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 100000 Then
+VACommFee = 250#
+End If
+
+'If VSprice > 10000000 Then
+'VP2 = (VSprice - 1000000) * 0.0005
+''VP3 = VP2 * 0.002
+'VACommFee = 10200 + VP2
+'ElseIf VSprice > 1000000 And VSprice <= 10000000 Then
+'VP2 = (VSprice - 1000000) * 0.001
+''VP3 = VP2 * 0.001
+''VACommFee = 1200 + (VP3 * 0.1)
+'VACommFee = 1200 + VP2
+'ElseIf VSprice > 500000 And VSprice <= 1000000 Then
+'VP2 = (VSprice - 500000) * 0.001
+''VP3 = VP2 * 0.001
+''VACommFee = 600 + (VP3 * 0.1)
+'VACommFee = 600 + VP2
+'ElseIf VSprice > 100000 And VSprice <= 500000 Then
+'VP2 = (VSprice - 100000) * 0.001
+''VP3 = VP2 * 0.001
+''VACommFee = 200 + (VP3 * 0.1)
+'VACommFee = 200 + VP2
+'ElseIf VSprice > 75000 And VSprice <= 100000 Then
+'VACommFee = 200
+'ElseIf VSprice > 25000 And VSprice <= 75000 Then
+'VACommFee = 150
+'ElseIf VSprice >= 25000 Then
+'VACommFee = 100
+'End If
+
+'MsgBox (VP1 & " + " & VP3 & " * .10 = " & Vp4)
+
+
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form.SaleDate >= #7/1/2008# Then
+
+If Forms![foreclosure database screen]!Propertycounty = "Prince Edward" Then
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 500000 Then
+VACommFee = 250#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 200000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 500000 Then
+VACommFee = 200#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 50000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 200000 Then
+VACommFee = 150#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 50000 Then
+VACommFee = 100#
+End If
+
+Else
+
+'If Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 900000 Then
+'VACommFee = 1000#
+'ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 750000 And _
+'Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 900000 Then
+'VACommFee = 900#
+'ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 600000 And _
+'Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 750000 Then
+'VACommFee = 750#
+'ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 450000 And _
+'Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 600000 Then
+'VACommFee = 600#
+'ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 300000 And _'
+'Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 450000 Then
+'VACommFee = 450#
+'ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 100000 And _
+'Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 300000 Then
+'VACommFee = 300#
+'ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 100000 Then
+'VACommFee = 250#
+'End If
+
+'End If
+
+'Else
+
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 900000 Then
+VACommFee = 1016#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 750000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 900000 Then
+VACommFee = 916#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 600000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 750000 Then
+VACommFee = 750#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 450000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 600000 Then
+VACommFee = 616#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 300000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 450000 Then
+VACommFee = 466#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 100000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 300000 Then
+VACommFee = 316#
+'ElseIf Forms![FORECLOSURE DATABASE SCREEN]!PostsaleSubForm.Form!SalePrice > 101000 And _
+'Forms![FORECLOSURE DATABASE SCREEN]!PostsaleSubForm.Form!SalePrice <= 300000 Then
+'VACommFee = 166#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 100000 Then
+VACommFee = 266#
+End If
+
+
+End If
+
+Else
+
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 900000 Then
+VACommFee = 766#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 750000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 900000 Then
+VACommFee = 666#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 600000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 750000 Then
+VACommFee = 566#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 450000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 600000 Then
+VACommFee = 466#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 300000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 450000 Then
+VACommFee = 366#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 100000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 300000 Then
+VACommFee = 266#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 101000 And _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 300000 Then
+VACommFee = 166#
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice <= 100000 Then
+VACommFee = 166#
+End If
+
+
+End If
+
+End If
+
+'MsgBox (VACommFee)
+
+
+
+End Function
+
+
+
+Public Function VAGrantor()
+Dim VCalc
+Dim VSaleP
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice) Then
+VSaleP = 0
+Else
+VSaleP = Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice
+End If
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value > VSaleP Then
+VCalc = Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value
+Else
+VCalc = VSaleP
+End If
+
+VAGrantor = VCalc * 0.001
+Else
+VAGrantor = 0
+End If
+
+End Function
+Public Function UpdateVAAcctBID()
+Dim strsql
+Dim rsA, rs As RecordSet
+
+strsql = "select * from virginiaaccounting where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rsA = CurrentDb.OpenRecordset("virginiaaccounting", dbOpenDynaset, dbSeeChanges)
+With rsA
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!d_adv = Forms![bidmainedit]!adv
+!acc_attorney = Forms!bidmainedit![Attorney Fee]
+!acc_title = Forms!bidmainedit!Titlesearch
+!Title_Co = "Landsafe Title"
+.Update
+.Close
+End With
+rs.Close
+DoCmd.RunMacro ("VAUpdateAssigned")
+
+Else
+
+With rs
+.Edit
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!d_adv = Forms![bidmainedit]!adv
+!acc_attorney = Forms!bidmainedit![Attorney Fee]
+!acc_title = Forms!bidmainedit!Titlesearch
+.Update
+.Close
+End With
+End If
+
+
+End Function
+Public Function VAAccountingOPEN()
+Dim rsA, rsB As RecordSet
+Dim strsqla, strsqlB, BAud, BServ, BAdv
+strsqla = "select * from virginiaaccounting where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsA = CurrentDb.OpenRecordset(strsqla, dbOpenSnapshot)
+
+If rsA.EOF Then
+
+Set rsA = CurrentDb.OpenRecordset("virginiaaccounting", dbOpenDynaset, dbSeeChanges)
+
+strsqlB = "select * from billing where filenum = " & Forms![foreclosure database screen]!filenum & " order by billingdate DESC;"
+Set rsB = CurrentDb.OpenRecordset(strsqlB, dbOpenSnapshot)
+If rsB.EOF Then
+rsB.Close
+Else
+
+If rsB!d_adv > 0 Then
+BAdv = rsB!d_adv
+Else
+BAdv = CalcAdCosts()
+End If
+
+If rsB!d_audfee > 0 Then
+BAud = rsB!d_audfee
+Else
+BAud = VACommFee()
+End If
+If rsB!d_servbymail > 0 Then
+BServ = rsB!d_servbymail
+Else
+BServ = NumberLetters()
+End If
+rsB.Close
+
+End If
+
+
+With rsA
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!billingdate = Date
+'If Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 0 And _
+'Forms![foreclosure database screen]!PropertyState = "VA" Then
+!d_audfee = BAud
+!va_taxes = 0
+!d_adv = BAdv
+!d_servbymail = BServ
+!acc_title = 0
+!acc_attorney = 0
+!acc_trustee = 0
+!va_miscm1 = 0
+!va_miscm2 = 0
+!otherm1 = 0
+!otherm2 = 0
+!va_recordation = 0
+!VA_Grantors = 0
+!va_water = 0
+![va-miscm5] = 0
+!va_miscm3 = 0
+!va_miscm4 = 0
+!Spamount = 0
+!Title_Co = "Landsafe Title"
+.Update
+End With
+rsA.Close
+Else
+rsA.Close
+End If
+
+DoCmd.RunMacro ("VAUpdateAssigned")
+
+If Forms![foreclosure database screen]!PropertyCity = "Alexandria" Or _
+Forms![foreclosure database screen]!PropertyCity = "Fairfax" Or _
+Forms![foreclosure database screen]!PropertyCity = "Falls Church" Or _
+Forms![foreclosure database screen]!PropertyCity Like "Manassas*" Or _
+Forms![foreclosure database screen]!PropertyCity = "Manassas Park" Or _
+Forms![foreclosure database screen]!Propertycounty = "Arlington" Or _
+Forms![foreclosure database screen]!Propertycounty = "Fairfax" Or _
+Forms![foreclosure database screen]!Propertycounty = "Loudoun" Or _
+Forms![foreclosure database screen]!Propertycounty = "Prince William" Then
+MsgBox ("Congestion Tax NEEDED!")
+End If
+
+DoCmd.OpenForm ("VAAccmain")
+
+
+End Function
+Public Function AcctCommReg()
+Dim rs As RecordSet, RsReg As RecordSet, rsTemp
+Dim strsql As String, VRegister As String
+
+Dim VBal
+
+CurrentDb.Execute "DELETE * FROM tempcomm;", dbFailOnError
+Set rs = CurrentDb.OpenRecordset("TempVASales")
+
+Do While Not rs.EOF
+strsql = "select * from RegisterCHECK where FileID = " & rs!filenum & ";"
+VRegister = ""
+Set RsReg = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not RsReg.EOF Then
+RsReg.MoveFirst
+GblFilenum = RsReg!FileID
+Do While Not RsReg.EOF
+VRegister = VRegister & "Date:" & Format(RsReg!TransDate, "mm/dd/yy") & vbCr & "Amt: " & Format(RsReg!TransAmount, "$###,##0.00") & vbCr
+VBal = RsReg!TransAmount + VBal
+RsReg.MoveNext
+Loop
+
+If VRegister <> "" Then
+Set rsTemp = CurrentDb.OpenRecordset("tempcomm")
+With rsTemp
+.AddNew
+!filenum = GblFilenum
+!register = VRegister
+!Bal_Money = VBal
+.Update
+.Close
+End With
+End If
+End If
+
+
+rs.MoveNext
+Loop
+
+
+End Function
+Public Function AcctCommCheck()
+
+Dim Vinitial, VCommissioner, VComm, strsql, AUDsql, vCounty, VState, Vlisting, VSaleDate, VID As String
+Dim auditor, Address, Address2, csz, dear As String
+Dim Vnoauditors
+Dim rs, rsAuditors As RecordSet, rsComm As RecordSet
+
+CurrentDb.Execute "DELETE * FROM tempcomm;", dbFailOnError
+
+Set rs = CurrentDb.OpenRecordset("TempVASales")
+
+Do While Not rs.EOF
+Set rsComm = CurrentDb.OpenRecordset("tempcomm")
+VCommissioner = ""
+vCounty = rs![Propertycounty]
+VState = rs!PropertyState
+
+If Not IsNull(rs!SaleDate) Then
+VSaleDate = Format(rs!SaleDate, "m")
+Else
+VSaleDate = ""
+End If
+
+If vCounty = "City of Virginia beach" Then
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+
+Do While Not rsAuditors.EOF And VCommissioner = ""
+'If rs!SaleDate >= #1/1/2008# And rs!SaleDate <= #12/31/2011# Then
+If (VSaleDate = 1 Or VSaleDate = 5 Or VSaleDate = 9) And rsAuditors!Comm_order = 1 Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+ElseIf (VSaleDate = 2 Or VSaleDate = 6 Or VSaleDate = 10) And rsAuditors!Comm_order = 2 Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+ElseIf (VSaleDate = 3 Or VSaleDate = 7 Or VSaleDate = 11) And rsAuditors!Comm_order = 4 Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+ElseIf (VSaleDate = "4" Or VSaleDate = 8 Or VSaleDate = 12) And rsAuditors!Comm_order = 5 Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+'End If
+rsAuditors.MoveNext
+Loop
+With rsComm
+.AddNew
+!filenum = rs!filenum
+!Commissioner = VCommissioner
+.Update
+.Close
+End With
+
+ElseIf vCounty Like "Richmon*" Then
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+rsAuditors.MoveFirst
+Do While Not rsAuditors.EOF And VCommissioner = ""
+If rs!propzip Like "23224*" Or _
+rs!propzip Like "23225*" Or _
+rs!propzip Like "23234*" Or _
+rs!propzip Like "23235*" Then
+If rsAuditors!Auditor_last = "pinchbeck" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+Else
+If rsAuditors!Auditor_last <> "pinchbeck" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+End If
+rsAuditors.MoveNext
+Loop
+With rsComm
+.AddNew
+!filenum = rs!filenum
+!Commissioner = VCommissioner
+.Update
+.Close
+End With
+
+ElseIf vCounty = "City of Lynchburg" Then
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+rsAuditors.MoveFirst
+Do While Not rsAuditors.EOF And VCommissioner = ""
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+If rsAuditors!Auditor_last = "Houck" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+Else
+If rsAuditors!Auditor_last <> "Houck" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+End If
+rsAuditors.MoveNext
+Loop
+With rsComm
+.AddNew
+!filenum = rs!filenum
+!Commissioner = VCommissioner
+.Update
+.Close
+End With
+
+ElseIf vCounty = "wythe" Then
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+rsAuditors.MoveFirst
+Do While Not rsAuditors.EOF And VCommissioner = ""
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+If rsAuditors!Auditor_last = "Jones" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+Else
+If rsAuditors!Auditor_last <> "Jones" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+End If
+rsAuditors.MoveNext
+Loop
+With rsComm
+.AddNew
+!filenum = rs!filenum
+!Commissioner = VCommissioner
+.Update
+.Close
+End With
+
+ElseIf vCounty = "amherst" Then
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+rsAuditors.MoveFirst
+Do While Not rsAuditors.EOF And VCommissioner = ""
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+If rsAuditors!Auditor_last = "Shrader" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+Else
+If rsAuditors!Auditor_last <> "Shrader" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+End If
+rsAuditors.MoveNext
+Loop
+With rsComm
+.AddNew
+!filenum = rs!filenum
+!Commissioner = VCommissioner
+.Update
+.Close
+End With
+
+ElseIf vCounty = "Floyd" Then
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+rsAuditors.MoveFirst
+Do While Not rsAuditors.EOF And VCommissioner = ""
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+If rsAuditors!Auditor_last = "Profitt" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+Else
+If rsAuditors!Auditor_last <> "Profitt" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+End If
+rsAuditors.MoveNext
+Loop
+With rsComm
+.AddNew
+!filenum = rs!filenum
+!Commissioner = VCommissioner
+.Update
+.Close
+End With
+
+ElseIf vCounty = "Hampton City" Then
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+rsAuditors.MoveFirst
+Do While Not rsAuditors.EOF And VCommissioner = ""
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+If rsAuditors!Auditor_last = "Cumming" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+Else
+If rsAuditors!Auditor_last <> "Cumming" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+End If
+rsAuditors.MoveNext
+Loop
+With rsComm
+.AddNew
+!filenum = rs!filenum
+!Commissioner = VCommissioner
+.Update
+.Close
+End With
+
+ElseIf vCounty = "City of Norfolk" Then
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+rsAuditors.MoveFirst
+Do While Not rsAuditors.EOF And VCommissioner = ""
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+If rsAuditors!Auditor_last Like "Trapan*" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+Else
+If rsAuditors!Auditor_last = "Gibson" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+End If
+rsAuditors.MoveNext
+Loop
+With rsComm
+.AddNew
+!filenum = rs!filenum
+!Commissioner = VCommissioner
+.Update
+.Close
+End With
+
+ElseIf vCounty = "prince william" Then
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+rsAuditors.MoveFirst
+Do While Not rsAuditors.EOF And VCommissioner = ""
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+If rsAuditors!Auditor_last = "Lonas" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+Else
+If rsAuditors!Auditor_last <> "Lonas" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+End If
+rsAuditors.MoveNext
+Loop
+With rsComm
+.AddNew
+!filenum = rs!filenum
+!Commissioner = VCommissioner
+.Update
+.Close
+End With
+
+ElseIf vCounty = "City of Newport News" Then
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+rsAuditors.MoveFirst
+Do While Not rsAuditors.EOF And VCommissioner = ""
+If rs!propzip Like "23601*" Or _
+rs!propzip Like "23603*" Or _
+rs!propzip Like "23604*" Or _
+rs!propzip Like "23605*" Or _
+rs!propzip Like "23607*" Then
+If rsAuditors!Auditor_last = "Hatchett" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+Else
+If rsAuditors!Auditor_last <> "Hatchett" Then
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+End If
+rsAuditors.MoveNext
+Loop
+With rsComm
+.AddNew
+!filenum = rs!filenum
+!Commissioner = VCommissioner
+.Update
+.Close
+End With
+
+ElseIf vCounty <> "City of Newport News" And _
+vCounty <> "prince william" And _
+vCounty <> "amherst" And _
+vCounty <> "City of Virginia beach" And _
+vCounty <> "Richmond" And _
+vCounty <> "Richmond City" And _
+vCounty <> "City of Lynchburg" And _
+vCounty <> "wythe" And _
+vCounty <> "Floyd" And _
+vCounty <> "Hampton City" Then
+
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & " and auditor_state = " & """" & VState & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+
+If Not rsAuditors.EOF Then
+rsAuditors.MoveFirst
+Dim VNumAud
+VNumAud = 0
+Do While Not rsAuditors.EOF
+VNumAud = VNumAud + 1
+rsAuditors.MoveNext
+Loop
+If VNumAud = 1 Then
+rsAuditors.MoveFirst
+VCommissioner = rsAuditors!Auditor_first & " " & rsAuditors!Auditor_last
+End If
+With rsComm
+.AddNew
+!filenum = rs!filenum
+!Commissioner = VCommissioner
+.Update
+.Close
+End With
+End If
+End If
+
+
+rs.MoveNext
+Loop
+
+
+End Function
+
+Public Function EmailBatchLS()
+CurrentDb.Execute "Delete * from tempvasales2;", dbFailOnError
+DoCmd.OpenQuery ("VABatchMT")
+DoCmd.OpenForm ("VirginiaAccountingLANDSAFE")
+
+End Function
+
+Public Function VACommCheckDUMP()
+Dim rsTblFilingFees As RecordSet, rs As RecordSet, rschks As RecordSet
+Dim strsql As String, VPrt As String
+Dim VPkey
+
+VPrt = InputBox("Print Commissioner Checks that have been selected? (YES or NO)")
+If VPrt = "YES" Then
+
+Set rs = CurrentDb.OpenRecordset("VAAcctINQ")
+Set rsTblFilingFees = CurrentDb.OpenRecordset("TblFilingFees")
+
+If rs.EOF Then
+MsgBox ("No Records found for Criteria Entered Please Try Again."), vbOKOnly
+Exit Function
+Else
+
+
+If Not rs.EOF Then
+rs.MoveFirst
+
+While Not rs.EOF
+
+With rsTblFilingFees
+.AddNew
+!PKey = GetAutoNumber("NextDepNum")
+'!PKey = VPKey + 1
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropertyState = rs!PropertyState
+!Client = rs!Client
+!ACCOUNT = "EqOp2"
+!Loan_No = rs!ClientRefNumber
+!TOTAL = rs!Comm_Fee
+!filenum = rs!filenum
+!Category = "Foreclosure"
+!Paid = Date
+!PropertyState = rs!PropertyState
+!Payee = "Commissioner of Accounts"
+!datestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!SaleDate = rs!SaleDate
+.Update
+End With
+
+If rs!Clerk_fee > 0 Then
+With rsTblFilingFees
+.AddNew
+!PKey = GetAutoNumber("NextDepNum")
+'!PKey = VPKey + 1
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropertyState = rs!PropertyState
+!Client = rs!Client
+!ACCOUNT = "EqOp2"
+!Loan_No = rs!ClientRefNumber
+!TOTAL = rs!Clerk_fee
+!filenum = rs!filenum
+!Category = "Foreclosure"
+!Paid = Date
+!PropertyState = rs!PropertyState
+!Payee = "Clerk of Court"
+!datestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!SaleDate = rs!SaleDate
+.Update
+End With
+End If
+
+If rs!Postage > 0 Then
+With rsTblFilingFees
+.AddNew
+!PKey = GetAutoNumber("NextDepNum")
+'!PKey = VPKey + 1
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropertyState = rs!PropertyState
+!Client = rs!Client
+!ACCOUNT = "EqOp2"
+!Loan_No = rs!ClientRefNumber
+!TOTAL = rs!Postage
+!filenum = rs!filenum
+!Category = "Foreclosure"
+!Paid = Date
+!PropertyState = rs!PropertyState
+!Payee = "BWW Law Group, LLC"
+!datestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!SaleDate = rs!SaleDate
+.Update
+End With
+End If
+
+If rs!LNA_Fee > 0 Then
+With rsTblFilingFees
+.AddNew
+!PKey = GetAutoNumber("NextDepNum")
+'!PKey = VPKey + 1
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropertyState = rs!PropertyState
+!Client = rs!Client
+!ACCOUNT = "EqOp2"
+!Loan_No = rs!ClientRefNumber
+!TOTAL = rs!LNA_Fee
+!filenum = rs!filenum
+!Category = "Foreclosure"
+!Paid = Date
+!PropertyState = rs!PropertyState
+If rs!LNA_Client_Comm = 1 Then
+!Payee = "Commissioner of Accounts"
+Else
+!Payee = rs!Client
+End If
+!datestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!SaleDate = rs!SaleDate
+.Update
+End With
+End If
+
+rs.MoveNext
+Wend
+End If
+End If
+
+
+
+End If
+
+End Function
+Public Function OpenAuctVA()
+DoCmd.OpenQuery ("UnpaidAuctVA")
+DoCmd.OpenForm ("Unpaid Auctioneer")
+
+End Function
+Public Function auctpaid()
+
+Dim rsTblFilingFees As RecordSet, rs As RecordSet, rschks As RecordSet
+Dim strsql As String, VPrt As String
+Dim VPkey
+
+VPrt = InputBox("Print Trustee Check? (YES or NO)")
+If VPrt = "YES" Then
+
+Set rs = CurrentDb.OpenRecordset("VAAuctCreateChecks")
+Set rsTblFilingFees = CurrentDb.OpenRecordset("TblFilingFees")
+
+If rs.EOF Then
+MsgBox ("No Records found for Criteria Entered Please Try Again."), vbOKOnly
+Exit Function
+Else
+
+
+If Not rs.EOF Then
+rs.MoveFirst
+
+While Not rs.EOF
+
+With rsTblFilingFees
+.AddNew
+!PKey = GetAutoNumber("NextDepNum")
+'!PKey = VPKey + 1
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropertyState = rs!PropertyState
+!Client = rs!CustomerID
+!ACCOUNT = "Escrow IV Account"
+!Loan_No = rs!ClientRefNumber
+!TOTAL = rs!Comm_Fee
+!filenum = rs!filenum
+!Category = "Foreclosure"
+!Paid = Date
+!PropertyState = rs!PropertyState
+!Payee = "Commissioner of Accounts"
+!datestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!SaleDate = rs!SaleDate
+.Update
+End With
+rs.MoveNext
+Wend
+End If
+End If
+
+
+
+End If
+
+End Function
+
+Public Function VAAcctScnLANDSAFE()
+ 
+
+CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+Dim rs, rsTemp As RecordSet
+Dim VBegSale, VEndSale
+VBegSale = InputBox("Enter Beginning Sale Date")
+VEndSale = InputBox("Enter Ending Sale Date")
+
+Dim strsql As String
+
+strsql = "SELECT Cases.LastNameDebtor1, Cases.PropAddress, Cases.ClientRefNumber, " _
+& "Cases.Client, Cases.FileNum, Cases.PropertyState, foreclosure.titlereportordered, Foreclosure.TitleReportRecieved, " _
+& " Foreclosure.Book, Foreclosure.VAPage, foreclosure.mot_date, foreclosure.mot_prinbal, foreclosure.mot_liber, foreclosure.mot_folio, Foreclosure.InstrumentNo, " _
+& " Cases.PropertyCounty, cases.[date recieved], foreclosure.irsnotice, Foreclosure.SaleDate, Foreclosure.SaleTime, Cases.Status, " _
+& " Foreclosure.pubreq, Foreclosure.[1st_ad], Foreclosure.[Ad Proof Recd], " _
+& " Foreclosure.newspaper1, Foreclosure.sale_cancelled, foreclosure.title_button, Foreclosure.newspaper2, Cases.PropertyCity, Cases.PropZip, " _
+& " Cases.propaddress2, Cases.Unit_no, Foreclosure.pub2, Foreclosure.pub3, " _
+& " Foreclosure.pub4, Foreclosure.pub5 FROM Cases " _
+& " INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum " _
+& " WHERE cases.PropertyState = " & """" & "va" & """" & " And sale_cancelled is null and " _
+& " foreclosure.SaleDate >= #" & VBegSale & "# and foreclosure.saledate <=#" & VEndSale & "#;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+With rsTemp
+.AddNew
+!filenum = rs!filenum
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropAddress = rs!PropAddress
+!ClientRefNumber = rs!ClientRefNumber
+!Client = rs!Client
+!IRSnotice = rs!IRSnotice
+!irs_lien = rs!title_button
+!PropertyState = rs!PropertyState
+!TitleReportRecieved = rs!TitleReportRecieved
+!TitleReportOrdered = rs!TitleReportOrdered
+!Book = rs!Book
+!VAPage = rs!VAPage
+!InstrumentNo = rs!InstrumentNo
+!Propertycounty = rs!Propertycounty
+!SaleDate = rs!SaleDate
+!SaleTime = rs!SaleTime
+!Status = rs!Status
+!pubreq = rs!pubreq
+![1st_ad] = rs![1st_ad]
+!omit = 0
+!newspaper1 = rs!newspaper1
+!newspaper2 = rs!newspaper2
+!PropertyCity = rs!PropertyCity
+!propzip = rs!propzip
+!propaddress2 = rs!propaddress2
+!unit_no = rs!unit_no
+!pub2 = rs!pub2
+!pub3 = rs!pub3
+!pub4 = rs!pub4
+!pub5 = rs!pub5
+![Date Recieved] = rs![Date Recieved]
+.Update
+End With
+rs.MoveNext
+Loop
+rsTemp.Close
+rs.Close
+DoCmd.OpenQuery ("VAAcctUpdate1")
+DoCmd.OpenQuery ("VAAcctUpdate2")
+
+DoCmd.OpenForm ("VirginiaAccountingLANDSAFE")
+End Function
+Public Function VAAcctScn()
+ 
+
+Dim VSel
+
+CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+
+Dim rs, rsTemp As RecordSet
+
+DoCmd.OpenQuery ("VAAcctUpdate")
+
+DoCmd.OpenQuery ("VAAcctUpdate1")
+DoCmd.OpenQuery ("VAAcctUpdate2")
+DoCmd.OpenQuery ("VAAcctUpdateTbl")
+
+Call AddRegMonies
+DoCmd.OpenQuery ("VaAcctUpdate3")
+
+
+
+DoCmd.OpenForm ("VirginiaAccounting")
+
+End Function
+Public Function AddRegMoniesACCT()
+Call AddRegMonies
+DoCmd.OpenQuery ("VaAcctUpdate3")
+
+
+End Function
+Public Function AddRegMonies()
+Dim rs As RecordSet, RsReg As RecordSet, rsTemp
+Dim strsql As String, VRegister As String
+
+Dim VBal
+
+CurrentDb.Execute "DELETE * FROM tempcomm;", dbFailOnError
+Set rs = CurrentDb.OpenRecordset("TempVASales")
+
+Do While Not rs.EOF
+strsql = "select * from RegisterEqOp2Checks where FileID = " & rs!filenum & ";"
+VRegister = ""
+
+Set RsReg = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not RsReg.EOF Then
+
+RsReg.MoveFirst
+GblFilenum = RsReg!FileID
+VBal = 0
+Do While Not RsReg.EOF
+'VRegister = VRegister & "Date:" & Format(RsReg!TransDate, "mm/dd/yy") & vbCr & "Amt: " & Format(RsReg!transamount, "$###,##0.00") & vbCr
+VBal = RsReg!TransAmount + VBal
+RsReg.MoveNext
+Loop
+
+'If VRegister <> "" Then
+Set rsTemp = CurrentDb.OpenRecordset("tempcomm")
+With rsTemp
+.AddNew
+!filenum = GblFilenum
+'!Register = VRegister
+!Bal_Money = VBal
+.Update
+.Close
+End With
+End If
+'End If
+
+
+rs.MoveNext
+Loop
+
+
+End Function
+
+Public Function VAAcctDEADLINE()
+
+Dim VDate As Date
+Dim vdateM
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+vdateM = DateAdd("m", 6, Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate)
+VDate = DateAdd("d", -2, vdateM)
+VAAcctDEADLINE = VDate
+'MsgBox (VAAcctDEADLINE)
+End If
+
+End Function
+Public Function AddCOMM()
+
+DoCmd.Close acForm, "Court Auditor/VA Commissioner Screen"
+
+Dim rs As RecordSet
+Dim VComID
+Dim vCounty As String, VState As String
+
+VComID = GetAutoNumber("NextAudNum")
+vCounty = InputBox("Enter County")
+VState = InputBox("Enter State")
+
+Dim DocName As String
+Dim linkcriteria As String
+Set rs = CurrentDb.OpenRecordset("dba_Court_Auditors", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!AuditorID = VComID
+!Auditor_County = vCounty
+!auditor_state = VState
+.Update
+.Close
+End With
+
+MsgBox ("Comm/Auditor ID#: " & VComID & " assigned to new Commissioner/Auditor.")
+
+DocName = "Court Auditor/VA Commissioner Screen"
+linkcriteria = "[auditorid] = " & VComID
+DoCmd.OpenForm DocName, , , linkcriteria
+
+
+
+End Function
+
+Public Function EncCount()
+Dim Vcnt As Integer
+Vcnt = 0
+
+
+If [Forms]![VAAccounting Suppltr]![rcs] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![VBlank] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![proof] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![plender] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![Title] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![retax] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![ad] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![AttFee] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![lnl] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![On] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![ojn] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![affpub] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![notsale] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![LNA] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![lnaAss] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![recdeed] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![crdot] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![REC] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![breakdown] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![bid] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![assignlender] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![acc] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![chkcomm] = -1 Then
+Vcnt = Vcnt + 1
+End If
+If [Forms]![VAAccounting Suppltr]![proofnotices] = -1 Then
+Vcnt = Vcnt + 1
+End If
+EncCount = Vcnt
+
+End Function
+Public Function RunMissingV()
+Dim VSelect2
+
+VSelect2 = InputBox("1.  Missing Vouchers (Accounting Screen)" & vbCr & "2.  Missing Vouchers (All Acct Screen/Deficiency)" & vbCr & "select 1 or 2")
+
+If VSelect2 = 1 Then
+
+DoCmd.OpenReport "Virginia Accounting - Missing Vouchers Report", acViewPreview
+
+ElseIf VSelect2 = 2 Then
+DoCmd.OpenReport "Virginia Accounting - Missing Vouchers and DEF Report", acViewPreview
+End If
+
+End Function
+Public Function VADel()
+Dim Vselect
+Vselect = InputBox("1. Aff Pub and Receipt marked Paid w/initials" & vbCr & "2. Real Estate Taxe Proof of Payment" & vbCr & "3. Proof of Title Examination" & vbCr & "4. Org Note/Lost Note" & vbCr & "5. Recorded Deed of Trust" & vbCr & "select 1, 2, 3, 4 or 5")
+
+If Vselect = 1 Then
+DoCmd.OutputTo acOutputReport, "VAAcctDelAffPubProof", acFormatXLS, pathuser() & "\VAAccountingAffPubProof.xls"
+Call Shell("excel.exe c:\4closure\VAAccountingAffPubProof.xls")
+ElseIf Vselect = 2 Then
+DoCmd.OutputTo acOutputReport, "VAAcctDelTaxes", acFormatXLS, pathuser() & "\RealEstateTaxProofofPayment.xls"
+Call Shell("excel.exe c:\4closure\RealEstateTaxProofofPayment.xls")
+ElseIf Vselect = 3 Then
+DoCmd.OutputTo acOutputReport, "VAAcctDelTitle", acFormatXLS, pathuser() & "\Proofoftitleform.xls"
+Call Shell("excel.exe c:\4closure\Proofoftitleform.xls")
+ElseIf Vselect = 4 Then
+DoCmd.OutputTo acOutputReport, "VAAcctDelONLN", acFormatXLS, pathuser() & "\DeliquentNote.xls"
+Call Shell("excel.exe c:\4closure\DeliquentNote.xls")
+ElseIf Vselect = 5 Then
+DoCmd.OutputTo acOutputReport, "VAAcctDelCRDOT", acFormatXLS, pathuser() & "\RecordedDOT.xls"
+Call Shell("excel.exe c:\4closure\RecordedDOT.xls")
+
+End If
+
+End Function
+
+Public Function AcctComm()
+
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor) Or _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor = 0 Then
+
+Dim Vinitial, strsql, AUDsql, vCounty, Vlisting, VSaleDate, VID As String
+Dim auditor, Address, Address2, csz, dear As String
+Dim Vnoauditors
+Dim rsAuditors As RecordSet
+Dim valacctcomm As Variant
+
+vCounty = Forms![foreclosure database screen]![Propertycounty]
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+VSaleDate = Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate, "m")
+Else
+VSaleDate = ""
+End If
+
+valacctcomm = ""
+
+AUDsql = "Select * from dba_court_auditors where auditor_county = " & """" & vCounty & """" & ";"
+Set rsAuditors = CurrentDb.OpenRecordset(AUDsql, dbOpenSnapshot)
+
+If VSaleDate <> "" Then
+
+If vCounty = "City of Virginia beach" Then
+
+Do While Not rsAuditors.EOF And valacctcomm = ""
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate >= #1/1/2006# And _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate <= #12/31/2006# Then
+
+If (VSaleDate = 5 Or VSaleDate = 10) And rsAuditors!Comm_order = 1 Then
+valacctcomm = rsAuditors!AuditorID
+ElseIf (VSaleDate = 1 Or VSaleDate = 6 Or VSaleDate = 11) And rsAuditors!Comm_order = 2 Then
+valacctcomm = rsAuditors!AuditorID
+ElseIf (VSaleDate = 2 Or VSaleDate = 7 Or VSaleDate = 12) And rsAuditors!Comm_order = 3 Then
+valacctcomm = rsAuditors!AuditorID
+ElseIf (VSaleDate = 3 Or VSaleDate = 8) And rsAuditors!Comm_order = 4 Then
+valacctcomm = rsAuditors!AuditorID
+ElseIf (VSaleDate = "4" Or VSaleDate = 9) And rsAuditors!Comm_order = 5 Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate >= #1/1/2007# And _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate <= #12/31/2007# Then
+If (VSaleDate = 3 Or VSaleDate = 8) And rsAuditors!Comm_order = 1 Then
+valacctcomm = rsAuditors!AuditorID
+ElseIf (VSaleDate = "4" Or VSaleDate = 9) And rsAuditors!Comm_order = 2 Then
+valacctcomm = rsAuditors!AuditorID
+ElseIf (VSaleDate = 5 Or VSaleDate = 10) And rsAuditors!Comm_order = 3 Then
+valacctcomm = rsAuditors!AuditorID
+ElseIf (VSaleDate = 1 Or VSaleDate = 6 Or VSaleDate = 11) And rsAuditors!Comm_order = 4 Then
+valacctcomm = rsAuditors!AuditorID
+ElseIf (VSaleDate = 2 Or VSaleDate = 7 Or VSaleDate = 12) And rsAuditors!Comm_order = 5 Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate >= #1/1/2008# Then
+If (VSaleDate = 1 Or VSaleDate = 5 Or VSaleDate = 9) And rsAuditors!Comm_order = 1 Then
+valacctcomm = rsAuditors!AuditorID
+ElseIf (VSaleDate = 2 Or VSaleDate = 6 Or VSaleDate = 10) And rsAuditors!Comm_order = 2 Then
+valacctcomm = rsAuditors!AuditorID
+ElseIf (VSaleDate = 3 Or VSaleDate = 7 Or VSaleDate = 11) And rsAuditors!Comm_order = 5 Then
+valacctcomm = rsAuditors!AuditorID
+ElseIf (VSaleDate = 4 Or VSaleDate = 8 Or VSaleDate = 12) And rsAuditors!Comm_order = 4 Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+End If
+
+rsAuditors.MoveNext
+Loop
+
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor = valacctcomm
+
+ElseIf vCounty Like "Richmon*" Then
+
+rsAuditors.MoveFirst
+
+Do While Not rsAuditors.EOF And valacctcomm = ""
+If Forms![foreclosure database screen]!propzip Like "23224*" Or _
+Forms![foreclosure database screen]!propzip Like "23225*" Or _
+Forms![foreclosure database screen]!propzip Like "23234*" Or _
+Forms![foreclosure database screen]!propzip Like "23235*" Then
+
+If rsAuditors!Auditor_last = "pinchbeck" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+Else
+If rsAuditors!Auditor_last <> "pinchbeck" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+End If
+rsAuditors.MoveNext
+Loop
+
+
+ElseIf vCounty = "City of Lynchburg" Then
+
+
+rsAuditors.MoveFirst
+
+Do While Not rsAuditors.EOF And valacctcomm = ""
+
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+
+If rsAuditors!Auditor_last = "Houck" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+Else
+If rsAuditors!Auditor_last <> "Houck" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+End If
+
+
+rsAuditors.MoveNext
+Loop
+
+ElseIf vCounty = "wythe" Then
+
+
+rsAuditors.MoveFirst
+
+Do While Not rsAuditors.EOF And valacctcomm = ""
+
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+
+If rsAuditors!Auditor_last = "Jones" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+Else
+If rsAuditors!Auditor_last <> "Jones" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+End If
+
+
+rsAuditors.MoveNext
+Loop
+
+ElseIf vCounty = "amherst" Then
+
+rsAuditors.MoveFirst
+
+Do While Not rsAuditors.EOF And valacctcomm = ""
+
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+
+If rsAuditors!Auditor_last = "Shrader" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+Else
+If rsAuditors!Auditor_last <> "Shrader" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+End If
+
+
+rsAuditors.MoveNext
+Loop
+
+ElseIf vCounty = "City of Chesapeake" And _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate >= #1/1/2009# Then
+
+rsAuditors.MoveFirst
+
+Do While Not rsAuditors.EOF And valacctcomm = ""
+
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+
+If rsAuditors!Auditor_last = "Jones" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+Else
+
+If rsAuditors!Auditor_last Like "Telfey*" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+End If
+
+
+rsAuditors.MoveNext
+Loop
+
+ElseIf vCounty = "Floyd" Then
+
+rsAuditors.MoveFirst
+
+Do While Not rsAuditors.EOF And valacctcomm = ""
+
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+
+If rsAuditors!Auditor_last = "Profitt" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+Else
+If rsAuditors!Auditor_last <> "Profitt" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+End If
+
+
+rsAuditors.MoveNext
+Loop
+
+ElseIf vCounty = "Hampton City" Then
+
+rsAuditors.MoveFirst
+
+Do While Not rsAuditors.EOF And valacctcomm = ""
+
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+
+If rsAuditors!Auditor_last = "Cumming" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+Else
+If rsAuditors!Auditor_last <> "Cumming" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+End If
+
+
+rsAuditors.MoveNext
+Loop
+
+ElseIf vCounty = "City of Norfolk" Then
+
+rsAuditors.MoveFirst
+
+Do While Not rsAuditors.EOF And valacctcomm = ""
+
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+
+If rsAuditors!Auditor_last Like "Trapan*" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+Else
+If rsAuditors!Auditor_last = "Gibson" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+End If
+
+
+rsAuditors.MoveNext
+Loop
+
+ElseIf vCounty = "prince william" Then
+
+rsAuditors.MoveFirst
+
+Do While Not rsAuditors.EOF And valacctcomm = ""
+
+If (VSaleDate = 1 Or VSaleDate = 3 Or VSaleDate = 5 Or VSaleDate = 7 Or VSaleDate = 9 Or VSaleDate = 11) Then
+
+If rsAuditors!Auditor_last = "Lonas" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+Else
+If rsAuditors!Auditor_last <> "Lonas" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+End If
+
+
+rsAuditors.MoveNext
+Loop
+
+ElseIf vCounty = "City of Newport News" Then
+
+rsAuditors.MoveFirst
+
+Do While Not rsAuditors.EOF And valacctcomm = ""
+If Forms![foreclosure database screen]!propzip Like "23601*" Or _
+Forms![foreclosure database screen]!propzip Like "23603*" Or _
+Forms![foreclosure database screen]!propzip Like "23604*" Or _
+Forms![foreclosure database screen]!propzip Like "23605*" Or _
+Forms![foreclosure database screen]!propzip Like "23607*" Then
+
+If rsAuditors!Auditor_last = "Hatchett" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+
+Else
+If rsAuditors!Auditor_last <> "Hatchett" Then
+valacctcomm = rsAuditors!AuditorID
+End If
+End If
+
+rsAuditors.MoveNext
+Loop
+
+
+Else
+
+
+If rsAuditors.EOF Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+MsgBox ("PLEASE INPUT AN AUDITOR FOR THIS COUNTY")
+Exit Function
+
+Else
+MsgBox ("There is not an Commissioner input for " & vCounty & ", please exit and input Commmissioner in Screen")
+Exit Function
+
+End If
+
+End If
+
+rsAuditors.MoveFirst
+Vnoauditors = 0
+
+Do While Not rsAuditors.EOF
+
+If rsAuditors!inactive = 0 Or IsNull(rsAuditors!inactive) Then
+Vnoauditors = Vnoauditors + 1
+VID = rsAuditors!AuditorID
+Vlisting = Vlisting + VID + "           " + rsAuditors!Auditor_last + ", " & rsAuditors!Auditor_first + Chr(13)
+
+End If
+
+rsAuditors.MoveNext
+
+Loop
+
+
+If Vnoauditors > 1 Then
+
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+valacctcomm = InputBox("ID #          Auditor" & Chr(13) & Vlisting & Chr(13) & "Enter Auditor ID#:")
+Else
+valacctcomm = InputBox("ID #          Commissioner" & Chr(13) & Vlisting & Chr(13) & "Enter Commissioner ID#:")
+End If
+
+
+
+Else
+valacctcomm = VID
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor = valacctcomm
+
+End If
+
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor = valacctcomm
+
+End If
+
+Forms![foreclosure database screen]!PostsaleSubForm.Form!court_auditor = valacctcomm
+
+'MsgBox (VSaleDate & ": " & valacctcomm)
+
+
+End If
+'MsgBox (valacctcomm)
+End If
+AcctComm = valacctcomm
+End Function
+

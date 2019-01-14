@@ -1,0 +1,129 @@
+Attribute VB_Name = "MergeDocuments"
+Option Compare Database
+Public Function ExportADVadataSALE()
+
+CurrentDb.Execute "DELETE * FROM Merge;", dbFailOnError
+
+    Dim rs As RecordSet
+    Dim sql As String
+  
+
+sql = "SELECT Cases.FileNum, Cases.Client, Cases.ClientRefNumber, Foreclosure.DOTDate, " _
+& " Foreclosure.LegalDescription, Foreclosure.SaleDate, Foreclosure.SaleTime, " _
+& " Foreclosure.OrgAmount, Jurisdiction.saleheld " _
+& " FROM ((Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum) " _
+& " INNER JOIN Jurisdiction ON Cases.PropertyCounty = Jurisdiction.County " _
+& " AND Cases.PropertyState = Jurisdiction.State) " _
+& " WHERE Cases.FileNum = " & [Forms]![VirginiaSales]![filenum] & ";"
+
+
+Set rs = CurrentDb.OpenRecordset(sql, dbOpenSnapshot)
+ 
+Set rsDOA = CurrentDb.OpenRecordset("Merge", dbOpenDynaset, dbSeeChanges)
+
+With rsDOA
+.AddNew
+!filenum = Forms![VirginiaSales]![filenum]
+!Client = rs!Client
+!Propertycounty = CountySALES()
+!liberfolio = liberfolioVA()
+!DOTDate = rs!DOTDate
+!SaleDate = rs![SaleDate]
+If rs![LegalDescription] Like "*see attached*" Then
+!legal = "."
+Else
+!legal = ", and more particularly described as follows: " & rs![LegalDescription] & "."
+End If
+!PROP = propVA()
+!SaleTime = rs!SaleTime
+!OrgAmount = rs!OrgAmount
+!SaleHeld = rs!SaleHeld
+.Update
+End With
+
+End Function
+
+Public Function ExportADVadata()
+
+CurrentDb.Execute "DELETE * FROM Merge;", dbFailOnError
+    Dim rs As RecordSet
+    Dim sql As String
+  
+  'sql = "SELECT cases.FileNum, cases.LastNameDebtor1, cases.PropAddress, " _
+  '& " cases.PropertyCounty, cases.PropertyCity, cases.PropertyState, " _
+  '& " cases.PropZip, cases.Client, foreclosure.orgamount, cases.ClientRefNumber, " _
+  '& " foreclosure.saletime, foreclosure.dotdate, foreclosure.SaleDate, foreclosure.[Legaldescription] " _
+  '& " FROM cases INNER JOIN Foreclosure ON cases.filenum = foreclosure.subfilenum " _
+  '& " WHERE cases.FileNum = " & [Forms]![foreclosure database screen]![FileNum] & ";"
+
+sql = "SELECT Cases.FileNum, Cases.Client, Cases.ClientRefNumber, Foreclosure.DOTDate, " _
+& " Foreclosure.LegalDescription, Foreclosure.SaleDate, Foreclosure.SaleTime, " _
+& " Foreclosure.OrgAmount, Jurisdiction.saleheld " _
+& " FROM ((Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum) " _
+& " INNER JOIN Jurisdiction ON Cases.PropertyCounty = Jurisdiction.County " _
+& " AND Cases.PropertyState = Jurisdiction.State) " _
+& " WHERE Cases.FileNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+
+'& " FROM Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum " _
+'& " WHERE Cases.FileNum = " & [Forms]![foreclosure database screen]![FileNum] & ";"
+
+Set rs = CurrentDb.OpenRecordset(sql, dbOpenDynaset, dbSeeChanges)
+ 
+Set rsDOA = CurrentDb.OpenRecordset("Merge, dbOpenDynaset, dbSeeChanges")
+
+With rsDOA
+.AddNew
+!filenum = Forms![foreclosure database screen]![filenum]
+!Debtors = debtorsOPEN()
+!Client = rs!Client
+!Propertycounty = County()
+!liberfolio = liberfolio()
+!DOTDate = rs!DOTDate
+!SaleDate = rs![SaleDate]
+If rs![LegalDescription] Like "*see attached*" Then
+!legal = "."
+Else
+!legal = ", and more particularly described as follows: " & rs![LegalDescription] & "."
+End If
+!PROP = PROP()
+!SaleTime = rs!SaleTime
+!OrgAmount = rs!OrgAmount
+!SaleHeld = rs!SaleHeld
+.Update
+End With
+
+End Function
+
+Public Function RunAdVAMergeSALE()
+
+Call ExportADVadataSALE
+
+DoCmd.RunMacro "ExportAdVA"
+
+Dim oDoc As Word.document
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\AdVA.dot", "Word.Document")
+oDoc.Application.Visible = True
+oDoc.MailMerge.OpenDataSource _
+name:=pathuser() & "\DataDoc.txt"
+oDoc.MailMerge.Execute
+oDoc.Close
+
+End Function
+Public Function RunAdVAMerge()
+Call ExportADVadata
+Dim wdMailMergeDestination1 As WdMailMergeDestination
+
+DoCmd.RunMacro "ExportAdVA"
+
+Dim oDoc As Word.document
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\AdVA.dot", "Word.Document")
+oDoc.Application.Visible = True
+oDoc.MailMerge.OpenDataSource _
+name:=pathuser() & "\DataDoc.txt"
+'oDoc.MailMerge.Destination = Word.WdMailMergeDestination.wdSendToNewDocument
+'oDoc.MailMerge.SuppressBlankLines = True
+oDoc.MailMerge.Execute
+oDoc.Close
+
+
+End Function

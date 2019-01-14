@@ -1,0 +1,12 @@
+Attribute VB_Name = "SeniorLienModule"
+Option Compare Database
+
+Public Function trusteesSubDeedSL() As String
+Dim SubTRUSTEES, DocName, trusteename As String
+Dim message, Title As String
+
+
+
+End Function
+
+

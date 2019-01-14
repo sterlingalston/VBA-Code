@@ -1,0 +1,8 @@
+Public Function getFiscalYear(dater As Date) As String
+
+Dim fisc_month As Date
+fisc_month = DateAdd("m", 3, dater)
+
+getFiscalYear = "FY" & Format(fisc_month, "yy")
+
+End Function

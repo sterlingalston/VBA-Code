@@ -1,0 +1,748 @@
+Attribute VB_Name = "SQLReports_Export"
+Option Compare Database
+
+
+Public Const dstring As Double = 129
+Public Const dboolean As Double = 11
+Public Const ddate As Double = 133
+Public Const dtime As Double = 134
+Public Const ddouble As Double = 5
+Public Const dnumeric As Double = 139
+Public Const sqlpath As String = "\\rvdv-fs01\DataTransfer\Templates\Excel\BWWSpreadsheetSQL\"
+
+Public Function connstr() As String
+    connstr = "DSN=BGW_Foreclosure;Description=BGW Foreclosure;" & _
+                "UID=" & Environ("username") & ";Trusted_Connection=Yes;APP=2007 Microsoft Office system;" & _
+                "WSID=494MZ12;DATABASE=Foreclosure"
+End Function
+
+
+
+Sub getva_dil_lt_eviction()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "va_dil_lt_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+
+Sub getva_lockout_eviction()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "va_lockout_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getva_ordertowrit_eviction()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "va_ordertowrit_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getva_summons_eviction()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "va_summons_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getva_presummons_nonbww_eviction()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "va_presummons_nonbww_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getva_presummons_bww_eviction()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "va_presummons_bww_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+
+
+Sub BillingMonthlyFeesCreateTable()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    
+    Dim BegDate As String: BegDate = InputBox("Enter Beginning Bill Date", "Enter Beginning Bill Date")
+    Dim EndDate As String: EndDate = InputBox("Enter Ending Bill Date", "Enter Ending Bill Date")
+    
+    Dim SQLText As String
+    
+    'SQLText = "InterimBillsNeededQRY.txt"
+    SQLText = "BillingMonthlyFeesQry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+    
+    sqler.AddParam pname:="begdate", dtype:=dstring, pval:=BegDate
+    sqler.AddParam pname:="enddate", dtype:=dstring, pval:=EndDate
+
+   
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getvwVAFCPipelineMainQry_UNION()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "vwVAFCPipelineMainQry_UNION.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getmd_main_evictions()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "md_main_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getmd_dl_lt_evictions()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "md_dl_lt_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getmd_lockout_evictions()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "md_lockout_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getmd_orderwrit_evictions()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "md_orderwrit_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getmd_mfp_evictions()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "md_mfp_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getmd_premfp_nonbww_evictions()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "md_premfp_nonbww_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getmd_premfp_bww_evictions()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "md_premfp_bww_evictionsqry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub EvicMDRpt_Pipeline()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "EvicMDRpt_Pipeline.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub EvictionReport_VA_Pipeline()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    
+    SQLText = "EvictionReport_VA_Pipeline.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+       
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub getSSNCount()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim SQLText As String
+    
+    'SQLText = "InterimBillsNeededQRY.txt"
+    SQLText = "SSNCountQry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+  
+   
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+
+Sub BillingMonthlyCreateTable()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    
+    Dim BegDate As String: BegDate = InputBox("Enter Beginning Bill Date", "Enter Beginning Bill Date")
+    Dim EndDate As String: EndDate = InputBox("Enter Ending Bill Date", "Enter Ending Bill Date")
+    
+    Dim SQLText As String
+    
+    'SQLText = "InterimBillsNeededQRY.txt"
+    SQLText = "BillingMonthlyQry.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+    
+    sqler.AddParam pname:="begdate", dtype:=dstring, pval:=BegDate
+    sqler.AddParam pname:="enddate", dtype:=dstring, pval:=EndDate
+
+   
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Sub GetInterimBillsNeeded()
+'Creating Parameters _
+    https://msdn.microsoft.com/en-us/library/windows/desktop/ms677209%28v=vs.85%29.aspx
+    Dim sqler As New SQLRpt
+    Dim strsql As String
+    Dim Client As String: Client = InputBox("Enter Client", "Enter Client")
+    Client = IIf(Len(Client) = 0, "%", Client)
+    Dim fromref As String: fromref = InputBox("From Referral Date", "Enter Referral Date")
+    Dim SQLText As String
+    
+    'SQLText = "InterimBillsNeededQRY.txt"
+    SQLText = "MDChaseFiles.txt"
+    strsql = ReadTextFile(sqlpath & SQLText)
+    
+    sqler.CreateSQLRpt rptcmd:=strsql
+    
+'    sqler.AddParam pname:="client1", dtype:=dstring, pval:=Client
+'    sqler.AddParam pname:="fromref2", dtype:=dstring, pval:=DateValue(fromref)
+'    sqler.AddParam pname:="today3", dtype:=dstring, pval:=Date
+'    sqler.AddParam pname:="client4", dtype:=dstring, pval:=Client
+'    sqler.AddParam pname:="fromref5", dtype:=dstring, pval:=DateValue(fromref)
+'    sqler.AddParam pname:="today", dtype:=dstring, pval:=Date
+   
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+sqler.SetRecordSet
+
+'below will just output the report onto a blank sheet
+
+On Error Resume Next
+    CurrentDb.Execute "drop table " & Replace(SQLText, ".txt", "")
+On Error GoTo 0
+Call ReportOutput(sqler, Replace(SQLText, ".txt", ""))
+
+'cleans memory
+sqler.Clean
+    
+End Sub
+
+Public Sub ReportOutput(objsqlrpt As SQLRpt, tblname As String)
+ Dim f As Integer
+ Dim i As Integer
+Dim ctfields As String
+Dim rsvals As String
+    If Not objsqlrpt.sqlrs.EOF Then
+
+        For f = 0 To (objsqlrpt.sqlrs.Fields.Count - 1)
+            'Debug.Print objsqlrpt.sqlrs.Fields(f).name
+             ctfields = ctfields & "[" & objsqlrpt.sqlrs.Fields(f).name & "] " & getFieldDataTypeSQLRpt(objsqlrpt.sqlrs.Fields(f).type) & ", "
+        Next f
+        
+        
+        ctfields = Left(ctfields, Len(ctfields) - 2)
+        CurrentDb.Execute "create table " & tblname & "(" & ctfields & ")"
+        
+        ctfields = ""
+        For f = 0 To (objsqlrpt.sqlrs.Fields.Count - 1)
+             ctfields = ctfields & "[" & objsqlrpt.sqlrs.Fields(f).name & "] " & ", "
+        Next f
+                
+        While Not objsqlrpt.sqlrs.EOF
+        rsvals = ""
+        
+            For f = 0 To (objsqlrpt.sqlrs.Fields.Count - 1)
+                
+                rsvals = rsvals & _
+                IIf(Len(objsqlrpt.sqlrs.Fields(f).Value) > 0 And getFieldDataTypeSQLRpt(objsqlrpt.sqlrs.Fields(f).type) = "Text", """", IIf(Len(objsqlrpt.sqlrs.Fields(f).Value) > 0 And getFieldDataTypeSQLRpt(objsqlrpt.sqlrs.Fields(f).type) = "Date", "#", "")) & _
+                    Nz(IIf(objsqlrpt.sqlrs.Fields(f) = "", "Null", objsqlrpt.sqlrs.Fields(f)), "Null") & _
+                    IIf(Len(objsqlrpt.sqlrs.Fields(f).Value) > 0 And getFieldDataTypeSQLRpt(objsqlrpt.sqlrs.Fields(f).type) = "Text", """", IIf(Len(objsqlrpt.sqlrs.Fields(f).Value) > 0 And getFieldDataTypeSQLRpt(objsqlrpt.sqlrs.Fields(f).type) = "Date", "#", "")) & _
+                    ","
+            Next f
+            rsvals = Left(rsvals, Len(rsvals) - 1)
+            CurrentDb.Execute "insert into " & tblname & " values(" & rsvals & ")"
+            objsqlrpt.sqlrs.MoveNext
+        
+        Wend
+        
+    If DCount("tablename", "DROPTABLESList", "TableName=" & """" & tblname & """") = 0 Then CurrentDb.Execute "insert into droptableslist(TableName) values(" & _
+        """" & tblname & """)"
+        
+     Else
+        MsgBox "Error: No records returned.", vbCritical
+    End If
+ 
+End Sub
+
+Public Function ReadTextFile(path As String)
+
+Dim filenum As Integer
+Dim DataLine As String
+
+filenum = FreeFile()
+Open path For Input As #filenum
+
+While Not EOF(filenum)
+    Line Input #filenum, DataLine
+    ReadTextFile = ReadTextFile & DataLine
+Wend
+
+End Function
+
+Public Function getFieldDataTypeSQLRpt(dtype As Integer)
+
+Dim rs As RecordSet
+
+
+Select Case dtype
+Case 200
+    getFieldDataTypeSQLRpt = "Text"
+Case dbBigInt
+    getFieldDataTypeSQLRpt = "Number"
+Case dbBinary
+    getFieldDataTypeSQLRpt = "Number"
+Case dbBoolean
+    getFieldDataTypeSQLRpt = "Number"
+Case dbByte
+    getFieldDataTypeSQLRpt = "Number"
+Case dbChar
+    getFieldDataTypeSQLRpt = "Text"
+Case dbCurrency
+    getFieldDataTypeSQLRpt = "Currency"
+Case dbDate
+    getFieldDataTypeSQLRpt = "Date"
+Case dbDecimal
+    getFieldDataTypeSQLRpt = "Number"
+Case dbDouble
+    getFieldDataTypeSQLRpt = "Number"
+Case dbFloat
+    getFieldDataTypeSQLRpt = "Number"
+Case dbInteger
+    getFieldDataTypeSQLRpt = "Number"
+Case dbLong
+    getFieldDataTypeSQLRpt = "Number"
+Case dbLongBinary
+    getFieldDataTypeSQLRpt = "Number"
+Case dbMemo
+    getFieldDataTypeSQLRpt = "Memo"
+Case dbNumeric
+    getFieldDataTypeSQLRpt = "Number"
+Case dbSingle
+    getFieldDataTypeSQLRpt = "Number"
+Case dbText
+    getFieldDataTypeSQLRpt = "Text"
+Case dbTime
+    getFieldDataTypeSQLRpt = "Date"
+Case dbVarBinary
+    getFieldDataTypeSQLRpt = "Number"
+Case 202
+        getFieldDataTypeSQLRpt = "Text"
+Case 135
+    getFieldDataTypeSQLRpt = "Date"
+Case 203
+    getFieldDataTypeSQLRpt = "Memo"
+Case 129
+    getFieldDataTypeSQLRpt = "Text"
+End Select
+
+End Function
+
+

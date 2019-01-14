@@ -1,0 +1,29 @@
+Attribute VB_Name = "ShellWait"
+Option Compare Database
+
+Declare Function OpenProcess Lib "Kernel32" (ByVal dwDesiredAccess As Long, _
+    ByVal bInheritHandle As Long, ByVal dwprocessID As Long) As Long
+Declare Function GetExitCodeProcess Lib "Kernel32" (ByVal hProcess As Long, _
+    lbExitCode As Long) As Long
+
+Public Const PROCESS_QUERY_INFORMATION = &H400
+Public Const STILL_ACTIVE = &H103
+
+Public Function ShellAndWait(ByVal pathname As String, Optional WindowState) As Double
+
+    Dim hProg As Long
+    Dim hProcess As Long, ExitCode As Long
+    
+    If IsMissing(WindowState) Then WindowState = 1
+    hProg = Shell(pathname, WindowState)
+    'hProg is the process ID under Win32.  To get the process handle -
+    hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, False, hProg)
+    Do
+        'populate the ExitCode variable
+        GetExitCodeProcess hProcess, ExitCode
+        DoEvents
+    Loop While ExitCode = STILL_ACTIVE
+    ShellAndWait = 1
+    
+End Function
+

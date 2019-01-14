@@ -1,0 +1,10 @@
+Public Sub BldAuditTable()
+
+Dim strSQL As String
+
+strSQL = "create table tblAudit("
+strSQL = strSQL & "[ID] autoincrement, TableName text(50), FieldName text(50), Action text (50), ChangeDate datetime, UserName text(50), OldValue text(255), NewValue text(255), PKeyID text(50))"
+
+CurrentDb.Execute strSQL
+
+End Sub

@@ -1,0 +1,262 @@
+Attribute VB_Name = "AssignmentModule"
+Option Compare Database
+
+Public Function AAA()
+DoCmd.SetWarnings False
+
+CurrentDb.Execute ("Delete * from AAA")
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("AAA", dbOpenDynaset, dbSeeChanges)
+Dim rsClient As RecordSet
+Dim strsql As String
+strsql = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+
+Set rsClient = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+With rs
+.AddNew
+!Assignor = Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgLender
+!Assignee = Forms![foreclosure database screen]!Client
+!AssigneeAddress = "c/o " & Forms![foreclosure database screen]![Client] & ", " & IIf(Forms![foreclosure database screen]![Client] = "American Home Mortgage Servicing, Inc.", "1525 S. Belt Line Road, Coppell, TX 75019", rsClient![Address] & ", " & rsClient![City] & ", " & rsClient![cl_state] & "  " & rsClient![PostalCode])
+.Update
+End With
+
+With rs
+.AddNew
+!Assignor = Forms![foreclosure database screen]!longsecured
+!Assignee = Forms![foreclosure database screen]!longsecured
+!AssigneeAddress = IIf(Forms![foreclosure database screen]![Client] = "American Home Mortgage Servicing, Inc.", "1525 S. Belt Line Road, Coppell, TX 75019", rsClient![Address] & ", " & rsClient![City] & ", " & rsClient![cl_state] & "  " & rsClient![PostalCode])
+.Update
+End With
+
+rsClient.Close
+
+With rs
+.AddNew
+!Assignor = "MERS"
+!Assignee = ""
+!AssigneeAddress = ""
+.Update
+End With
+
+With rs
+.AddNew
+!Assignor = Forms![foreclosure database screen]!Client
+!Assignee = ""
+!AssigneeAddress = ""
+.Update
+.Close
+End With
+
+
+End Function
+
+Public Function AssQueue()
+VSel = InputBox("Assignment Queue: " & vbCr & vbCr & "1. To be Requested" & vbCr & "2.  To be Received and/or Recorded" & vbCr & vbCr & "enter 1 or 2")
+If VSel = 1 Then
+DoCmd.OpenForm ("AssignmentQueue-BWW")
+Else
+DoCmd.OpenForm ("AssignmentQueue-Client")
+End If
+
+End Function
+Public Function EndFrom()
+VSel = InputBox("Endorsement needed from: " & vbCr & vbCr & "1. Original Lender" & vbCr & "Type in Name" & vbCr & vbCr & "Enter a 1 for Org Lender or just type in name directly")
+If VSel = 1 Then
+EndFrom = Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgLender
+Else
+EndFrom = VSel
+End If
+
+End Function
+Public Function EndTo()
+VSel = InputBox("Endorsement To: " & vbCr & vbCr & "1. Secured Party" & vbCr & "Type in Name" & vbCr & vbCr & "Enter a 1 for Long Secured Party or just type in name directly")
+If VSel = 1 Then
+EndTo = Forms![foreclosure database screen]!longsecured
+Else
+EndTo = VSel
+End If
+
+End Function
+Public Function AssignmentClientAdd()
+
+Dim rsClient As RecordSet
+Dim strsql As String
+strsql = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+
+Set rsClient = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Client() Like "Pennym*" Then
+If Forms![foreclosure database screen]!longsecured = "PennyMac Corp." Then
+AssignmentClientAdd = "6101 Condor Drive Suite 300, Moorpark, CA 93021"
+ElseIf Forms![foreclosure database screen]!longsecured = "PennyMac Mortgage Investment Trust Holdings I, LLC" Then
+AssignmentClientAdd = "6101 Condor Drive Suite 310, Moorpark, CA 93021"
+ElseIf Forms![foreclosure database screen]!longsecured = "PNMAC Mortgage Opportunity Fund Investors, LLC" Then
+AssignmentClientAdd = "6101 Condor Drive Suite 330, Moorpark, CA 93021"
+ElseIf Forms![foreclosure database screen]!longsecured = "PNMAC Mortgage Co., LLC" Then
+AssignmentClientAdd = "6101 Condor Drive Suite 340, Moorpark, CA 93021"
+ElseIf Forms![foreclosure database screen]!longsecured = "PennyMac Loan Trust 2010-NPL1" Then
+AssignmentClientAdd = "6101 Condor Drive 3rd Floor, Moorpark, CA 93021"
+ElseIf Forms![foreclosure database screen]!longsecured = "PennyMac Loan Trust 2012-NPL1" Or Forms![foreclosure database screen]!longsecured = "PennyMac Loan Trust 2011-NPL1" Then
+AssignmentClientAdd = "6101 Condor Drive, Moorpark, CA 93021"
+ElseIf Forms![foreclosure database screen]!longsecured = "FNBN I, LLC" Then
+AssignmentClientAdd = "6101 Condor Drive Suite 320, Moorpark, CA 93021"
+Else
+AssignmentClientAdd = rsClient![Address] & ", " & rsClient![City] & ", " & rsClient![cl_state] & "  " & rsClient![PostalCode]
+End If
+
+ElseIf Client() = "American Home Mortgage Servicing, Inc." Then
+AssignmentClientAdd = "1525 S. Belt Line Road, Coppell, TX 75019"
+Else
+AssignmentClientAdd = rsClient![Address] & ", " & rsClient![City] & ", " & rsClient![cl_state] & "  " & rsClient![PostalCode]
+End If
+rsClient.Close
+
+End Function
+Public Function Assignee()
+
+If Forms![foreclosure database screen]![TypeOfLoan] = "FNMA" Or _
+ Forms![foreclosure database screen]![TypeOfLoan] = "FHLMC" Then
+
+Assignee = Client()
+Else
+Assignee = [Forms]![foreclosure database screen]![longsecured]
+End If
+
+
+End Function
+Public Function AssignmentAOMPrep()
+Do While Vini = ""
+Vini = InputBox("AOM Prepared By")
+strsql = "select * from employees where employeeid = " & """" & Vini & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rsEmp.EOF Then
+MsgBox ("Initials not in Employee Table")
+Vini = ""
+Else
+Forms![assignmentformmd]!aom_prepared_by = Vini
+End If
+Loop
+rsEmp.Close
+Set rsEmp = Nothing
+
+Forms![assignmentformmd].Refresh
+
+End Function
+Public Function AssignmentPopUp()
+
+Dim vAssignee
+
+Dim AssignorField
+
+vAssignee = InputBox("Who is Assignee? " & vbCr & "1. Secured Party" & vbCr & "2. Client" & vbCr & "OTHER" & vbCr & vbCr & "Enter 1, 2 or type in text")
+vAssignorPopUp = InputBox("Who is Assignor? " & vbCr & "1. Orginal Lender" & vbCr & "2. MERS" & vbCr & "OTHER" & vbCr & vbCr & "Enter 1, 2 or type in text")
+
+
+If vAssignee = 1 Then
+Forms!assignmentformmd!Assignee = LSecured()
+ElseIf vAssignee = 2 Then
+Forms!assignmentformmd!Assignee = [Forms]![foreclosure database screen]![Client]
+Else
+Forms!assignmentformmd!Assignee = vAssignee
+End If
+'Forms![assignmentformmd].Refresh
+
+If vAssignorPopUp = 1 Then
+Forms!assignmentformmd!Assignor = [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![OrgLender]
+ElseIf vAssignorPopUp = 2 Then
+Forms!assignmentformmd!Assignor = "Mortgage Electronic Registration Systems, Inc. (" & """" & "MERS" & """" & ") as nominee for " & [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![OrgLender]
+Else
+Forms!assignmentformmd!Assignor = vAssignorPopUp
+End If
+'Forms![assignmentformmd].Refresh
+
+mySendKeys ("{F9}")
+DoEvents
+
+Dim VAppend
+VAppend = MsgBox("Would you like to save record?", vbYesNo)
+If VAppend = vbYes Then
+
+Set rs = CurrentDb.OpenRecordset("aom_chain", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+'!ID = GetAutoNumber("NextAudNum")
+!Chain_To = Forms!assignmentformmd!Assignee
+!Chain_From = Forms!assignmentformmd!Assignor
+
+.Update
+.Close
+End With
+Set rs = Nothing
+
+End If
+
+'Forms![assignmentformmd].Refresh
+
+
+
+
+
+'=IIf([Who is Assignor? 1-Org Lender  2-MERS or 3-Type in Here]="1",[Forms]![foreclosure database screen]![foreclosuresubform].[Form]![orglender],IIf([Who is Assignor? 1-Org Lender  2-MERS or 3-Type in Here]="2","Mortgage Electronic Registration Systems, Inc. (" & """" & "MERS" & """" & ") as nominee for " & [Forms]![foreclosure database screen]![foreclosuresubform].[Form]![orglender],[Who is Assignor? 1-Org Lender  2-MERS or 3-Type in Here]))
+
+End Function
+Public Function AssignorPara()
+Dim VAssignorFrom
+Dim VTo
+Dim VEnd
+Dim vAssignor
+vAssignor = Assignor()
+
+If vAssignor Like "Mortgage Electronic Registration*" Then
+VAssignorFrom = vAssignor & " (" & """" & "MERS" & """" & ") as nominee for " & [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![OrgLender] & ", its successors and assigns, does hereby give notice that it transfers and conveys to "
+Else
+VAssignorFrom = vAssignor & ", (" & """" & "Assignor" & """" & ") " & " does hereby give notice that it previously transferred and conveyed to "
+End If
+
+
+'rs!Chain_from & " does hereby give notice that it previously transferred and conveyed"
+  
+If Forms![foreclosure database screen]![TypeOfLoan] = "FNMA" And _
+Forms![foreclosure database screen]![PropertyState] = "MD" Then
+VTo = "Federal National Mortgage Association"
+ElseIf Forms![foreclosure database screen]![TypeOfLoan] = "FHLMC" And _
+Forms![foreclosure database screen]![PropertyState] = "MD" Then
+VTo = "Federal  Home Loan Mortgage Corporation"
+Else
+VTo = [Forms]![foreclosure database screen]![longsecured]
+End If
+
+'VEnd = ", (" & """" & "Assignee" & """" & "), whose address is, c/o " & [OrganizationName] & ", " _
+& IIf(Client() = "American Home Mortgage Servicing, Inc.", "1525 S. Belt Line Road, Coppell, TX 75019", _
+& [address] & ", " & [City] & ", " & [cl_state] & "  " & [PostalCode]) & _
+& IIf(Assignor() like "Mortgage Elec*", ", all its beneficial interest, if any, in and to the below described Deed of Trust.", _
+& ", all its beneficial interest in and to the below described Deed of Trust.")
+
+VEnd = ", (" & """" & "Assignee" & """" & "), whose address is,"
+
+AssignorPara = VAssignorFrom + VTo + VEnd
+
+End Function
+Public Function Assignor()
+
+'VAssignor = InputBox("Who is Assignor? " & vbCr & "1-Org Lender" & vbCr & "2-MERS" & vbCr & vbCr & "input 1 or 2")
+
+'If VAssignor = 1 Then
+'assignor = [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![OrgLender]
+'ElseIf VAssignor = 2 Then
+'assignor = "Mortgage Electronic Registration Systems, Inc. "
+'End If
+
+'assignor = me!chain_to
+
+'"Mortgage Electronic Registration Systems, Inc. (" & """" & "MERS" & """" & ") as nominee for " & [Forms]![foreclosure database screen]![foreclosuresubform].[Form]![orglender] & , its successors and assigns"
+
+'rs!Chain_from
+
+
+
+End Function
+

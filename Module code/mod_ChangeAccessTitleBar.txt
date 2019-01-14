@@ -1,0 +1,11 @@
+Attribute VB_Name = "ChangeAccessTitleBar"
+Option Compare Database   'Use database order for string comparisons
+    Declare Function GetParent% Lib "user" (ByVal hwnd%)
+    Declare Sub SetWindowText Lib "user" (ByVal h%, ByVal lpStr$)
+     'Declare Function WNetGetUser% Lib "USER" (ByVal UserName As String, BufSize As Integer)
+
+
+Function sChangeTitle(Caption$)
+
+End Function
+

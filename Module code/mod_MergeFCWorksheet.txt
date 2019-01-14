@@ -1,0 +1,123 @@
+Attribute VB_Name = "MergeFCWorksheet"
+Option Explicit
+
+Function MergeIt()
+
+   Dim objWord As Word.document
+   
+   CreateMailMergeDataFile
+   
+   
+   Set objWord = GetObject("f:\fcsaleInput.doc", "Word.Document")
+   ' Make Word visible.
+   objWord.Application.Visible = True
+   objWord.MailMerge.OpenDataSource name:="c:\DataDoc.doc"
+     
+   
+   ' Execute the mail merge.
+   objWord.MailMerge.Execute
+   objWord.Close
+   
+End Function
+Public Sub FillRow(doc As Word.document, Row As Integer, _
+                   Text1 As String, Text2 As String, _
+                   Text3 As String, Text4 As String, _
+                    Text5 As String, Text6 As String, _
+                   Text7 As String, Text8 As String, _
+                    Text9 As String, Text10 As String, _
+                   Text11 As String, Text12 As String, _
+                    Text13 As String, _
+                    Text14 As String, Text15 As String, _
+                   Text16 As String, Text17 As String, _
+                    Text18 As String, Text19 As String, _
+                   Text20 As String, Text21 As String, _
+                    Text22 As String, Text23 As String)
+
+
+With doc.Tables(1)
+    ' Insert the data into the specific cell
+    .Cell(Row, 1).Range.InsertAfter Text1
+    .Cell(Row, 2).Range.InsertAfter Text2
+    .Cell(Row, 3).Range.InsertAfter Text3
+    .Cell(Row, 4).Range.InsertAfter Text4
+    .Cell(Row, 5).Range.InsertAfter Text5
+    .Cell(Row, 6).Range.InsertAfter Text6
+    .Cell(Row, 7).Range.InsertAfter Text7
+    .Cell(Row, 8).Range.InsertAfter Text8
+    .Cell(Row, 9).Range.InsertAfter Text9
+    .Cell(Row, 10).Range.InsertAfter Text10
+    .Cell(Row, 11).Range.InsertAfter Text11
+    .Cell(Row, 12).Range.InsertAfter Text12
+    .Cell(Row, 13).Range.InsertAfter Text13
+    .Cell(Row, 14).Range.InsertAfter Text14
+    .Cell(Row, 15).Range.InsertAfter Text15
+    .Cell(Row, 16).Range.InsertAfter Text16
+    .Cell(Row, 17).Range.InsertAfter Text17
+    .Cell(Row, 18).Range.InsertAfter Text18
+    .Cell(Row, 19).Range.InsertAfter Text19
+    .Cell(Row, 20).Range.InsertAfter Text20
+    .Cell(Row, 21).Range.InsertAfter Text21
+    .Cell(Row, 22).Range.InsertAfter Text22
+    .Cell(Row, 23).Range.InsertAfter Text23
+End With
+End Sub
+Public Sub CreateMailMergeDataFile()
+    Dim WrdDataDoc As Word.document
+    Dim wrddoc As Word.document
+    Dim WrdApp As Word.Application
+    Dim iCount As Integer
+    Dim rs As RecordSet
+    Dim sql As String
+  
+  sql = "SELECT cases.FileNum, cases.LastNameDebtor1, cases.PropAddress, " _
+  & " cases.PropertyCounty, cases.PropertyCity, cases.PropertyState, " _
+  & " cases.PropZip, cases.Client, cases.ClientRefNumber, PostSale.taxid, " _
+  & " Clients.CustomerID, foreclosure.Taxes_due, foreclosure.Taxes_thru, " _
+  & " foreclosure.In_tax_sale, foreclosure.SaleDate, foreclosure.[1ST Legal]," _
+  & " PostSale.SalePrice, PostSale.Buyer, Clients.Address, Clients.claddress2, " _
+  & " Clients.City, Clients.PostalCode, Clients.cl_state " _
+  & " FROM ((cases INNER JOIN PostSale ON cases.FileNum = PostSale.SubFileNum)" _
+  & " INNER JOIN Clients ON cases.Client = Clients.OrganizationName) " _
+  & " INNER JOIN foreclosure ON PostSale.SubFileNum = foreclosure.SubFileNum " _
+  & " WHERE (((cases.FileNum)= " & [Forms]![foreclosure database screen]![filenum] & "));"
+
+ Set rs = CurrentDb.OpenRecordset(sql, dbOpenSnapshot)
+ 
+' Create an instance of Word  and make it visible
+  Set WrdApp = CreateObject("Word.Application")
+  WrdApp.Visible = False
+  
+Set wrddoc = WrdApp.Documents.ADD
+
+' wrdDoc.Select
+  
+' Create MailMerge Data file
+        
+        
+wrddoc.MailMerge.CreateDataSource name:="c:\DataDoc.doc", _
+        HeaderRecord:="Bank, LoanNo, SaleDate, Name, FirstLegal, Investor, NameInvestor , InvestorAdd1, InvestorAdd2, InvestorAdd3, InvestorPhone, purchaseamt , projecteddate, b5th, binv, b3rd, bankowned, invbutton, reofnma, reofhlmc, fhlmc3rd, boreo, claim"
+        
+' Open the file to insert data
+  Set WrdDataDoc = WrdApp.Documents.Open("c:\DataDoc.doc")
+  For iCount = 1 To 2
+    WrdDataDoc.Tables(1).Rows.ADD
+  Next iCount
+' Fill in the data
+
+  FillRow WrdDataDoc, 2, [Reports]![foreclosure Sale worksheet]![Bank], rs!ClientRefNumber, _
+    [Reports]![foreclosure Sale worksheet]![SaleDate], debtorsFORE(), [Reports]![foreclosure Sale worksheet]![1stlegal], [Reports]![foreclosure Sale worksheet]![investor], _
+        [Reports]![foreclosure Sale worksheet]![3rdpartyname], [Reports]![foreclosure Sale worksheet]![3rdpartyadd1], _
+        [Reports]![foreclosure Sale worksheet]![3rdpartyadd2], [Reports]![foreclosure Sale worksheet]![3rdpartyadd3], _
+        [Reports]![foreclosure Sale worksheet]![3rdpartyphone], [Reports]![foreclosure Sale worksheet]![purchaseamt], _
+        [Reports]![foreclosure Sale worksheet]![projecteddate], [Reports]![foreclosure Sale worksheet]![b5th], _
+        [Reports]![foreclosure Sale worksheet]![binv], [Reports]![foreclosure Sale worksheet]![b3rd], _
+        [Reports]![foreclosure Sale worksheet]![bankowned], [Reports]![foreclosure Sale worksheet]![invbutton], _
+        [Reports]![foreclosure Sale worksheet]![reofnma], [Reports]![foreclosure Sale worksheet]![reofhlmc], _
+        [Reports]![foreclosure Sale worksheet]![fhlmc3rd], [Reports]![foreclosure Sale worksheet]![BoREO], _
+        [Reports]![foreclosure Sale worksheet]![claim]
+
+ ' Save and close the file
+  WrdDataDoc.Save
+  WrdDataDoc.Close 'False
+End Sub
+

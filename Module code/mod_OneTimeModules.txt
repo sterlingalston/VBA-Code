@@ -1,0 +1,483 @@
+Attribute VB_Name = "OneTimeModules"
+Option Compare Database
+Public Function LabelsPrinter3()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("EmployeeAddresses", dbOpenSnapshot)
+Dim Vcnt As Integer
+Vcnt = 0
+
+Dim VSelprt
+
+VSelprt = 3
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+Set A = fs.CreateTextFile("\\rvdv-fs01\LabelRequests\" & Vcnt & "_EMPLOYEE_" & Format$(Date, "mmddyy") & "_LabelReq.txt", True)
+A.WriteLine ("|Printer " & VSelprt)
+A.WriteLine ("|User " & username() & ", Address Label, File " & rs!Last_Name)
+A.WriteLine (rs!First_Name & " " & rs!Last_Name)
+A.WriteLine (rs!Address)
+A.WriteLine (rs!City & ", " & rs!State & "  " & rs!ZIP_CODE)
+A.WriteLine ("|NEWLINE")
+A.WriteLine ("|NEWLINE")
+A.WriteLine ("|NEWLINE")
+rs.MoveNext
+Loop
+End If
+
+End Function
+
+Public Function addtoTable()
+
+Dim rs As RecordSet
+Dim rstTbl As RecordSet
+Dim VID
+
+Set rstTbl = CurrentDb.OpenRecordset("QC", dbOpenDynaset, dbSeeChanges)
+rstTbl.MoveLast
+Set rs = CurrentDb.OpenRecordset("addqc")
+
+Do While Not rs.EOF
+
+With rstTbl
+.AddNew
+!filenum = rs![SubFileNum]
+.Update
+End With
+rs.MoveNext
+Loop
+
+rstTbl.Close
+End Function
+Public Function AddtoWalz()
+Dim rs As RecordSet
+Dim rstTbl As RecordSet
+Dim VID
+
+Set rstTbl = CurrentDb.OpenRecordset("WalzInfo", dbOpenDynaset, dbSeeChanges)
+rstTbl.MoveLast
+Set rs = CurrentDb.OpenRecordset("BulkAffSentWalz")
+Do While Not rs.EOF
+
+With rstTbl
+.AddNew
+VID = GetAutoNumber("NextWalz")
+!ID_No = VID
+!filenum = rs![filenum]
+!ri = "Bulk1R1"
+!Name1 = rs!Name1
+!Name2 = rs!Name2
+!Address1 = rs!Address1
+!Address2 = rs!Address2
+!address3 = rs!address3
+!citystatezip = rs!citystatezip
+!WalzDateMailed = rs!WalzDateMailed
+!Tracking_No = rs!Tracking_No
+!reference = rs!reference
+!Notes = "Bulk Affidavit Mailing/FileName: " & rs!FileName
+!PostageFeesReg = rs!PostageFeesReg
+.Update
+End With
+rs.MoveNext
+Loop
+
+rstTbl.Close
+
+End Function
+Public Function DeleteBKBlanks()
+Dim rs As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("BKCheck", dbOpenSnapshot)
+
+
+Do While Not rs.EOF
+
+If Not IsNull(rs!bkno) Then
+CurrentDb.Execute "delete * from bankruptcy where counter = " & rs!bkno & ";"
+End If
+
+rs.MoveNext
+
+Loop
+
+End Function
+Public Function ImportMDJud()
+Dim VDelApp
+VDelApp = MsgBox("Delete Temp Table (if same County click NO?", vbYesNo)
+If VDelApp = vbYes Then
+CurrentDb.Execute "Delete * from MDJudOpenFiles;", dbFailOnError
+
+
+End If
+
+DoCmd.RunMacro ("MDJUD")
+DoCmd.OpenQuery ("MDJudUpdate")
+DoCmd.OpenTable ("MDJudOpenFiles")
+
+
+End Function
+Public Function CreateTablefromLittonImages()
+
+Dim VFolder, f, fs, fldr, f1, fc, vFile, Vfilename
+Dim VFileTimeDownload, vfiletime As Date
+Dim vtime As String
+Dim rs As RecordSet
+Dim tempName As Variant
+Dim C
+
+VFolder = "\\rvdv-fs01\DataTransfer\Litton"
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set fldr = fs.GetFolder(VFolder)
+Set rs = CurrentDb.OpenRecordset("LittonImages", dbOpenDynaset, dbSeeChanges)
+f = FreeFile(1)
+
+For Each f1 In fldr.Files
+
+        vFile = f1.name
+      On Error Resume Next
+       
+        With rs
+        .AddNew
+        !DocName = vFile
+        tempName = Split(!DocName, "_")
+        C = Split(!DocName, "_")
+        If UBound(tempName) >= 0 Then
+        !FileNo = StrConv(C(0), vbProperCase)
+         End If
+        .Update
+        End With
+        
+        vFile = ""
+        Next
+
+End Function
+
+Public Function OWBLna()
+
+Dim rs As RecordSet
+Dim BrowseFLDR1stLeg
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+
+Set rs = CurrentDb.OpenRecordset("query6", dbOpenSnapshot)
+
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+BrowseFLDR1stLeg = ""
+vFName = ""
+
+fldr = GetDocPath(rs!filenum)
+vFile = rs!filenum & "_LostNotAff_01.PDF"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set f = fs.GetFolder(fldr)
+
+For Each f2 In f.Files
+If f2.name Like vFile Then
+vFName = f2.name
+'vDT = f2.DateLastModified
+End If
+Next
+
+If vFile = "" Then
+BrowseFLDR1stLeg = ""
+Else
+BrowseFLDR1stLeg = fldr & vFName
+End If
+
+If BrowseFLDR1stLeg <> "" Then
+Dim txtname As String
+txtname = rs!ClientRefNumber & "_LNA.pdf"
+sourcefile = BrowseFLDR1stLeg
+destinationfile = DTLocation & "\OWB\" & txtname
+
+
+On Error Resume Next
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+End If
+
+
+
+rs.MoveNext
+
+Loop
+
+
+
+End Function
+
+Public Function Litton1stLeg()
+
+Dim rs As RecordSet
+Dim BrowseFLDR1stLeg
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+
+Set rs = CurrentDb.OpenRecordset("LittonLink", dbOpenSnapshot)
+
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+BrowseFLDR1stLeg = ""
+vFName = ""
+
+fldr = GetDocPath(rs!filenum)
+vFile = rs!filenum & "_StpOrd2Dkt_01.PDF"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set f = fs.GetFolder(fldr)
+
+For Each f2 In f.Files
+If f2.name Like vFile Then
+vFName = f2.name
+'vDT = f2.DateLastModified
+End If
+Next
+
+If vFile = "" Then
+BrowseFLDR1stLeg = ""
+Else
+BrowseFLDR1stLeg = fldr & vFName
+End If
+
+If BrowseFLDR1stLeg <> "" Then
+Dim txtname As String
+txtname = rs!ClientRefNumber & "_StpOrd2Dkt.pdf"
+sourcefile = BrowseFLDR1stLeg
+destinationfile = DTLocation & "\LittonLoan\" & txtname
+
+
+On Error Resume Next
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+End If
+
+
+
+rs.MoveNext
+
+Loop
+
+
+
+End Function
+Public Function EtsAdd()
+Dim rs As RecordSet
+Dim strsql As String
+
+Set rs = CurrentDb.OpenRecordset("ETS")
+
+Do While Not rs.EOF
+With rs
+.Edit
+!ID = GetAutoNumber("NextWalzinv")
+.Update
+End With
+
+rs.MoveNext
+Loop
+
+
+End Function
+
+Public Function CheckBK()
+Dim rsBK As RecordSet
+Dim strsql As String
+
+strsql = "select * from bankruptcy where counter > " & 797766 & ";"
+Set rsBK = CurrentDb.OpenRecordset(strsql)
+
+Do While Not rsBK.EOF
+With rsBK
+.Edit
+!counter = GetAutoNumber("NextBankruptcy")
+.Update
+End With
+
+rs.MoveNext
+Loop
+
+
+End Function
+Public Function AddtoCasesfromSpreadsheet()
+
+Dim BGNum As Long
+Dim rs As RecordSet, rsPS As RecordSet
+Dim rsProcess As RecordSet
+Dim rsSS As RecordSet
+Dim rsCases As RecordSet
+Dim rsMI As RecordSet
+Dim rsAff As RecordSet
+Dim rstitle As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("Foreclosure", dbOpenDynaset, dbSeeChanges)
+Set rsPS = CurrentDb.OpenRecordset("Postsale", dbOpenDynaset, dbSeeChanges)
+Set rsProcess = CurrentDb.OpenRecordset("ProcessService", dbOpenDynaset, dbSeeChanges)
+Set rsCases = CurrentDb.OpenRecordset("Cases", dbOpenDynaset, dbSeeChanges)
+Set rsMI = CurrentDb.OpenRecordset("MissingInfo", dbOpenDynaset, dbSeeChanges)
+Set rsSS = CurrentDb.OpenRecordset("GMACNotDumped", dbOpenSnapshot)
+Set rsAff = CurrentDb.OpenRecordset("AffDebt", dbOpenDynaset, dbSeeChanges)
+
+rsSS.MoveFirst
+
+Do While Not rsSS.EOF
+BGNum = GetAutoNumber("NextFileNumber")
+      
+With rsCases
+      .AddNew
+      ![filenum] = BGNum
+      !fob = "F"
+      !Status = "Foreclosure"
+      ![Date Recieved] = rsSS![Date Recieved]
+      !FirstNameDebtor1 = rsSS!FirstNameDebtor1
+      !LastNameDebtor1 = rsSS!LastNameDebtor1
+      !PropAddress = rsSS!PropAddress
+      !PropertyCity = rsSS!PropertyCity
+      !PropertyState = rsSS!PropertyState
+      !propzip = rsSS!propzip
+      !Propertycounty = rsSS!Propertycounty
+      !Client = rsSS!Client
+      !ClientRefNumber = rsSS!ClientRefNumber
+      !imported_date = Date
+      .Update
+      End With
+   
+Call AddJournalEntry(BGNum, "Opened as Manually (did not dump from New Trak)")
+
+With rsPS
+.AddNew
+!SubFileNum = BGNum
+.Update
+End With
+
+With rsAff
+.AddNew
+!SubFileNum = BGNum
+.Update
+End With
+
+With rs
+.AddNew
+![SubFileNum] = BGNum
+.Update
+End With
+      
+With rsMI
+.AddNew
+![filenum] = BGNum
+.Update
+End With
+  
+With rsProcess
+.AddNew
+!SubFileNum = BGNum
+.Update
+End With
+
+rsSS.MoveNext
+Loop
+
+rsProcess.Close
+rsMI.Close
+rs.Close
+rsPS.Close
+rsCases.Close
+rsAff.Close
+rsSS.Close
+
+End Function
+Public Function UpdateLatestBill()
+Dim rs As RecordSet
+Dim RSU As RecordSet
+Dim strsql
+
+Set rs = CurrentDb.OpenRecordset("sheet1", dbOpenDynaset, dbSeeChanges)
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+strsql = "SELECT Billing.FileNum, Billing.CustomerID, Billing.BillingDate " _
+& " FROM Sheet1 INNER JOIN Billing ON Sheet1.[BGWW#] = Billing.FileNum Where Billing.filenum = " & rs![BGWW#] & " ORDER BY Billing.FileNum, Billing.CustomerID;"
+Set RSU = CurrentDb.OpenRecordset(strsql)
+
+Do While Not RSU.EOF
+With rs
+.Edit
+!billingdate = RSU![billingdate]
+!billinginv = RSU!CustomerID
+.Update
+End With
+RSU.MoveNext
+Loop
+
+rs.MoveNext
+Loop
+
+rs.Close
+
+End Function
+Public Function ADDTOTables()
+Dim rs As RecordSet
+Dim rstTbl As RecordSet
+Dim VID
+VID = 0
+Set rstTbl = CurrentDb.OpenRecordset("FCTracking", dbOpenDynaset, dbSeeChanges)
+
+Set rs = CurrentDb.OpenRecordset("QUERY1")
+Do While Not rs.EOF
+With rstTbl
+.AddNew
+!filenum = rs![filenum]
+.Update
+End With
+rs.MoveNext
+Loop
+
+rstTbl.Close
+End Function
+Public Function ChkDupsHomeowners()
+
+
+Dim VHome, strsql As String
+
+Dim RsH, rs As RecordSet
+
+Set RsH = CurrentDb.OpenRecordset("Homeowners", dbOpenSnapshot)
+
+
+RsH.MoveFirst
+
+Do While Not RsH.EOF
+
+strsql = "select clientrefnumber, filenum, propaddress, client from cases where propaddress like " & """" & RsH.[Property Address] & "*""" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+VHome = VHome & "Client: " & rs!Client & ", Loan#: " & rs!ClientRefNumber & vbCr & "Spreadsheet: " & RsH![Property Address] & ", BWW Address: " & rs!PropAddress & vbCr & vbCr
+End If
+RsH.MoveNext
+Loop
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+
+MyMail.To = "ccurley@bozmangroup.com"
+MyMail.Subject = "Homeowners Addresses"
+MyMail.body = VHome
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End Function
+

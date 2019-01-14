@@ -1,0 +1,88 @@
+
+Public Function previousBusinessDay(dater As Variant, days As Variant) As Variant
+
+Dim i As Integer
+Dim daysExtra As Integer
+Dim nextDay As Date
+Dim busday As Date
+
+On Error GoTo handler
+
+i = 0
+daysExtra = 0
+nextDay = dater
+
+Do While i < days
+    nextDay = nextDay - 1
+    If Weekday(nextDay) = 7 Or Weekday(nextDay) = 1 Then
+        daysExtra = daysExtra + 1
+    Else
+        i = i + 1
+    End If
+Loop
+
+busday = DateAdd("d", -(days + daysExtra), dater)
+
+previousBusinessDay = busday
+
+Exit Function
+
+handler:
+
+previousBusinessDay = Null
+
+End Function
+
+Public Function nextBusinessDay(dater As Variant, days As Variant) As Variant
+
+Dim i As Integer
+Dim daysExtra As Integer
+Dim nextDay As Date
+Dim busday As Date
+
+On Error GoTo handler
+
+i = 0
+daysExtra = 0
+nextDay = dater
+
+Do While i < days
+    nextDay = nextDay + 1
+    If Weekday(nextDay) = 7 Or Weekday(nextDay) = 1 Then
+        daysExtra = daysExtra + 1
+    Else
+        i = i + 1
+    End If
+Loop
+
+busday = DateAdd("d", days + daysExtra, dater)
+
+nextBusinessDay = busday
+
+Exit Function
+
+handler:
+nextBusinessDay = Null
+
+End Function
+
+Public Function getBusinessDayNext(dater As Variant, days As Variant) As Variant
+
+Dim busfinal As Date
+busfinal = dater
+
+If days < 0 Then
+    busfinal = previousBusinessDay(dater, days * -1)
+ElseIf days > 0 Then
+    busfinal = nextBusinessDay(dater, days)
+End If
+
+getBusinessDayNext = busfinal
+
+Exit Function
+
+handler:
+
+getBusinessDayNext = Null
+
+End Function

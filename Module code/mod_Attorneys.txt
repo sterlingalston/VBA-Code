@@ -1,0 +1,94 @@
+Attribute VB_Name = "Attorneys"
+Option Compare Database
+
+Public Function AttorneyRep()
+Dim VAtt1, VAtt2, VAtt3, VAtt4, VAtt5, VAtt6
+VAtt1 = Null
+VAtt2 = Null
+VAtt3 = Null
+VAtt4 = Null
+VAtt5 = Null
+VAtt6 = Null
+'LITIGATION CODE
+
+strsql = "Select * from litigation where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+VAtt1 = rs!Plaintiff_Firm
+VAtt2 = rs!Plaintiff_Att
+VAtt3 = rs!Plaintiff_Address
+VAtt4 = rs!Plaintiff_csz
+VAtt5 = rs!Plaintiff_Phone
+VAtt6 = rs!Plaintiff_email
+End If
+rs.Close
+
+'Eviction Code
+If VAtt1 <> "" Then
+
+strsql = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+VAtt1 = rs!Occupant_Att_Firm
+VAtt2 = rs!Occupant_Att
+VAtt3 = rs!Occupant_Att_add
+VAtt4 = rs!Occupant_Att_csz
+VAtt5 = rs!Occupant_Att_phone
+
+Else
+VAtt1 = Null
+VAtt2 = Null
+VAtt3 = Null
+VAtt4 = Null
+VAtt5 = Null
+End If
+rs.Close
+End If
+
+
+If Not IsNull(VAtt1) Or _
+Not IsNull(VAtt2) Then
+
+If Not IsNull(VAtt1) Then
+att1 = VAtt2 & ", "
+Else
+att1 = ""
+End If
+
+If Not IsNull(VAtt2) Then
+att2 = VAtt2 & ", "
+Else
+att2 = ""
+End If
+
+If Not IsNull(VAtt3) Then
+att3 = VAtt3 & ", "
+Else
+att3 = ""
+End If
+
+If Not IsNull(VAtt4) Then
+att4 = VAtt4 & ", "
+Else
+att4 = ""
+End If
+
+If Not IsNull(VAtt5) Then
+att5 = VAtt5 & ", "
+Else
+att5 = ""
+End If
+
+If Not IsNull(VAtt6) Then
+att6 = VAtt6
+Else
+att6 = ""
+End If
+
+
+AttorneyRep = att1 + att2 + att3 + att4 + att5 + att6
+End If
+
+
+End Function

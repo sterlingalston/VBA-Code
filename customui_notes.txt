@@ -1,0 +1,4 @@
+remove <mso:cmd app="Access" dt="0" />
+rename the customUI to Access.officeUI and copy to
+
+C:\Users\matthewsalston\AppData\Local\Microsoft\Office

@@ -1,0 +1,12 @@
+Attribute VB_Name = "CapitalizeFirst"
+Option Explicit
+ 
+
+Function CapitalizeFirst(x)
+    '  Make first letter in field uppercase; leave other
+    '  letters as typed.
+    Dim temp
+    temp = Trim(x)
+    CapitalizeFirst = UCase(Left(temp, 1)) & Mid(temp, 2)
+End Function
+

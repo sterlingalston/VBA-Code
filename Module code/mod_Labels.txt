@@ -1,0 +1,126 @@
+Attribute VB_Name = "Labels"
+Option Compare Database
+Public Function LabelGenerator()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("Notices")
+Dim VUser
+Dim Vcnt
+Dim VSelprt
+Vcnt = 1
+'|FontName Arial
+'|FontSize 14
+'|FontBold 1
+
+Do While VSelprt <> 2 And VSelprt <> 11 And VSelprt <> 12 And VSelprt <> 3 And VSelprt <> 4 And VSelprt <> 5 And VSelprt <> 6 And VSelprt <> 7 And VSelprt <> 8 And VSelprt <> 9 And VSelprt <> 15
+
+VSelprt = InputBox("Select PRINTER #:" & vbCr & vbCr & "  2 - PRINTER 2" & vbCr & "  3 - PRINTER 3" & vbCr & "  4 - PRINTER 4" & vbCr & "  5 - PRINTER 5" & vbCr & "  6 - PRINTER 6 (Arlington)" & vbCr & "  7 - PRINTER 7 (Trio)" & vbCr & "  8 - PRINTER 8" & vbCr & "  9 - PRINTER 9" & vbCr & "11 - PRINTER 11" & vbCr & "12 - PRINTER 12" & vbCr & "15 - PRINTER 15")
+
+If VSelprt <> 2 And VSelprt <> 15 And VSelprt <> 11 And VSelprt <> 12 And VSelprt <> 3 And VSelprt <> 4 And VSelprt <> 5 And VSelprt <> 6 And VSelprt <> 7 And VSelprt <> 8 And VSelprt <> 9 Then
+MsgBox ("Incorrect Printer Number")
+Exit Function
+End If
+Loop
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+Set fs = CreateObject("Scripting.FileSystemObject")
+txtname = Forms![foreclosure database screen]!filenum & "_" & Vcnt & "_Label.txt"
+docsfldr = "\\rvdv-fs01\LabelRequests\"
+'DocsFldr = "c:\4closure\"
+Set A = fs.CreateTextFile(docsfldr & txtname, True)
+A.WriteLine ("|Printer " & VSelprt)
+A.WriteLine ("|FONTSIZE 14")
+A.WriteLine ("|FONTName Times New Roman")
+A.WriteLine ("|USER " & username() & ", Address Label, File " & rs!filenum)
+A.WriteLine (rs!NoticeTo)
+A.WriteLine (rs!NoticeAdd)
+If Not IsNull(rs!NoticeAdd2) Then
+A.WriteLine (rs!NoticeAdd2)
+End If
+A.WriteLine (rs!NoticeCSZ)
+A.WriteLine ("|Fontbold 1")
+A.WriteLine ("|FONTSIZE 14")
+If rs!extra = "REQUEST FOR FORECLOSURE MEDIATION" Then
+A.WriteLine ("REQUEST FOR FORECLOSURE")
+A.WriteLine ("MEDIATION")
+Else
+A.WriteLine (rs!extra)
+End If
+
+'A.WriteLine ("Fondbold 0")
+
+A.WriteLine ("|NEWLINE")
+A.WriteLine ("|NEWLINE")
+'A.WriteLine ("BWW#: " & rs!FIleNum)
+
+A.Close
+Vcnt = Vcnt + 1
+rs.MoveNext
+Loop
+
+MsgBox ("Labels Sent to Label Printer")
+Else
+MsgBox ("No labels to generate from this BWW#")
+End If
+End Function
+Public Function BWWLabel()
+Dim rsnotice As RecordSet
+Dim Vcnt
+Vcnt = Forms!labelform!BWWAmt
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+Do While Vcnt > 0
+With rsnotice
+.AddNew
+!NoticeTo = "BWW Law Group, LLC"
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = "6003 Executive Blvd. Suite 101"
+!NoticeAdd2 = ""
+!NoticeCSZ = "Rockville" & ", MD  20852"
+If IsNull(Forms!labelform!BWWRef) Or Forms!labelform!BWWRef = "" Then
+!extra = ""
+Else
+!extra = Forms!labelform!BWWRef
+End If
+.Update
+End With
+Vcnt = Vcnt - 1
+Loop
+
+rsnotice.Close
+
+End Function
+Public Function CircuitCourtMdLabel()
+Dim rsnotice As RecordSet
+Dim Vcnt
+Vcnt = Forms!labelform!CCAmt
+Dim strsql As String
+
+Dim rs As RecordSet
+strsql = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+Do While Vcnt > 0
+With rsnotice
+.AddNew
+!NoticeTo = "Circuit Court for " & County()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = IIf(Forms![foreclosure database screen]![Propertycounty] Like "Baltimore Ci*", "Clarence Mitchell Courthouse", rs![CourtAddress])
+!NoticeAdd2 = IIf(Forms![foreclosure database screen]![Propertycounty] Like "Baltimore Ci*", "100 North Calvert Street, Room 460", Trim(rs![CourtCity] & ", " & rs![State] & "  " & rs![CourtZip]))
+!NoticeCSZ = IIf(Forms![foreclosure database screen]![Propertycounty] Like "Baltimore Ci*", "Baltimore, MD  21202", "Attn: Civil Division")
+If IsNull(Forms!labelform!CCRef) Or Forms!labelform!CCRef = "" Then
+!extra = ""
+Else
+!extra = Forms!labelform!CCRef
+End If
+
+.Update
+End With
+Vcnt = Vcnt - 1
+Loop
+
+rsnotice.Close
+rs.Close
+
+End Function

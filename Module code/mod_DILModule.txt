@@ -1,0 +1,2000 @@
+Attribute VB_Name = "DILModule"
+Option Compare Database
+Public Function DILSignsCheck()
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+Dim rsEmpSigns As RecordSet
+Dim strsql2 As String
+strsql2 = "SELECT DISTINCTROW Employees.EmployeeID, Employees.FirstName, Employees.MiddleName, Employees.LastName, Employees.WorkPhone, " & _
+"Employees.[VSB#], " & _
+"DeedInLieu.FileNum FROM Employees INNER JOIN DeedInLieu ON Employees.EmployeeID = DeedInLieu.DIL_Signs_Deed WHERE DeedInLieu.FileNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+
+Set rsEmpSigns = CurrentDb.OpenRecordset(strsql2, dbOpenSnapshot)
+If rsEmpSigns.EOF Then
+
+MsgBox ("No selection on who signs SW Deed will not generate Deed.")
+Exit Function
+
+Else
+DoCmd.OpenReport "Deed-HudMDSPDil", acViewPreview
+End If
+
+Else
+
+DoCmd.OpenReport "Deed-HudMDSPDil", acViewPreview
+
+
+End If
+
+End Function
+Public Function DILRelease()
+Dim VSel
+
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+VSel = InputBox("Release is being executed by: " & vbCr & "1. Secured Party by Client (as servicer)" & vbCr & "2. Secured Party by Client (attorney-in-fact)" & vbCr & "3. Other (enter below)")
+If VSel = 1 Then
+DILRelease = Client() & " as servicer for " & LSecured()
+ElseIf VSel = 2 Then
+DILRelease = LSecured() & ", by " & Client() & ", it's attorney-in-fact"
+Else
+DILRelease = VSel
+End If
+
+Else
+
+VSel = InputBox("Release is being executed by: " & vbCr & "1. Secured Party" & vbCr & "2. Secured Party by Client (as servicer)" & vbCr & "3. Secured Party by Client (attorney-in-fact)" & vbCr & "4. Other (enter below)")
+If VSel = 1 Then
+DILRelease = LSecured()
+ElseIf VSel = 2 Then
+DILRelease = Client() & " as servicer for " & LSecured()
+ElseIf VSel = 3 Then
+DILRelease = LSecured() & ", by " & Client() & ", it's attorney-in-fact"
+Else
+DILRelease = VSel
+End If
+
+End If
+
+
+
+End Function
+Public Function DILOpen()
+strsqlDIL = "select * from deedinlieu where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsDIL = CurrentDb.OpenRecordset(strsqlDIL, dbOpenSnapshot)
+If Not IsNull(rsDIL!dil_referral_recd) And IsNull(rsDIL!dil_file_closed) Then
+DILOpen = "YES"
+Else
+DILOpen = "NO"
+End If
+
+End Function
+Public Function dilclause()
+Dim strsql
+Dim rs As RecordSet
+
+strsql = "select * from DILClause where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+dilclause = ""
+
+Do While Not rs.EOF
+
+If Forms![foreclosure database screen]!PropertyState = "VA" And _
+Not IsNull(rs!DeedBook) Then
+
+dilclause = dilclause + "BEING THE SAME PROPERTY CONVEYED BY " + UCase(rs!grantor) & " TO " & UCase(rs!Grantee) & " BY DEED DATED " & Format(rs!Dated_date, "MMMM DD, YYYY") & _
+" AND RECORDED " & Format(rs!Date_Recorded, "MMMM DD, YYYY") & " IN " & " DEED BOOK " & Trim(rs!DeedBook) & ", PAGE " & Trim(rs!page) & _
+", BEING RECORDED AMONG THE LAND RECORDS OF " & UCase(County()) & ", VIRGINIA.  "
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" And _
+IsNull(rs!DeedBook) Then
+
+dilclause = dilclause + "BEING THE SAME PROPERTY CONVEYED BY " + UCase(rs!grantor) & " TO " & UCase(rs!Grantee) & " BY DEED DATED " & Format(rs!Dated_date, "MMMM DD, YYYY") & _
+" AND RECORDED " & Format(rs!Date_Recorded, "MMMM DD, YYYY") & " IN " & " INSTRUMENT # " & Trim(rs![Inst#]) & _
+", BEING RECORDED AMONG THE LAND RECORDS OF " & UCase(County()) & ", VIRGINIA.  "
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "dc" Then
+dilclause = dilclause + "BEING THE SAME PROPERTY CONVEYED BY " + UCase(rs!grantor) & " TO " & UCase(rs!Grantee) & " BY DEED DATED " & Format(rs!Dated_date, "MMMM DD, YYYY") & _
+" AND RECORDED " & Format(rs!Date_Recorded, "MMMM DD, YYYY") & " IN " & " DOCUMENT # " & Trim(rs![Inst#]) & _
+", BEING RECORDED AMONG THE LAND RECORDS OF " & UCase(County()) & ", DISTRICT OF COLUMBIA.  "
+
+Else
+dilclause = dilclause + "BEING THE SAME PROPERTY CONVEYED BY " + UCase(rs!grantor) & " TO " & UCase(rs!Grantee) & " BY DEED DATED " & Format(rs!Dated_date, "MMMM DD, YYYY") & _
+" AND RECORDED " & Format(rs!Date_Recorded, "MMMM DD, YYYY") & " IN " & " LIBER " & Trim(rs!Liber) & ", FOLIO " & Trim(rs!Folio) & _
+", BEING RECORDED AMONG THE LAND RECORDS OF " & UCase(County()) & ", MARYLAND.  "
+
+End If
+
+rs.MoveNext
+Loop
+
+
+
+Else
+
+'MsgBox ("No Grantor/Grantee info input in Clause screen on DIL Form")
+
+End If
+
+End Function
+Public Function DILMoveOut()
+Dim VSel
+Dim VMout
+Dim VSec
+Dim strsql
+Dim rs As RecordSet
+
+If Forms![foreclosure database screen]!SPsameasCl = 0 Or _
+IsNull(Forms![foreclosure database screen]!SPsameasCl) Then
+VSec = LSecured() & " (" & """" & Forms![foreclosure database screen]!SecuredParty & """" & ") "
+Else
+VSec = LSecured()
+End If
+
+
+VSel = InputBox("Move Out Date" & vbCr & vbCr & "1. Enter Date" & vbCr & "2. Vacant" & vbCr & "3. N/A" & vbCr & vbCr & "enter 1, 2 or 3")
+If VSel = 1 Then
+VMout = InputBox("Enter Move Out Date")
+
+DILMoveOut = Client() & " wishes us to remind you that upon your execution of these documents, " & VSec & " is authorized to remove or discard any personal belongings which are left behind, inside and/or out, after " & Format(VMout, "mmmm dd, yyyy") & "."
+ElseIf VSel = 2 Then
+DILMoveOut = Client() & " wishes us to remind you that you have stated the property has been vacated and that upon your execution of these documents, " & VSec & " is authorized to remove or discard any remaining personal belongings."
+Else
+DILMoveOut = ""
+End If
+
+
+End Function
+Public Function DILGrantee2()
+If Forms![foreclosure database screen]!Client Like "Seter*" Then
+DILGrantee2 = "14221 Dallas Parkway, Suite 1000"
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of AM*" And Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+DILGrantee2 = "3900 Wisconsin Ave., NW"
+
+Else
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Or _
+Forms![foreclosure database screen]!TypeOfLoan = "VA" Then
+
+If gAltAdd = 1 Then
+DILGrantee2 = ClientAddONLY()
+ElseIf Forms![foreclosure database screen]![TypeOfLoan] Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Then
+DILGrantee2 = "820 First Street, NE"
+ElseIf Forms![foreclosure database screen]![TypeOfLoan] = "VA" Then
+DILGrantee2 = "210 Franklin Road, SW"
+End If
+
+
+Else
+DILGrantee2 = ClientAddONLY()
+End If
+End If
+
+End Function
+Public Function DILGrantee3()
+
+If Forms![foreclosure database screen]!Client Like "Seter*" Then
+DILGrantee3 = "Dallas, TX  75254"
+ElseIf (Forms![foreclosure database screen]!Client Like "Bank of Am*" And Forms![foreclosure database screen]!TypeOfLoan = "FNMA") Then
+DILGrantee3 = "Washington, DC 20016"
+
+Else
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Or _
+Forms![foreclosure database screen]!TypeOfLoan = "VA" Then
+
+If gAltAdd = 1 Then
+DILGrantee3 = ClientCity() & ", " & ClientState() & " " & Clientzip()
+ElseIf Forms![foreclosure database screen]![TypeOfLoan] Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Then
+DILGrantee3 = "Washington, DC 20002"
+ElseIf Forms![foreclosure database screen]![TypeOfLoan] = "VA" Then
+DILGrantee3 = "Roanoke, VA 24011"
+End If
+
+
+Else
+DILGrantee3 = ClientCity() & ", " & ClientState() & " " & Clientzip()
+End If
+End If
+
+End Function
+Public Function DILGrantee1()
+
+
+If Forms![foreclosure database screen]!Client Like "Seter*" Or (Forms![foreclosure database screen]!Client Like "Bank of Am*" And Forms![foreclosure database screen]!TypeOfLoan = "FNMA") Then
+DILGrantee1 = "Federal National Mortgage Association"
+
+Else
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Or _
+Forms![foreclosure database screen]!TypeOfLoan = "VA" Then
+
+gAltAdd = InputBox("This is a " & Forms![foreclosure database screen]!TypeOfLoan & " file:" & vbCr & vbCr & "1. Client Address" & vbCr & "2. Alternate Addres" & vbCr & "type in 1 or 2")
+
+If gAltAdd = 1 Then
+DILGrantee1 = "c/o " & Trim(Client())
+ElseIf Forms![foreclosure database screen]![TypeOfLoan] Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Then
+DILGrantee1 = "Secretary of Housing and Urban Development"
+ElseIf Forms![foreclosure database screen]![TypeOfLoan] = "VA" Then
+DILGrantee1 = "Secretary of Veterans Affairs"
+End If
+
+
+Else
+DILGrantee1 = "c/o " & Trim(Client())
+End If
+
+End If
+
+End Function
+Public Function DILTaxExempt()
+DILTaxExempt = ""
+
+
+
+If (Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party] = 0 Or _
+IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party])) Then
+
+If Forms![foreclosure database screen]![TypeOfLoan] Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Or _
+Forms![foreclosure database screen]![TypeOfLoan] = "VA" Or _
+Forms![foreclosure database screen]![TypeOfLoan] = "FNMA" Or _
+Forms![foreclosure database screen]![TypeOfLoan] = "FHLMC" Then
+
+Dim VTEx
+VTEx = MsgBox("This is a " & Forms![foreclosure database screen]![TypeOfLoan] & " file is it Tax Exempt", vbYesNo)
+
+If VTEx = vbYes Then
+
+If Forms![foreclosure database screen]![TypeOfLoan] Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Then
+If Forms![foreclosure database screen]![PropertyState] = "MD" Then
+DILTaxExempt = "Tax Exempt - Tax Property Article - Section 12-108(a)(1)(i)"
+Else
+DILTaxExempt = "Tax Exempt pursuant to Code of VA Section 58.1-811(a)(3)"
+End If
+
+
+ElseIf Forms![foreclosure database screen]![TypeOfLoan] = "VA" Then
+
+If Forms![foreclosure database screen]![PropertyState] = "MD" Then
+DILTaxExempt = "Tax Exempt - Tax Property Article - Section 12-108(a)(1) and Section 13-207(a)(1)"
+ElseIf Forms![foreclosure database screen]![PropertyState] = "VA" Then
+DILTaxExempt = "Tax Exempt pursuant to Code of VA Section 58.1-811(a)(3)"
+End If
+
+End If
+
+If Forms![foreclosure database screen]![TypeOfLoan] = "FNMA" Or _
+Forms![foreclosure database screen]![TypeOfLoan] = "FHLMC" Then
+If Forms![foreclosure database screen]![PropertyState] = "MD" Then
+
+If Forms![foreclosure database screen]![TypeOfLoan] = "FNMA" Then
+DILTaxExempt = "Tax Exempt per 12-U.S.C. §1723 (a)(c)(2)"
+ElseIf Forms![foreclosure database screen]![TypeOfLoan] = "FHLMC" Then
+DILTaxExempt = "Tax Exempt per 12-U.S.C. §1452 (e)"
+End If
+ 
+
+
+ElseIf Forms![foreclosure database screen]![PropertyState] = "VA" Then
+DILTaxExempt = "Tax Exempt pursuant to Code of VA Section 58.1-811(a)(3)"
+End If
+End If
+
+End If
+End If
+
+End If
+
+
+End Function
+Public Function DILTitleClear()
+Dim prtorder As String
+Dim Client As String
+Dim LoanNo As String
+Dim subj As String
+Dim DocName As String
+Dim emailto As String
+Dim ccTo As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim rsDIL As RecordSet
+Dim strsqlDIL As String
+Dim VAom
+
+Client = Forms![foreclosure database screen]![Client]
+
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+
+LoanNo = Forms![foreclosure database screen]![ClientRefNumber]
+
+subj = "Deed in Lieu: Title Clear " & Client & " / " & LoanNo
+
+Dim varsendemail As String
+
+varsendemail = MsgBox("Sending Email, Continue?", vbYesNo)
+If varsendemail = vbYes Then
+Dim VarParaLegal, strPL, sig1, SigEmailBlock, vtitle As String
+Dim VPhone As String
+Dim VFax As String
+
+Dim rsPL As RecordSet
+VarParaLegal = Environ("username")
+strPL = "Select * from employees where login = " & """" & VarParaLegal & """" & ";"
+Set rsPL = CurrentDb.OpenRecordset(strPL, dbOpenSnapshot)
+
+If rsPL.EOF Then
+MsgBox "Computer login is not in Foreclosure employee table", vbOKOnly
+rsPL.Close
+sig1 = ""
+
+Else
+
+If Not IsNull(rsPL!LastName) Then
+
+If IsNull(rsPL!MiddleName) Then
+
+sig1 = rsPL!FirstName & " " & rsPL!LastName
+If IsNull(rsPL!Title) Then
+vtitle = ""
+Else
+vtitle = rsPL!Title
+End If
+
+Else
+
+sig1 = rsPL!FirstName & " " & rsPL!MiddleName & " " & rsPL!LastName
+If IsNull(rsPL!Title) Then
+vtitle = ""
+Else
+vtitle = rsPL!Title
+End If
+
+End If
+
+Else
+
+sig1 = ""
+vtitle = ""
+
+End If
+
+If IsNull(rsPL!WorkPhone) Then
+VPhone = "301-961-6555"
+Else
+VPhone = rsPL!WorkPhone
+End If
+
+
+If IsNull(rsPL!Emp_Fax) Then
+VFax = "301-961-6545"
+Else
+VFax = rsPL!Emp_Fax
+End If
+
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+If IsNull(rsPL!EmailName) Then
+ccTo = "ordertitles@bww-law.com"
+Else
+ccTo = rsPL!EmailName & "; ordertitles@bww-law.com"
+End If
+End If
+
+End If
+
+rsPL.Close
+
+Dim VAssAmt
+Dim VUPB
+Dim V2nd
+Dim V2ndEach
+Dim V2ndEachDOT
+Dim V2ndEach2
+Dim strsql As String
+Dim rs As RecordSet
+Dim VDOT
+Dim VAOMPrepFee
+Dim VAOMRecFee
+strsqlDIL = "select * from deedinlieu where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsDIL = CurrentDb.OpenRecordset(strsqlDIL, dbOpenSnapshot)
+If rsDIL!dil_aom = -1 Or rsDIL!dil_aom = 1 Then
+Dim VAssGrantor
+Dim VAssGrantee
+Dim VAOMPrep
+
+VAssGrantor = InputBox("Assignment Grantor")
+VAssGrantee = InputBox("Assignment Grantee")
+If Forms![foreclosure database screen]!TypeOfLoan = "CONV" Then
+VAOMPrepFee = "$125.00"
+Else
+VAOMPrepFee = "$35.00"
+End If
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+VAOMRecFee = "$60.00"
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+VAOMRecFee = "$21.00"
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+VAOMRecFee = "$33.50 "
+End If
+
+VAom = vbCr & "2a. An assignment from " & VAssGrantor & " to " & VAssGrantee & " is required, please approve " & VAOMPrepFee & " preparation fee, plus " & VAOMRecFee & " recording fee."
+
+VAOMPrep = vbCr & "*Assignment Preparation: " & VAOMPrepFee & vbCr & "*Assignment Recording: " & VAOMRecFee & vbCr
+
+rsDIL.Close
+Else
+VAom = ""
+VAOMPrep = ""
+
+End If
+
+
+strsql = "select * from dil_junior_dot where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+V2nd = ""
+V2ndEach = ""
+V2ndEachDOT = ""
+V2ndEach2 = ""
+Else
+V2nd = "AND 2nd DOT "
+V2ndEach = "(each) "
+V2ndEach2 = " each"
+V2ndEachDOT = "(if Junior DOT information completed add additional $125.00 each)"
+End If
+
+Dim VOTP
+Dim VORR
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!OwnerFullRate) Then
+VOTP = "$"
+Else
+VOTP = Format(Forms![foreclosure database screen]!PostsaleSubForm.Form!OwnerFullRate, "$###,##0.00")
+End If
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!OwnerReissueRate) Then
+VORR = "$"
+Else
+VORR = Format(Forms![foreclosure database screen]!PostsaleSubForm.Form!OwnerReissueRate, "$###,##0.00")
+End If
+
+rs.Close
+
+Dim VEstimates
+Dim VRelease
+Dim VReleaseRec
+Dim VDilProc
+
+If Forms![foreclosure database screen]!TypeOfLoan = "CONV" Then
+VRelease = ": $125.00 "
+VDilProc = "$350.00 "
+Else
+VRelease = ": $35.00 "
+End If
+
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+VDilProc = "$350.00 "
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Then
+VDilProc = "$400.00 "
+ElseIf Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+VDilProc = "$300.00 "
+End If
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+VReleaseRec = ": $41.00 "
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+VReleaseRec = ": $50.00 "
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+VReleaseRec = ": $33.50 "
+
+End If
+
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+
+VAssAmt = "$40.00"
+VDOT = "$50.00"
+VEstimates = "BWW DIL Processing: " & VDilProc & vbCr & _
+"Title Search Cost: $" & vbCr & _
+"UPS (Estimated) Fees (only actual amounts are billed): $" & vbCr & _
+"DIL Filing Fee: $115.00" & vbCr & _
+"State Recordation Tax (required): $" & vbCr & _
+"State Transfer Tax (required): $" & vbCr & _
+"County Transfer Tax (required): $" & vbCr & _
+"Lien Certificate (required): $" & vbCr & _
+"Property Taxes (required): $" & vbCr & _
+"Water (required): $" & vbCr & _
+"Release Preparation" & V2ndEach & VRelease & vbCr & _
+"Release recording " & V2ndEach & VReleaseRec & vbCr & _
+"*IF needed" & vbCr & _
+"*Owners Title Policy:" & VOTP & vbCr & _
+VAOMPrep & vbCr & _
+"Total with *Fees: $"
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+Dim VRRate
+'If VORR = "" Then
+VRRate = ""
+'Else
+'VRRate = ", please provide a copy of the Lender's Title Insurance Policy, if available, for a discount.  If not provided, you will be charged the full premium rate." & vbCr
+'End If
+
+VAssAmt = "$21.00"
+VDOT = "$41.00"
+VEstimates = "BWW DIL Processing: " & VDilProc & vbCr & _
+"Title Search Cost: $" & vbCr & _
+"UPS (Estimated) Fees (only actual amounts are billed): " & vbCr & _
+"DIL Filing Fee: " & Format(Forms![foreclosure database screen]!PostsaleSubForm.Form!Recording_Fee, "$###,##0.00") & vbCr & _
+"Release Preparation " & V2ndEach & VRelease & vbCr & _
+"Release recording " & V2ndEach & VReleaseRec & vbCr & _
+"*IF needed" & vbCr & _
+"*Owners Title Policy:" & VOTP & VRRate & vbCr & vbCr & _
+"*Record Continuous Marriage Affidavit: $" & vbCr & _
+VAOMPrep & vbCr & _
+"Total with *Fees: $"
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+VAssAmt = "$33.50"
+VDOT = "$33.50"
+VEstimates = "BWW DIL Processing: " & VDilProc & vbCr & _
+"Title Search: $" & vbCr & _
+"UPS (Estimated) Fees (only actual amounts are billed): $75.00" & vbCr & _
+"DIL Filling Fee: " & Format(Forms![foreclosure database screen]!PostsaleSubForm.Form!Recording_Fee, "$###,##0.00") & vbCr & _
+"Release Preparation " & V2ndEach & VRelease & vbCr & _
+"Release recording " & V2ndEach & VReleaseRec & vbCr & _
+"*IF needed" & vbCr & _
+"*Owners Title Policy:" & VOTP & ", if copy of policy provided reissue rate is: " & VORR & vbCr & _
+VAOMPrep & vbCr & _
+"Total with *Fees: $"
+
+
+End If
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![Principal Balance]) Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![Principal Balance] = 0 Then
+VUPB = "Please provide UPB"
+Else
+VUPB = "Confirm UPB is " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form![Principal Balance], "$###,##0.00")
+End If
+
+Dim VSPecify
+VSPecify = ""
+
+'VSPecify = "  Please specify if I have approval for additional fees. "
+
+Dim VPropTotal
+Dim VProperty
+If Forms![foreclosure database screen]!PropertyState = "MD" And _
+(Forms![foreclosure database screen]!Propertycounty = "Anne Arundel" Or _
+Forms![foreclosure database screen]!Propertycounty Like "Baltimore*" Or _
+Forms![foreclosure database screen]!Propertycounty = "carroll" Or _
+Forms![foreclosure database screen]!Propertycounty = "charles" Or _
+Forms![foreclosure database screen]!Propertycounty = "frederick" Or _
+Forms![foreclosure database screen]!Propertycounty = "harford" Or _
+Forms![foreclosure database screen]!Propertycounty = "howard") Then
+VProperty = "Property is located in " & Forms![foreclosure database screen]!Propertycounty & ", these counties require a Lien Certificate to record the DIL, and I send the request for the Lien Certificate and a return envelope to expedite receipt of the Lien Certificate - again, each package averages $25.00. " & vbCr
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+VProperty = "Property is located in Virginia - 1 additional package at $25.00 (for sending documents to Clerk for recording)." & vbCr
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+VProperty = "Property is located in DC - 1 additional package at $25.00 (for sending documents to Clerk for recording)." & vbCr
+Else
+VProperty = "Property is located in " & Forms![foreclosure database screen]!PropertyState & "." & vbCr
+End If
+
+Dim VNo10
+Dim VReissueRate
+
+'If Forms![foreclosure database screen]!PropertyState = "VA" Then
+'VReissueRate = "" & vbCr & vbCr
+'Else
+'VReissueRate = "Please provide a copy of the Lender's Title Insurance Policy, if available, for a discount.  If not provided, you will be charge the full premium rate." & vbCr & vbCr
+'End If
+
+VNo10 = "12. A release of subject DOT " & V2nd & "will be needed.  Our office can prepare same - the vesting must either match the original DOT or the current vesting." & vbCr & vbCr
+
+
+'If Forms![foreclosure database screen]!TypeOfLoan = "CONV" Then
+'VNo10 = "10. A release of subject DOT " & V2nd & "will be needed.  Our office can prepare same - " & V2ndEach2 & " plus" & VDOT & V2ndEach2 & " to record." & VSPecify & vbCr & vbCr
+'Else
+'VNo10 = "10. A release of subject DOT " & V2nd & "will be needed.  Our office can prepare same - " & V2ndEach2 & " plus" & VDOT & V2ndEach2 & " to record." & VSPecify & vbCr & vbCr
+'End If
+
+SigEmailBlock = vbCr & vbCr & sig1 & vbCr & vtitle + (Chr(13)) + "BWW Law Group, LLC" + (Chr(13)) + "Phone: " & VPhone & (Chr(13)) + "Main Fax: 301-961-6545" + (Chr(13)) + "Fax: " & VFax
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = ""
+MyMail.Subject = "BWW#: " & Forms![foreclosure database screen]!filenum & " Borrowers: " & Forms![foreclosure database screen]!LastNameDebtor1 & "***Title Review Summary***"
+
+MyMail.body = "Loan#: " & LoanNo & vbCr & vbCr & "Title is clear to proceed with DIL." & vbCr & vbCr & _
+"We will need ALL of the following information in order to process the DIL.  Failure to provide ANY requested information WILL result in a delay of the DIL documents being sent to the borrower.  Please be sure to read the email carefully and respond to each request.  All fees and costs are listed in item 16.  Our standard process is to draft and send documents" & _
+" within 2 business days of receipt; if you do not wish for documents to be sent immediately, but wish to provide us with the responses, please indicate same." & vbCr & vbCr & _
+"1. Payoff statement good through " & Date & "; OR including per diem interest - if statement is unavailable, please advise same, so we can advise how to proceed." & vbCr & vbCr & "2. Vesting entity name and complete address - _______________" & _
+vbCr & VAom & vbCr & "3. " & _
+VUPB & vbCr & vbCr & "4. Borrower mailing address (NO P.O. BOXES) (including Apt/Ste numbers) " & _
+vbCr & vbCr & "5. Borrower contact telephone number" & _
+vbCr & vbCr & "6. Property vacate by date*: " & _
+vbCr & vbCr & "7. Executed DIL return-by date*: " & _
+vbCr & vbCr & "*If no dates are provided for items 5 & 6, we will use 10 calendar days from date DIL docs sent to borrower." & _
+vbCr & vbCr & "8. Is any party deceased? " & _
+vbCr & vbCr & "9. If parties were married, are they still married?" & _
+vbCr & vbCr & "10. Will a Power of Attorney be used for any borrower?" & _
+vbCr & vbCr & "11. Approval to bill for the UPS shipping of the documents to the borrower and back from the borrower.  Each package averages $25.00.  Each file has a minimum of 2 packages, one to the borrower and one back from the borrower. " & _
+VProperty & _
+vbCr & VNo10 & _
+"13. Please advise if you would like an Owner's Title Insurance Policy.  " & _
+vbCr & vbCr & "14. Please provide the contact name and address you would like the original DIL documents returned to AFTER RECORDING.  We will send these via 2-day overnight shipping and will bill for same (which cost will be determined upon receipt of the address)." & _
+vbCr & vbCr & "15. Please advise if you wish for us to send a copy of the recorded DIL documents to the borrower at their current mailing address - if so, please approve fees for standard USPS mailing (which cost will be determined upon receipt of the address)." & _
+vbCr & vbCr & "16. THE FOLLOWING FEES AND COSTS ARE REQUIRED FOR PROPER DIL PROCESSING AND RECORDING - if you are unsure of whether a fee or cost is appropriate, please contact us, otherwise we will bill for all items listed.  (Note: Recording fees, " & _
+"property taxes and water, if applicable in the jurisdiction, must be paid in order to record, the title insurance premium will also be billed at this time - our final fees and costs will be billed after the documents are recorded) PLEASE NOTE THAT YOU ACKNOWLEDGE THESE FEES WILL BE CHARGED AS STATED:" & _
+vbCr & vbCr & VEstimates _
+
+
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+End If
+
+
+End Function
+
+Function ExtraCode()
+If Forms![foreclosure database screen]!dec1 = -1 Or Forms![foreclosure database screen]!dec1 = 1 Then
+VPOA = rs!POA1
+VDebtor = firstdebtor()
+End If
+If Forms![foreclosure database screen]!dec2 = -1 Or Forms![foreclosure database screen]!dec2 = 1 Then
+If VPOA <> "" Then
+VPOA = VPOA & ", " & rs!POA2
+VDebtor = VDebtor & ", " & secondDebtor()
+Else
+VPOA = rs!POA2
+VDebtor = secondDebtor()
+End If
+End If
+If Forms![foreclosure database screen]!dec3 = -1 Or Forms![foreclosure database screen]!dec3 = 1 Then
+If VPOA <> "" Then
+VPOA = VPOA & ", " & rs!POA3
+VDebtor = VDebtor & ", " & thirddebtor()
+Else
+VPOA = rs!POA3
+VDebtor = thirddebtor()
+End If
+End If
+If Forms![foreclosure database screen]!dec4 = -1 Or Forms![foreclosure database screen]!dec4 = 1 Then
+If VPOA <> "" Then
+VPOA = VPOA & ", " & rs!POA4
+VDebtor = VDebtor & ", " & fourthdebtor()
+Else
+VPOA = rs!POA4
+VDebtor = fourthdebtor()
+End If
+End If
+If Forms![foreclosure database screen]!dec5 = -1 Or Forms![foreclosure database screen]!dec5 = 1 Then
+If VPOA <> "" Then
+VPOA = VPOA & ", " & rs!POA5
+VDebtor = VDebtor & ", " & fifthdebtor()
+Else
+VPOA = rs!POA5
+VDebtor = fifthdebtor()
+End If
+End If
+
+End Function
+Public Function DeceasedDebtors()
+Dim first As String
+Dim second As String
+Dim third As String
+Dim Fourth As String
+Dim Fifth As String
+
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+Dim Vest As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+Vest = ""
+
+If Forms![foreclosure database screen]!dec1 = -1 Or Forms![foreclosure database screen]!dec1 = 1 Then
+first = firstdebtor()
+End If
+If Forms![foreclosure database screen]!dec2 = -1 Or Forms![foreclosure database screen]!dec2 = 1 Then
+second = secondDebtor()
+End If
+If Forms![foreclosure database screen]!dec3 = -1 Or Forms![foreclosure database screen]!dec3 = 1 Then
+third = thirddebtor()
+End If
+If Forms![foreclosure database screen]!dec4 = -1 Or Forms![foreclosure database screen]!dec4 = 1 Then
+Fourth = fourthdebtor()
+End If
+If Forms![foreclosure database screen]!dec5 = -1 Or Forms![foreclosure database screen]!dec5 = 1 Then
+Fifth = fifthdebtor()
+End If
+
+If first <> "" And second <> "" And third <> "" And Fourth <> "" And Fifth <> "" Then
+fs = ", "
+st = ", "
+tf = ", "
+FF = " and "
+ElseIf first <> "" And second <> "" And third <> "" And Fourth <> "" And Fifth = "" Then
+fs = ", "
+st = ", "
+tf = " and "
+ElseIf first <> "" And second <> "" And third <> "" And Fourth = "" And Fifth = "" Then
+fs = ", "
+st = " and "
+ElseIf first <> "" And second <> "" And third = "" And Fourth = "" And Fifth = "" Then
+fs = " and "
+ElseIf first <> "" And second = "" And third = "" And Fourth = "" And Fifth = "" Or _
+first = "" And second <> "" And third = "" And Fourth = "" And Fifth = "" Or _
+first = "" And second = "" And third <> "" And Fourth = "" And Fifth = "" Or _
+first = "" And second = "" And third = "" And Fourth = "" And Fifth <> "" Or _
+first = "" And second = "" And third = "" And Fourth <> "" And Fifth = "" Then
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+End If
+
+
+
+
+
+
+
+
+
+DeceasedDebtors = first & fs & second & st & third & tf & Fourth & FF & Fifth
+
+
+
+End Function
+Public Function debtorsDILEstate() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+Dim Vest As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+Vest = ""
+
+Dim strsqlE As String
+Dim rsE As RecordSet
+
+strsqlE = "select * from deedinlieu where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If (Forms![foreclosure database screen]!dec1 = -1 Or Forms![foreclosure database screen]!dec1 = 1) And _
+rsE!Escrow = 1 Then
+Vest = "Estate of "
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Vest & Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+Else
+firstdebtor = Vest & Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+End If
+
+Vest = ""
+
+If (Forms![foreclosure database screen]!dec2 = -1 Or Forms![foreclosure database screen]!dec2 = 1) And rsE!Escrow = 1 Then
+Vest = "Estate of "
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Vest & Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+secondDebtor = Vest & Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+
+Vest = ""
+If (Forms![foreclosure database screen]!dec3 = -1 Or Forms![foreclosure database screen]!dec3 = 1) And rsE!Escrow = 1 Then
+Vest = "Estate of "
+End If
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Vest & Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+thirddebtor = Vest & Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+
+Vest = ""
+If (Forms![foreclosure database screen]!dec4 = -1 Or Forms![foreclosure database screen]!dec4 = 1) And rsE!Escrow = 1 Then
+Vest = "Estate of "
+End If
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Vest & Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+fourthdebtor = Vest & Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+
+Vest = ""
+If (Forms![foreclosure database screen]!dec5 = -1 Or Forms![foreclosure database screen]!dec5 = 1) And rsE!Escrow = 1 Then
+Vest = "Estate of "
+End If
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Vest & Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtor = Vest & Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+FF = " and "
+End If
+
+
+
+rsE.Close
+
+debtorsDILEstate = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+End Function
+
+
+Public Function EstoppelPara1()
+
+If AppType = "DILForm" Then
+strsqlE = "select * from deedinlieu where filenum = " & Forms![DILForm]!filenum
+Else
+strsqlE = "select * from deedinlieu where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+
+If rsE!Escrow = -1 Or rsE!Escrow = 1 Then
+EstoppelPara1 = "          I, " & UCase(POAList()) & " (" & """" & "Affiant" & """" & ") of the Estate (" & """" & "Estate" & """" & ") of " & UCase(DeceasedDebtors()) & " (" & """" & "Borrower" & """" & "), being duly sworn for myself and duly say:"
+
+ElseIf rsE!Escrow = 3 Then
+
+EstoppelPara1 = "          " & IIf(Forms![foreclosure database screen]![LastNameDebtor2] <> "", "We", "I") & ", " & UCase(POADebtors()) & " " & UCase(DeceasedDebtors()) & " (" & """" & "Affiant" & """" & "), being duly sworn for myself and duly say:"
+
+
+Else
+EstoppelPara1 = IIf(DILDebtorsCnt() > 1, "          We, ", "           I, ") & Trim(UCase(POADebtorsSurviving())) & ", being duly sworn for " & IIf(Forms![foreclosure database screen]![LastNameDebtor2] <> "", "ourselves", "myself") & ", depose and say:"
+End If
+
+rsE.Close
+End Function
+Public Function DILAgreePara1()
+
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from deedinlieu where filenum = " & Forms![DILForm]!filenum
+Else
+strsql = "select * from deedinlieu where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Dim VHereinAfter
+
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+VHereinAfter = ""
+Else
+'VHereinAfter = " (hereinafter referred to as " & """" & Trim(UCase(Forms![foreclosure database screen]!abbrsec)) & """" & ")"
+VHereinAfter = " (hereinafter referred to as " & """" & "Secured Party" & """" & ")"
+End If
+
+If rs!Escrow = -1 Or rs!Escrow = 1 Then
+DILAgreePara1 = UCase(LSecured()) & VHereinAfter & "," & " and/or its designee, successors and assigns, and " _
+& UCase(POAList()) & " (" & """" & "PR" & """" & _
+") for the Estate (the " & """" & "Estate" & """" & ") of " & UCase(DeceasedDebtors()) & _
+" (" & """" & "BORROWER" & """" & ")."
+
+ElseIf rs!Escrow = 3 Then
+DILAgreePara1 = UCase(LSecured()) & VHereinAfter & "," & _
+" and/or its designee, successors and assigns, and " & _
+UCase(POADebtorsALL()) & " (hereinafter referred to as " & """" & "BORROWER(S)" & """" & ")."
+
+ElseIf POACOwners() <> "" Then
+DILAgreePara1 = UCase(LSecured()) & VHereinAfter & "," & _
+" and/or its designee, successors and assigns, and " & _
+UCase(POADebtors()) & " (hereinafter referred to as " & """" & "BORROWER(S)" & """" & ") and " & UCase(POACOwners()) & " (hereinafter referred to as " & """" & "CO-OWNER(S)" & """" & ")."
+
+ElseIf rs!Party1 = 1 Or rs!Party1 = -1 Then
+DILAgreePara1 = UCase(Client()) & ", as servicer for " & LSecured() & " (hereinafter referred to as " & """" & "Secured Party" & """" & ")" & _
+" and/or its designee, successors and assigns, and " & _
+UCase(POADebtors()) & " (hereinafter referred to as " & """" & "BORROWER(S)" & """" & ")."
+
+
+ElseIf Forms![foreclosure database screen]!TypeOfLoan = "FNMA" And (rs!Party1 = 0 Or IsNull(rs!Party1)) Then
+DILAgreePara1 = UCase(LSecured()) & " (hereinafter referred to as " & """" & "Secured Party" & """" & ")," & _
+" and/or its designee, successors and assigns, and " & _
+UCase(POADebtors()) & " (hereinafter referred to as " & """" & "BORROWER(S)" & """" & ")."
+
+Else
+DILAgreePara1 = UCase(LSecured()) & VHereinAfter & "," & _
+" and/or its designee, successors and assigns, and " & _
+UCase(POADebtors()) & " (hereinafter referred to as " & """" & "BORROWER(S)" & """" & ")."
+End If
+
+
+End Function
+Public Function DILDeedPara1()
+Dim strsql As String, strsqlE As String
+Dim rs As RecordSet, rsE As RecordSet
+Dim VPOA, VDebtor, VDoD, Vest
+VPOA = ""
+VDebtor = ""
+VDoD = ""
+Vest = ""
+
+If AppType = "DILForm" Then
+strsql = "select * from deedinlieu where filenum = " & Forms![DILForm]!filenum
+Else
+strsql = "select * from deedinlieu where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If AppType = "DILForm" Then
+strsqlE = "select * from estate where subfilenum = " & Forms![DILForm]!filenum
+Else
+strsqlE = "select * from estate where subfilenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If Not rsE.EOF Then
+If IsNull(rsE!datedeath) Or rsE!datedeath = "" Then
+VDoD = "________"
+Else
+VDoD = rsE!datedeath
+End If
+
+If IsNull(rsE!EstateCaseNo) Or rsE!EstateCaseNo = "" Then
+Vest = "_________"
+Else
+Vest = rsE!EstateCaseNo
+End If
+
+Else
+
+VDoD = "________"
+Vest = "________"
+End If
+
+rsE.Close
+'rs!escrow = 3 (Surviving) rs!escrow = 2 (Estate_
+
+If rs!dil_3rdparty = -1 Or rs!dil_3rdparty = 1 Then
+Dim VFHA
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+VFHA = " and SECRETARY OF HOUSING AND URBAN DEVELOPMENT (hereinafter referred to as " & """" & "HUD" & """" & " and/or " & """" & "Party of the Third Part" & """" & ")"
+End If
+
+DILDeedPara1 = UCase(POADebtorsSurviving()) & " (" & """" & "Party of the First Part" & """" & "), and " & Trim(UCase(LSecured())) & " (hereinafter referred to as " & """" & UCase(Forms![foreclosure database screen]![abbrsec]) & """" & _
+" and/or " & """" & "Party of the Second Part" & """" & ")" & VFHA & "."
+
+ElseIf rs!Escrow = 1 Then
+
+'Paragraph Insertion
+DILDeedPara1 = UCase(POAList()) & " (" & """" & "Grantors" & """" & _
+") of the Estate of " & UCase(DeceasedDebtors()) & _
+" (the " & """" & "Estate" & """" & "), who departed this life on or about " & _
+Format(VDoD, "mmmm dd, yyyy") & ", Estate Number " & Vest & _
+", and " & LSecured() & " (" & """" & "Grantee" & """" & ")."
+
+
+ElseIf rs!Escrow = 3 Then
+DILDeedPara1 = UCase(POADebtorsSurviving()) & " (" & """" & "Grantors" & """" & ")" & _
+", and " & LSecured() & " (" & """" & "Grantee" & """" & ")."
+
+
+
+Else
+
+DILDeedPara1 = UCase(POADebtorsSurviving()) & " (" & """" & "Grantors" & """" & "), and " & Trim(UCase(LSecured())) & " (" & """" & "Grantee" & """" & ")."
+
+'Else
+
+'DILDeedPara1 = UCase(POADebtorsSurviving()) & " (" & """" & "Grantors" & """" & "), and " & Trim(UCase(LSecured())) & " (hereinafter referred to as " & """" & UCase(Forms![foreclosure database screen]![abbrsec]) & """" & ") (" & """" & "Grantee" & """" & ")."
+End If
+
+End Function
+
+Public Function POAList() As String
+
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from deedinlieu where filenum = " & Forms![DILForm]!filenum
+
+Else
+strsql = "select * from deedinlieu where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+Dim VFirst As String
+Dim VSecond As String
+Dim VThird As String
+Dim VFourth As String
+Dim VFifth As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If Not IsNull(rs!POA1) Then
+VFirst = rs!POA1
+End If
+
+
+If Not IsNull(rs!POA2) Then
+VSecond = rs!POA2
+End If
+
+If Not IsNull(rs!POA3) Then
+VThird = rs!POA3
+End If
+
+If Not IsNull(rs!POA4) Then
+VFourth = rs!POA4
+End If
+
+If Not IsNull(rs!POA5) Then
+VFifth = rs!POA5
+
+End If
+
+
+If VSecond <> "" Then
+If VThird <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If VThird <> "" Then
+If VFourth <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If VFourth <> "" Then
+If VFifth <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If VFifth <> "" Then
+FF = " and "
+End If
+
+
+rs.Close
+
+
+POAList = VFirst & fs & VSecond & st & VThird & tf & VFourth & FF & VFifth
+
+
+End Function
+
+Public Function POACOwners() As String
+
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from POAQry where filenum = " & Forms![DILForm]!filenum
+
+Else
+strsql = "select * from POAQry where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+Dim VFirst As String
+Dim VSecond As String
+Dim VThird As String
+Dim VFourth As String
+Dim VFifth As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If (rs!DNS1 = 1 Or rs!DNS1 = -1) And (rs!dec1 = 0 Or IsNull(rs!dec1)) Then
+
+If Not IsNull(rs!POA1) Then
+VFirst = firstdebtor() & "" & rs!POA1
+Else
+VFirst = firstdebtor()
+End If
+
+Else
+VFirst = ""
+End If
+
+If (rs!DNS2 = 1 Or rs!DNS2 = -1) And (rs!dec2 = 0 Or IsNull(rs!dec2)) Then
+
+If Not IsNull(rs!POA2) Then
+VSecond = secondDebtor() & "" & rs!POA2
+Else
+VSecond = secondDebtor()
+End If
+
+Else
+VSecond = ""
+End If
+
+If (rs!DNS3 = 1 Or rs!DNS3 = -1) And (rs!dec3 = 0 Or IsNull(rs!dec3)) Then
+If Not IsNull(rs!POA3) Then
+VThird = thirddebtor() & "" & rs!POA3
+Else
+VThird = thirddebtor()
+End If
+Else
+VThird = ""
+End If
+
+If (rs!DNS4 = 1 Or rs!DNS4 = -1) And (rs!dec4 = 0 Or IsNull(rs!dec4)) Then
+
+If Not IsNull(rs!POA4) Then
+VFourth = fourthdebtor() & "" & rs!POA4
+Else
+VFourth = fourthdebtor()
+End If
+Else
+VFourth = ""
+End If
+
+If (rs!dns5 = 1 Or rs!dns5 = -1) And (rs!dec5 = 0 Or IsNull(rs!dec5)) Then
+
+If Not IsNull(rs!POA5) Then
+VFifth = fifthdebtor() & "" & rs!POA5
+Else
+VFifth = fifthdebtor()
+End If
+Else
+VFifth = ""
+End If
+
+If VFirst = "" Then
+fs = ""
+ElseIf VSecond <> "" Then
+If VThird <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If VThird <> "" Then
+If VFourth <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If VFourth <> "" Then
+If VFifth <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If VFifth <> "" Then
+FF = " and "
+End If
+
+
+rs.Close
+
+
+POACOwners = VFirst & fs & VSecond & st & VThird & tf & VFourth & FF & VFifth
+
+
+End Function
+
+
+Public Function POADebtorsALL() As String
+
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from POAQry where filenum = " & Forms![DILForm]!filenum
+
+Else
+strsql = "select * from POAQry where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+Dim VFirst As String
+Dim VSecond As String
+Dim VThird As String
+Dim VFourth As String
+Dim VFifth As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+
+If Not IsNull(rs!POA1) Then
+VFirst = firstdebtor() & rs!POA1
+Else
+VFirst = firstdebtor()
+End If
+
+'Else
+'VFirst = ""
+
+If Not IsNull(secondDebtor()) Then
+
+If Not IsNull(rs!POA2) Then
+VSecond = secondDebtor() & rs!POA2
+Else
+VSecond = secondDebtor()
+End If
+
+Else
+VSecond = ""
+End If
+
+If Not IsNull(thirddebtor()) Then
+If Not IsNull(rs!POA3) Then
+VThird = thirddebtor() & rs!POA3
+Else
+VThird = thirddebtor()
+End If
+Else
+VThird = ""
+End If
+
+If Not IsNull(fourthdebtor()) Then
+
+If Not IsNull(rs!POA4) Then
+VFourth = fourthdebtor() & rs!POA4
+Else
+VFourth = fourthdebtor()
+End If
+Else
+VFourth = ""
+End If
+
+If Not IsNull(fifthdebtor()) Then
+
+If Not IsNull(rs!POA5) Then
+VFifth = fifthdebtor() & rs!POA5
+Else
+VFifth = fifthdebtor()
+End If
+Else
+VFifth = ""
+End If
+
+If VFirst = "" Then
+fs = ""
+ElseIf VSecond <> "" Then
+If VThird <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If VThird <> "" Then
+If VFourth <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If VFourth <> "" Then
+If VFifth <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If VFifth <> "" Then
+FF = " and "
+End If
+
+
+rs.Close
+
+
+POADebtorsALL = VFirst & fs & VSecond & st & VThird & tf & VFourth & FF & VFifth
+'MsgBox (POADebtorsALL)
+
+
+End Function
+
+
+Public Function POADebtors() As String
+
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from POAQry where filenum = " & Forms![DILForm]!filenum
+
+Else
+strsql = "select * from POAQry where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+Dim VFirst As String
+Dim VSecond As String
+Dim VThird As String
+Dim VFourth As String
+Dim VFifth As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If (rs!DNS1 = 0 Or IsNull(rs!DNS1)) And (rs!dec1 = 0 Or IsNull(rs!dec1)) Then
+
+If Not IsNull(rs!POA1) Then
+VFirst = firstdebtor() & rs!POA1
+Else
+VFirst = firstdebtor()
+End If
+
+Else
+VFirst = ""
+End If
+
+If (rs!DNS2 = 0 Or IsNull(rs!DNS2)) And (rs!dec2 = 0 Or IsNull(rs!dec2)) Then
+
+If Not IsNull(rs!POA2) Then
+VSecond = secondDebtor() & rs!POA2
+Else
+VSecond = secondDebtor()
+End If
+
+Else
+VSecond = ""
+End If
+
+If (rs!DNS3 = 0 Or IsNull(rs!DNS3)) And (rs!dec3 = 0 Or IsNull(rs!dec3)) Then
+If Not IsNull(rs!POA3) Then
+VThird = thirddebtor() & rs!POA3
+Else
+VThird = thirddebtor()
+End If
+Else
+VThird = ""
+End If
+
+If (rs!DNS4 = 0 Or IsNull(rs!DNS4)) And (rs!dec4 = 0 Or IsNull(rs!dec4)) Then
+
+If Not IsNull(rs!POA4) Then
+VFourth = fourthdebtor() & rs!POA4
+Else
+VFourth = fourthdebtor()
+End If
+Else
+VFourth = ""
+End If
+
+If (rs!dns5 = 0 Or IsNull(rs!dns5)) And (rs!dec5 = 0 Or IsNull(rs!dec5)) Then
+
+If Not IsNull(rs!POA5) Then
+VFifth = fifthdebtor() & rs!POA5
+Else
+VFifth = fifthdebtor()
+End If
+Else
+VFifth = ""
+End If
+
+If VFirst = "" Then
+fs = ""
+ElseIf VSecond <> "" Then
+If VThird <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If VThird <> "" Then
+If VFourth <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If VFourth <> "" Then
+If VFifth <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If VFifth <> "" Then
+FF = " and "
+End If
+
+
+rs.Close
+
+
+POADebtors = VFirst & fs & VSecond & st & VThird & tf & VFourth & FF & VFifth
+
+
+End Function
+Public Function DILDebtorsCnt()
+
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from POAQry where filenum = " & Forms![DILForm]!filenum
+
+Else
+strsql = "select * from POAQry where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+If (rs!DNS1 = 0 Or IsNull(rs!DNS1)) And (rs!dec1 = 0 Or IsNull(rs!dec1)) Then
+DILDebtorsCnt = 1
+End If
+
+
+If (rs!DNS2 = 0 Or IsNull(rs!DNS2)) And (rs!dec2 = 0 Or IsNull(rs!dec2)) Then
+DILDebtorsCnt = dildebtorsccnt + 1
+End If
+
+If (rs!DNS3 = 0 Or IsNull(rs!DNS3)) And (rs!dec3 = 0 Or IsNull(rs!dec3)) Then
+DILDebtorsCnt = dildebtorsccnt + 1
+End If
+
+If (rs!DNS4 = 0 Or IsNull(rs!DNS4)) And (rs!dec4 = 0 Or IsNull(rs!dec4)) Then
+DILDebtorsCnt = dildebtorsccnt + 1
+
+End If
+
+If (rs!dns5 = 0 Or IsNull(rs!dns5)) And (rs!dec5 = 0 Or IsNull(rs!dec5)) Then
+DILDebtorsCnt = dildebtorsccnt + 1
+End If
+
+rs.Close
+
+End Function
+
+Public Function POADebtorsSurviving() As String
+
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from POAQry where filenum = " & Forms![DILForm]!filenum
+
+Else
+strsql = "select * from POAQry where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+Dim VFirst As String
+Dim VSecond As String
+Dim VThird As String
+Dim VFourth As String
+Dim VFifth As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If (rs!dec1 = 0 Or IsNull(rs!dec1)) Then
+
+
+VFirst = firstdebtor()
+
+
+Else
+VFirst = ""
+End If
+
+If (rs!dec2 = 0 Or IsNull(rs!dec2)) Then
+
+
+VSecond = secondDebtor()
+
+Else
+VSecond = ""
+End If
+
+If (rs!dec3 = 0 Or IsNull(rs!dec3)) Then
+
+VThird = thirddebtor()
+Else
+VThird = ""
+End If
+
+If (rs!dec4 = 0 Or IsNull(rs!dec4)) Then
+
+
+VFourth = fourthdebtor()
+
+Else
+VFourth = ""
+End If
+
+If (rs!dec5 = 0 Or IsNull(rs!dec5)) Then
+
+
+VFifth = fifthdebtor()
+
+Else
+VFifth = ""
+End If
+
+If VFirst = "" Then
+fs = ""
+ElseIf VSecond <> "" Then
+If VThird <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If VThird <> "" Then
+If VFourth <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If VFourth <> "" Then
+If VFifth <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If VFifth <> "" Then
+FF = " and "
+End If
+
+
+rs.Close
+
+
+POADebtorsSurviving = VFirst & fs & VSecond & st & VThird & tf & VFourth & FF & VFifth
+
+
+End Function
+
+Public Function POA() As String
+
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from deedinlieu where filenum = " & Forms![DILForm]!filenum
+
+Else
+strsql = "select * from deedinlieu where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+Dim VFirst As String
+Dim VSecond As String
+Dim VThird As String
+Dim VFourth As String
+Dim VFifth As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If Not IsNull(rs!POA1) Then
+VFirst = firstdebtor() & " " & rs!POA1
+Else
+VFirst = firstdebtor()
+End If
+
+
+If Not IsNull(rs!POA2) Then
+VSecond = secondDebtor() & " " & rs!POA2
+Else
+VSecond = secondDebtor()
+End If
+
+If Not IsNull(rs!POA3) Then
+VThird = thirddebtor() & " " & rs!POA3
+Else
+VThird = thirddebtor()
+End If
+
+If Not IsNull(rs!POA4) Then
+VFourth = fourthdebtor() & " " & rs!POA4
+Else
+VFourth = fourthdebtor()
+End If
+
+If Not IsNull(rs!POA5) Then
+VFifth = fifthdebtor() & " " & rs!POA5
+Else
+VFifth = fifthdebtor()
+End If
+
+
+If VSecond <> "" Then
+If VThird <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If VThird <> "" Then
+If VFourth <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If VFourth <> "" Then
+If VFifth <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If VFifth <> "" Then
+FF = " and "
+End If
+
+
+rs.Close
+
+
+POA = VFirst & fs & VSecond & st & VThird & tf & VFourth & FF & VFifth
+
+
+End Function
+Public Function SalisburyPAff()
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\SALISBURYPROPERTYAFFIDAVIT.pdf")
+
+End Function
+
+Public Function DILFaq()
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\FAQ.pdf")
+
+End Function
+Public Function DILNotary()
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Templates\DIL\DILNotaryInstructions.doc")
+
+End Function
+
+Public Function propDIL()
+If IsNull(Forms![DILForm]!DILSub.Form![propaddress2]) Then
+If IsNull(Forms![DILForm]!DILSub.Form![unit_no]) Or Forms![DILForm]!DILSub.Form![unit_no] = "" Then
+propDIL = Forms![DILForm]!DILSub.Form![PropAddress] & ", " & Forms![DILForm]!DILSub.Form![PropertyCity] & ", " & Forms![DILForm]!DILSub.Form![PropertyState] & "  " & Forms![DILForm]!DILSub.Form![propzip]
+Else
+propDIL = Forms![DILForm]!DILSub.Form![PropAddress] & ", Unit # " & Forms![DILForm]!DILSub.Form![unit_no] & ", " & Forms![DILForm]!DILSub.Form![PropertyCity] & ", " & Forms![DILForm]!DILSub.Form![PropertyState] & "  " & Forms![DILForm]!DILSub.Form![propzip]
+End If
+
+Else
+If IsNull(Forms![DILForm]!DILSub.Form![unit_no]) Or Forms![DILForm]!DILSub.Form![unit_no] = "" Then
+propDIL = Forms![DILForm]!DILSub.Form![PropAddress] & ", " & Forms![DILForm]!DILSub.Form![propaddress2] & ", " & Forms![DILForm]!DILSub.Form![PropertyCity] & ", " & Forms![DILForm]!DILSub.Form![PropertyState] & "  " & Forms![DILForm]!DILSub.Form![propzip]
+Else
+propDIL = Forms![DILForm]!DILSub.Form![PropAddress] & ", Unit # " & Forms![DILForm]!DILSub.Form![unit_no] & ", " & Forms![DILForm]!DILSub.Form![propaddress2] & ", " & Forms![DILForm]!DILSub.Form![PropertyCity] & ", " & Forms![DILForm]!DILSub.Form![PropertyState] & "  " & Forms![DILForm]!DILSub.Form![propzip]
+End If
+End If
+
+End Function
+
+Public Function countymoniesDIL()
+
+countymoniesDIL = Forms![DILForm]![DILSub].[Form]![countytransfertax]
+
+
+End Function
+
+Public Function clerkcourtmoniesDIL()
+
+clerkcourtmoniesDIL = [Forms]![DILForm]![DILSub].Form!recording_charge _
++ [Forms]![DILForm]![DILSub].Form!surcharge
+
+
+
+End Function
+
+Public Function ordertitleDIL()
+Dim prtorder As String
+Dim vClient As String
+Dim LoanNo As String
+Dim subj As String
+Dim DocName As String
+Dim emailto As String
+Dim ccTo As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+vClient = Forms![DILForm]![Client]
+
+prtorder = InputBox("(E)mail or (P)rint Order Title")
+
+If prtorder = "P" Then
+DoCmd.OpenReport "OrderTitle Letter-DIL", acViewPreview
+
+Else
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+DocName = "OrderTitle Letter-DIL"
+
+LoanNo = Forms![DILForm]!DILSub.Form![ClientRefNumber]
+
+If [Forms]![DILForm].[Form]![DILSub]!Client Like "Bank of Am*" Or _
+[Forms]![DILForm].[Form]![DILSub]!Client = "Bank of America, N.A." Then
+
+emailto = "NONCHL@Landsafe.com"
+ccTo = "katherine.yee@landsafe.com; ordertitles@bww-law.com"
+DoCmd.OpenQuery ("TitleOrderedLandsafeDIL")
+subj = "EXTERNAL ORDER (Non CHL): " & vClient & " / " & LoanNo
+
+Else
+
+If [Forms]![DILForm].[Form]![DILSub]!PropertyState = "VA" Then
+emailto = "VAOrders@compassresearchgroup.com"
+ccTo = "tyrone@compassresearchgroup.com; ordertitles@bww-law.com"
+ElseIf [Forms]![DILForm].[Form]![DILSub]!PropertyState = "DC" Then
+emailto = "DCOrders@compassresearchgroup.com"
+ccTo = "john@compassresearchgroup.com; ordertitles@bww-law.com"
+ElseIf [Forms]![DILForm].[Form]![DILSub]!PropertyState = "MD" Then
+emailto = "MDOrders@compassresearchgroup.com"
+ccTo = "john@compassresearchgroup.com; ordertitles@bww-law.com"
+End If
+
+Vfilename = [Forms]![DILForm].[Form]![DILSub]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "CompassOrder.xls"
+
+DoCmd.OpenQuery ("TitleOrderedCompassDIL")
+DoCmd.OutputTo acOutputQuery, "CompassOrdersBGWDIL", acFormatXLS, "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+MyMail.Attachments.ADD "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+subj = "**DIL** " & vClient & " / " & LoanNo
+
+
+End If
+
+DoCmd.OutputTo acOutputReport, DocName, acFormatRTF, pathuser() & "\OrderTitle.rtf"
+MyMail.Attachments.ADD pathuser() & "\OrderTitle.rtf"
+
+
+Dim varsendemail As String
+varsendemail = MsgBox("Sending Email, Continue?", vbYesNo)
+If varsendemail = vbYes Then
+Dim VarParaLegal, strPL, sig1, SigEmailBlock, vtitle As String
+Dim VPhone As String
+Dim VFax As String
+
+Dim rsPL As RecordSet
+VarParaLegal = Environ("username")
+strPL = "Select * from employees where login = " & """" & VarParaLegal & """" & ";"
+Set rsPL = CurrentDb.OpenRecordset(strPL, dbOpenSnapshot)
+If rsPL.EOF Then
+MsgBox "Login not in Foreclosure employee table", vbOKOnly
+rsPL.Close
+sig1 = ""
+
+Else
+
+If Not IsNull(rsPL!LastName) Then
+
+If IsNull(rsPL!MiddleName) Then
+
+sig1 = rsPL!FirstName & " " & rsPL!LastName
+If IsNull(rsPL!Title) Then
+vtitle = ""
+Else
+vtitle = rsPL!Title
+End If
+
+Else
+
+sig1 = rsPL!FirstName & " " & rsPL!MiddleName & " " & rsPL!LastName
+If IsNull(rsPL!Title) Then
+vtitle = ""
+Else
+vtitle = rsPL!Title
+End If
+
+End If
+
+Else
+
+sig1 = ""
+vtitle = ""
+
+End If
+
+If IsNull(rsPL!WorkPhone) Then
+VPhone = "301-961-6555"
+Else
+VPhone = rsPL!WorkPhone
+End If
+
+
+If IsNull(rsPL!Emp_Fax) Then
+VFax = "301-961-6545"
+Else
+VFax = rsPL!Emp_Fax
+End If
+
+
+If [Forms]![DILForm].[Form]![DILSub]!PropertyState = "MD" Then
+If IsNull(rsPL!EmailName) Then
+ccTo = "ordertitles@bww-law.com"
+Else
+ccTo = rsPL!EmailName & "; ordertitles@bww-law.com; john@compassresearchgroup.com"
+End If
+End If
+
+End If
+
+rsPL.Close
+
+SigEmailBlock = vbCr & vbCr & sig1 & vbCr & vtitle + (Chr(13)) + "BWW Law Group, LLC" + (Chr(13)) + "Phone: " & VPhone & (Chr(13)) + "Main Fax: 301-961-6545" + (Chr(13)) + "Fax: " & VFax
+'DoCmd.SendObject acSendReport, docname, acFormatRTF, EmailTo, ccTo, , subj, emailmessage
+MyMail.To = emailto
+MyMail.CC = ccTo
+MyMail.Subject = subj
+MyMail.body = "FULL SIXTY (60) YEAR TITLE SEARCH FOR DIL" + SigEmailBlock
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+End If
+End If
+
+If [Forms]![DILForm].[Form]![DILSub]!PropertyState = "MD" And _
+[Forms]![DILForm].[Form]![DILSub]!Client Like "Ocwen*" Then
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "Dewey.Brown@bww-law.com; Stefani.Sherer-Ballew@bww-law.com"
+MyMail.Subject = "Title Ordered = Maryland Ocwen File" & Date
+MyMail.body = "FULL SIXTY (60) YEAR TITLE SEARCH FOR DIL" & vbCr & "Borrower: " & [Forms]![DILForm].[Form]![DILSub]!DILSub.Form!LastNameDebtor1 & vbCr & "Property: " & [Forms]![DILForm].[Form]![DILSub]!PropAddress & vbCr & "Loan#: " & [Forms]![DILForm].[Form]![DILSub]![ClientRefNumber] & vbCr & "Org Prin Balance: " & Format([Forms]![DILForm].[Form]![DILSub]!ForeclosureSubForm.Form!OrgAmount, "$###,##0.00")
+
+
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+End If
+
+
+End Function
+
+
+Public Function DILForm()
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "select * from deedinlieu where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("deedinlieu")
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+
+
+    Dim stDocName As String
+    Dim stLinkCriteria As String
+
+    stDocName = "DILForm"
+    
+    stLinkCriteria = "[FileNum]=" & Forms![foreclosure database screen]![filenum]
+    DoCmd.OpenForm stDocName, , , stLinkCriteria
+End Function
+

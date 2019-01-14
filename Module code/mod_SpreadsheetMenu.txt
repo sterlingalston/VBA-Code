@@ -1,0 +1,988 @@
+Attribute VB_Name = "SpreadsheetMenu"
+Option Compare Database
+
+Public Function adj_items_report()
+
+    ExcelSaveAsQRY ("adj_items_reportqry")
+
+End Function
+
+Public Function EstateStatusSpreadsheet()
+
+ExcelSaveAsQRY ("EstateStatusSpreadsheetQry")
+
+End Function
+
+Public Function dc_hearings_friday()
+
+ExcelSaveAsQRY ("dc_hearings_fridayqry")
+
+End Function
+
+Public Function dccloseandbillspreadsheet()
+
+ExcelSaveAsQRY ("dccloseandbillspreadsheetqry")
+
+End Function
+
+Public Function eviction_nonbwwdeedsnotrecorded()
+
+ExcelSaveAsQRY ("eviction_nonbwwdeedsnotrecordedqry")
+
+End Function
+
+Public Function eviction_deedsnotrecorded()
+
+ExcelSaveAsQRY ("eviction_deedsnotrecordedQRY")
+
+End Function
+
+Public Function eviction_lt()
+
+ExcelSaveAsQRY ("eviction_ltqry")
+
+End Function
+
+Public Function eviction_dil()
+
+ExcelSaveAsQRY ("eviction_dilqry")
+
+End Function
+
+Public Function eviction_baltcitynoticenotyetsent()
+
+ExcelSaveAsQRY ("eviction_baltcitynoticenotyetsentqry")
+
+End Function
+
+Public Function eviction_fcdocsnotrecd()
+
+ExcelSaveAsQRY ("eviction_fcdocsnotrecdqry")
+
+End Function
+
+Public Function eviction_ordergrantedwritnotsent()
+
+ExcelSaveAsQRY ("eviction_ordergrantedwritnotsentqry")
+
+End Function
+
+Public Function eviction_mfpnotyetsent()
+
+ExcelSaveAsQRY ("eviction_mfpnotyetsentqry")
+
+End Function
+
+Public Function eviction_90daysexpired()
+
+ExcelSaveAsQRY ("eviction_90daysexpiredqry")
+
+End Function
+
+Public Function eviction_affoccnotreqqry()
+
+ExcelSaveAsQRY ("eviction_affoccnotreqqry")
+
+End Function
+Public Function eviction_affoccnotrecd()
+
+ExcelSaveAsQRY ("eviction_affoccnotrecdqry")
+
+End Function
+
+Public Function eviction_ntvnotyetsent()
+
+ExcelSaveAsQRY ("eviction_ntvnotyetsentqry")
+
+End Function
+
+Public Function mediationdocsdeadline()
+
+ExcelSaveAsQRY ("mediationdocsdeadlineqry")
+
+End Function
+
+Public Function DCMiscMedHearingsUNION()
+
+ExcelSaveAsQRY ("DCMiscMedHearingsUNIONQry")
+
+End Function
+
+
+Public Function BillingCancellationSpreadsheet()
+
+ExcelSaveAsQRY ("BillingCancellationSpreadsheetQry")
+
+End Function
+
+Public Function BillingFCLDailyReport()
+
+ExcelSaveAsQRY ("BillingFCLDailyReportQry")
+
+End Function
+
+Public Function NOIDeadlineSpreadsheetExport()
+
+ExcelSaveAsQRY ("NOIDeadlineQry")
+
+End Function
+
+Public Function MDLitBWWDef()
+
+ExcelSaveAsQRY ("MDLitBWWDefQry")
+
+End Function
+
+Public Function VA1stLegalReport()
+ExcelSaveAsQRY ("VA1stLegalReportSalesUNIONQry")
+
+End Function
+
+Public Function TitleClaimsOutsideCounsel()
+
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Dim emlstr As String
+Dim r As Excel.Range
+Dim rList As Excel.Range
+Dim savepath As String
+Dim rs As RecordSet
+
+Dim queryname As String: queryname = "TitleClaimsOutsideCounsel"
+
+On Error GoTo handler
+Set xl = CreateObject("Excel.Application")
+xl.DisplayAlerts = False
+xl.Visible = False
+
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+If Len(savepath) = 0 Then Exit Function
+
+Call getUnresolvedTitleClaims
+
+DoCmd.OutputTo acOutputQuery, queryname, acFormatXLS, savepath & ".xls"
+
+Set xlBook = xl.Workbooks.Open(savepath & ".xls")
+Set xlSheet = xlBook.Worksheets(1)
+
+
+    xlSheet.ListObjects.ADD(1, xlSheet.UsedRange, , 1).name = _
+        "Table1"
+    With xlSheet.ListObjects("Table1")
+        Set rList = .Range
+        .TableStyle = "TableStyleMedium2"
+        .Unlist                           ' convert the table back to a range
+    End With
+        
+    With xlSheet.UsedRange.Columns(xlSheet.UsedRange.Columns.Count)
+        .ColumnWidth = 47.71
+        .WrapText = True
+        .VerticalAlignment = xlTop
+    End With
+     For Each r In xlSheet.UsedRange.Columns(7).Cells
+
+         If InStr(1, r.Value, "@") > 0 Then
+
+            emlstr = r.Value
+           ' Debug.Print "=hyperlink(" & """" & "mailto:" & emlstr & """" & "," & """" & emlstr & """" & ")"
+            r.formula = "=hyperlink(" & """" & "mailto:" & emlstr & """" & "," & """" & emlstr & """" & ")"
+         End If
+    Next r
+
+xlBook.SaveAs savepath, xlExcel12
+xlBook.Close
+xl.Quit
+Kill (savepath & ".xls")
+ShellExecuteFileOpen (savepath & ".xlsb")
+MsgBox ("The Excel Spreadsheet you will find in preview and saved in: " & savepath)
+
+Exit Function
+
+handler:
+
+On Error Resume Next
+xl.Quit
+MsgBox "Report Not Exported", vbCritical, "End Report"
+
+Exit Function
+
+End Function
+
+Public Function REONadel()
+ExcelSaveAsQRY ("REONadelQRY-Monies")
+
+End Function
+
+Public Function SCRAQueueALL_VADCBusiness()
+    ExcelSaveAsQRY ("SCRAQueueALL-VADCBusinessQry")
+End Function
+
+Public Function SCRAQueueALL_MDBusiness()
+    ExcelSaveAsQRY ("SCRAQueueALL-MDBusinessQry")
+End Function
+
+Public Function AbstractorPerf()
+    ExcelSaveAsQRY ("AbstractorPerfQry")
+End Function
+
+
+Public Function DismissalFilesSpreadsheet()
+    ExcelSaveAsQRY ("DismissalFilesSpreadsheetQry")
+End Function
+
+Public Function DCSalesSpreadsheet()
+    ExcelSaveAsQRY ("DCSalesSpreadsheetQry")
+End Function
+
+Public Function DCLisPendensNeeded()
+    ExcelSaveAsQRY ("DCLisPendensNeededQry")
+End Function
+
+Public Function DILReportingDILSReferredSpreadsheet()
+    ExcelSaveAsQRY ("DILReportingDILSReferredSpreadsheetQry")
+End Function
+Public Function DILReportingClosedSpreadsheet()
+    ExcelSaveAsQRY ("DILReportingClosedSpreadsheetQry")
+End Function
+Public Function PreSalePipelinePMU()
+    ExcelSaveAsQRY ("PreSalePipelinePMUQry")
+End Function
+
+Public Function BKComfortSpreadsheet()
+    ExcelSaveAsQRY ("BKComfortSpreadsheetQry")
+End Function
+
+Public Function DCNoteSpreadsheet()
+    ExcelSaveAsQRY ("DCNoteSpreadsheetQry")
+End Function
+
+Public Function DILHoldingFundsFeesRemaining()
+    ExcelSaveAsQRY ("DILHoldingFundsFeesRemainingQry")
+End Function
+
+Public Function FHASpreadsheet()
+    ExcelSaveAsQRY ("FHASpreadsheetQry")
+End Function
+
+Public Function PSBKSpreadsheetReport()
+    ExcelSaveAsQRY ("PSBKSpreadsheetReportQry")
+End Function
+Public Function WalzNoticesMD()
+ExcelSaveAsQRY ("Walzproblemsnotices")
+
+End Function
+Public Function WalzProblemsVa()
+ExcelSaveAsQRY ("Walzproblems")
+
+End Function
+
+Public Function UpcomingStatusConfSpreadseet_MC()
+    ExcelSaveAsQRY ("UpcomingStatusConfSpreadseet_MCQry")
+End Function
+Public Function CoopSpreadsheet()
+    ExcelSaveAsQRY ("CoopSpreadsheetQry")
+End Function
+Public Function DCNotesNotEndorsedSpreadsheet()
+    ExcelSaveAsQRY ("DCNotesNotEndorsedSpreadsheetQry")
+End Function
+Public Function ContDismissSpreadsheet()
+    ExcelSaveAsQRY ("ContDismissSpreadsheetQry")
+End Function
+
+Public Function BWWLitDefSpreadsheet()
+    ExcelSaveAsQRY ("BWWLitDefSpreadsheetQry")
+End Function
+
+Public Function VASOTsRecdSpreadsheet()
+ExcelSaveAsQRY ("VASOTsRecdSpreadsheetQry")
+End Function
+
+Public Function DCPostComplaintSpreadsheet()
+ExcelSaveAsQRY ("DCPostComplaintSpreadsheetQry")
+End Function
+
+
+Public Function EmpInitials()
+ExcelSaveAsQRY ("EmpInitials")
+End Function
+
+Public Function HUDDeedstoBePrepared()
+ 
+ExcelSaveAsQRY ("HUDDeedstoBePreparedQry")
+
+End Function
+Public Function QC3PkgUpdate()
+Dim Vpass
+Vpass = InputBox("Enter password to run Scan Updates")
+
+If Vpass = "qc3scan" Then
+Dim rs As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("QC2PackageUPDATESELECT", dbOpenSnapshot)
+
+If Not rs.EOF Then
+DoCmd.OpenQuery "QC2PackageUPDATE"
+MsgBox ("Completed")
+Else
+MsgBox ("Nothing in queue to scan")
+End If
+
+End If
+
+End Function
+Public Function DCCondoSpreadsheet()
+ 
+ExcelSaveAsQRY ("DCCondoSpreadsheetQry")
+
+End Function
+Public Function DCComplaintReadySpreadsheet()
+ 
+ExcelSaveAsQRY ("DCComplaintReadySpreadsheetQry")
+
+End Function
+Public Function DCSOTSpreadsheet()
+ 
+ExcelSaveAsQRY ("DCSOTSpreadsheetQry")
+
+End Function
+Public Function DCAssignmentSpreadsheet()
+ 
+ExcelSaveAsQRY ("DCAssignmentSpreadsheetQry")
+
+End Function
+Public Function DCBreachLetterSpreadsheet()
+ 
+ExcelSaveAsQRY ("DCBreachLetterSpreadsheetQry")
+
+End Function
+Public Function DCPayoffReqdSpreadsheet()
+ 
+ExcelSaveAsQRY ("DCPayoffReqdSpreadsheetQry")
+
+End Function
+
+Public Function DCPostsaleRatSpreadsheet()
+ 
+ExcelSaveAsQRY ("DCPostsaleRatSpreadsheetQry")
+
+End Function
+
+Public Function DCServiceSpreadsheet()
+ 
+ExcelSaveAsQRY ("DCServiceSpreadsheetQry")
+
+End Function
+
+Public Function DCDefaultSpreadsheet()
+ 
+ExcelSaveAsQRY ("DCDefaultSpreadsheetQry")
+
+End Function
+
+Public Function DCComplaintsSCRASearch()
+ 
+ExcelSaveAsQRY ("DCComplaintsSCRASearchQry")
+
+End Function
+Public Function DCMiscMediationStatusHearingExport()
+ 
+ExcelSaveAsQRY ("DCMiscMediationStatusHearingQry")
+
+End Function
+
+Public Function DCMediationStatusHearingExport()
+ 
+ExcelSaveAsQRY ("DCMediationStatusHearingQry")
+
+End Function
+
+Public Function DCStatusConferenceExport()
+ 
+ExcelSaveAsQRY ("DCStatusConferenceQry")
+
+End Function
+
+Public Function DCInitSchedulingConfExport()
+ 
+ExcelSaveAsQRY ("DCInitSchedulingConfQry")
+
+End Function
+
+Public Function TitleIssuesExcelExport()
+ 
+ExcelSaveAsQRY ("TitleIssuesExcelQry")
+
+End Function
+
+Public Function BillsDueTotalsSpreadsheetExport()
+ 
+ExcelSaveAsQRY ("BillsDueTotalsSpreadsheetQry")
+
+End Function
+
+Public Function DocketReadySpreadSheetExport()
+ 
+ExcelSaveAsQRY ("DocketReadySpreadSheetQry")
+
+End Function
+
+Public Function ReferralResumeTODAY()
+
+Dim rs As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("ReferralResumeTODAY", dbOpenSnapshot)
+If Not rs.EOF Then
+
+ExcelSaveAsQRY ("ReferralResumeTODAY")
+
+Else
+MsgBox ("No referrals or restarts")
+
+End If
+
+
+
+
+End Function
+Public Function SetSaleQry()
+ 
+ExcelSaveAsQRY ("SalestobesetQRY")
+
+End Function
+
+Public Function CloseAuditFindings()
+'ClosedFileAuditRPT-NoFinding
+
+
+
+Dim VSel
+VSel = InputBox("1. Audit Findings" & vbCr & "2. No Audit Findings" & vbCr & vbCr & "enter 1 or 2")
+If VSel = 1 Then
+
+ExcelSaveAsQRY ("ClosedFileAuditRPT-Finding")
+
+Else
+
+
+
+ExcelSaveAsQRY ("ClosedFileAuditRPT-NoFinding")
+
+
+
+End If
+End Function
+
+Public Function ClientNotifiedCrtStamped()
+
+
+
+
+ExcelSaveAsQRY ("ClientNotified-CourtStamped-RPT")
+
+
+
+
+End Function
+Public Function BillUplQueueOutstanding()
+
+
+ExcelSaveAsQRY ("BillsUploadedOutstanding")
+
+
+
+
+End Function
+Public Function FirstLegalFiledExcel()
+'FirstLegalFiledQRY
+
+
+ExcelSaveAsQRY ("FirstLegalFiledQRY")
+
+
+
+
+End Function
+Public Function DocketServedFiledExcel()
+
+
+ExcelSaveAsQRY ("DocketServedFiledQRY")
+
+
+
+
+End Function
+Public Function BillUplQueueCompleted()
+'BillsUploadedOutstanding
+
+
+ExcelSaveAsQRY ("BillsUploadedCOMPLETED")
+
+
+
+End Function
+Public Function EvictionUPLSearches()
+
+
+
+ExcelSaveAsQRY ("EvictionUPSSearchQRY")
+
+
+
+End Function
+Public Function DSAffidavits()
+
+
+ExcelSaveAsQRY ("DSAffidavits")
+
+
+
+
+End Function
+
+
+Public Function PORIQueueQry()
+'PORIQueueREPORT
+ 
+ 
+ MsgBox ("PORI Reinstatment Spreadsheet")
+ 
+
+
+
+ExcelSaveAsQRY ("PORIQueueREPORT-Rein")
+
+
+
+ MsgBox ("PORI Payoff Spreadsheet")
+
+
+
+ExcelSaveAsQRY ("PORIQueueREPORT-Payoff")
+
+
+
+ 
+End Function
+Public Function OcwenOcwenExcel()
+Dim vFile As String
+ 
+
+Call WarningsNowFalse
+
+CurrentDb.Execute "Delete * from clientstatusrequesttable;", dbFailOnError
+
+DoCmd.OpenQuery ("clientstatusrequestqueryMD-Ocwen")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD2-Ocwen")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD3")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD4")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD5")
+Dim savepath As String
+
+
+ExcelSaveAsQRY ("clientstatusrequestOcwen")
+
+
+
+
+ 
+
+End Function
+Public Function RptSaleImaged()
+
+
+ExcelSaveAsQRY ("RptSaleImaged")
+
+
+
+
+End Function
+
+Public Function EvictionCount()
+'
+
+
+ExcelSaveAsQRY ("FileCOUNT-Eviction")
+
+
+
+
+End Function
+Public Function FNMADcVA()
+'FNMA-Virginia-DC-Files
+
+
+ExcelSaveAsQRY ("FNMA-Virginia-DC-Files")
+
+
+
+
+End Function
+Public Function DocketPreparedQRY()
+ 
+
+
+
+ExcelSaveAsQRY ("docketpreparedQRY")
+
+
+
+End Function
+Public Function FDLTiming()
+ 
+
+ExcelSaveAsQRY ("FDLTiming")
+ 
+End Function
+
+Public Function HOASpreadsheetRPT()
+ 
+DoCmd.OpenQuery "HOAQry"
+DoCmd.OpenQuery "HOAQry2"
+
+
+ExcelSaveAsTBL ("HOAReport")
+End Function
+Public Function QryCourtStamped()
+
+ExcelSaveAsQRY ("QryWALZMailedPart1PKGEMAILTODAY")
+
+End Function
+Public Function QrySaleDate()
+
+ExcelSaveAsQRY ("Sale Date Query")
+
+End Function
+Public Function QryAllFilesPSNotRat()
+
+ExcelSaveAsQRY ("AllfilesMDPostsaleStatusNotRatified")
+
+End Function
+Public Function QryClientPreFinFiled()
+'
+
+ExcelSaveAsQRY ("ClientQueryPrefiledFinfiled")
+
+End Function
+Public Function QryClient1stlegal1stad()
+
+ExcelSaveAsQRY ("ClientQuery1stLegal1stAd")
+
+End Function
+Public Function QryClient1stlegal1stadServ()
+
+ExcelSaveAsQRY ("ClientQuery1stLegal1stAdServ")
+
+End Function
+Public Function QryAllfilesClientAffs()
+
+ExcelSaveAsQRY ("AllFilesEnterClientAFFS")
+
+End Function
+
+Public Function QryAllFilesClientStatusState()
+
+ExcelSaveAsQRY ("AllFilesEnterClientStatusState")
+
+End Function
+Public Function QryAllFilesClientStatusStateBK()
+'AllFilesEnterClientStatusState
+CurrentDb.Execute "Delete * from BKQueryClientStatus;", dbFailOnError
+
+DoCmd.OpenQuery "AllFilesEnterClientStatusStateBK"
+DoCmd.OpenQuery "BKQryLoanMod"
+DoCmd.OpenQuery "BKQryReaffirmation"
+DoCmd.OpenQuery "BKQryBKMort"
+DoCmd.OpenQuery "BKQryBKPPFees"
+DoCmd.OpenQuery "BKQryNODResolution"
+DoCmd.OpenQuery "BKUpdateMax"
+DoCmd.OpenQuery "BKUpdateMax2"
+DoCmd.OpenQuery "BKUpdateMax3"
+DoCmd.OpenQuery "BKUpdateMax4"
+DoCmd.OpenQuery "BKUpdateMax5"
+DoCmd.OpenQuery "BKUpdateMax6"
+DoCmd.OpenQuery "BKUpdateMax7"
+DoCmd.OpenQuery "BKUpdateMax8"
+DoCmd.OpenQuery "BKUpdateMax9"
+DoCmd.OpenQuery "BKUpdateMax10"
+DoCmd.OpenQuery "BKUpdateMax11"
+DoCmd.OpenQuery "BKUpdateMax12"
+DoCmd.OpenQuery "BKUpdateMax13"
+DoCmd.OpenQuery "BKUpdateMax14"
+
+ExcelSaveAsQRY ("BKQueryexcel")
+
+End Function
+Public Function TitleClaimQRY()
+
+ExcelSaveAsQRY ("AllFilesEnterClientStatusStateTITLEClaimFields")
+
+End Function
+Public Function FDCPANotGiven()
+
+ExcelSaveAsQRY ("FDCPANoticeNotGiven")
+
+End Function
+Public Function DepositCheckNotNull()
+
+
+ExcelSaveAsQRY ("DepositCheckDocketCourt")
+
+End Function
+Public Function DepositCheckNull()
+
+
+ExcelSaveAsQRY ("DepositCheckDocketCourtBlank")
+
+End Function
+
+Public Function VAReferralCarve()
+
+CurrentDb.Execute "Delete * from VAReferralSOTCarve;", dbFailOnError
+
+DoCmd.OpenQuery ("VAReferral1stLegalSOTCarve")
+
+ExcelSaveAsQRY ("VAReferral1stLegalCarveSOTQRY")
+
+End Function
+Public Function OrgNoteQRY()
+Dim VSel
+
+VSel = InputBox("1. Sale Date is Null" & vbCr & "2. Sale Date, enter dates" & vbCr & "enter 1 or 2")
+If VSel = 1 Then
+
+ExcelSaveAsQRY ("AllFilesSaleNullTypeDocsRecdReturned")
+
+Else
+ExcelSaveAsQRY ("AllFilesSaleTypeDocsRecdReturned")
+End If
+
+End Function
+Public Function ChaseSaleDatesWeekly()
+
+ 
+ExcelSaveAsQRY ("ChaseSaleDatesPastWeek")
+
+End Function
+Public Function ChaseSalesCancelled()
+
+ExcelSaveAsQRY ("ChaseSaleDatesCancelled")
+End Function
+Public Function EvicLockOutExcel()
+ Dim rs As RecordSet
+   
+Set rs = CurrentDb.OpenRecordset("EvictionLockOut", dbOpenSnapshot)
+If Not rs.EOF Then
+
+
+ExcelSaveAsQRY ("EvictionLockOut")
+End If
+
+End Function
+
+Public Function FHAPudExcel()
+'FHA PUD Qry
+ Dim rs As RecordSet
+   
+Set rs = CurrentDb.OpenRecordset("fHA PUD Qry", dbOpenSnapshot)
+If Not rs.EOF Then
+
+
+ExcelSaveAsQRY ("FHA PUD Qry")
+End If
+
+End Function
+Public Function CurrentStatusExcel()
+ExcelSaveAsQRY ("CurrentStatusReport")
+
+End Function
+Public Function BACLitFiles()
+
+
+ExcelSaveAsQRY ("BACCapacityQRYLITSelect")
+
+End Function
+Public Function TitlesNeededExcel()
+ 
+ExcelSaveAsQRY ("TitlesToBeOrderedFNMAFHLMC")
+
+End Function
+Public Function UnableDocketExcel()
+Dim VCreate
+VCreate = InputBox("Unable to Docket Selection:" & vbCr & vbCr & "1. ALL " & vbCr & _
+"2. Occupancy Only " & vbCr & _
+"3. Skip Trace Only " & vbCr & _
+"4. Note Only " & vbCr & _
+"5. Assignment Only " & vbCr & _
+"6. Loan Mod Only " & vbCr & _
+"7. POA Only " & vbCr & _
+"8. SOT Resent Only " & vbCr & _
+"9. Aff of Default Resent Only " & vbCr & _
+"10. Aff of Debt Resent Only " & vbCr & _
+"11. ACO Resent Only " & vbCr & _
+"12. LMA Only " & vbCr & _
+"13. Aff of Mailing (OWB) Only " & vbCr & _
+"14. Mil Aff (OWB) Only " & vbCr & _
+"15. Other Reasons Only " & vbCr & vbCr & "Enter your selection")
+
+
+
+If VCreate = 1 Then
+ExcelSaveAsQRY ("UnableDocketAll")
+ElseIf VCreate = 2 Then
+ExcelSaveAsQRY ("UnableDocket-Occ")
+ElseIf VCreate = 3 Then
+ExcelSaveAsQRY ("UnableDocket-skip")
+ElseIf VCreate = 4 Then
+ExcelSaveAsQRY ("UnableDocket-Note")
+ElseIf VCreate = 5 Then
+ExcelSaveAsQRY ("UnableDocket-Ass")
+ElseIf VCreate = 6 Then
+ExcelSaveAsQRY ("UnableDocket-LoanMod")
+ElseIf VCreate = 7 Then
+ExcelSaveAsQRY ("UnableDocket-POA")
+ElseIf VCreate = 8 Then
+ExcelSaveAsQRY ("UnableDocket-SOT")
+ElseIf VCreate = 9 Then
+ExcelSaveAsQRY ("UnableDocket-AffDef")
+ElseIf VCreate = 10 Then
+ExcelSaveAsQRY ("UnableDocket-AffDebt")
+ElseIf VCreate = 11 Then
+ExcelSaveAsQRY ("UnableDocket-ACO")
+ElseIf VCreate = 12 Then
+ExcelSaveAsQRY ("UnableDocket-LMA")
+ElseIf VCreate = 13 Then
+ExcelSaveAsQRY ("UnableDocket-AffMail")
+ElseIf VCreate = 14 Then
+ExcelSaveAsQRY ("UnableDocket-MilAff")
+ElseIf VCreate = 15 Then
+ExcelSaveAsQRY ("UnableDocket-Other")
+
+End If
+
+
+End Function
+
+Public Function AOMSentNotRecd()
+'AffidavitsALLQuery-AOMRecd
+Dim VCreate
+VCreate = MsgBox("Create Excel Spreadsheet?", vbYesNo)
+
+If VCreate = vbYes Then
+
+
+ExcelSaveAsQRY ("AffsSentNotRecd")
+End If
+End Function
+
+Public Function AOMRecNotRecordedAllAffs()
+'AffidavitsALLQuery-AOMRecd
+Dim VCreate
+VCreate = MsgBox("Create Excel Spreadsheet?", vbYesNo)
+
+If VCreate = vbYes Then
+
+
+ExcelSaveAsQRY ("AffidavitsALLQuery-AOMRecd")
+End If
+End Function
+Public Function AOMRecNotRecorded()
+
+Dim VCreate
+VCreate = MsgBox("Create Excel Spreadsheet?", vbYesNo)
+
+If VCreate = vbYes Then
+
+
+ExcelSaveAsQRY ("AOMRecNotRecorded")
+End If
+
+End Function
+Public Function SetSaleExcel()
+
+
+ExcelSaveAsQRY ("SetSaleExcel")
+
+End Function
+Public Function DocketsAllAffs()
+
+
+ExcelSaveAsQRY ("DocketNotSentToCourt-AllAff")
+
+End Function
+
+
+Public Function DILBOA()
+  
+    Dim rs As RecordSet
+   
+    Set rs = CurrentDb.OpenRecordset("DILBOAQuery", dbOpenSnapshot)
+    If Not rs.EOF Then
+    
+  
+ExcelSaveAsQRY ("DILBOAQuery")
+End If
+
+
+End Function
+
+Public Function QCNotComplete()
+Dim VSel
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_QCNotComplete.xls"
+
+VSel = InputBox("1. FDL Prepared - ONLY" & vbCr & "2. NOI Ready for Review - ONLY" & vbCr & "3. Both")
+If VSel = 1 Then
+ExcelSaveAsQRY ("FDLPrep-NotSent")
+ElseIf VSel = 2 Then
+ExcelSaveAsQRY ("NOIRevd-NotSent")
+ElseIf VSel = 3 Then
+ExcelSaveAsQRY ("QC2NotComplete")
+End If
+
+
+End Function
+Public Function InterimBillsNeeded()
+ 
+
+CurrentDb.Execute "Delete * from InterimBillCheck;", dbFailOnError
+
+
+DoCmd.OpenQuery ("InterimBillTableCreate")
+DoCmd.OpenQuery ("InterimBill-Served2")
+
+ExcelSaveAsQRY ("InterimBillsNeededQRY")
+
+End Function
+Public Function MDChaseFiles()
+
+ExcelSaveAsQRY ("MDChaseFiles")
+End Function
+
+Public Function BACBKQry()
+
+ExcelSaveAsQRY ("bacbkqry")
+End Function
+
+
+
+Public Function TransferredFilesBILLED()
+
+ExcelSaveAsQRY ("TransferredFiles-BILLED")
+
+End Function
+Public Function HudOccAged()
+
+ExcelSaveAsQRY ("HudOccAged")
+
+
+End Function
+
+Public Function LitOrdQry()
+
+ExcelSaveAsQRY ("LitigationOrdQRY")
+
+
+End Function
+

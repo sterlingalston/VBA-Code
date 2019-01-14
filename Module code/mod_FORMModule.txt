@@ -1,0 +1,135 @@
+Attribute VB_Name = "FORMModule"
+Option Compare Database
+Public Function OpenMobileHome()
+Dim rs As RecordSet
+Dim strsql As String
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+
+strsql = "select * from MobileHOME where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("MobileHOME", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+
+    Dim stDocName As String
+    Dim stLinkCriteria As String
+
+    stDocName = "MobileHomeForm"
+    
+    stLinkCriteria = "[FileNum]=" & GblFilenum
+    
+    DoCmd.OpenForm stDocName, , , stLinkCriteria
+End Function
+Public Function ClientNotifiedQUEUE()
+Dim VSl
+VSl = InputBox("1. Maryland Files" & vbCr & "2. DC Files")
+If VSl = 2 Then
+DoCmd.OpenForm "clientnotifieddc"
+Else
+DoCmd.OpenForm "clientnotified"
+End If
+
+End Function
+Public Function EvicScreenOPEN()
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+VSelState = 1
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+VSelState = 3
+End If
+
+DoCmd.Close acForm, "Foreclosure database screen"
+
+DoCmd.OpenForm "evictionmainscreen", , , "[Filenum] = " & GblFilenum
+
+End Function
+Public Function EvicScreenCLOSE()
+
+GblFilenum = Forms![evictionmainform]!filenum
+
+DoCmd.Close acForm, "evictionmainscreen"
+
+
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & GblFilenum
+
+End Function
+Public Function LitScreenOPEN()
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+'DoCmd.Close acForm, "Foreclosure database screen"
+
+
+DoCmd.OpenForm "litigationsubformnew", , , "[Filenum] = " & GblFilenum
+
+End Function
+
+Public Function LitScreenCLOSE()
+GblFilenum = Forms![litigationsubformnew]!filenum
+
+DoCmd.Close acForm, "litigationsubformnew"
+
+
+'DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & GblFilenum
+
+End Function
+Public Function SLScreenOPEN()
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+'DoCmd.Close acForm, "Foreclosure database screen"
+
+
+DoCmd.OpenForm "SeniorLienSaleMAIN", , , "[Filenum] = " & GblFilenum
+
+End Function
+
+Public Function BKScreenOPEN()
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+'DoCmd.Close acForm, "Foreclosure database screen"
+
+
+DoCmd.OpenForm "BankruptcyMAIN", , , "[Filenum] = " & GblFilenum
+
+End Function
+Public Function TitleIssueScreenOPEN()
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+DoCmd.Close acForm, "Foreclosure database screen"
+
+
+DoCmd.OpenForm "TitleIssueMain", , , "[Filenum] = " & GblFilenum
+
+End Function
+
+Public Function TitleIssueScreenCLOSE()
+GblFilenum = Forms![titleissuemain]!filenum
+
+DoCmd.Close acForm, "TitleIssueMain"
+
+
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & GblFilenum
+
+End Function
+Public Function SeniorLienScreenCLOSE()
+GblFilenum = Forms![SeniorLienSaleMain]!filenum
+
+mySendKeys ("{F9}")
+DoEvents
+
+DoCmd.Close acForm, "SeniorLienSaleMain"
+
+
+'DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & GblFilenum
+
+End Function

@@ -1,0 +1,3873 @@
+Attribute VB_Name = "MoneyDefaults"
+Option Compare Database
+
+Public Function mailnote()
+
+mailnote = MailLtrText() & MAILLtrMoney() & "/TOTAL:" & Format(NumberLetters(), "$###,##0.00")
+
+'MsgBox (MailLtrText() & MAILLtrMoney() & "/TOTAL:" & Format(NumberLetters(), "$###,##0.00"))
+
+End Function
+Public Function CheckBillTotal()
+
+If Forms!BillingMainEdit![balance due] > 0 And _
+bill_amt_uploaded > 0 Then
+If Forms!BillingMainEdit!bill_amt_uploaded <> Forms!BillingMainEdit![balance due] Then
+''logcase Forms![billingmainedit]!CustomerID, "Bill uploaded Amt DOES NOT Equal Total on Exit of Bill (: " & Date & "), Amt NOW: " & Forms!billingmainedit![Balance Due] & ", PREV Amt: " & Forms!billingmainedit!bill_amt_uploaded
+MsgBox "Bill PREVIOUSLY Uploaded to NOEMI for the amount of " & Forms!BillingMainEdit!bill_amt_uploaded & "!  Is the correct bill being UPDATED?", vbCritical
+End If
+End If
+
+End Function
+Public Function MailLtrText()
+
+Dim strsql, WalzFDL, WalzNOS As String
+Dim rs As RecordSet
+Dim VCount, vdebtors As Integer
+Dim walzcalcoomc, walzcalcAvelo, walzcalcMDst, walzcalcamchot, walzcalccity, walzcalcCTY, walzcalcVALN As Currency
+Dim NOILtrs
+
+vdebtors = 0
+
+If (IsNull(Forms![foreclosure database screen]![Mailing Address]) Or Forms![foreclosure database screen]![Mailing Address] = "") And _
+(IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Or Forms![foreclosure database screen]![Mailing AddressB] = "") Then
+VCount = 1
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+VCount = 2
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+VCount = 3
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+If Forms![foreclosure database screen]!LastNameDebtor2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+If Forms![foreclosure database screen]!LastNameDebtor3 <> "" Then
+vdebtors = vdebtors + 1
+End If
+If Forms![foreclosure database screen]!lastnamedebtor4 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+Dim VNum, VHudVA, VMonMD, VMonVA, VMonDC As Double
+
+'If Forms![foreclosure database screen]!PropertyState = "MD" Then
+'NOILtrs = (2 * vdebtors) + 1 & " NOI Letters: Regular (.44) and Certified ($3.12)"
+'Else
+'NOILtrs = ""
+'End If
+
+If Forms![foreclosure database screen]!Client Like "Homeward*" Then
+OOMCLtrs = (VCount * vdebtors) & " Fairdebt Letters for Option One:"
+End If
+If Forms![foreclosure database screen]!Client Like "avelo*" Then
+AveloLtrs = (VCount & vdebtors) & "Avelo Letters: "
+End If
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+FHANOS = "FHA Letter: (2) Letters:"
+FHAFDL = "FHA Letters: (1) Letter:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters/Lost Note Letters ($3.88/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.88 each) and 1 Occupant Letter ($3.88)"
+
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44) and Certified ($3.54)"
+Else
+fdlltrs = "(Resume)"
+End If
+
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+VANOS = "VA Letter: (1) Letters:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters/Lost Note Letters ($3.88/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.88 each) and 1 Occupant Letter ($3.88)"
+
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44) and Certified ($3.54)"
+Else
+fdlltrs = "(Resume)"
+End If
+
+Else
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters/Lost Note Letters ($3.88/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.88 each) and 1 Occupant Letter ($3.88)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44) and Certified ($3.54)"
+Else
+fdlltrs = "(Resume)"
+End If
+End If
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+FHANOS = "FHA Letter: (2) Letters:"
+FHAFDL = "FHA Letters: (1) Letter:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44), Certified ($3.54), County Letter ($3.54) and MD Stat Letter ($3.54):"
+Else
+fdlltrs = "(Resume): County Letter ($3.54) and MD Stat Letter ($3.54):"
+End If
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+VANOS = "VA Letter: (1) Letters:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44), Certified ($3.54), County Letter ($3.54) and MD Stat Letter ($3.54):"
+Else
+fdlltrs = "(Resume): County Letter ($3.54) and MD Stat Letter ($3.54):"
+End If
+Else
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44), Certified ($3.54), County Letter ($3.54) and MD Stat Letter ($3.54)"
+Else
+fdlltrs = "(Resume): County Letter ($3.54) and MD Stat Letter ($3.54):"
+End If
+End If
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+FHANOS = "FHA Letter: (2) Letters:"
+FHAFDL = "FHA Letters: (1) Letter:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44):"
+Else
+fdlltrs = "(Resume)"
+End If
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+VANOS = "VA Letter: (1) Letters:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44):"
+Else
+fdlltrs = "(Resume)"
+End If
+Else
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44):"
+Else
+fdlltrs = "(Resume)"
+End If
+End If
+End If
+
+
+formulalettersfdl = fdlltrs & FHAFDL & FHANOS & VANOS & OOMCLtrs & AveloLtrs & NOILtrs
+formulalettersnos = NOSLtrs & FHANOS
+
+'MsgBox (FormulaLetters)
+
+
+If (WalzCalcFdl = 0 Or IsNull(WalzCalcFdl)) Then
+fdlbillscreen = formulalettersfdl
+Else
+fdlbillscreen = WalzFDLBreakOut
+End If
+
+If (WalzCalcNOS = 0 Or IsNull(WalzCalcNOS)) Then
+'MsgBox ("using NOS manual")
+
+nosbillscreen = formulalettersnos
+Else
+nosbillscreen = WalzNOSBreakOut
+End If
+
+
+MailLtrText = fdlbillscreen & " " & nosbillscreen
+
+
+End Function
+
+Public Function MAILLtrMoney()
+Dim strsql As String
+Dim rs As RecordSet
+Dim VCount, vdebtors As Integer
+vdebtors = 0
+
+If (IsNull(Forms![foreclosure database screen]![Mailing Address]) Or Forms![foreclosure database screen]![Mailing Address] = "") And _
+(IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Or Forms![foreclosure database screen]![Mailing AddressB] = "") Then
+VCount = 1
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+VCount = 2
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+VCount = 3
+End If
+
+'MsgBox (VCount)
+If Forms![foreclosure database screen]!LastNameDebtor1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor3 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor4 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+'MsgBox (vdebtors)
+Dim VNum, VHudVA, VMonMD, VMonVA, VMonDC As Double
+
+If Forms![foreclosure database screen]!Client Like "Homeward*" Or _
+Forms![foreclosure database screen]!Client Like "avelo*" Then
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 3) * 3.88)
+vfdlvirginia = 0.44 + ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 2) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+Else
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 1) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSmaryland = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+Else
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSDC = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 0.44)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 0.44)
+Else
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 0.44)
+End If
+End If
+
+Else
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vnosvirginia = 0.44 + ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 3) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 2) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+Else
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 1) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSmaryland = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+Else
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSDC = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44)
+Else
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44)
+End If
+End If
+End If
+
+Dim VNote As String
+VNote = ""
+
+If WalzCalcFdl = 0 Or IsNull(WalzCalcFdl) Then
+VNote = "FDL not sent via Walz"
+Dim rsR As RecordSet
+Dim strsqlR As String
+strsqlR = "select * from resumes where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsR = CurrentDb.OpenRecordset(strsqlR)
+If rsR.EOF Then
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+FDLMonies = vfdlvirginia
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+FDLMonies = vfdlDC
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+FDLMonies = vfdlmaryland
+End If
+Else
+FDLMonies = 0
+End If
+
+Else
+
+FDLMonies = WalzCalcFdl()
+
+End If
+
+If WalzCalcNOS = 0 Or IsNull(WalzCalcNOS) Then
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+NOSMonies = vnosvirginia
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+NOSMonies = vNOSDC
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+NOSMonies = vNOSmaryland
+End If
+Else
+NOSMonies = WalzCalcNOS()
+End If
+
+MAILLtrMoney = " : " & FDLMonies & " (FDL) + " & NOSMonies & " (NOS)"
+End Function
+Public Function AdCalcVA()
+
+Dim VCalc
+'MsgBox (Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgAmount & " * .10 = " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgAmount * 0.1)
+
+VCalc = Round((Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgAmount * 0.1) / 1000, 0) * 1000
+If VCalc > 20000 Then
+AdCalcVA = Format(20000, "$###,##0.00")
+Else
+AdCalcVA = Format(VCalc, "$###,##0.00")
+End If
+
+'MsgBox AdCalcVA
+
+End Function
+
+Public Function countymonies()
+
+
+countymonies = Forms![foreclosure database screen]![PostsaleSubForm].[Form]![countytransfertax]
+
+
+End Function
+
+
+
+Public Function clerkcourtmonies()
+clerkcourtmonies = [Forms]![foreclosure database screen]![PostsaleSubForm].Form!recording_charge _
++ [Forms]![foreclosure database screen]![PostsaleSubForm].Form!surcharge
+
+
+
+End Function
+Public Function UpdateBidAcct()
+
+Dim strsql
+Dim rs As RecordSet
+Dim rsAcct As RecordSet
+
+strsql = "select * from virginiaaccounting where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+
+If rs.EOF Then
+rs.Close
+Set rs = CurrentDb.OpenRecordset("virginiaaccounting", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!Title_Co = "Landsafe Title"
+.Update
+End With
+
+rs.Close
+DoCmd.RunMacro ("VAUpdateAssigned")
+
+strsql = "select * from virginiaaccounting where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+With rs
+.Edit
+If Forms!bidmainedit![Attorney Fee] > 0 Then
+!acc_trustee = Forms!bidmainedit![Attorney Fee]
+End If
+If Forms!bidmainedit![Titlesearch] > 0 Then
+!acc_title = Forms!bidmainedit![Titlesearch]
+Else
+!acc_title = 275#
+End If
+If Forms!bidmainedit![recording] > 0 Then
+!va_recordation = Forms!bidmainedit![recording]
+Else
+!va_recordation = 21#
+End If
+If Forms!bidmainedit![adv] > 0 Then
+!d_adv = Forms!bidmainedit![adv]
+Else
+!d_adv = CalcAdCosts()
+End If
+If Forms!bidmainedit![audfee] > 0 Then
+!d_audfee = Forms!bidmainedit![audfee]
+End If
+If Forms!bidmainedit!VA_Grantors > 0 Then
+!VA_Grantors = Forms!bidmainedit!VA_Grantors
+Else
+!VA_Grantors = VAGrantor()
+End If
+
+.Update
+.Close
+End With
+
+End If
+End Function
+Public Function TOTALCHECK()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("TBLUnpaidBills", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+TOTALCHECK = rs!Amt + TOTALCHECK
+rs.MoveNext
+Loop
+End If
+
+End Function
+Public Function LNA()
+
+If Forms![foreclosure database screen]![PropertyState] = "VA" Then
+'If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!LoanDocsReceived) Then
+'lna = 150#
+'Else
+LNA = 0#
+'End If
+
+Else
+
+If Forms![foreclosure database screen]![ForeclosureSubForm].Form!LNA = "Yes" Then
+Dim strsqlClient As String
+Dim rsClient As RecordSet
+
+strsqlClient = "Select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+    'MsgBox (rsClient!lna)
+    
+If rsClient!LNA > 0 Then
+
+LNA = rsClient!LNA
+Else
+LNA = 0#
+
+End If
+
+rsClient.Close
+
+'If Client() Like "Wilshire*" Or Client() Like "Option*" Or Client() Like "OOM*" Then
+'lna = 0#
+'ElseIf Forms![foreclosure database screen]!fidelity = -1 Then
+'lna = 35#
+'ElseIf Forms![foreclosure database screen]![fidelity] = 0 Then
+'lna = 50#
+'End If
+Else
+LNA = 0#
+
+End If
+
+End If
+
+End Function
+Public Function SLMFee()
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+SLMFee = 250
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+SLMFee = 250
+ElseIf Forms![foreclosure database screen]!PropertyState = "md" Then
+SLMFee = 350
+End If
+
+End Function
+Public Function SLMBid()
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+SLMBid = 350
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+SLMBid = 350
+ElseIf Forms![foreclosure database screen]!PropertyState = "md" Then
+SLMBid = 250
+End If
+End Function
+Public Function SLMMotion()
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+SLMMotion = 0
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+SLMMotion = 0
+ElseIf Forms![foreclosure database screen]!PropertyState = "md" Then
+SLMMotion = 500
+End If
+End Function
+Public Function SLMFiling()
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+SLMFiling = 0
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+SLMFiling = 0
+ElseIf Forms![foreclosure database screen]!PropertyState = "md" Then
+SLMFiling = 10
+End If
+End Function
+
+Public Function TAvaluedeed()
+Dim VCalc
+Dim VValue
+TVal = 0
+
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value) Then
+TVal = InputBox("Assessment Value:")
+'Forms![foreclosure database screen]!foreclosuresubform.form!ta_value = TAvaluedeed
+Else
+TVal = Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value
+End If
+TAvaluedeed = TVal
+
+End Function
+Public Function statevadeed()
+
+
+If Forms![foreclosure database screen]!Propertycounty <> "City of Newport News" Then
+If TVal > 0 Then
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value > _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice Then
+VCalc = TAvaluedeed()
+Else
+VCalc = Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice
+End If
+statevadeed = Format(VCalc * 0.25 / 100, "$###,##0.00")
+Else
+statevadeed = 0
+End If
+
+Else
+VCalc = Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice
+statevadeed = Format(VCalc * 0.25 / 100, "$###,##0.00")
+
+End If
+
+
+End Function
+Public Function localvadeed()
+If TVal > 0 Or Not IsNull(TVal) Then
+localvadeed = Format(statevadeed() / 3, "$###,##0.00")
+
+'MsgBox (localvadeed)
+
+Else
+localvadeed = 0
+End If
+
+End Function
+Public Function GrantorsTax()
+Dim VCalc
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!Gtax > 0 Then
+GrantorsTax = Forms![foreclosure database screen]!PostsaleSubForm.Form!Gtax
+Exit Function
+End If
+
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value) And _
+Forms![foreclosure database screen]!Propertycounty <> "City of Newport News" And _
+Forms![foreclosure database screen]!Propertycounty <> "City of Virginia Beach" And _
+Forms![foreclosure database screen]!Propertycounty <> "Rockingham" Then
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value > _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice Then
+VCalc = Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value
+Else
+VCalc = Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice
+End If
+
+Else
+VCalc = Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice
+End If
+
+
+If Forms![foreclosure database screen]!PropertyCity = "Cit of Alexandria" Or _
+Forms![foreclosure database screen]!PropertyCity = "Fairfax" Or _
+Forms![foreclosure database screen]!PropertyCity = "Falls Church" Or _
+Forms![foreclosure database screen]!PropertyCity = "Manassas" Or _
+Forms![foreclosure database screen]!PropertyCity = "Manassas Park" Or _
+Forms![foreclosure database screen]!Propertycounty = "Arlington" Or _
+Forms![foreclosure database screen]!Propertycounty = "Fairfax" Or _
+Forms![foreclosure database screen]!Propertycounty = "Loudoun" Or _
+Forms![foreclosure database screen]!Propertycounty = "Prince William" Then
+'MsgBox ("This One")
+'grantorstax = Format(Abs(Fix(VCalc / 500 * 0.5 * 2.5)), "$#,###.00")
+'NewCode
+GrantorsTax = Format(Abs(Fix(VCalc / 500 * 0.5)), "$#,###.00")
+
+Else
+
+If Abs(((VCalc / 500) * 0.5) - Fix((VCalc / 500) * 0.5)) <= 0.5 And Abs(((VCalc / 500) * 0.5) - Fix((VCalc / 500) * 0.5)) <> 0 Then
+GrantorsTax = Format(Abs(Fix(VCalc / 500 * 0.5)) + 0.5, "$#,###.00")
+ElseIf Abs(((VCalc / 500) * 0.5) - Fix((VCalc / 500) * 0.5)) > 0.5 Then
+GrantorsTax = Format(Abs(Fix(VCalc / 500 * 0.5)) + 1, "$#,###.00")
+ElseIf Abs(((VCalc / 500) * 0.5) - Fix((VCalc / 500) * 0.5)) = 0 Then
+GrantorsTax = Format(VCalc / 500 * 0.5, "$#,###.00")
+End If
+
+End If
+
+'MsgBox (GrantorsTax)
+
+
+End Function
+
+Public Function GrantorsTaxBID()
+Dim VCalc
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!Gtax > 0 Then
+GrantorsTaxBID = Forms![foreclosure database screen]!PostsaleSubForm.Form!Gtax
+Exit Function
+End If
+
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value) And _
+Forms![foreclosure database screen]!Propertycounty <> "City of Newport News" And _
+Forms![foreclosure database screen]!Propertycounty <> "City of Virginia Beach" And _
+Forms![foreclosure database screen]!Propertycounty <> "Rockingham" Then
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value > _
+Forms![bidmainedit]!SubTotal Then
+VCalc = Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value
+Else
+VCalc = Forms![bidmainedit]!SubTotal
+End If
+
+Else
+VCalc = Forms![bidmainedit]!SubTotal
+End If
+
+
+If Forms![foreclosure database screen]!PropertyCity = "Alexandria" Or _
+Forms![foreclosure database screen]!PropertyCity = "Fairfax" Or _
+Forms![foreclosure database screen]!PropertyCity = "Falls Church" Or _
+Forms![foreclosure database screen]!PropertyCity = "Manassas" Or _
+Forms![foreclosure database screen]!PropertyCity = "Manassas Park" Or _
+Forms![foreclosure database screen]!Propertycounty = "Arlington" Or _
+Forms![foreclosure database screen]!Propertycounty = "Fairfax" Or _
+Forms![foreclosure database screen]!Propertycounty = "Loudoun" Or _
+Forms![foreclosure database screen]!Propertycounty = "Prince William" Then
+'MsgBox ("This One")
+'GrantorsTaxBID = Format(Abs(Fix(VCalc / 500 * 0.5 * 2.5)), "$#,###.00")
+'NewCode
+GrantorsTaxBID = Format(Abs(Fix(VCalc / 500 * 0.5)), "$#,###.00")
+
+Else
+
+If Abs(((VCalc / 500) * 0.5) - Fix((VCalc / 500) * 0.5)) <= 0.5 And Abs(((VCalc / 500) * 0.5) - Fix((VCalc / 500) * 0.5)) <> 0 Then
+GrantorsTaxBID = Format(Abs(Fix(VCalc / 500 * 0.5)) + 0.5, "$#,###.00")
+ElseIf Abs(((VCalc / 500) * 0.5) - Fix((VCalc / 500) * 0.5)) > 0.5 Then
+GrantorsTaxBID = Format(Abs(Fix(VCalc / 500 * 0.5)) + 1, "$#,###.00")
+ElseIf Abs(((VCalc / 500) * 0.5) - Fix((VCalc / 500) * 0.5)) = 0 Then
+GrantorsTaxBID = Format(VCalc / 500 * 0.5, "$#,###.00")
+End If
+
+End If
+
+'MsgBox (GrantorsTaxBID)
+
+
+End Function
+
+Public Function congestionTaxBID()
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!Crelief > 0 Then
+congestionTaxBID = Forms![foreclosure database screen]!PostsaleSubForm.Form!Crelief
+Exit Function
+End If
+
+If Forms![foreclosure database screen]!PropertyCity = "Alexandria" Or _
+Forms![foreclosure database screen]!PropertyCity = "Fairfax" Or _
+Forms![foreclosure database screen]!PropertyCity = "Falls Church" Or _
+Forms![foreclosure database screen]!PropertyCity Like "Manassas*" Or _
+Forms![foreclosure database screen]!PropertyCity = "Manassas Park" Or _
+Forms![foreclosure database screen]!Propertycounty = "Arlington" Or _
+Forms![foreclosure database screen]!Propertycounty = "Fairfax" Or _
+Forms![foreclosure database screen]!Propertycounty = "Loudoun" Or _
+Forms![foreclosure database screen]!Propertycounty = "Prince William" Then
+Dim VCalc
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value > _
+Forms![bidmainedit]!SubTotal Then
+VCalc = Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value
+Else
+VCalc = Forms![bidmainedit]!SubTotal
+End If
+
+congestionTaxBID = Format(VCalc * 0.0015, "$#,###.00")
+
+End If
+'MsgBox (VCalc)
+
+'MsgBox (CongestionTax)
+
+End Function
+
+
+Public Function congestionTax()
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!Crelief > 0 Then
+congestionTax = Forms![foreclosure database screen]!PostsaleSubForm.Form!Crelief
+Exit Function
+End If
+
+If Forms![foreclosure database screen]!PropertyCity = "Alexandria" Or _
+Forms![foreclosure database screen]!PropertyCity = "Fairfax" Or _
+Forms![foreclosure database screen]!PropertyCity = "Falls Church" Or _
+Forms![foreclosure database screen]!PropertyCity Like "Manassas*" Or _
+Forms![foreclosure database screen]!PropertyCity = "Manassas Park" Or _
+Forms![foreclosure database screen]!Propertycounty = "Arlington" Or _
+Forms![foreclosure database screen]!Propertycounty = "Fairfax" Or _
+Forms![foreclosure database screen]!Propertycounty = "Loudoun" Or _
+Forms![foreclosure database screen]!Propertycounty = "Prince William" Then
+Dim VCalc
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value > _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice Then
+VCalc = Forms![foreclosure database screen]!ForeclosureSubForm.Form!ta_value
+Else
+VCalc = Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice
+End If
+
+congestionTax = Format(VCalc * 0.0015, "$#,###.00")
+
+End If
+'MsgBox (VCalc)
+
+'MsgBox (CongestionTax)
+
+End Function
+Public Function AmtCureDefault()
+Dim strsql As String
+Dim rs As RecordSet
+strsql = "select * from affs where counter = " & Forms!bankruptcymain!BankruptcySubForm.Form!counter & " and aff_filed = " & [Forms]![bankruptcymain]![BankruptcySubForm].[Form]![noticedefault].[Form]![PrtNotice] & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+AmtCureDefault = rs!payment_amt + AmtCureDefault
+rs.MoveNext
+Loop
+
+
+End Function
+Public Function BidSheetScreen()
+Dim linkcriteria As String
+Dim Figures As String
+Dim fee0 As String
+Dim estate As String
+Dim rs As RecordSet
+Dim db As Database
+Dim vClient As String
+Dim strsql As String
+Dim VNI As String
+Dim VBill, fcYN As String
+Dim rsbill, rsbid As RecordSet
+Dim strsqlBill, strsqlBID As String
+
+strsqlBID = "select * from bidtable where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsbid = CurrentDb.OpenRecordset(strsqlBID, dbOpenSnapshot)
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Or Forms![foreclosure database screen]!PropertyState = "VA" Then
+DocName = "BidMainEdit"
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+DocName = "BidMainEditDC"
+'ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+'DocName = "BidMainEditVA"
+End If
+
+If rsbid.EOF Then
+
+Set db = CurrentDb()
+vClient = [Forms]![foreclosure database screen]![Client]
+strsql = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """"
+Set rs = db.OpenRecordset(strsql, dbOpenSnapshot)
+
+sqlfees = ("Select * from dba_feescosts where filenum = " & Forms![foreclosure database screen]![filenum])
+Set rsfees = CurrentDb().OpenRecordset(sqlfees, dbOpenSnapshot)
+
+If Not rsfees.EOF Then
+Dim fc As String
+fc = MsgBox("Would you like to Update Bid with Fees/Costs Input?", vbYesNo)
+Else
+fcYN = "NO"
+fc = vbNo
+End If
+
+  Dim js As RecordSet
+    Dim sqljd As String
+     Dim stateT As String
+    Dim countyT As String
+    stateT = Forms![foreclosure database screen]![PropertyState]
+    countyT = Forms![foreclosure database screen]![Propertycounty]
+    sqljd = "Select * from jurisdiction where state = " & """" & stateT & """" & " and county = " & """" & countyT & """"
+    Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+
+If fc = vbNo Or _
+fcYN = "NO" Then
+
+Set rsbill = CurrentDb().OpenRecordset("bidtable", dbOpenDynaset, dbSeeChanges)
+
+
+Dim dbclient, VarDef As String
+Dim rsCLT As RecordSet
+dbclient = "select * from clients where organizationname = " & """" & [Forms]![foreclosure database screen]![Client] & """"
+Set rsCLT = CurrentDb.OpenRecordset(dbclient, dbOpenSnapshot)
+
+VarDef = MsgBox("Have defaults dump in?", vbYesNo)
+If VarDef = vbYes Then
+
+With rsbill
+.AddNew
+!filenum = Forms![foreclosure database screen]![filenum]
+!bid_date = Date
+
+If js!nisi_fee = 0 Or IsNull(js!nisi_fee) Then
+!advnisi = 0
+Else
+!advnisi = js!nisi_fee
+End If
+
+!audfee = js!auditor_fee
+
+
+If Forms![foreclosure database screen]!PropertyState <> "DC" And Forms![foreclosure database screen]!ForeclosureSubForm.Form!LNA = "Yes" Then
+If Forms![foreclosure database screen]!Fidelity = 0 Then
+!prep_lna = 50#
+!prepmotion_lna = 150#
+Else
+!prep_lna = 50#
+End If
+End If
+
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" Then
+![Attorney Fee] = rsCLT!fc_md
+![Titlesearch] = rsCLT!ts_md
+ElseIf [Forms]![foreclosure database screen]![PropertyState] = "VA" Then
+![Attorney Fee] = rsCLT!fc_va
+![Titlesearch] = rsCLT!ts_va
+End If
+
+If (Client() = "BAC Home Loans, Inc." Or Client() = "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP") And _
+(Forms![foreclosure database screen]![TypeOfLoan] Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) And _
+[Forms]![foreclosure database screen]![ForeclosureSubForm].Form!SaleDate <> "" Then
+Dim VarCW As String
+VarCW = MsgBox("Did this property go to sale? (if it did not then the fee will be $600.00 because this is a FHA Loan)", vbYesNo)
+If VarCW = vbNo Then
+![Attorney Fee] = 600#
+End If
+End If
+
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+If Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+![Attorney Fee] = 2300#
+Else
+![Attorney Fee] = js!Complaint
+End If
+
+!hearing_add = 0#
+!titleupdate = js!titleupdate
+!procserver = 0#
+!complaint_filing = js!compfiling
+!motion_filing = js!motionfiling
+!motion_add_filing = js!add_Motions
+!nonmotion_filing = js!add_nonMotion
+!aom_recording = js!AOMRecording
+!transfertax = 0#
+!bondprem = js!bondprem
+!prep_lna = js!lnaprep
+!recording = js!Recording_Fee
+![Titlesearch] = js!Titlesearch
+!auctfee = js!auct_fee
+!adv = js!adv_costs
+Else
+
+!bondprem = bondprem()
+!hearing_add = 0#
+!titleupdate = 0#
+!procserver = 0#
+!complaint_filing = 0#
+!motion_filing = 0#
+!motion_add_filing = 0#
+!nonmotion_filing = 0#
+!aom_recording = 0#
+!transfertax = 0#
+!prep_lna = 0#
+!recording = RecordingFee()
+!auctfee = 0#
+End If
+
+!motion_accept = 0#
+!lender_bid = 0#
+!prepmotion_lna = 0#
+!realestatetaxes = 0#
+!otherm2 = 0#
+!otherm1 = 0#
+!prepabstract = 0#
+!re_recording = 0#
+!trustees_fee = 0#
+!filing = FilingFee()
+!servbymail = 0#
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+If IsNull(Forms![foreclosure database screen]![ForeclosureSubForm].Form![va_advcosts]) Or _
+Forms![foreclosure database screen]![ForeclosureSubForm].Form![va_advcosts] = 0 Then
+!adv = 0#
+Else
+!adv = Forms![foreclosure database screen]![ForeclosureSubForm].Form![va_advcosts]
+End If
+
+ElseIf Forms![foreclosure database screen]![PropertyState] = "MD" Then
+ If IsNull(Forms![foreclosure database screen]![ForeclosureSubForm].Form![ad_costs]) Or _
+Forms![foreclosure database screen]![ForeclosureSubForm].Form![ad_costs] = 0 Then
+     If Forms![foreclosure database screen]![Fidelity] = 0 Then
+    !adv = js!adv_costs
+    Else
+    !adv = js!adv_costs + 150#
+    End If
+   Else
+        !adv = Forms![foreclosure database screen]![ForeclosureSubForm].Form![ad_costs]
+End If
+End If
+    
+!auct_fee3 = 0#
+!motion_accept3 = 0#
+!lender_bid3 = 0#
+!prep_lna3 = 0#
+!prepmotion_lna3 = 0#
+
+If js!nisi_fee = 0 Or IsNull(js!nisi_fee) Then
+!advnisi3 = 0
+Else
+!advnisi3 = js!nisi_fee
+End If
+!realestatetaxes3 = 0#
+!otherm2_3 = 0#
+!prepabstract3 = 0#
+!audfee3 = js!auditor_fee
+!re_recording3 = 0#
+!trustees_fee3 = 0#
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!LNA = "Yes" Then
+If Forms![foreclosure database screen]!Fidelity = 0 Then
+!prep_lna3 = 50#
+!prepmotion_lna3 = 150#
+Else
+!prep_lna3 = 50#
+End If
+End If
+!bondprem3 = bondprem()
+!titlesearch3 = Titlesearch()
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" Then
+![attorneyfee3] = rsCLT!fc_md
+![titlesearch3] = rsCLT!ts_md
+ElseIf [Forms]![foreclosure database screen]![PropertyState] = "DC" Then
+If (Client() = "Bank of America" Or Client() = "Homecomings" Or Client() = "Homecomings Financial, LLC" _
+Or Client() = "HSBC Mortgage Services" Or Client() = "JPMorgan Chase Bank, National Association" Or _
+Client() = "Washington Mutual Bank" Or Client() Like "Wilshire*" Or _
+Client() = "Lender Business Process Services") _
+And Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+![attorneyfee3] = 750#
+Else
+![attorneyfee3] = rsCLT!fc_dc
+End If
+![titlesearch3] = rsCLT!ts_dc
+ElseIf [Forms]![foreclosure database screen]![PropertyState] = "VA" Then
+![attorneyfee3] = rsCLT!fc_va
+![titlesearch3] = rsCLT!ts_va
+End If
+If (Client() = "BAC Home Loans, Inc." Or Client() = "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP") And _
+(Forms![foreclosure database screen]![TypeOfLoan] Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) And _
+[Forms]![foreclosure database screen]![ForeclosureSubForm].Form!SaleDate <> "" Then
+VarCW = MsgBox("Did this property go to sale? (if it did not then the fee will be $600.00 because this is a FHA Loan)", vbYesNo)
+If VarCW = vbNo Then
+![attorneyfee3] = 600#
+End If
+End If
+!filing3 = FilingFee()
+!recording3 = RecordingFee()
+ !servbymail3 = numberlettersFCBid()
+If IsNull(Forms![foreclosure database screen]![ForeclosureSubForm].Form![va_advcosts]) Or _
+Forms![foreclosure database screen]![ForeclosureSubForm].Form![va_advcosts] = 0 Then
+!adv3 = 0#
+Else
+!adv3 = Forms![foreclosure database screen]![ForeclosureSubForm].Form![va_advcosts]
+End If
+If Forms![foreclosure database screen]![PropertyState] = "DC" Then
+    !adv3 = 1150#
+     End If
+       If Forms![foreclosure database screen]![PropertyState] = "MD" Then
+     If Forms![foreclosure database screen]![Fidelity] = 0 Then
+    !adv3 = js!adv_costs
+    Else
+    !adv3 = js!adv_costs + 150#
+    End If
+    End If
+    
+ .Update
+ End With
+ 
+ Else
+    
+With rsbill
+.AddNew
+!filenum = Forms![foreclosure database screen]![filenum]
+!bid_date = Date
+!motion_accept = 0#
+!lender_bid = 0#
+!advnisi = 0#
+!realestatetaxes = 0#
+!otherm2 = 0#
+!prepabstract = 0#
+!audfee = 0#
+!re_recording = 0#
+!trustees_fee = 0#
+!prep_lna = 0#
+!prepmotion_lna = 0#
+!Titlesearch = 0#
+![Attorney Fee] = 0#
+!recording = 0#
+!servbymail = 0#
+!adv = 0#
+!auctfee = 0#
+!VA_Grantors = 0#
+!otherm2 = 0#
+!filing = 0#
+!filing3 = 0#
+!bondprem = 0#
+!bondprem3 = 0#
+!otherm1 = 0#
+!otherm1_3 = 0#
+!otherm2_3 = 0#
+!motion_accept3 = 0#
+!lender_bid3 = 0#
+!advnisi3 = 0#
+!realestatetaxes3 = 0#
+!otherm2_3 = 0#
+!prepabstract3 = 0#
+!audfee3 = 0#
+!re_recording3 = 0#
+!trustees_fee3 = 0#
+!prep_lna3 = 0#
+!prepmotion_lna3 = 0#
+!titlesearch3 = 0#
+![attorneyfee3] = 0#
+!recording3 = 0#
+!servbymail3 = 0#
+!otherm2_3 = 0#
+!adv3 = 0#
+!auct_fee3 = 0#
+!va_grantors3 = 0#
+.Update
+End With
+
+
+End If
+
+
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Or Forms![foreclosure database screen]!PropertyState = "VA" Then
+DocName = "BidMainEdit"
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+DocName = "BidMainEditDC"
+'ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+'DocName = "BidMainEditVA"
+End If
+
+
+End If
+
+'Part 2 UPDATE FROM Fees/Costs
+
+If fc = vbYes Then
+Set rsbill = CurrentDb().OpenRecordset("bidtable", dbOpenDynaset, dbSeeChanges)
+
+With rsbill
+.AddNew
+!filenum = Forms![foreclosure database screen]![filenum]
+!bid_date = Date
+![Attorney Fee] = rsfees![Attorney Fee]
+!prepabstract = rsfees!l_prepabstract
+!Titlesearch = rsfees!d_titlesearch
+!filing = rsfees!d_filing
+!recording = rsfees!d_recording
+!auctfee = rsfees!d_auctfee
+
+If Forms![foreclosure database screen]!PropertyState <> "VA" Then
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs) Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs > 0 Then
+!adv = Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs
+ElseIf rsfees!d_adv > 0 Then
+!adv = rsfees!d_adv
+Else
+!adv = 0#
+End If
+
+
+Else
+
+If (IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs) Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs = 0) Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!va_advcosts > 0 Then
+!adv = Forms![foreclosure database screen]!ForeclosureSubForm.Form!va_advcosts
+ElseIf rsfees!d_adv > 0 Then
+!adv = rsfees!d_adv
+Else
+!adv = 0#
+End If
+
+End If
+
+!prep_lna = 0#
+!prepmotion_lna = 0#
+!servbymail = 0#
+!othert1 = rsfees!othert1
+!othert2 = rsfees!othert2
+!otherm1 = rsfees!otherm1
+!otherm2 = rsfees!otherm2
+!trustees_fee = 0#
+!VA_Grantors = 0#
+!lender_bid = 0#
+'If js!nisi_fee = 0 Or IsNull(js!nisi_fee) Then
+'!advnisi = 0
+'Else
+!advnisi = js!nisi_fee
+'End If
+!motion_accept = 0#
+!bondprem = 0#
+!realestatetaxes = 0#
+!audfee = js!auditor_fee
+!re_recording = 0#
+
+.Update
+End With
+End If
+
+
+If Forms![foreclosure database screen]!PropertyState = "VA" And (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+Forms![foreclosure database screen]!fha = 1 Or _
+Forms![foreclosure database screen]!fha = -1) Then
+MsgBox ("MINUS Post-Sale Interest!")
+End If
+
+'linkcriteria = "FIleNum = " & gblfilenum
+DoCmd.OpenForm DocName, , , linkcriteria
+
+Else
+If Forms![foreclosure database screen]!PropertyState = "VA" And (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+Forms![foreclosure database screen]!fha = 1 Or _
+Forms![foreclosure database screen]!fha = -1) Then
+MsgBox ("MINUS Post-Sale Interest!")
+End If
+
+DoCmd.OpenForm DocName, , , linkcriteria
+
+End If
+End Function
+Public Function CalcAdCosts() As Double
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs) Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs = 0 Then
+
+ stateT = Forms![foreclosure database screen]![PropertyState]
+ countyT = Forms![foreclosure database screen]![Propertycounty]
+ 
+ sqljd = "Select * from jurisdiction where state = " & """" & stateT & """" & " and county = " & """" & countyT & """"
+ Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+
+If Forms![foreclosure database screen]!PropertyState <> "VA" Then
+Else
+If Forms![foreclosure database screen]![Fidelity] = 0 Then
+Calccosts = js!adv_costs
+
+Else
+
+Calccosts = js!adv_costs + 150#
+End If
+
+js.Close
+End If
+
+ Else
+ Calccosts = Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs
+
+End If
+
+
+
+
+
+
+ 'MsgBox (calccosts)
+ 
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!sale_cancelled) Then
+vcalcdate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!sale_cancelled
+Else
+vcalcdate = Date
+End If
+
+vaddate1 = Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] - 3
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+vadcosts = Calccosts / 3
+
+vaddate2 = (Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] + 7) - 3
+vaddate3 = (Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] + 14) - 3
+
+If vcalcdate >= vaddate3 Then
+CalcAdCosts = vadcosts * 3
+End If
+
+If vcalcdate < vaddate3 And vcalcdate >= vaddate2 Then
+CalcAdCosts = vadcosts * 2
+End If
+
+If vcalcdate < vaddate2 And vcalcdate >= vaddate1 Then
+CalcAdCosts = vadcosts
+End If
+
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+vadcosts = Calccosts / 5
+vaddate2 = (Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] + 2) - 3
+vaddate3 = (Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] + 4) - 3
+vaddate4 = (Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] + 6) - 3
+vaddate5 = (Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] + 8) - 3
+
+If vcalcdate >= vaddate5 Then
+CalcAdCosts = vadcosts * 5
+End If
+
+If vcalcdate < vaddate5 And vcalcdate >= vaddate4 Then
+CalcAdCosts = vadcosts * 4
+End If
+
+If vcalcdate < vaddate4 And vcalcdate >= vaddate3 Then
+CalcAdCosts = vadcosts * 3
+End If
+
+If vcalcdate < vaddate3 And vcalcdate >= vaddate2 Then
+CalcAdCosts = vadcosts * 2
+End If
+
+If vcalcdate < vaddate2 And vcalcdate >= vaddate1 Then
+CalcAdCosts = vadcosts
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+If IsNull(Forms![foreclosure database screen]![ForeclosureSubForm].Form![va_advcosts]) Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!va_advcosts = 0 Then
+MsgBox ("No Ad Costs listed for Virginia")
+Calccosts = 1250
+Else
+Calccosts = Forms![foreclosure database screen]![ForeclosureSubForm].Form![va_advcosts]
+End If
+
+Dim adcount As Integer
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad]) Then
+adcount = 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!pub2) Then
+adcount = 2
+vaddate2 = (Forms![foreclosure database screen]!ForeclosureSubForm.Form![pub2]) - 3
+End If
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!pub3) Then
+adcount = 3
+vaddate3 = (Forms![foreclosure database screen]!ForeclosureSubForm.Form![pub3]) - 3
+End If
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!pub4) Then
+adcount = 4
+vaddate4 = (Forms![foreclosure database screen]!ForeclosureSubForm.Form![pub4]) - 3
+End If
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!pub5) Then
+adcount = 5
+vaddate5 = (Forms![foreclosure database screen]!ForeclosureSubForm.Form![pub5]) - 3
+End If
+If adcount = 0 Then
+vadcosts = 0
+Else
+vadcosts = Calccosts / adcount
+End If
+
+
+If IsNull(vadcosts) Then
+CalcAdCosts = 1250#
+Else
+
+If adcount = 5 Then
+If vcalcdate >= vaddate5 Then
+CalcAdCosts = vadcosts * 5
+End If
+End If
+
+
+If adcount >= 4 Then
+
+If adcount > 4 Then
+If vcalcdate < vaddate5 And vcalcdate >= vaddate4 Then
+CalcAdCosts = vadcosts * 4
+End If
+End If
+
+If adcount = 4 Then
+If vcalcdate >= vaddate4 Then
+CalcAdCosts = vadcosts * 4
+End If
+End If
+
+End If
+
+
+
+If adcount >= 3 Then
+
+If adcount > 3 Then
+If vcalcdate < vaddate4 And vcalcdate >= vaddate3 Then
+CalcAdCosts = vadcosts * 3
+End If
+End If
+
+If adcount = 3 Then
+If vcalcdate >= vaddate3 Then
+CalcAdCosts = vadcosts * 3
+End If
+End If
+
+End If
+
+
+If adcount >= 2 Then
+
+If adcount > 2 Then
+If vcalcdate < vaddate3 And vcalcdate >= vaddate2 Then
+CalcAdCosts = vadcosts * 2
+End If
+End If
+
+If adcount = 2 Then
+If vcalcdate >= vaddate2 Then
+CalcAdCosts = vadcosts * 2
+End If
+End If
+
+End If
+
+
+If adcount >= 1 Then
+
+If adcount > 1 Then
+If vcalcdate < vaddate2 And vcalcdate >= vaddate1 Then
+CalcAdCosts = vadcosts
+End If
+End If
+
+If adcount = 1 Then
+If vcalcdate >= vaddate1 Then
+CalcAdCosts = vadcosts
+End If
+End If
+
+End If
+
+End If
+
+
+End If
+
+'MsgBox ("Calc Date: " & vcalcdate & vbcr & "Calc Costs: " & calccosts & " After division: " & vadcosts & vbcr & "Ad Date1: " & vaddate1 & vbcr & "Ad Date2: " & vaddate2 & vbcr & "Ad Date3: " & vaddate3 & vbcr & "Ad Date4: " & vaddate4 & vbcr & "Ad Date5: " & vaddate5 & vbcr & "Calculated Costs: " & CalcAdCosts & vbcr & "Ad Count for VA: " & adcount)
+End If
+
+
+
+End Function
+Public Function DemLtrFee()
+
+   
+If Not IsNull(Forms![FeesCosts]!breech_sent) Then
+Dim dbclient As String
+Dim rsCLT As RecordSet
+
+dbclient = "select * from clients where organizationname = " & """" & [Forms]![FeesCosts]![Client] & """"
+Set rsCLT = CurrentDb.OpenRecordset(dbclient, dbOpenSnapshot)
+
+If Forms![FeesCosts]!PropertyState = "MD" Then
+DemLtrFee = rsCLT!demandltr_md
+ElseIf Forms![FeesCosts]!PropertyState = "DC" Then
+DemLtrFee = rsCLT!demandltr_dc
+ElseIf Forms![FeesCosts]!PropertyState = "VA" Then
+DemLtrFee = rsCLT!demandltr_va
+rsCLT.Close
+End If
+
+Else
+DemLtrFee = 0#
+End If
+
+End Function
+Public Function PrepTitle()
+
+If Not IsNull(Forms![FeesCosts]![app_recd]) Or _
+Not IsNull(Forms![FeesCosts]![TitleClaimSent]) Then
+
+Dim dbclient As String
+Dim rsCLT As RecordSet
+
+dbclient = "select * from clients where organizationname = " & """" & [Forms]![FeesCosts]![Client] & """"
+Set rsCLT = CurrentDb.OpenRecordset(dbclient, dbOpenSnapshot)
+
+
+If Forms![FeesCosts]!PropertyState = "MD" Then
+PrepTitle = rsCLT!tc_md
+ElseIf Forms![FeesCosts]!PropertyState = "DC" Then
+PrepTitle = rsCLT!tc_dc
+ElseIf Forms![FeesCosts]!PropertyState = "VA" Then
+PrepTitle = rsCLT!tc_va
+rsCLT.Close
+End If
+   
+Else
+
+PrepTitle = 0#
+
+End If
+'MsgBox (PrepTitle)
+
+   
+End Function
+Public Function TitleIns()
+
+Dim PPRound
+'PPRound = RoundUP(PP / 1000) * 1000
+'MsgBox (PPRound)Public Function PP()
+Dim VDif, vBal1, VBal2
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![upb]) Then
+PPRound = 0
+Else
+PPRound = RoundUP(Forms![foreclosure database screen]!ForeclosureSubForm.Form![upb] / 1000) * 1000
+
+End If
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+If PPRound <= 34400 Then
+TitleIns = 150
+Else
+
+If PPRound > 250000 Then
+VDif = PPRound - 250000
+VBal2 = 3.72 * VDif / 1000
+vBal1 = 4.36 * 250000 / 1000
+TitleIns = vBal1 + VBal2
+Else
+TitleIns = 4.36 * PPRound / 1000
+End If
+End If
+
+
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+
+If PPRound <= 40000 Then
+TitleIns = 228
+Else
+
+If PPRound > 250000 Then
+VDif = PPRound - 250000
+VBal2 = 5.1 * VDif / 1000
+vBal1 = 5.7 * 250000 / 1000
+TitleIns = vBal1 + VBal2
+
+Else
+TitleIns = 4.36 * PPRound / 1000
+End If
+End If
+
+End If
+
+
+
+
+
+
+'MsgBox (PPRound & ": " & TitleIns)
+
+End Function
+Public Function Titlesearch()
+
+Dim dbclient As String, strsql As String
+Dim rsCLT As RecordSet, rs As RecordSet
+
+dbclient = "select * from clients where organizationname = " & """" & [Forms]![foreclosure database screen]![Client] & """"
+Set rsCLT = CurrentDb.OpenRecordset(dbclient, dbOpenSnapshot)
+
+strsql = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Or _
+Forms![foreclosure database screen]!Client Like "Nations Def*" Or _
+Forms![foreclosure database screen]!Client = "Bank of America, N.A." Or _
+Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+Titlesearch = 0#
+
+Else
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!updateord) _
+Or (Forms![foreclosure database screen]!PropertyState = "VA" And _
+(Forms![foreclosure database screen]!ForeclosureSubForm.Form!updateord - _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleReportOrdered > 365) And _
+rs!title_Time = 1 Or rs!title_Time = -1) Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleReportOrdered >= #10/1/2008# Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!updateord >= #10/1/2008# Then
+Titlesearch = 250
+Else
+Titlesearch = rsCLT!ts_md
+End If
+
+'ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+'Titlesearch = rsCLT!ts_dc
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+Titlesearch = rsCLT!ts_va
+End If
+If IsNull(Titlesearch) Then
+Titlesearch = 0#
+End If
+
+Else
+
+If Forms![foreclosure database screen]!PropertyState = "MD" And _
+(Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleReportOrdered >= #10/1/2008# Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!updateord >= #10/1/2008#) Then
+Titlesearch = 250
+Else
+Titlesearch = 80#
+End If
+End If
+
+
+End If
+rs.Close
+rsCLT.Close
+'MsgBox (titlesearch)
+
+End Function
+Public Function NOIAmt()
+
+'dbclient = "select * from clients where organizationname = " & """" & [Forms]![foreclosure database screen]![Client] & """"
+'Set rsCLT = CurrentDb.OpenRecordset(dbclient, dbopensnapshot)
+'If rsCLT!NOI_Prepare = 1 Then
+'NOIAmt = 150#
+'Else
+NOIAmt = 0#
+'End If
+
+End Function
+Public Function AttorneyFee()
+
+dbclient = "select * from clients where organizationname = " & """" & [Forms]![foreclosure database screen]![Client] & """"
+Set rsCLT = CurrentDb.OpenRecordset(dbclient, dbOpenSnapshot)
+
+'If (Client() = "Bank of America" Or Client() = "Homecomings" Or _
+'Client() = "Homecomings Financial, LLC" _
+'Or Client() = "HSBC Mortgage Services" Or _
+'Client() = "JPMorgan Chase Bank, National Association" Or Client() Like "Wilshire*") _
+'And Forms![foreclosure database screen]!fhlmc = Yes Or _
+'Forms![foreclosure database screen]!fhlmc = -1 Then
+'afee = 750#
+'Else
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+If Forms![foreclosure database screen]![Date Recieved] >= #10/1/2008# Or _
+Forms![foreclosure database screen]!resume_recd >= #10/1/2008# Then
+afee = 950
+Else
+afee = rsCLT!fc_md
+End If
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+afee = rsCLT!fc_dc
+If Forms![foreclosure database screen]!Client Like "Avelo*" And _
+Forms![foreclosure database screen]![Date Recieved] > #10/15/2007# Then
+afee = 600
+End If
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+afee = rsCLT!fc_va
+If Forms![foreclosure database screen]!Client Like "Avelo*" And _
+Forms![foreclosure database screen]![Date Recieved] > #10/15/2007# Then
+afee = 600
+End If
+End If
+'End If
+
+If Forms![foreclosure database screen]!Client Like "Avelo*" And _
+Forms![foreclosure database screen]![Date Recieved] > #10/15/2007# Then
+afee = 600
+End If
+
+
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+afee = 850#
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+afee = 650#
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+afee = 650#
+End If
+End If
+
+If Date > Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate _
+And IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!salecancel_reason) Then
+AttorneyFee = afee
+Else
+
+If Forms![foreclosure database screen]!Client Like "Well Far*" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+AttorneyFee = 637.5
+Else
+If Forms![foreclosure database screen]!PropertyState <> "VA" Then
+If Date < Forms![foreclosure database screen]!ForeclosureSubForm.Form![1ST Legal] Or _
+IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![1ST Legal]) Then
+AttorneyFee = afee * 0.3
+ElseIf Date >= Forms![foreclosure database screen]!ForeclosureSubForm.Form![1ST Legal] And _
+Date < Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] Then
+AttorneyFee = afee * 0.6
+ElseIf Date >= Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] Then
+AttorneyFee = afee * 0.9
+End If
+End If
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+If Date < Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] Then
+AttorneyFee = afee * 0.3
+ElseIf Date >= Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] Then
+AttorneyFee = afee * 0.9
+End If
+End If
+
+End If
+End If
+
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) And _
+AttorneyFee > 637.5 Then
+AttorneyFee = 637.5
+End If
+
+
+'MsgBox (AttorneyFee)
+ 
+If Forms![foreclosure database screen]!Client Like "Nations Def*" And _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!sale_cancelled < Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] Then
+AttorneyFee = 250
+End If
+
+
+
+End Function
+Public Function AttorneyFeeFeesCosts()
+dbclient = "select * from clients where organizationname = " & """" & [Forms]![FeesCosts]![Client] & """"
+Set rsCLT = CurrentDb.OpenRecordset(dbclient, dbOpenSnapshot)
+
+
+If Forms![FeesCosts]!PropertyState = "MD" Then
+afee = rsCLT!fc_md
+ElseIf Forms![FeesCosts]!PropertyState = "DC" Then
+afee = rsCLT!fc_dc
+ElseIf Forms![FeesCosts]!PropertyState = "VA" Then
+afee = rsCLT!fc_va
+End If
+'End If
+
+
+If IsNull(Forms!FeesCosts!good_thru3) And IsNull(Forms!FeesCosts!good_thru2) Then
+vcalcdate = Forms!FeesCosts!Good_Thru
+ElseIf IsNull(Forms!FeesCosts!good_thru3) And Not IsNull(Forms!FeesCosts!good_thru2) Then
+vcalcdate = Forms!FeesCosts!good_thru2
+Else
+vcalcdate = Forms!FeesCosts!good_thru3
+End If
+
+If vcalcdate >= Forms![FeesCosts]!SaleDate Then
+AttorneyFeeFeesCosts = afee
+Else
+
+If Forms![FeesCosts]!PropertyState <> "VA" Then
+If vcalcdate < Forms![FeesCosts]![1ST Legal] Or _
+IsNull(Forms![FeesCosts]![1ST Legal]) Then
+AttorneyFeeFeesCosts = afee * 0.3
+ElseIf vcalcdate >= Forms![FeesCosts]![1ST Legal] And _
+vcalcdate < Forms![FeesCosts]![1st_ad] Then
+AttorneyFeeFeesCosts = afee * 0.6
+ElseIf vcalcdate >= Forms![FeesCosts]![1st_ad] Then
+AttorneyFeeFeesCosts = afee * 0.9
+End If
+End If
+
+If Forms![FeesCosts]!PropertyState = "VA" Then
+If vcalcdate < Forms![FeesCosts]![1st_ad] Then
+AttorneyFeeFeesCosts = afee * 0.3
+ElseIf vcalcdate >= Forms![FeesCosts]![1st_ad] Then
+AttorneyFeeFeesCosts = afee * 0.9
+End If
+End If
+
+End If
+
+'End If
+
+'MsgBox (AttorneyFeefeescosts)
+
+
+If Forms![FeesCosts]!Client Like "Nations Def*" And _
+Forms![FeesCosts]!sale_cancelled < Forms![FeesCosts]![1st_ad] Then
+AttorneyFeeFeesCosts = 250
+End If
+
+
+
+End Function
+Public Function FilingFeeFC()
+
+If [Forms]![FeesCosts]![PropertyState] = "MD" Then
+
+   sqljd = "Select * from jurisdiction where state = " & """" & Forms![FeesCosts]!PropertyState & """" & " and county = " & """" & Forms![FeesCosts]!Propertycounty & """"
+    Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+    FilingFeeFC = js!docketing_fee
+    js.Close
+    
+    Else
+    FilingFeeFC = 0#
+    End If
+End Function
+Public Function FilingFee()
+
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" Then
+
+   sqljd = "Select * from jurisdiction where state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & " and county = " & """" & Forms![foreclosure database screen]!Propertycounty & """"
+    Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+    FilingFee = js!docketing_fee
+    js.Close
+    
+    Else
+    FilingFee = 0#
+    End If
+End Function
+Public Function LienCert()
+
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" Then
+    
+    If [Forms]![foreclosure database screen]![Propertycounty] = "Baltimore City" Then
+    LienCert = 55#
+     ElseIf [Forms]![foreclosure database screen]![Propertycounty] = "Baltimore" Or _
+     [Forms]![foreclosure database screen]![Propertycounty] = "Carroll" Then
+    LienCert = 40#
+    ElseIf [Forms]![foreclosure database screen]![Propertycounty] = "Howard" Or _
+    [Forms]![foreclosure database screen]![Propertycounty] = "Harford" Then
+    LienCert = 50#
+    ElseIf [Forms]![foreclosure database screen]![Propertycounty] <> "Howard" _
+    And [Forms]![foreclosure database screen]![Propertycounty] <> "Carroll" And _
+    [Forms]![foreclosure database screen]![Propertycounty] <> "Harford" And _
+    [Forms]![foreclosure database screen]![Propertycounty] <> "Baltimore" And _
+    [Forms]![foreclosure database screen]![Propertycounty] <> "Baltimore City" Then
+    LienCert = 0#
+    End If
+    Else
+    LienCert = 0#
+    End If
+End Function
+Public Function bondpremFC()
+Dim vcalcamt
+
+
+    If [Forms]![FeesCosts]![PropertyState] <> "MD" Then
+    bondpremFC = 0#
+    Else
+    vcalcamt = 0
+   
+    If [Forms]![FeesCosts]![3rd_party] = 1 Or _
+    [Forms]![FeesCosts]![Buyer] <> "REO" Then
+    
+    If [Forms]![FeesCosts]![bondamt] < _
+    [Forms]![FeesCosts]![SalePrice] Then
+    vcalcamt = [Forms]![FeesCosts]![SalePrice]
+    Else
+    vcalcamt = [Forms]![FeesCosts]![bondamt]
+    End If
+    
+    bondpremFC = vcalcamt * 0.00375
+    
+    Else
+    
+    If Forms![FeesCosts]!Propertycounty = "Baltimore" Then
+    bondpremFC = 112.5
+    Else
+    bondpremFC = 93.75
+    End If
+    
+    End If
+    
+    End If
+    
+    
+End Function
+
+Public Function bondprem()
+Dim vcalcamt
+
+
+    If [Forms]![foreclosure database screen]![PropertyState] <> "MD" Then
+    bondprem = 0#
+    Else
+    vcalcamt = 0
+   
+    If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![3rd_party] = 1 Or _
+    [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] <> "REO" Then
+    
+    If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![bondamt] < _
+    [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![SalePrice] Then
+    vcalcamt = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![SalePrice]
+    Else
+    vcalcamt = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![bondamt]
+    End If
+    
+    bondprem = vcalcamt * 0.00375
+    
+    Else
+    
+    If Forms![foreclosure database screen]!Propertycounty = "Baltimore" Then
+    bondprem = 112.5
+    Else
+    bondprem = 93.75
+    End If
+    
+    End If
+    
+    End If
+    
+    
+End Function
+Public Function transfertax()
+
+If Forms![foreclosure database screen]![PropertyState] = "MD" Then
+    
+    
+    If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!staterecordationtax) Then
+    realtax = 0
+    Else
+    realtax = Forms![foreclosure database screen]!PostsaleSubForm.Form!staterecordationtax
+    End If
+    If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!statetransfertax) Then
+    STax = 0
+    Else
+    STax = Forms![foreclosure database screen]!PostsaleSubForm.Form!statetransfertax
+    End If
+    If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!countytransfertax) Then
+    CtyTax = 0
+    Else
+    CtyTax = Forms![foreclosure database screen]!PostsaleSubForm.Form!countytransfertax
+    End If
+    
+    transfertax = realtax + STax + CtyTax
+  
+ElseIf Forms![foreclosure database screen]![PropertyState] = "VA" Then
+
+If Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!transfer_tax > 0 Then
+transfertax = Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!transfer_tax
+Else
+transfertax = 0
+End If
+
+End If
+'MsgBox (TransferTax)
+
+End Function
+Public Function RealEstateRec()
+
+If Forms![foreclosure database screen]![PropertyState] = "MD" Then
+     
+    If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!recording_charge) Then
+    RC = 0
+    Else
+    RC = Forms![foreclosure database screen]!PostsaleSubForm.Form!recording_charge
+    End If
+    If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!surcharge) Then
+    SC = 0
+    Else
+    SC = Forms![foreclosure database screen]!PostsaleSubForm.Form!surcharge
+    End If
+    
+    If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_rec_charge) And _
+    (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+    Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Or _
+    Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Or _
+    (Forms![foreclosure database screen]!TypeOfLoan Like "Conv*" And Forms![foreclosure database screen]!Client Like "Ocwen*") Or _
+    (Forms![foreclosure database screen]!TypeOfLoan Like "Conv*" And Forms![foreclosure database screen]!Client Like "Citi*") Or _
+    (Forms![foreclosure database screen]!TypeOfLoan Like "Conv*" And Forms![foreclosure database screen]!Client Like "Foreclosure Manage*") Or _
+    (Forms![foreclosure database screen]!TypeOfLoan Like "Conv*" And Forms![foreclosure database screen]!Client Like "Nations Def*")) Then
+    DRC = 55
+    Else
+    DRC = 0
+   ' Else
+   ' DRC = Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_rec_charge
+    End If
+    
+    RealEstateRec = RC + SC + DRC
+  
+End If
+'MsgBox (RealEstateRec)
+
+End Function
+Public Function MD_Recordation()
+Dim VRec As Double
+Dim VV
+'MsgBox (PP500 / 1000 * Rtax)
+
+If IsNull(PP500) Or PP500 = 0 Then
+
+MD_Recordation = 0
+
+
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Montgomery" And PP500 >= 500000 Then
+
+Dim VM1 As Currency
+Dim VM2 As Currency
+Dim VM3 As Currency
+Dim VM4 As Currency
+
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Then
+
+VM1 = (500000 / 1000) * (Rtax)
+
+VM2 = totaldebt() - 500000
+
+VM3 = VM2 / 1000 * 10
+
+MD_Recordation = VM1 + VM3
+
+Else
+
+VM1 = (500000 / 1000) * (Rtax)
+
+VM2 = PP500 - 500000
+
+VM3 = VM2 / 1000 * 10
+
+MD_Recordation = VM1 + VM3
+
+'MsgBox ("VM1: " & VM1 & ", VM2: " & VM2 & ", VM3: " & VM3 & ", MD Rec: " & MD_Recordation)
+
+'MD_Recordation = (PP500 / 1000) * Rtax
+
+End If
+
+'Else
+
+'If Forms![foreclosure database screen]!Propertycounty = "Montgomery" And totaldebt() < 500000 Then
+
+'MD_Recordation = Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice / 1000 * Rtax
+'MD_Recordation = PP500 / 1000 * Rtax
+
+Else
+
+MD_Recordation = PP500 / 1000 * Rtax
+
+'MsgBox (MD_Recordation)
+
+
+
+End If
+
+'MsgBox (PP500 / 1000 & ": Tax: " & Rtax & ": " & MD_Recordation)
+
+'MsgBox (VM1 & ";" & VM2 & ";" & VM3 & ";" & PP500 & ": " & Rtax & ": " & MD_Recordation)
+   
+End Function
+Public Function DCRecordation() As Double
+Dim v1 As Double, v2 As Double
+
+v1 = ([Forms]![foreclosure database screen]![PostsaleSubForm].[Form].[SalePrice] * 0.01)
+v2 = ([Forms]![foreclosure database screen]![PostsaleSubForm].[Form].[SalePrice] * 0.001)
+
+DCRecordation = v1 + v2
+
+End Function
+Public Function DC_Recordation() As Double
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form].[SalePrice] > 0 Then
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form].[SalePrice] <= 399999 Then
+DC_Recordation = ([Forms]![foreclosure database screen]![PostsaleSubForm].[Form].[SalePrice] * 0.022)
+Else
+DC_Recordation = ([Forms]![foreclosure database screen]![PostsaleSubForm].[Form].[SalePrice] * 0.029)
+End If
+End If
+
+
+End Function
+Public Function MD_CountyTransferTax()
+
+
+'If Forms![foreclosure database screen]!Propertycounty = "Cecil" Then
+
+'If Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate > #6/1/2015# Then
+'MD_CountyTransferTax = CTax * PP / 1000
+'Else
+'MD_CountyTransferTax = 0
+'End If
+
+'Else
+
+If Forms![foreclosure database screen]!Propertycounty = "Montgomery" Then
+MD_CountyTransferTax = CTax * [Forms]![foreclosure database screen]![PostsaleSubForm].[Form].[SalePrice] / 1000
+
+Else
+MD_CountyTransferTax = CTax * PP / 1000
+End If
+
+'MsgBox ("PP: " & PP & ", Ctax: " & CTax & ": " & MD_CountyTransferTax)
+   
+End Function
+Public Function Rtax()
+sqljd = "Select * from jurisdiction where state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & " and county = " & """" & Forms![foreclosure database screen]!Propertycounty & """"
+    Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+    
+    If Not js.EOF Then
+    
+    If Not IsNull(js!recordation) Then
+    'If Forms![foreclosure database screen]!PropertyCounty Like "Prince Geor*" Then
+    'Rtax = 0.55
+    'Else
+    Rtax = js!recordation
+    End If
+    
+   ' MsgBox (js!recordation)
+    js.Close
+    End If
+'MsgBox (Rtax)
+
+End Function
+Public Function CTax()
+sqljd = "Select * from jurisdiction where state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & " and county = " & """" & Forms![foreclosure database screen]!Propertycounty & """"
+    Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+    If Not js.EOF Then
+    CTax = js!countytransfer
+    End If
+    
+    js.Close
+End Function
+Public Function MD_RealEstateTaxes()
+
+If Forms![foreclosure database screen]![PropertyState] = "MD" Then
+
+
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!intakeOther1) Then
+MD_RealEstateTaxes = 0
+Else
+MD_RealEstateTaxes = Forms![foreclosure database screen]!PostsaleSubForm.Form!intakeOther1
+End If
+
+ElseIf Forms![foreclosure database screen]![PropertyState] = "VA" Then
+
+If Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!taxprorated > 0 Then
+MD_RealEstateTaxes = Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!taxprorated
+Else
+MD_RealEstateTaxes = 0
+End If
+
+End If
+
+
+End Function
+
+Public Function PP500()
+
+If Forms![foreclosure database screen]!Status = "Deed In Lieu" Then
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![upb]) Then
+PP500 = 0
+Else
+PP500 = RoundUP(Forms![foreclosure database screen]!ForeclosureSubForm.Form![upb])
+End If
+
+Else
+
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice) Then
+PP500 = 0
+
+ElseIf (Forms![foreclosure database screen]!Client Like "Financial Free*" Or _
+(Forms![foreclosure database screen]!Client Like "Wells*" And acs_wff = 4)) Then
+
+'If totaldebt() >= 500000 Then
+'PP500 = RoundUP(500000 / 500) * 500
+'Else
+PP500 = RoundUP(totaldebt() / 500) * 500
+'End If
+
+Else
+PP500 = RoundUP(Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice / 500) * 500
+End If
+
+End If
+'MsgBox (PP500)
+
+End Function
+Public Function PP()
+
+If Forms![foreclosure database screen]!Status = "Deed In Lieu" Then
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![upb]) Then
+PP = 0
+Else
+PP = Round(Forms![foreclosure database screen]!ForeclosureSubForm.Form![upb])
+End If
+
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Washington" Or _
+Forms![foreclosure database screen]!Propertycounty = "Garrett" Then
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 50000 Then
+PP = Round(Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice - 50000)
+Else
+PP = Round(Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice)
+End If
+
+
+
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Montgomery" And _
+(Forms![foreclosure database screen]!Client Like "Champion*" Or _
+Forms![foreclosure database screen]!Client Like "Financial Free*" Or _
+(Forms![foreclosure database screen]!Client Like "Wells*" And acs_wff = 4)) Then
+
+PP = totaldebt()
+
+ElseIf IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice) Then
+PP = 0
+
+
+Else
+PP = Round(Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice)
+End If
+
+'MsgBox (PP - 50000)
+
+
+End Function
+Public Function MD_StateTransferTax()
+
+If Forms![foreclosure database screen]!Propertycounty = "Washington" Or Forms![foreclosure database screen]!Propertycounty = "Montgomery" Then
+MD_StateTransferTax = 5 * Round(Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice) / 1000
+
+Else
+MD_StateTransferTax = 5 * PP / 1000
+End If
+
+'
+
+End Function
+Public Function MD_Rec_Charge()
+
+MD_Rec_Charge = 20
+
+End Function
+Public Function DC_Rec_Charge()
+
+DC_Rec_Charge = 26.5
+
+End Function
+Public Function MD_SurCharge()
+MD_SurCharge = 40
+
+End Function
+Public Function auctfee()
+    
+    If Forms![foreclosure database screen]![PropertyState] = "MD" Then
+    
+    sqljd = "Select * from jurisdiction where state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & " and county = " & """" & Forms![foreclosure database screen]!Propertycounty & """"
+    Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+
+
+auctfee = js!auct_fee
+
+    
+    js.Close
+  
+    End If
+    
+    If Forms![foreclosure database screen]![PropertyState] = "DC" Then
+    auctfee = 375#
+    End If
+    
+    If Forms![foreclosure database screen]![PropertyState] = "VA" Then
+    auctfee = 150#
+    End If
+    
+
+    
+End Function
+Public Function auctfeeFC()
+    
+    If Forms![FeesCosts]![PropertyState] = "MD" Then
+    
+    sqljd = "Select * from jurisdiction where state = " & """" & Forms![FeesCosts]!PropertyState & """" & " and county = " & """" & Forms![FeesCosts]!Propertycounty & """"
+    Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+
+
+auctfeeFC = js!auct_fee
+
+    
+    js.Close
+  
+    End If
+    
+    If Forms![FeesCosts]![PropertyState] = "DC" Then
+    auctfeeFC = 375#
+    End If
+    
+    If Forms![FeesCosts]![PropertyState] = "VA" Then
+    auctfeeFC = 150#
+    End If
+    
+
+    
+End Function
+
+Public Function RecordingFeeFC()
+ 
+    sqljd = "Select * from jurisdiction where state = " & """" & Forms![FeesCosts]!PropertyState & """" & " and county = " & """" & Forms![FeesCosts]!Propertycounty & """"
+    Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+   
+    
+    If Forms![FeesCosts]!Propertycounty = "Augusta" Or _
+    Forms![FeesCosts]!Propertycounty = "Staunton City" Or _
+    Forms![FeesCosts]!Propertycounty = "Waynesboro City" Then
+    MsgBox ("NOTE: Recording Fee has to be MANUALLY input for: " & Forms![FeesCosts]!Propertycounty & vbCr & "For this county there is a $21.00 base fee and $0.50 per page." & vbCr & "2 Pages: fee is $22.00." & vbCr & "3 Pages: fee is $22.50." & vbCr & "If the DOA is over ten pages (which would only be in very extraordinary circumstances), additional filing fees will apply and you should contact the Clerk's office to see what the total fee will be.")
+    
+    
+    RecordingFeeFC = 0
+    
+    Else
+    If js.EOF Then
+    RecordingFeeFC = 0
+    Else
+    RecordingFeeFC = js!doa_recording
+    End If
+    
+    
+    End If
+    
+    js.Close
+    
+End Function
+
+Public Function RecordingFee()
+ 
+    sqljd = "Select * from jurisdiction where state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & " and county = " & """" & Forms![foreclosure database screen]!Propertycounty & """"
+    Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+   
+    
+    If Forms![foreclosure database screen]!Propertycounty = "Augusta" Or _
+    Forms![foreclosure database screen]!Propertycounty = "Staunton City" Or _
+    Forms![foreclosure database screen]!Propertycounty = "Waynesboro City" Then
+    MsgBox ("NOTE: Recording Fee has to be MANUALLY input for: " & Forms![foreclosure database screen]!Propertycounty & vbCr & "For this county there is a $21.00 base fee and $0.50 per page." & vbCr & "2 Pages: fee is $22.00." & vbCr & "3 Pages: fee is $22.50." & vbCr & "If the DOA is over ten pages (which would only be in very extraordinary circumstances), additional filing fees will apply and you should contact the Clerk's office to see what the total fee will be.")
+    
+    
+    RecordingFee = 0
+    
+    Else
+    If js.EOF Then
+    RecordingFee = 0
+    Else
+    RecordingFee = js!doa_recording
+    End If
+    
+    
+    End If
+    
+    js.Close
+    
+End Function
+Public Function NumberLienholders()
+Dim strsql As String
+Dim rs As RecordSet
+Dim VCount As Integer
+VCount = 0
+
+strsql = "select * from creditors where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+VCount = VCount + 1
+rs.MoveNext
+Loop
+
+
+NumberLienholders = VCount
+
+rs.Close
+
+End Function
+Public Function NumberLettersPrintOut()
+Dim strsql As String
+Dim rs As RecordSet
+Dim VCount, vdebtors As Integer
+vdebtors = 0
+
+If (IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Or Forms![foreclosure database screen]![Mailing AddressB] = "") And _
+(IsNull(Forms![foreclosure database screen]![Mailing Address]) Or Forms![foreclosure database screen]![Mailing Address] = "") Then
+VCount = 1
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+VCount = 2
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+VCount = 3
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor3 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor4 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+Dim VNum, VHudVA, VMonMD, VMonVA, VMonDC As Double
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Or _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+VHudVA = "2 - HUD/VA Letters @ $3.20/each"
+Else
+VHudVA = ""
+End If
+
+vnumdebt = (VCount * vdebtors)
+vnum318 = vnumdebt
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!noticesent) Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+
+NumberLettersPrintOut = "FairDebt Letters: " & vnum318 & " @ .44" & vbCr & "Notice of Sale Letters: " & vnum318 & " @ $3.20" & vbCr & "Occupant Letter 1 @ $3.20" & vbCr & "Lienholder Letters: " & NumberLienholders & " @ $3.20" & vbCr & "County Letter: 1 @ $3.20" + vbCr & "MD Stat Letter: " & vnum318 & "@ $3.20" & vbCr & VHudVA
+Else
+NumberLettersPrintOut = "Notice of Sale Letters: " & vnum318 & " @ $3.20" & vbCr & "Occupant Letter 1 @ $3.20" & vbCr & "Lienholder Letters: " & NumberLienholders & " @ $3.20" & vbCr & "County Letter: 1 @ $3.20" + vbCr & "MD Stat Letter: " & vnum318 & "@ $3.20" & vbCr & VHudVA
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+NumberLettersPrintOut = "FairDebt Letters: " & vnum318 & " @ .44" & vbCr & "Lost Note Letters: " & vnum318 & " @ $3.44" & vbCr & "Notice of Sale Letters: " & vnum318 & " @ $3.44" & vbCr & "Occupant Letter 1 @ $3.44" & vbCr & "Lienholder Letters: " & NumberLienholders & " @ $3.20" & vbCr & VHudVA
+Else
+NumberLettersPrintOut = "Notice of Sale Letters: " & vnum318 & "@ $3.44" & vbCr & "Occupant Letter 1 @ $3.44" & vbCr & "Lienholder Letters: " & NumberLienholders & " @ $3.20" & vbCr & VHudVA
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+NumberLettersPrintOut = "FairDebt Letters: " & vnum318 & " @ .44" & vbCr & "Notice of Sale Letters: " & vnum318 & " @ $3.44" & vbCr & "Occupant Letter 1 @ $3.44" & vbCr & "Lienholder Letters: " & NumberLienholders & " @ $3.44" & vbCr & vbCr & VHudVA
+Else
+NumberLettersPrintOut = "Notice of Sale Letters: " & vnum318 & " @ $3.44" & vbCr & "Occupant Letter 1 @ $3.44" & vbCr & "Lienholder Letters: " & NumberLienholders & " @ $3.44" & vbCr & vbCr & VHudVA
+End If
+End If
+
+
+Else
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+If Not IsNull(Forms![foreclosure database screen]!resume_recd) Then
+NumberLettersPrintOut = "County Letter: 1 @ $3.20" + vbCr & "MD Stat Letter: " & vnum318 & "@ $3.20" & vbCr & VHudVA
+Else
+NumberLettersPrintOut = "FairDebt Letters: " & vnum318 & " @ .44" & vbCr & "County Letter: 1 @ $3.20" + vbCr & "MD Stat Letter: " & vnum318 & "@ $3.20" & vbCr & VHudVA
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+If Not IsNull(Forms![foreclosure database screen]!resume_recd) Then
+NumberLettersPrintOut = ""
+Else
+NumberLettersPrintOut = "FairDebt Letters: " & vnum318 & " @ .44" & vbCr & "Lost Note Letters: " & vnum318 & " @ $3.44" & vbCr & VHudVA
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+
+If Not IsNull(Forms![foreclosure database screen]!resume_recd) Then
+NumberLettersPrintOut = ""
+Else
+NumberLettersPrintOut = "FairDebt Letters: " & vnum318 & " @ .44" & vbCr & VHudVA
+End If
+
+End If
+End If
+
+
+'MsgBox (NumberLettersPrintOut & ":" & Forms![foreclosure database screen]!resume_recd & ":" & Forms![foreclosure database screen]!ForeclosureSubForm.Form!NoticeSent)
+
+
+'NumberLetters = VNum
+
+'MsgBox (VNum & ": " & NumberLetters & " " & NumberLienholders)
+
+'MsgBox ("Count: " & VCount & ", VA/FHA:" & VHudVA & ", Debtors: " & VDebtors & ", Lienholders: " & NumberLienholders & ": " & NumberLetters)
+'End If
+'MsgBox ("Hud/VA:" & VHudVA & ", Debtors: " & VDebtors & ", Count: " & VCount & ", Lienholders: " & NumberLienholders & ", Cost: " & NumberLetters)
+'MsgBox ("Number Lienholders: " & NumberLienholders & ":  Number of Letters: " & 5 * (VCount * VDebtors) + NumberLienholders)
+End Function
+Public Function WalzFDLBreakOutAdd()
+strsql = "Select * from Walzinfo where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!ri Like "FDL*" Or rs!ri = "VAln" Or _
+rs!ri = "OOMC" Or _
+rs!ri = "Avelo" Or _
+rs!ri = "MDst" Or _
+rs!ri = "AMCHOT" Or _
+rs!ri = "CITY" Or _
+rs!ri = "CTY" Then
+If rs!bill_saledate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate Then
+If rs!ri Like "FDL*" Then
+VFDL = VFDL + 1
+ElseIf rs!ri = "VAln" Then
+vln = vln + 1
+ElseIf rs!ri = "OOMC" Then
+voomc = voomc + 1
+ElseIf rs!ri = "Avelo" Then
+vavelo = vavelo + 1
+ElseIf rs!ri = "AMCHOT" Then
+vamchot = vamchot + 1
+ElseIf rs!ri = "CITY" Then
+VCity = VCity + 1
+ElseIf rs!ri = "CTY" Then
+VCty = VCty + 1
+End If
+End If
+End If
+
+rs.MoveNext
+Loop
+
+End If
+
+If VFDL > 0 Then
+vfdln = VFDL & " FDL Ltrs/"
+Else
+vfdln = ""
+End If
+If vln > 0 Then
+vlnn = vln & " Lost Note Ltrs/"
+Else
+vlnn = ""
+End If
+If voomc > 0 Then
+voomcn = voomc & " OOMC Ltr/"
+Else
+voomcn = ""
+End If
+If vavelo > 0 Then
+vavelon = vavelo & " Avelo Ltr/"
+Else
+vavelon = ""
+End If
+If vamchot > 0 Then
+vamchotn = vamchot & " amchot Ltr/"
+Else
+vamchotn = ""
+End If
+If VCity > 0 Then
+vcityn = VCity & " city Ltr/"
+Else
+vcityn = ""
+End If
+If VCty > 0 Then
+vctyn = VCty & " CTY Ltr/"
+Else
+vctyn = ""
+End If
+Dim VCheck As String
+
+VCheck = vfdln + vlnn + voomcn + vavelon + vamchotn + vcityn + vctyn
+
+If VCheck = "" Or IsNull(VCheck) Then
+WalzFDLBreakOutAdd = "No FDL sent via Walz for this bill/"
+Else
+WalzFDLBreakOutAdd = vfdln + vlnn + voomcn + vavelon + vamchotn + vcityn + vctyn
+End If
+
+End Function
+Public Function WalzNOSBreakOutAdd()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "Select * from Walzinfo where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+
+rs.MoveFirst
+Do While Not rs.EOF
+
+If rs!bill_saledate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate Then
+
+If rs!ri = "NOSVA" Or rs!ri = "NOSMD" Or rs!ri = "NOSVAI" Or rs!ri = "NOSDC" Then
+vnos = vnos + 1
+End If
+
+If rs!ri = "NOSCredVA" Or rs!ri = "NOSCredVAI" Or rs!ri = "NOSCredMD" Or rs!ri = "NOSCredDC" Then
+vnosc = vnosc + 1
+End If
+
+End If
+
+rs.MoveNext
+Loop
+
+End If
+
+If vnos > 0 Then
+vnosn = vnos & " NOS Ltrs/"
+Else
+vnosn = "No Borrower Notices sent via Walz/"
+End If
+If vnosc > 0 Then
+vnoscn = vnosc & " NOS Creditor Ltrs/"
+Else
+vnoscn = "No Creditor Letters sent via Walz/"
+End If
+
+'VCheck = vnos + vnosc
+
+'If VCheck = 0 Then
+WalzNOSBreakOutAdd = vnosn + vnoscn
+'Else
+'WalzNOSBreakOut = vnosc + vnos
+'End If
+
+End Function
+Public Function WalzFDLBreakOut()
+Dim VCheck
+strsql = "Select * from Walzinfo where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!ri Like "FDL*" Or rs!ri = "VAln" Or _
+rs!ri = "OOMC" Or _
+rs!ri = "Avelo" Or _
+rs!ri = "MDst" Or _
+rs!ri = "AMCHOT" Or _
+rs!ri = "CITY" Or _
+rs!ri = "CTY" Then
+If rs!bill_saledate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate Then
+If rs!ri Like "FDL*" Then
+VFDL = VFDL + 1
+ElseIf rs!ri = "VAln" Then
+vln = vln + 1
+ElseIf rs!ri = "OOMC" Then
+voomc = voomc + 1
+ElseIf rs!ri = "Avelo" Then
+vavelo = vavelo + 1
+ElseIf rs!ri = "AMCHOT" Then
+vamchot = vamchot + 1
+ElseIf rs!ri = "CITY" Then
+VCity = VCity + 1
+ElseIf rs!ri = "CTY" Then
+VCty = VCty + 1
+End If
+End If
+End If
+
+rs.MoveNext
+Loop
+
+End If
+
+If VFDL > 0 Then
+vfdln = VFDL & " FDL Ltrs/"
+End If
+If vln > 0 Then
+vlnn = vln & " Lost Note Ltrs/"
+End If
+If voomc > 0 Then
+voomcn = voomc & " OOMC Ltr/"
+End If
+If vavelo > 0 Then
+vavelon = vavelo & " Avelo Ltr/"
+End If
+If vamchot > 0 Then
+vamchotn = vamchot & " amchot Ltr/"
+End If
+If VCity > 0 Then
+vcityn = VCity & " city Ltr/"
+End If
+If VCty > 0 Then
+vctyn = VCty & " CTY Ltr/"
+End If
+
+VCheck = vfdln & vlnn & voomcn & vavelon & vamchotn & vcityn & vctyn
+
+If VCheck = "" Then
+WalzFDLBreakOut = "No FDL sent via Walz for this bill/"
+Else
+WalzFDLBreakOut = vfdln & vlnn & voomcn & vavelon & vamchotn & vcityn & vctyn
+End If
+
+End Function
+Public Function WalzNOSBreakOut()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "Select * from Walzinfo where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+
+rs.MoveFirst
+Do While Not rs.EOF
+
+If rs!bill_saledate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate Then
+
+If rs!ri = "NOSVA" Or rs!ri = "NOSMD" Or rs!ri = "NOSVAI" Or rs!ri = "NOSDC" Then
+vnos = vnos + 1
+End If
+
+If rs!ri = "NOSCredVA" Or rs!ri = "NOSCredVAI" Or rs!ri = "NOSCredMD" Or rs!ri = "NOSCredDC" Then
+vnosc = vnosc + 1
+End If
+
+End If
+
+rs.MoveNext
+Loop
+
+End If
+
+If vnos > 0 Then
+vnosn = vnos & " NOS Ltrs/"
+Else
+vnosn = "No Borrower Notices sent via Walz/"
+End If
+If vnosc > 0 Then
+vnoscn = vnosc & " NOS Creditor Ltrs/"
+Else
+vnoscn = "No Creditor Letters sent via Walz/"
+End If
+
+'VCheck = vnos + vnosc
+
+'If VCheck = 0 Then
+WalzNOSBreakOut = vnosn + vnoscn
+'Else
+'WalzNOSBreakOut = vnosc + vnos
+'End If
+
+End Function
+Public Function WalzCalcFdl() As Double
+Dim strsql, VPF, VpfR, VSf As String
+Dim rs As RecordSet
+
+strsql = "Select * from Walzinfo where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+
+
+If rs!ri Like "FDL*" Or rs!ri = "VAln" Or _
+rs!ri = "OOMC" Or _
+rs!ri = "Avelo" Or _
+rs!ri = "MDst" Or _
+rs!ri = "AMCHOT" Or _
+rs!ri = "CITY" Or _
+rs!ri = "CTY" Then
+
+If rs!bill_saledate = BillSaleDateCalc Or _
+BillSaleDateCalc = 0 Then
+
+If IsNull(rs!PostageFees) Then
+VPF = 0
+Else
+VPF = rs!PostageFees
+End If
+If IsNull(rs!PostageFeesReg) Then
+VpfR = 0
+Else
+VpfR = rs!PostageFeesReg
+End If
+If IsNull(rs!ServiceFees) Then
+VSf = 0
+Else
+VSf = rs!ServiceFees
+End If
+WalzCalcFdl = WalzCalcFdl + VPF + VpfR + VSf
+End If
+
+End If
+
+rs.MoveNext
+Loop
+
+Else
+
+End If
+
+'MsgBox (WalzCalcFdl)
+
+
+End Function
+Public Function WalzCalcNOS() As Double
+
+Dim strsql, VPF, VpfR, VSf As String
+Dim rs As RecordSet
+
+strsql = "Select * from Walzinfo where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!bill_saledate = BillSaleDateCalc Or _
+BillSaleDateCalc = 0 Then
+
+If rs!ri Like "NOS*" Then
+
+If IsNull(rs!PostageFees) Then
+VPF = 0
+Else
+VPF = rs!PostageFees
+End If
+If IsNull(rs!PostageFeesReg) Then
+VpfR = 0
+Else
+VpfR = rs!PostageFeesReg
+End If
+If IsNull(rs!ServiceFees) Then
+VSf = 0
+Else
+VSf = rs!ServiceFees
+End If
+WalzCalcNOS = WalzCalcNOS + VPF + VpfR + VSf
+End If
+
+End If
+
+
+rs.MoveNext
+Loop
+End If
+
+
+'MsgBox (WalzCalcNOS)
+
+
+End Function
+Public Function WalzCalcFdlBillScreen() As Double
+Dim strsql, VPF, VpfR, VSf As String
+Dim rs As RecordSet
+
+strsql = "Select * from Walzinfo where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+
+
+If rs!ri Like "FDL*" Or rs!ri = "VAln" Or _
+rs!ri = "OOMC" Or _
+rs!ri = "Avelo" Or _
+rs!ri = "MDst" Or _
+rs!ri = "AMCHOT" Or _
+rs!ri = "CITY" Or _
+rs!ri = "CTY" Then
+
+If rs!bill_saledate = Forms![billingmain]!BillingSubForm.Form!bill_saledate Then
+
+If IsNull(rs!PostageFees) Then
+VPF = 0
+Else
+VPF = rs!PostageFees
+End If
+If IsNull(rs!PostageFeesReg) Then
+VpfR = 0
+Else
+VpfR = rs!PostageFeesReg
+End If
+If IsNull(rs!ServiceFees) Then
+VSf = 0
+Else
+VSf = rs!ServiceFees
+End If
+WalzCalcFdlBillScreen = WalzCalcFdlBillScreen + VPF + VpfR + VSf
+End If
+
+End If
+
+rs.MoveNext
+Loop
+
+Else
+
+End If
+
+'MsgBox (WalzCalcFdl)
+
+
+End Function
+Public Function WalzCalcNOSBillScreen() As Double
+Dim strsql, VPF, VpfR, VSf As String
+Dim rs As RecordSet
+
+strsql = "Select * from Walzinfo where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!bill_saledate = Forms![billingmain]!BillingSubForm.Form!bill_saledate Then
+
+If rs!ri Like "NOS*" Then
+If IsNull(rs!PostageFees) Then
+VPF = 0
+Else
+VPF = rs!PostageFees
+End If
+If IsNull(rs!PostageFeesReg) Then
+VpfR = 0
+Else
+VpfR = rs!PostageFeesReg
+End If
+If IsNull(rs!ServiceFees) Then
+VSf = 0
+Else
+VSf = rs!ServiceFees
+End If
+
+WalzCalcNOSBillScreen = WalzCalcNOSBillScreen + VPF + VpfR + VSf
+'MsgBox (Vpf & "+" & VpfR & "+" & VSf & "= " & Vpf + VpfR + VSf & ": " & WalzCalcNOSBillScreen)
+
+End If
+
+End If
+
+
+rs.MoveNext
+Loop
+End If
+
+
+'MsgBox (WalzCalcNOS)
+
+
+End Function
+Public Function CountLetterPrint()
+Dim Vcnt As Double
+Dim strsql As String
+Dim rs As RecordSet
+Vcnt = 0
+
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenSnapshot)
+rs.MoveFirst
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+If rs!extra <> "LMC" Then
+Vcnt = Vcnt + 1
+End If
+rs.MoveNext
+Loop
+Else
+Vcnt = 0
+MsgBox ("NO Count for Letters Sent")
+End If
+
+CountLetterPrint = (Vcnt * 2) - 1
+
+End Function
+Public Function CountVASB()
+Dim Vcnt As Double
+Dim strsql As String
+Dim rs As RecordSet
+Vcnt = 0
+
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenSnapshot)
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+Vcnt = Vcnt + 1
+rs.MoveNext
+Loop
+Else
+Vcnt = 0
+MsgBox ("NO Count for Letters Sent")
+End If
+
+CountVASB = (Vcnt * 0.79)
+'(.79 (.44 + .37 (walz fee))
+
+
+End Function
+Public Function CountNoticeTableACL()
+Dim Vcnt As Double
+Dim strsql As String
+Dim rs As RecordSet
+Vcnt = 0
+
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenSnapshot)
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+Vcnt = Vcnt + 1
+rs.MoveNext
+Loop
+Else
+Vcnt = 0
+MsgBox ("NO Count for Letters Sent")
+End If
+
+CountNoticeTableACL = (Vcnt * 8.03)
+'(Certified Mail ($2.70) Return Receipt Service ($2.20) + $.44 and a First Class Letter ($.44))
+
+
+End Function
+Public Function CountNoticeTable()
+Dim Vcnt As Double
+Dim strsql As String
+Dim rs As RecordSet
+Vcnt = 0
+
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenSnapshot)
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+Vcnt = Vcnt + 1
+rs.MoveNext
+Loop
+Else
+Vcnt = 0
+MsgBox ("NO Count for Letters Sent")
+End If
+
+CountNoticeTable = ((Vcnt * 5.54 + 0.44) - 5.54)
+'MsgBox (CountNoticeTable)
+
+
+End Function
+Public Function CountTablenotesWalz()
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenSnapshot)
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+If rs!NoticeTo <> "Commissioner of Financial Regulation" Then
+Vcnt = Vcnt + 1
+End If
+
+rs.MoveNext
+Loop
+Else
+Vcnt = 0
+End If
+
+CountTablenotesWalz = "NOI Ltrs: " & Vcnt & " x ($5.54 (certfied/return receipt) + .44 (1st class) + $2.29 Walz fees))  + .44 (commissioner)  "
+rs.Close
+End Function
+Public Function CountTableNotes()
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenSnapshot)
+
+If Not rs.EOF Then
+
+Do While Not rs.EOF
+If rs!NoticeTo <> "Commissioner of Financial Regulation" Then
+Vcnt = Vcnt + 1
+End If
+
+rs.MoveNext
+Loop
+Else
+Vcnt = 0
+End If
+
+CountTableNotes = "NOI Ltrs: " & Vcnt & " x $5.54 (certfied/return receipt) + .44 (1st class) + .44 (commissioner)"
+rs.Close
+
+End Function
+Public Function CountNoticeTableWALZ()
+Dim Vcnt As Double
+Dim strsql As String
+Dim rs As RecordSet
+Vcnt = 0
+
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenSnapshot)
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+If rs!NoticeTo <> "Commissioner of Financial Regulation" Then
+Vcnt = Vcnt + 1
+End If
+
+rs.MoveNext
+Loop
+Else
+Vcnt = 0
+MsgBox ("NO Count for Letters Sent")
+End If
+
+CountNoticeTableWALZ = ((Vcnt * (5.54 + 2.29 + 0.44)) + 0.44)
+'MsgBox (VCnt & ":" & CountNoticeTableWALZ)
+
+End Function
+Public Function NumberLetters() As Double
+Dim strsql As String
+Dim rs As RecordSet
+Dim VCount, vdebtors As Integer
+vdebtors = 0
+
+If (IsNull(Forms![foreclosure database screen]![Mailing Address]) Or Forms![foreclosure database screen]![Mailing Address] = "") And _
+(IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Or Forms![foreclosure database screen]![Mailing AddressB] = "") Then
+VCount = 1
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+VCount = 2
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+VCount = 3
+End If
+
+'MsgBox (VCount)
+If Forms![foreclosure database screen]!LastNameDebtor1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor3 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor4 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+'MsgBox (vdebtors)
+Dim VNum, VHudVA, VMonMD, VMonVA, VMonDC As Double
+
+If Forms![foreclosure database screen]!Client Like "Homeward*" Or _
+Forms![foreclosure database screen]!Client Like "avelo*" Then
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 3) * 3.88)
+vfdlvirginia = 0.44 + ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 2) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+Else
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 1) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSmaryland = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+Else
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSDC = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 0.44)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 0.44)
+Else
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 0.44)
+End If
+End If
+
+Else
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vnosvirginia = 0.44 + ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 3) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 2) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+Else
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 1) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSmaryland = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+Else
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSDC = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44)
+Else
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44)
+End If
+End If
+End If
+
+Dim VNote As String
+VNote = ""
+
+If WalzCalcFdl = 0 Or IsNull(WalzCalcFdl) Then
+VNote = "FDL not sent via Walz"
+Dim rsR As RecordSet
+Dim strsqlR As String
+strsqlR = "select * from resumes where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsR = CurrentDb.OpenRecordset(strsqlR)
+If rsR.EOF Then
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+FDLMonies = vfdlvirginia
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+FDLMonies = vfdlDC
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+FDLMonies = vfdlmaryland
+End If
+Else
+FDLMonies = 0
+End If
+
+Else
+
+FDLMonies = WalzCalcFdl()
+
+End If
+
+If WalzCalcNOS = 0 Or IsNull(WalzCalcNOS) Then
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+NOSMonies = vnosvirginia
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+NOSMonies = vNOSDC
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+NOSMonies = vNOSmaryland
+End If
+Else
+NOSMonies = WalzCalcNOS()
+End If
+
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!noticesent) And _
+WalzCalcNOS() = 0 Then
+NumberLetters = FDLMonies
+Else
+NumberLetters = FDLMonies + NOSMonies
+End If
+
+'MsgBox (FDLMonies & "/" & NOSMonies & "/" & NumberLetters)
+End Function
+Public Function NumberLettersFeesCosts()
+Dim strsql As String
+Dim rs As RecordSet
+Dim VCount, vdebtors As Integer
+vdebtors = 0
+
+If (IsNull(Forms![foreclosure database screen]![Mailing Address]) Or Forms![foreclosure database screen]![Mailing Address] = "") And _
+(IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Or Forms![foreclosure database screen]![Mailing AddressB] = "") Then
+VCount = 1
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+VCount = 2
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+VCount = 3
+End If
+'MsgBox (VCount)
+If Forms![foreclosure database screen]!LastNameDebtor1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor3 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor4 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+'MsgBox (vdebtors)
+Dim VNum, VHudVA, VMonMD, VMonVA, VMonDC As Double
+
+If Forms![foreclosure database screen]!Client Like "Homeward*" Or _
+Forms![foreclosure database screen]!Client Like "avelo*" Then
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 3) * 3.88)
+vfdlvirginia = 0.44 + ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 2) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+Else
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 1) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSmaryland = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+Else
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSDC = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 0.44)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 0.44)
+Else
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 0.44)
+End If
+
+End If
+
+
+
+Else
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vnosvirginia = 0.44 + ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 3) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 2) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+Else
+vnosvirginia = ((VCount * vdebtors) * 0.61) + ((VCount * vdebtors) * 3.3) + ((NumberLienholders + 1) * 3.88)
+vfdlvirginia = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSmaryland = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54) + ((VCount * vdebtors) * 3.54)
+Else
+vNOSmaryland = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54)
+vfdlmaryland = ((VCount * vdebtors) * 0.44) + ((VCount * vdebtors) * 3.54)
+End If
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+vNOSDC = 0.44 + ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 3) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44)
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 2) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44)
+Else
+vNOSDC = ((VCount * vdebtors) * 3.54) + ((NumberLienholders + 1) * 3.54) + ((VCount * vdebtors) * 3.54)
+vfdlDC = ((VCount * vdebtors) * 0.44)
+End If
+
+End If
+
+End If
+
+'If WalzCalcFdl = 0 Or IsNull(WalzCalcFdl) Then
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+FDLMonies = vfdlvirginia
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+FDLMonies = vfdlDC
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+FDLMonies = vfdlmaryland
+End If
+
+
+'If WalzCalcNOS = 0 Or IsNull(WalzCalcNOS) Then
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+NOSMonies = vnosvirginia
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+NOSMonies = vNOSDC
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+NOSMonies = vNOSmaryland
+End If
+
+'End If
+
+
+'If WalzCalcNOS() = 0 Then
+'NumberLettersFeesCosts = FDLMonies
+'Else
+NumberLettersFeesCosts = FDLMonies + NOSMonies
+
+'End If
+'MsgBox (NumberLetters)
+End Function
+Public Function NumberLtrBillScreenTOTAL() As Double
+NumberLtrBillScreenTOTAL = WalzCalcFdlBillScreen + WalzCalcNOSBillScreen
+End Function
+Public Function NumberLtrBill()
+
+Dim strsql, WalzFDL, WalzNOS As String
+Dim rs As RecordSet
+Dim VCount, vdebtors As Integer
+Dim walzcalcoomc, walzcalcAvelo, walzcalcMDst, walzcalcamchot, walzcalccity, walzcalcCTY, walzcalcVALN As Currency
+Dim NOILtrs
+
+vdebtors = 0
+
+If (IsNull(Forms![foreclosure database screen]![Mailing Address]) Or Forms![foreclosure database screen]![Mailing Address] = "") And _
+(IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Or Forms![foreclosure database screen]![Mailing AddressB] = "") Then
+VCount = 1
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+VCount = 2
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+VCount = 3
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+If Forms![foreclosure database screen]!LastNameDebtor2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+If Forms![foreclosure database screen]!LastNameDebtor3 <> "" Then
+vdebtors = vdebtors + 1
+End If
+If Forms![foreclosure database screen]!lastnamedebtor4 <> "" Then
+vdebtors = vdebtors + 1
+End If
+If Forms![foreclosure database screen]!lastnameo1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+If Forms![foreclosure database screen]!lastnameo2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+Dim VNum, VHudVA, VMonMD, VMonVA, VMonDC As Double
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+NOILtrs = (2 * vdebtors) + 1 & " NOI Letters: Regular (.44) and Certified ($3.12)"
+Else
+NOILtrs = ""
+End If
+
+If Forms![foreclosure database screen]!Client Like "Homeward*" Then
+OOMCLtrs = (VCount * vdebtors) & " Fairdebt Letters for Option One:"
+End If
+If Forms![foreclosure database screen]!Client Like "avelo*" Then
+AveloLtrs = (VCount & vdebtors) & "Avelo Letters: "
+End If
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+FHANOS = "FHA Letter: (2) Letters:"
+FHAFDL = "FHA Letters: (1) Letter:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters/Lost Note Letters ($3.88/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.88 each) and 1 Occupant Letter ($3.88)"
+
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44) and Certified ($3.54)"
+Else
+fdlltrs = "(Resume)"
+End If
+
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+VANOS = "VA Letter: (1) Letters:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters/Lost Note Letters ($3.88/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.88 each) and 1 Occupant Letter ($3.88)"
+
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44) and Certified ($3.54)"
+Else
+fdlltrs = "(Resume)"
+End If
+
+Else
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters/Lost Note Letters ($3.88/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.88 each) and 1 Occupant Letter ($3.88)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44) and Certified ($3.54)"
+Else
+fdlltrs = "(Resume)"
+End If
+End If
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+FHANOS = "FHA Letter: (2) Letters:"
+FHAFDL = "FHA Letters: (1) Letter:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44), Certified ($3.54), County Letter ($3.54) and MD Stat Letter ($3.54):"
+Else
+fdlltrs = "(Resume): " & (VCount * vdebtors) & " County Letter ($3.54) and MD Stat Letter ($3.54):"
+End If
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+VANOS = "VA Letter: (1) Letters:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44), Certified ($3.54), County Letter ($3.54) and MD Stat Letter ($3.54):"
+Else
+fdlltrs = "(Resume): " & (VCount * vdebtors) & " County Letter ($3.54) and MD Stat Letter ($3.54):"
+End If
+Else
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44), Certified ($3.54), County Letter ($3.54) and MD Stat Letter ($3.54)"
+Else
+fdlltrs = "(Resume): " & (VCount * vdebtors) & " County Letter ($3.54) and MD Stat Letter ($3.54):"
+End If
+End If
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+FHANOS = "FHA Letter: (2) Letters:"
+FHAFDL = "FHA Letters: (1) Letter:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44):"
+Else
+fdlltrs = "(Resume)"
+End If
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+VANOS = "VA Letter: (1) Letters:"
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44):"
+Else
+fdlltrs = "(Resume)"
+End If
+Else
+NOSLtrs = (VCount * vdebtors) & " Notice of Sale Letters ($3.54/each) and " & NumberLienholders & " Notice of Sale Lienholder Letters ($3.54 each) and 1 Occupant Letter ($3.54)"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+fdlltrs = (VCount * vdebtors) & " Fairdebt Letters: Regular (.44):"
+Else
+fdlltrs = "(Resume)"
+End If
+End If
+End If
+
+
+formulalettersfdl = fdlltrs & FHAFDL & FHANOS & VANOS & OOMCLtrs & AveloLtrs & NOILtrs
+formulalettersnos = NOSLtrs & FHANOS
+
+'MsgBox (FormulaLetters)
+
+
+If (WalzCalcFdl = 0 Or IsNull(WalzCalcFdl)) Then
+fdlbillscreen = formulalettersfdl
+Else
+fdlbillscreen = WalzFDLBreakOut
+End If
+
+If (WalzCalcNOS = 0 Or IsNull(WalzCalcNOS)) Then
+'MsgBox ("using NOS manual")
+
+nosbillscreen = formulalettersnos
+Else
+nosbillscreen = WalzNOSBreakOut
+End If
+
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!noticesent) And _
+WalzCalcNOS = 0 Then
+NumberLtrBill = fdlbillscreen
+Else
+NumberLtrBill = fdlbillscreen & nosbillscreen
+End If
+
+End Function
+Public Function numberlettersFCBid()
+numberlettersFCBid = NumberLetters()
+End Function
+Public Function LetterCount()
+Dim strsql As String
+Dim rs As RecordSet
+Dim VCount, vdebtors As Integer
+vdebtors = 0
+
+
+If (IsNull(Forms![foreclosure database screen]![Mailing Address]) Or Forms![foreclosure database screen]![Mailing Address] = "") And _
+(IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Or Forms![foreclosure database screen]![Mailing AddressB] = "") Then
+VCount = 1
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+VCount = 2
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+VCount = 3
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor3 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor4 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+Dim VNum As Double
+LetterCount = (5 * (VCount * vdebtors) + NumberLienholders)
+
+'MsgBox (VNum & ": " & NumberLetters)
+
+
+End Function
+Public Function FeePS()
+
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from trioinvoices where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+FeePS = 0#
+
+If Not rs.EOF Then
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+VSaleDate = ""
+Else
+VSaleDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+End If
+
+If VSaleDate = "" Or VSaleDate = rs!SaleDate Then
+FeePS = FeePS + rs!Bill_amt + rs!bill_amt2 + rs!bill_amt3 + rs!bill_amt4 + rs!d_servbymail
+End If
+'MsgBox (rs!SaleDate)
+
+rs.MoveNext
+Loop
+
+Else
+FeePS = 0#
+
+End If
+rs.Close
+
+'MsgBox (FeePS)
+
+End Function
+Public Function FeeST()
+'Dim rs As Recordset
+'Dim strsql As String
+
+'strsql = "select * from foreclosure where subfilenum = " & Forms![foreclosure database screen]!FIleNum
+'Set rs = CurrentDb.OpenRecordset(strsql, dbopensnapshot)
+
+'If Not IsNull(rs!skiptrace_sent) Then
+
+'If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+'VSaleDate = ""
+'Else
+'VSaleDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+'End If
+
+'If VSaleDate = "" Or VSaleDate = rs!SaleDate Then
+'FeeST = numdef() * 35
+'End If
+
+'Else
+'FeeST = 0#
+
+'End If
+
+
+'rs.Close
+
+
+End Function
+Public Function AddNewBillBID()
+Set rsbill = CurrentDb().OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+
+Dim sqlfees As String
+Dim rsfees As RecordSet
+Dim VSaleD As Date
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+    VSaleD = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+    End If
+    
+sqlfees = ("Select * from bidtable where filenum = " & Forms![foreclosure database screen]![filenum])
+Set rsfees = CurrentDb().OpenRecordset(sqlfees, dbOpenSnapshot)
+vcustomerid = GetAutoNumber("NextBillNum")
+
+ If IsNull(Forms![foreclosure database screen]![Propertycounty]) Then
+    MsgBox ("There is no County input for this File!  Please update.")
+    Exit Function
+        Else
+    
+    stateT = Forms![foreclosure database screen]![PropertyState]
+    countyT = Forms![foreclosure database screen]![Propertycounty]
+    sqljd = "Select * from jurisdiction where state = " & """" & stateT & """" & " and county = " & """" & countyT & """"
+    Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+End If
+    
+     
+With rsbill
+.AddNew
+!evicva_UD = 0#
+!process_service = FeePS()
+!skip_trace = 0#
+![sheriff_fee] = 0#
+!water = 0#
+!lien_citation_violation = 0#
+!evicmd_mjap = 0#
+!evicmd_pshco = 0#
+!evicdc_spnq = 0#
+!evicdc_comp = 0#
+!evicdc_sps = 0#
+!evicdc_usmf = 0#
+!estate_adm = 0#
+!estate_cost = 0#
+!dod_search = 0#
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" And _
+Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!sale_cancelled) Then
+!fee_dismcase = 15#
+Else
+!fee_dismcase = 0#
+End If
+
+If Not IsNull(VSaleD) Then
+!bill_saledate = VSaleD
+End If
+
+If Not IsNull(rsfees!audfee) Then
+!d_audfee = rsfees!audfee
+Else
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!SalePrice > 0 And _
+Forms![foreclosure database screen]!PropertyState = "VA" Then
+!d_audfee = VACommFeeBill()
+ElseIf Not IsNull(js!auditor_fee) Then
+!d_audfee = js!auditor_fee
+Else
+!d_audfee = 0#
+End If
+End If
+
+If Not IsNull(rsfees!advnisi) Then
+!d_advnisi = rsfees!advnisi
+Else
+If Not IsNull(js!nisi_fee) Then
+!d_advnisi = js!nisi_fee
+Else
+!d_advnisi = 0#
+End If
+End If
+
+!cert_cpy_dot = 0#
+!billingdate = Date
+!sheriff_fee = 0#
+!writ_fee = 0#
+
+
+!CustomerID = vcustomerid
+!filenum = Forms![foreclosure database screen]![filenum]
+![Attorney Fee] = rsfees![Attorney Fee]
+!l_prepabstract = rsfees!prepabstract
+
+!l_appearance = LNA()
+
+If Forms![foreclosure database screen]![ForeclosureSubForm].Form!LNA = "Yes" Then
+If rsfees!prepmotion_lna = 0 Or IsNull(rsfees!prepmotion_lna) Then
+If Forms![foreclosure database screen]![Fidelity] = 0 Then
+If !feeothermoney = 0 Or IsNull(!feeothermoney) Then
+!feeothertext = "Prep and Draft Motion Accept Lost Note Aff"
+!feeothermoney = 150#
+Else
+!othert10 = "Prep and Draft Motion Accept Lost Note Aff"
+!otherm10 = 150#
+End If
+End If
+End If
+End If
+
+!re_recording = rsfees!re_recording
+!d_realestatetaxes = rsfees!realestatetaxes
+!d_titlesearch = rsfees!Titlesearch
+!d_filing = rsfees!filing
+If Forms![foreclosure database screen]![PropertyState] = "DC" Then
+   !d_recording = js!doa_recording + 20
+   ElseIf Forms![foreclosure database screen]![PropertyState] = "VA" Then
+   If js!doa_recording = 0 Then !d_recording = 30# Else !d_recording = js!doa_recording
+    ElseIf Forms![foreclosure database screen]![PropertyState] = "MD" Then
+   If Forms![foreclosure database screen]![Propertycounty] = "Prince George's" Then
+   !d_recording = 95#
+   Else
+   !d_recording = rsfees!recording
+   End If
+   End If
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs) Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs > 0 Then
+!d_adv = Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs
+Else
+!d_adv = rsfees!d_adv
+End If
+
+!d_bondprem = rsfees!bondprem
+!motion_accept = rsfees!motion_accept
+!d_auctfee = rsfees!auctfee
+!d_servbymail = NumberLetters()
+!othert1 = rsfees!othert1
+!othert2 = rsfees!othert2
+!otherm1 = rsfees!otherm1
+!otherm2 = rsfees!otherm2
+!fee_prepassignment = 0#
+!fee_recassignment = 0#
+!fee_recpoweratt = 0#
+
+.Update
+End With
+rsbill.Close
+
+'=======================================
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+DocName = "BillingMainEdit"
+linkcriteria = "[CustomerID] =  " & vcustomerid & " And FIleNum = " & GblFilenum
+DoCmd.OpenForm DocName, , , linkcriteria
+DoCmd.RunMacro ("closebillingmain")
+End Function
+
+Public Function BillNotes()
+Dim VBillMsg, strsql As String
+Dim rs As RecordSet
+strsql = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Forms![foreclosure database screen]!Client Like "OneWest*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+
+VBillMsg = MsgBox("Billing Notes for: " & Forms![foreclosure database screen]!Client & vbCr & "Lost Note Affidavit: Separate Invoice" & vbCr & "Title Claim: MUST be billed separately and under Attorney Fees" & vbCr & "Preparation/Drafting Assignment of Mortgage: Separate Invoice" & vbCr & "Real Estate Taxes: Separate Invoice" & vbCr & "Creating bill for everything REMEMBER you must create Separate Invoices!")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Wilshire*" Or _
+Forms![foreclosure database screen]!Client = "Lender Business Process Services" Or _
+Forms![foreclosure database screen]!Client Like "Citi Res*" Then
+VBillMsg = MsgBox("Billing Notes for: " & Forms![foreclosure database screen]!Client & vbCr & "Title Claim MUST be billed separately and under Attorney Fees")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Litton*" Then
+VBillMsg = MsgBox("Billing Notes for: " & Forms![foreclosure database screen]!Client & vbCr & "You can NOT charge more than $50.00 for Lost Note Affidavit")
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "HSBC*" _
+Or Forms![foreclosure database screen]!Client Like "Citi*" _
+Or rs!NewTrak = 1 Then
+VBillMsg = MsgBox("Billing Notes for: " & Forms![foreclosure database screen]!Client & vbCr & "If you are billing a line item that is more than $1000.00, you are required to have backup loaded into Newtrak as a FC Invoice Document before you submit the Invoice.")
+End If
+
+rs.Close
+
+End Function
+

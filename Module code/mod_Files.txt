@@ -1,0 +1,3533 @@
+Attribute VB_Name = "Files"
+Option Compare Database
+Option Explicit
+
+Declare Function ShellExecute& Lib "shell32.dll" Alias "ShellExecuteA" (ByVal hwnd As Long, ByVal lpOperation As String, ByVal lpFile As String, ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long)
+Const SW_SHOWNORMAL = 1
+Const ERROR_FILE_NOT_FOUND = 2&
+Const ERROR_PATH_NOT_FOUND = 3&
+Const ERROR_BAD_FORMAT = 11&
+Declare Function GetDesktopWindow& Lib "user32" ()
+Public Function ScoreCardCloseOpen()
+DoCmd.Close acForm, "ScoreCardTabs"
+DoCmd.OpenForm ("ScoreCardTabs")
+
+
+End Function
+Public Function AddOcwenMilestone()
+
+Dim strsql As String
+Dim rs As RecordSet
+
+If Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+strsql = "select * from ocwenmilestones where filenum = " & GblFilenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+
+Dim rsFC As RecordSet
+Set rsFC = CurrentDb.OpenRecordset("ocwenmilestones", dbOpenDynaset, dbSeeChanges)
+
+With rsFC
+.AddNew
+!filenum = GblFilenum
+
+.Update
+End With
+End If
+
+
+End If
+
+End Function
+
+Public Sub CheckPostsaleSupplement()
+Dim rs As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("select filenum from postsalesupplement where filenum = " & _
+    Forms![foreclosure database screen]!filenum, , dbOpenSnapshot)
+
+If rs.EOF Then
+With rs
+    .AddNew
+    !filenum = Forms![foreclosure database screen]!filenum
+    .Update
+End With
+
+
+
+
+rs.Close
+Set rs = Nothing
+
+DoCmd.RunCommand acCmdRefresh
+
+Else
+
+rs.Close
+Set rs = Nothing
+
+End If
+
+End Sub
+
+Public Function AddOChecklist()
+
+Dim strsql As String
+Dim rs As RecordSet
+Dim rsOC
+
+strsql = "select * from OcwenChecklist where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+        
+    If rs.EOF Then
+    'MsgBox ("No BWW#")
+    
+    rs.Close
+    
+    Set rsOC = CurrentDb.OpenRecordset("OcwenChecklist", dbOpenDynaset, dbSeeChanges)
+    With rsOC
+    .AddNew
+    !filenum = Forms![foreclosure database screen]![filenum]
+    .Update
+    .Close
+    End With
+    End If
+ 
+
+End Function
+Public Function OpenCoopFrm()
+Dim rs As RecordSet
+Dim strsql As String
+
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+strsql = "Select * from coop where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+Dim rsCoop As RecordSet
+
+If rs.EOF Then
+rs.Close
+Set rsCoop = CurrentDb.OpenRecordset("coop", dbOpenDynaset, dbSeeChanges)
+
+With rsCoop
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+
+End If
+
+DoCmd.OpenForm "CoopFrm"
+
+End Function
+Public Function InsertNadel()
+Dim VID As Long
+Dim f, fso
+
+VID = Forms!deedtransfer!filenum
+
+Set fso = CreateObject("Scripting.filesystemobject")
+If FileOrDirExists(NadelPath & VID) Then
+Else
+Set f = fso.CreateFolder(NadelPath & VID)
+End If
+Set f = Nothing
+Set fso = Nothing
+
+
+End Function
+
+Public Function InsertScoreCard()
+Dim VID As Long
+Dim f, fso
+
+VID = Forms!scorecardtabs!ID
+
+Set fso = CreateObject("Scripting.filesystemobject")
+If FileOrDirExists(ScoreCardPath & VID) Then
+Else
+Set f = fso.CreateFolder(ScoreCardPath & VID)
+End If
+Set f = Nothing
+Set fso = Nothing
+
+
+End Function
+Public Function InsertScoreCardCompleted()
+Dim VID As Long
+Dim f, fso
+
+VID = Forms!scorecardtabs!ScoreCardCompleted!ID
+
+Set fso = CreateObject("Scripting.filesystemobject")
+If FileOrDirExists(ScoreCardPath & VID) Then
+Else
+Set f = fso.CreateFolder(ScoreCardPath & VID)
+End If
+Set f = Nothing
+Set fso = Nothing
+
+
+End Function
+
+Public Function InsertAnnouncement()
+Dim VID As Long
+Dim f, fso
+
+VID = Forms!clientannouncements!ID
+
+Set fso = CreateObject("Scripting.filesystemobject")
+If FileOrDirExists(ClientAnnPath & VID) Then
+Else
+Set f = fso.CreateFolder(ClientAnnPath & VID)
+End If
+Set f = Nothing
+Set fso = Nothing
+
+
+End Function
+Public Function InsertAnnouncementClosed()
+Dim VID As Long
+Dim f, fso
+
+VID = Forms!clientannouncementsClosed!ID
+
+Set fso = CreateObject("Scripting.filesystemobject")
+If FileOrDirExists(ClientAnnPath & VID) Then
+Else
+Set f = fso.CreateFolder(ClientAnnPath & VID)
+End If
+Set f = Nothing
+Set fso = Nothing
+
+
+End Function
+Public Function PathUSERPOPUp()
+
+Dim sPathUser
+sPathUser = Environ$("USERPROFILE") & "\appdata\local\programs\"
+
+If sPathUser Like "C:\user*" Then
+PathUSERPOPUp = Environ$("USERPROFILE") & "\appdata\local\programs\"
+Else
+PathUSERPOPUp = Environ$("USERPROFILE") & "\local settings\application data\programs\"
+End If
+
+InputBox "Path User Location (Copy and Paste)", "Path User Location", PathUSERPOPUp
+End Function
+
+Public Function pathuser()
+
+Dim sPathUser
+sPathUser = Environ$("USERPROFILE") & "\appdata\local\programs\"
+
+If sPathUser Like "C:\user*" Then
+pathuser = Environ$("USERPROFILE") & "\appdata\local\programs\"
+Else
+pathuser = Environ$("USERPROFILE") & "\local settings\application data\programs\"
+End If
+
+'MsgBox (PathUSER)
+End Function
+Public Function FileOrDirExists(pathname As String) As Boolean
+
+Dim iTemp As Integer
+'Ignore errors to allow for error evaluation
+On Error Resume Next
+iTemp = GetAttr(pathname)
+'Check if error exists and set response appropriately
+Select Case Err.Number
+Case Is = 0
+FileOrDirExists = True
+Case Else
+FileOrDirExists = False
+End Select
+'Resume error checking
+On Error GoTo 0
+End Function
+
+
+Public Function CreateFldrAutoIndUSER()
+Dim f, fso
+
+Set fso = CreateObject("Scripting.filesystemobject")
+If FileOrDirExists(AutoIndexPathUser & username()) Then
+Else
+Set f = fso.CreateFolder(AutoIndexPathUser & username())
+End If
+Set f = Nothing
+Set fso = Nothing
+
+End Function
+Public Function CreateFldrType(VFolder)
+Call CreateFldrAutoIndUSER
+
+Dim f, fso
+
+Set fso = CreateObject("Scripting.filesystemobject")
+
+If FileOrDirExists(AutoIndexPathUser & username() & "\" & VFolder) Then
+Else
+Set f = fso.CreateFolder(AutoIndexPathUser & username() & "\" & VFolder)
+End If
+Set f = Nothing
+Set fso = Nothing
+
+End Function
+Public Function ThirdPartyOLServ()
+Dim strsqlClient As String
+Dim rsClient As RecordSet
+
+strsqlClient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+
+If rsClient!NewTrak = 1 Or rsClient!NewTrak = -1 Then
+ThirdPartyOLServ = "NT"
+ElseIf rsClient!vendorscape = 1 Or rsClient!vendorscape = -1 Then
+ThirdPartyOLServ = "VS"
+ElseIf rsClient!lenstar = 1 Or rsClient!lenstar = -1 Then
+ThirdPartyOLServ = "LS"
+Else
+ThirdPartyOLServ = "NA"
+End If
+
+End Function
+Public Function AddBKMisc()
+Dim rs As RecordSet
+Dim strsql As String
+Dim VCid
+
+strsql = "select * from bkmisc where subfilenum = " & Forms![foreclosure database screen]!filenum & " and counter = " & Forms![foreclosure database screen]!BankruptcySubForm.Form!counter & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("bkmisc", dbOpenDynaset, dbSeeChanges)
+
+   
+    With rs
+    .AddNew
+    !counter = Forms!bankruptcymain!BankruptcySubForm.Form!counter
+    !SubFileNum = Forms![foreclosure database screen]![filenum]
+    .Update
+    .Close
+    End With
+       
+Else
+rs.Close
+End If
+End Function
+Public Function AddNODRes()
+Dim rs As RecordSet
+Dim strsql As String
+Dim VCid
+
+strsql = "select * from NODResolution where subfilenum = " & Forms![foreclosure database screen]!filenum & " and counter = " & Forms!bankruptcymain!BankruptcySubForm.Form!counter & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("NODResolution", dbOpenDynaset, dbSeeChanges)
+
+   
+    With rs
+    .AddNew
+    !counter = Forms!bankruptcymain!BankruptcySubForm.Form!counter
+    !SubFileNum = Forms![foreclosure database screen]![filenum]
+    .Update
+    .Close
+    End With
+       
+Else
+rs.Close
+End If
+End Function
+Public Function AddToACL()
+Dim rs As RecordSet
+Dim strsql As String
+Dim VCid
+
+strsql = "select * from TblACL where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("TblACL", dbOpenDynaset, dbSeeChanges)
+
+VCid = GetAutoNumber("getnextabstractnum")
+    
+    With rs
+    .AddNew
+    !CustomerID = VCid
+    !filenum = Forms![foreclosure database screen]![filenum]
+    .Update
+    .Close
+    End With
+       
+Else
+rs.Close
+End If
+
+
+End Function
+Public Function AddtoPostsaleDC()
+Dim strsqlPSDc As String
+Dim rsPSDC As RecordSet
+
+strsqlPSDc = "select * from postsaledc where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsPSDC = CurrentDb.OpenRecordset(strsqlPSDc, dbOpenSnapshot)
+
+If rsPSDC.EOF Then
+Set rsPSDC = CurrentDb.OpenRecordset("postsaledc", dbOpenDynaset, dbSeeChanges)
+With rsPSDC
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+End If
+
+End Function
+
+
+Public Function AddToFCTrackingDC()
+Call AddtoPostsaleDC
+Dim strsqlAffs As String
+Dim rsAffs As RecordSet
+
+
+strsqlAffs = "select * from fctrackingDC where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsAffs = CurrentDb.OpenRecordset(strsqlAffs, dbOpenSnapshot)
+
+If rsAffs.EOF Then
+Set rsAffs = CurrentDb.OpenRecordset("fctrackingDC", dbOpenDynaset, dbSeeChanges)
+With rsAffs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+End If
+
+
+End Function
+
+Public Function AddToFCTracking()
+Dim strsql As String
+Dim rs As RecordSet
+Dim strsqlClient As String
+Dim rsClient As RecordSet
+Dim PExt
+Dim NOIPhone
+Dim strsqlAffs As String
+Dim rsAffs As RecordSet
+Dim rsUTD As RecordSet
+Dim strsqlUTD As String
+
+strsqlAffs = "select * from fcaffs_tracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsAffs = CurrentDb.OpenRecordset(strsqlAffs, dbOpenSnapshot)
+
+If rsAffs.EOF Then
+Set rsAffs = CurrentDb.OpenRecordset("fcaffs_tracking", dbOpenDynaset, dbSeeChanges)
+With rsAffs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+End If
+Set rsAffs = Nothing
+
+strsqlUTD = "select * from FCTrackingUnableDocket where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsUTD = CurrentDb.OpenRecordset(strsqlUTD, dbOpenSnapshot)
+
+If rsUTD.EOF Then
+Set rsUTD = CurrentDb.OpenRecordset("FCTrackingUnableDocket", dbOpenDynaset, dbSeeChanges)
+With rsUTD
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+End If
+
+Set rsUTD = Nothing
+
+
+Dim LMN As String
+
+strsqlClient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+
+If Forms![foreclosure database screen]!Client Like "Suntrust*" And _
+Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+LMN = "(877) 657-8433"
+Else
+If IsNull(rsClient!loss_mit_no) Then
+LMN = ""
+Else
+LMN = rsClient!loss_mit_no
+End If
+
+If IsNull(rsClient!Loss_mit_no_ext) Then
+Else
+LMN = LMN & ", " & rsClient!Loss_mit_no_ext
+End If
+End If
+
+rsClient.Close
+Set rsClient = Nothing
+
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("fctracking", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+If Forms![foreclosure database screen]!TypeOfLoan Like "FNMA*" Then
+!sp_phone = "(800)7-FANNIE"
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust*" And _
+Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+!sp_phone = "(877) 675-8433"
+Else
+!sp_phone = LMN
+
+End If
+
+!serv_phone = LMN
+
+.Update
+.Close
+End With
+Set rs = Nothing
+
+Else
+Dim strsqlfct
+End If
+
+
+'Check docupload
+Dim rsDU As RecordSet
+Dim strsqlDU As String
+
+strsqlDU = "select * from docupload where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsDU = CurrentDb.OpenRecordset(strsqlDU, dbOpenSnapshot)
+
+If rsDU.EOF Then
+Set rsDU = CurrentDb.OpenRecordset("docupload", dbOpenDynaset, dbSeeChanges)
+
+With rsDU
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+
+End If
+Set rsDU = Nothing
+
+'end docupload check
+
+End Function
+Public Function ViewDoc(VDoc As String)
+Dim WordObj As Object
+Set WordObj = CreateObject("Word.Application")
+WordObj.Visible = True
+WordObj.Documents.Open VDoc
+Set WordObj = Nothing
+
+End Function
+Public Function ExplanationFC()
+
+ViewDoc ("\\rvdv-fs01\datatransfer\attachments\ExplanationFCProcess.doc")
+
+End Function
+Public Function PrintDoc(VDoc As String)
+Dim WordObj As Object
+Set WordObj = CreateObject("Word.Application")
+WordObj.Documents.Open VDoc
+WordObj.PrintOut Background:=False
+WordObj.Quit
+Set WordObj = Nothing
+End Function
+
+Public Function ResumeMemo()
+
+Dim VMemo As String
+
+VMemo = "Resume Rec'd: " & Forms!resumeform!RR & _
+"/Resume Completed: " & Forms!resumeform!Reset & " by: " & Forms!resumeform!RC & _
+"/Prev. Sale Date: " & Forms!resumeform!SaleDate & _
+"/Secured Party Verified: " & Forms!resumeform!SPV & _
+"/Prior Civil Suit Review: " & Forms!resumeform!PCSR & _
+"/NOI Reviewed: " & Forms!resumeform!NOIR & " New NOI Needed: " & Forms!resumeform!NNDI & _
+"/Secured Party Valid " & Forms!resumeform!SPVALID & _
+"/Send to All Addresses: " & Forms!resumeform!SAA & _
+"/Date of Last Payment: " & Forms!resumeform!NOLP & _
+"/Last Payment Recd: " & Forms!resumeform!NLPR & _
+"/Date of Default: " & Forms!resumeform!NDD & _
+"/Reinstatement Amount: " & Forms!resumeform!NRA & _
+"/Note Signature Checked " & Forms!resumeform!NSC & _
+"/FDL Verified: " & Forms!resumeform!fdl_sent & ":" & Forms!resumeform!VD & _
+"/Pacer Checked: " & Forms!resumeform!PC & _
+"/Military Search: " & Forms!resumeform!MS & _
+"/SSDI Search: " & Forms!resumeform!SSDI & _
+"/SDAT Search: " & Forms!resumeform!sdat & _
+"/Grantors from DOT verified: " & Forms!resumeform!GDOT & _
+"/Liber/Folio from DOT: " & Forms!resumeform!LFDOT & _
+"Additional Fee Request Needed: " & Forms!resumeform!addfeereqneeded & _
+"Additional Fee Requested Date: " & Forms!resumeform!addfeereq & _
+"/Next Action: " & Forms!resumeform!NA
+
+'msgbox (VMemo)
+
+
+Call AddJournalEntry(Forms![foreclosure database screen]!filenum, VMemo)
+
+
+
+End Function
+
+Public Function LocateWalzReject()
+Dim VSel
+Dim VReference
+Dim VAddress
+Dim strsql As String
+Dim rs As RecordSet
+Dim linkcriteria As String
+Dim VFile1
+Dim VFile2
+Dim VFile3
+Dim VTypeAdd1, VtypeAdd2, Vtypeadd3
+
+VSel = InputBox("Record Finder: Locate By: " & vbCr & "1. Walz Reference# for Rejects" & vbCr & "2. Address (Searches all Property/Mailing Addresses)" & vbCr & "3. Lienholder Address" & vbCr & "4. EXIT" & vbCr & "select 1, 2, 3 or 4 to Exit")
+
+If VSel = 1 Then
+VReference = InputBox("Enter Reference Number from Walz Reject Email:")
+strsql = "select * from walzinfo where id_no = " & VReference & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+MsgBox ("Cannot find by Reference#")
+
+Else
+MsgBox ("This file sent a record indicator of: " & rs!ri & ".  Will now open screen to BWW#: " & rs!filenum)
+
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & rs!filenum
+rs.Close
+Exit Function
+End If
+
+ElseIf VSel = 2 Then
+
+
+VAddress = InputBox("Enter Address for Search:")
+Dim VCt
+VCt = 0
+
+strsql = "select * from cases where [propaddress] like " & """" & VAddress & "*"" "
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+VFile1 = 0
+strsql = "select * from cases where [mailing address] like " & """" & VAddress & "*"" "
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+Else
+VFile1 = rs!filenum
+VTypeAdd1 = "Property Address"
+VCt = VCt + 1
+End If
+rs.Close
+
+strsql = "select * from cases where [mailing address] like " & """" & VAddress & "*"" "
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+VFile2 = 0
+Else
+VFile2 = rs!filenum
+VtypeAdd2 = "1st Mailing Address"
+VCt = VCt + 1
+End If
+rs.Close
+
+strsql = "select * from cases where [mailing addressb] like " & """" & VAddress & "*"" "
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+VFile3 = 0
+Else
+VFile3 = rs!filenum
+Vtypeadd3 = "2nd Mailing Address"
+VCt = VCt + 1
+End If
+rs.Close
+
+If VFile1 = 0 And VFile2 = 0 And VFile3 = 0 Then
+MsgBox ("Cannot find by property or mailing addresses")
+ElseIf VFile1 > 0 And VFile2 = 0 And VFile3 = 0 Then
+MsgBox ("Will now open screen to BWW# (" & VTypeAdd1 & " was found), you have to access Walz Screen to see what type of letter was sent for: " & rs!filenum)
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & VFile1
+rs.Close
+Exit Function
+ElseIf VFile1 = 0 And VFile2 > 0 And VFile3 = 0 Then
+MsgBox ("Will now open screen to BWW#, (" & VtypeAdd2 & " was found), you have to access Walz Screen to see what type of letter was sent for: " & rs!filenum)
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & VFile2
+rs.Close
+Exit Function
+ElseIf VFile1 = 0 And VFile2 = 0 And VFile3 > 0 Then
+MsgBox ("Will now open screen to BWW#, (" & Vtypeadd3 & " was found), you have to access Walz Screen to see what type of letter was sent for: " & rs!filenum)
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & VFile2
+rs.Close
+Exit Function
+ElseIf VCt > 0 Then
+
+Dim VselFile
+VselFile = InputBox("More than one (1) file was found with this address:" & vbCr & "1. " & VFile1 & ":" & VTypeAdd1 & vbCr & "2. " & VFile2 & ":" & VtypeAdd2 & vbCr & "3. " & VFile3 & ":" & Vtypeadd3 & vbCr & vbCr & "select 1, 2 or 3 (File# Info Next to Each Selection)")
+If VselFile = 1 Then
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & VFile1
+ElseIf VselFile = 2 Then
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & VFile2
+ElseIf VselFile = 3 Then
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & VFile3
+End If
+
+
+
+End If
+
+
+ElseIf VSel = 3 Then
+Dim vFile
+
+VAddress = InputBox("Enter Address from Email:")
+
+strsql = "select * from creditors where [address] like " & """" & VAddress & "*"" "
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("Cannot find by Any Lienholder Address that match the criteria")
+Else
+MsgBox ("Will now open screen to BWW#, you have to access Walz Screen to see what type of letter was sent for: " & rs!filenum)
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & vFile
+rs.Close
+Exit Function
+End If
+
+ElseIf VSel = 4 Then
+Exit Function
+
+
+End If
+
+
+
+
+
+
+End Function
+Public Function NewDiary()
+Dim rs As RecordSet
+DoCmd.Close acForm, "Diary"
+
+Set rs = CurrentDb.OpenRecordset("diary", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+'!counter_id = GetAutoNumber("NextAudNum")
+.Update
+.Close
+End With
+
+DoCmd.OpenForm "Diary"
+End Function
+Public Function ReOpenCASE()
+Dim VCls As String
+VCls = InputBox("Re-Open file? Type in YES if you are reopening this case")
+If VCls = "YES" Then
+[Forms]![foreclosure database screen]![ClosedNum] = 0
+[Forms]![foreclosure database screen]!Status = "Foreclosure"
+''logcase Forms![foreclosure database screen]!FileNum, "ReOpened Case: "
+Else
+Exit Function
+End If
+End Function
+Public Function AddBK()
+
+' Verify that the referenced form is still there
+If Not CurrentProject.AllForms("foreclosure database screen").IsLoaded Then Exit Function
+
+
+Dim rsBK As RecordSet
+Dim VBGw As Long
+
+Dim VBK As Long
+Dim rsbkar As RecordSet
+
+Set rsbkar = CurrentDb.OpenRecordset("BKArrearages", dbOpenDynaset, dbSeeChanges)
+Set rsBK = CurrentDb.OpenRecordset("Bankruptcy", dbOpenDynaset, dbSeeChanges)
+
+VBGw = Forms![foreclosure database screen]!filenum
+
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form!BK_No) Then
+GblBKNo = 0
+Else
+GblBKNo = Forms!bankruptcymain!BankruptcySubForm.Form!BK_No
+
+End If
+
+DoCmd.Close acForm, "Foreclosure database screen"
+DoCmd.Close acForm, "BankruptcyMAIN"
+Dim Vcnt As Long
+
+Vcnt = GetAutoNumber("NextBankruptcy")
+
+With rsBK
+.AddNew
+!SubFileNum = VBGw
+!counter = Vcnt
+!BK_No = GblBKNo + 1
+!DateFiled = Date
+.Update
+.Close
+End With
+
+With rsbkar
+.AddNew
+!SubFileNum = VBGw
+!counter = Vcnt
+.Update
+.Close
+End With
+
+MsgBox ("Bankruptcy added for " & VBGw & ", Please Re-open Foreclosure screen")
+
+
+'DoCmd.OpenForm "Foreclosure Database Screen", , , "Filenum = " & VBGW
+
+End Function
+Public Function AddRecord()
+VNF = 1
+DoCmd.OpenForm "NewFile"
+End Function
+Public Function CheckMailingLog()
+
+If Not IsNull(VMail1) And VMail1 <> Forms![foreclosure database screen]![Mailing Address] Then
+CheckMailingLog = "Mailing"
+VMail1 = Forms![foreclosure database screen]![Mailing Address]
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address2]) And _
+Forms![foreclosure database screen]![Mailing Address2] <> "" Then
+VMail2 = Forms![foreclosure database screen]![Mailing Address2]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing City]) And _
+Forms![foreclosure database screen]![Mailing City] <> "" Then
+VMail3 = Forms![foreclosure database screen]![Mailing City]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing State]) And _
+Forms![foreclosure database screen]![Mailing State] <> "" Then
+VMail4 = Forms![foreclosure database screen]![Mailing State]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing Zip]) And _
+Forms![foreclosure database screen]![Mailing Zip] <> "" Then
+VMail5 = Forms![foreclosure database screen]![Mailing Zip]
+End If
+End If
+
+
+If Not IsNull(VMailb1) And VMailb1 <> Forms![foreclosure database screen]![Mailing AddressB] Then
+CheckMailingLog = CheckMailingLog + "/2nd Mailing"
+VMailb1 = Forms![foreclosure database screen]![Mailing AddressB]
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address2B]) And _
+Forms![foreclosure database screen]![Mailing Address2B] <> "" Then
+VMailb2 = Forms![foreclosure database screen]![Mailing Address2B]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing CityB]) And _
+Forms![foreclosure database screen]![Mailing CityB] <> "" Then
+VMailb3 = Forms![foreclosure database screen]![Mailing CityB]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing StateB]) And _
+Forms![foreclosure database screen]![Mailing StateB] <> "" Then
+VMailb4 = Forms![foreclosure database screen]![Mailing StateB]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing ZipB]) And _
+Forms![foreclosure database screen]![Mailing ZipB] <> "" Then
+VMailb5 = Forms![foreclosure database screen]![Mailing ZipB]
+End If
+End If
+
+If Not IsNull(VSdat1) And VSdat1 <> Forms![foreclosure database screen]![SDatAddress] Then
+CheckMailingLog = CheckMailingLog + "/SDAT"
+VSdat1 = Forms![foreclosure database screen]![SDatAddress]
+If Not IsNull(Forms![foreclosure database screen]![SDatAddress2]) And _
+Forms![foreclosure database screen]![SDatAddress2] <> "" Then
+VSdat2 = Forms![foreclosure database screen]![SDatAddress2]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatCity]) And _
+Forms![foreclosure database screen]![SDatCity] <> "" Then
+VSdat3 = Forms![foreclosure database screen]![SDatCity]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatState]) And _
+Forms![foreclosure database screen]![SDatState] <> "" Then
+VSdat4 = Forms![foreclosure database screen]![SDatState]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatZip]) And _
+Forms![foreclosure database screen]![SDatZip] <> "" Then
+VSdat5 = Forms![foreclosure database screen]![SDatZip]
+End If
+End If
+
+If CheckMailingLog <> "" Then
+Dim VPsd
+Dim vOldAdd As String
+If CheckMailingLog Like "Mailing*" Then
+vOldAdd = VMail1 & "/" & VMail2 & "/" & VMail3 & "/" & VMail4 & "/" & VMail5
+End If
+If CheckMailingLog Like "*2nd*" Then
+vOldAdd = vOldAdd + "/" & VMailb1 & "/" & VMailb2 & "/" & VMailb3 & "/" & VMailb4 & "/" & VMailb5
+End If
+If CheckMailingLog Like "*sdat*" Then
+vOldAdd = vOldAdd + "/" & VSdat1 & "/" & VSdat2 & "/" & VSdat3 & "/" & VSdat4 & "/" & VSdat5
+End If
+''logcase Forms![foreclosure database screen]!FileNum, "Changed Address: " & CheckMailingLog & "/Old Add:" & vOldAdd & Date
+
+End If
+
+End Function
+Public Function CheckMailingChange()
+
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address]) And _
+Forms![foreclosure database screen]![Mailing Address] <> "" Then
+VMail1 = Forms![foreclosure database screen]![Mailing Address]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address2]) And _
+Forms![foreclosure database screen]![Mailing Address2] <> "" Then
+VMail2 = Forms![foreclosure database screen]![Mailing Address2]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing City]) And _
+Forms![foreclosure database screen]![Mailing City] <> "" Then
+VMail3 = Forms![foreclosure database screen]![Mailing City]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing State]) And _
+Forms![foreclosure database screen]![Mailing State] <> "" Then
+VMail4 = Forms![foreclosure database screen]![Mailing State]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing Zip]) And _
+Forms![foreclosure database screen]![Mailing Zip] <> "" Then
+VMail5 = Forms![foreclosure database screen]![Mailing Zip]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) And _
+Forms![foreclosure database screen]![Mailing AddressB] <> "" Then
+VMailb1 = Forms![foreclosure database screen]![Mailing AddressB]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address2B]) And _
+Forms![foreclosure database screen]![Mailing Address2B] <> "" Then
+VMailb2 = Forms![foreclosure database screen]![Mailing Address2B]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing CityB]) And _
+Forms![foreclosure database screen]![Mailing CityB] <> "" Then
+VMailb3 = Forms![foreclosure database screen]![Mailing CityB]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing StateB]) And _
+Forms![foreclosure database screen]![Mailing StateB] <> "" Then
+VMailb4 = Forms![foreclosure database screen]![Mailing StateB]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing ZipB]) And _
+Forms![foreclosure database screen]![Mailing ZipB] <> "" Then
+VMailb5 = Forms![foreclosure database screen]![Mailing ZipB]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatAddress]) And _
+Forms![foreclosure database screen]![SDatAddress] <> "" Then
+VSdat1 = Forms![foreclosure database screen]![SDatAddress]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatAddress2]) And _
+Forms![foreclosure database screen]![SDatAddress2] <> "" Then
+VSdat2 = Forms![foreclosure database screen]![SDatAddress2]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatCity]) And _
+Forms![foreclosure database screen]![SDatCity] <> "" Then
+VSdat3 = Forms![foreclosure database screen]![SDatCity]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatState]) And _
+Forms![foreclosure database screen]![SDatState] <> "" Then
+VSdat4 = Forms![foreclosure database screen]![SDatState]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatZip]) And _
+Forms![foreclosure database screen]![SDatZip] <> "" Then
+VSdat5 = Forms![foreclosure database screen]![SDatZip]
+End If
+
+End Function
+Public Function CheckMailingCHG()
+
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address]) And _
+Forms![foreclosure database screen]![Mailing Address] <> "" Then
+If Not IsNull(VMail1) And VMail1 <> Forms![foreclosure database screen]![Mailing Address] Then
+CheckMailingCHG = "Mailing"
+End If
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address2]) And _
+Forms![foreclosure database screen]![Mailing Address2] <> "" Then
+VMail2 = Forms![foreclosure database screen]![Mailing Address2]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing City]) And _
+Forms![foreclosure database screen]![Mailing City] <> "" Then
+VMail3 = Forms![foreclosure database screen]![Mailing City]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing State]) And _
+Forms![foreclosure database screen]![Mailing State] <> "" Then
+VMail4 = Forms![foreclosure database screen]![Mailing State]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing Zip]) And _
+Forms![foreclosure database screen]![Mailing Zip] <> "" Then
+VMail5 = Forms![foreclosure database screen]![Mailing Zip]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) And _
+Forms![foreclosure database screen]![Mailing AddressB] <> "" Then
+If Not IsNull(VMailb1) And VMailb1 <> Forms![foreclosure database screen]![Mailing AddressB] Then
+CheckMailingCHG = CheckMailingCHG + "/2nd Mailing"
+End If
+VMailb1 = Forms![foreclosure database screen]![Mailing AddressB]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address2B]) And _
+Forms![foreclosure database screen]![Mailing Address2B] <> "" Then
+VMailb2 = Forms![foreclosure database screen]![Mailing Address2B]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing CityB]) And _
+Forms![foreclosure database screen]![Mailing CityB] <> "" Then
+VMailb3 = Forms![foreclosure database screen]![Mailing CityB]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing StateB]) And _
+Forms![foreclosure database screen]![Mailing StateB] <> "" Then
+VMailb4 = Forms![foreclosure database screen]![Mailing StateB]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing ZipB]) And _
+Forms![foreclosure database screen]![Mailing ZipB] <> "" Then
+VMailb5 = Forms![foreclosure database screen]![Mailing ZipB]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatAddress]) And _
+Forms![foreclosure database screen]![SDatAddress] <> "" Then
+If Not IsNull(VSdat1) And VSdat1 <> Forms![foreclosure database screen]![SDatAddress] Then
+CheckMailingCHG = CheckMailingCHG + "/SDAT"
+End If
+VSdat1 = Forms![foreclosure database screen]![SDatAddress]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatAddress2]) And _
+Forms![foreclosure database screen]![SDatAddress2] <> "" Then
+VSdat2 = Forms![foreclosure database screen]![SDatAddress2]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatCity]) And _
+Forms![foreclosure database screen]![SDatCity] <> "" Then
+VSdat3 = Forms![foreclosure database screen]![SDatCity]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatState]) And _
+Forms![foreclosure database screen]![SDatState] <> "" Then
+VSdat4 = Forms![foreclosure database screen]![SDatState]
+End If
+If Not IsNull(Forms![foreclosure database screen]![SDatZip]) And _
+Forms![foreclosure database screen]![SDatZip] <> "" Then
+VSdat5 = Forms![foreclosure database screen]![SDatZip]
+End If
+
+If CheckMailingCHG <> "" Then
+Dim VPsd
+VPsd = InputBox("Addresses have been changed: " & CheckMailingCHG & ".  Please enter password to make the change.")
+
+If VPsd = "addchg" Then
+Dim vOldAdd As String
+
+If CheckMailingCHG Like "Mailing*" Then
+vOldAdd = VMail1 & "/" & VMail2 & "/" & VMail3 & "/" & VMail4 & "/" & VMail5
+End If
+
+If CheckMailingCHG Like "*2nd*" Then
+vOldAdd = vOldAdd + "/" & VMailb1 & "/" & VMailb2 & "/" & VMailb3 & "/" & VMailb4 & "/" & VMailb5
+End If
+
+
+If CheckMailingCHG Like "*sdat*" Then
+vOldAdd = vOldAdd + "/" & VSdat1 & "/" & VSdat2 & "/" & VSdat3 & "/" & VSdat4 & "/" & VSdat5
+End If
+
+
+''logcase Forms![foreclosure database screen]!FileNum, "Changed Address: " & CheckMailingCHG & "/Old Add:" & vOldAdd & Date
+
+Exit Function
+Else
+
+If CheckMailingCHG Like "Mailing*" Then
+Forms![foreclosure database screen]![Mailing Address] = VMail1
+Forms![foreclosure database screen]![Mailing Address2] = VMail2
+Forms![foreclosure database screen]![Mailing City] = VMail3
+Forms![foreclosure database screen]![Mailing State] = VMail4
+Forms![foreclosure database screen]![Mailing Zip] = VMail5
+End If
+If CheckMailingCHG Like "*2nd*" Then
+Forms![foreclosure database screen]![Mailing AddressB] = VMailb1
+Forms![foreclosure database screen]![Mailing Address2B] = VMailb2
+Forms![foreclosure database screen]![Mailing CityB] = VMailb3
+Forms![foreclosure database screen]![Mailing StateB] = VMailb4
+Forms![foreclosure database screen]![Mailing ZipB] = VMailb5
+End If
+If CheckMailingCHG Like "*sdat*" Then
+Forms![foreclosure database screen]![SDatAddress] = VSdat1
+Forms![foreclosure database screen]![SDatAddress2] = VSdat2
+Forms![foreclosure database screen]![SDatCity] = VSdat3
+Forms![foreclosure database screen]![SDatState] = VSdat4
+Forms![foreclosure database screen]![SDatZip] = VSdat5
+End If
+
+End If
+End If
+
+
+End Function
+
+Public Function CloseOutFile()
+Dim FCOpenfile As Long
+Dim ClosedEdit As String
+Dim ClosedNew As String
+Dim closeOpenno As String
+Dim ClosedNo As Integer
+Dim CLOSERS As RecordSet
+Dim linkcriteria As String
+Dim closeno As Integer
+Dim StrCriteria As String
+
+FCOpenfile = [Forms]![foreclosure database screen]![filenum]
+ClosedEdit = "ClosedSubFormEdit"
+ClosedNew = "ClosedSubForm"
+Dim closercheck As RecordSet
+
+StrCriteria = "select * from closedfiles where [openfilenum] = " & FCOpenfile
+Set closercheck = CurrentDb.OpenRecordset(StrCriteria, dbOpenSnapshot)
+  
+ If closercheck.EOF Then
+   closercheck.Close
+
+ 'ClosedNo = GetAutoNumber("NextClosedNumber")
+ Set CLOSERS = CurrentDb.OpenRecordset("closedfiles", dbOpenDynaset, dbSeeChanges)
+ 
+
+ GblFilenum = Forms![foreclosure database screen]!filenum
+ 
+ With CLOSERS
+ .AddNew
+ '!ClosedNum = ClosedNo
+ !OpenFileNum = GblFilenum
+ !Client = Forms![foreclosure database screen]!Client
+ !ClientRefNumber = Forms![foreclosure database screen]!ClientRefNumber
+!FirstNameDebtor1 = Forms![foreclosure database screen]!FirstNameDebtor1
+!LastNameDebtor1 = Forms![foreclosure database screen]!LastNameDebtor1
+!PropAddress = Forms![foreclosure database screen]!PropAddress
+!Propertycounty = Forms![foreclosure database screen]!Propertycounty
+!PropertyCity = Forms![foreclosure database screen]!PropertyCity
+!PropertyState = Forms![foreclosure database screen]!PropertyState
+!propzip = Forms![foreclosure database screen]!propzip
+![Date Recieved] = Forms![foreclosure database screen]![Date Recieved]
+!DateClosed = Date
+!TypeOfLoan = Forms![foreclosure database screen]!TypeOfLoan
+!Status = Forms![foreclosure database screen]!Status
+'MsgBox (Forms![foreclosure database screen]![Mailing Address] & " " & Forms![foreclosure database screen]![Mailing Address2] & ", " & Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip])
+If Forms![foreclosure database screen]![Mailing Address] <> "" Then
+![Mailing Address] = Forms![foreclosure database screen]![Mailing Address] & " " & Forms![foreclosure database screen]![Mailing Address2] & ", " & Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+End If
+.Update
+.Close
+End With
+
+'Forms![foreclosure database screen]!ClosedNum = ClosedNo
+
+
+mySendKeys ("{F9}")
+
+Dim VOpenScreen As String
+MsgBox ("File has been closed.")
+''logcase Forms![foreclosure database screen]!FileNum, "Closed File: " & Date
+
+linkcriteria = "[OpenFileNum] = Forms![Foreclosure Database Screen]![FIleNum]"
+DoCmd.OpenForm "ClosedSubFormEdit", , , linkcriteria
+Else
+
+MsgBox ("This file has been closed previously.  Please check data and click Update to reinstate.")
+''logcase Forms![foreclosure database screen]!FileNum, "Re-Closed File: " & Date
+
+linkcriteria = "[OpenFileNum] = Forms![Foreclosure Database Screen]![FIleNum]"
+DoCmd.OpenForm "ClosedSubFormEdit", , , linkcriteria
+
+
+
+End If
+End Function
+Public Function closebackup()
+Dim FCOpenfile As String, ClosedEdit As String, ClosedNew As String
+Dim closeOpenno As String
+Dim ClosedNo As Integer
+Dim CLOSERS As RecordSet
+Dim linkcriteria As String
+Dim closeno As Integer
+Dim StrCriteria As String
+
+FCOpenfile = [Forms]![foreclosure database screen]![filenum]
+ClosedEdit = "ClosedSubFormEdit"
+ClosedNew = "ClosedSubForm"
+
+
+    ' Return reference to current database.
+    StrCriteria = "select * from closedfiles where [openfilenum] = " & FCOpenfile
+    Set CLOSERS = CurrentDb.OpenRecordset(StrCriteria, dbOpenSnapshot)
+  
+  
+ If CLOSERS.EOF Then
+ ClosedNo = GetAutoNumber("NextClosedNumber")
+ CLOSERS.Close
+ Set CLOSERS = CurrentDb.OpenRecordset("closedfiles", dbOpenDynaset, dbSeeChanges)
+ With CLOSERS
+ .AddNew
+ ![ClosedNum] = ClosedNo
+ !OpenFileNum = Forms![foreclosure database screen]!filenum
+ !Client = Forms![foreclosure database screen]!Client
+ !ClientRefNumber = Forms![foreclosure database screen]!ClientRefNumber
+!FirstNameDebtor1 = Forms![foreclosure database screen]!FirstNameDebtor1
+!LastNameDebtor1 = Forms![foreclosure database screen]!LastNameDebtor1
+!PropAddress = Forms![foreclosure database screen]!PropAddress
+!Propertycounty = Forms![foreclosure database screen]!Propertycounty
+!PropertyCity = Forms![foreclosure database screen]!PropertyCity
+!PropertyState = Forms![foreclosure database screen]!PropertyState
+!propzip = Forms![foreclosure database screen]!propzip
+![Date Recieved] = Forms![foreclosure database screen]![Date Recieved]
+!DateClosed = Date
+!TypeOfLoan = Forms![foreclosure database screen]!TypeOfLoan
+!Status = Forms![foreclosure database screen]!Status
+If Forms![foreclosure database screen]![Mailing Address] <> "" Then
+![Mailing Address] = Forms![foreclosure database screen]![Mailing Address] & " " & Forms![foreclosure database screen]![Mailing Address2] & ", " & Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+End If
+.Update
+.Close
+End With
+
+Forms![foreclosure database screen]!ClosedNum = ClosedNo
+Dim VOpenScreen As String
+MsgBox ("File has been closed. The Closed File # is: " & ClosedNo)
+
+'If VOpenScreen = vbYes Then
+       linkcriteria = "[OpenFileNum] = Forms![Foreclosure Database Screen]![FIleNum]"
+        DoCmd.OpenForm ClosedEdit, , , linkcriteria
+        'Else
+        'Exit Sub
+        'End If
+        
+    Else
+     MsgBox ("This file has been closed previously.  Please check data and click Update to reinstate.")
+       linkcriteria = "[OpenFileNum] = Forms![Foreclosure Database Screen]![FIleNum]"
+        DoCmd.OpenForm ClosedEdit, , , linkcriteria
+    End If
+End Function
+Public Function PrtFremontPDF()
+MsgBox ("This is a Fremont file.  There is a PDF document that has to be printed and sent along with the Fremont letter it will print out now. ")
+PrtPDF ("f:\fremontpdf.pdf")
+End Function
+Public Function PrtChasePDF()
+If Client() Like "JP*" Then
+MsgBox ("This is a JPMorgan Chase File.  There is a PDF document that has to be printed and sent along with the Fremont letter it will print out now. ")
+PrtPDF ("\\rvdv-fs01\datatransfer\attachments\chaselossmit.pdf")
+Else
+MsgBox ("This is a EMC File.  There is a PDF document that has to be printed and sent along with the Fremont letter it will print out now. ")
+PrtPDF ("\\rvdv-fs01\datatransfer\attachments\emclossmit.pdf")
+End If
+
+End Function
+
+Public Function contactLONG()
+Dim VCont, strsql
+Dim rs As RecordSet
+If IsNull(Forms![Sale Date BGW Contacts]!bgwcontact) Then
+VCont = ""
+contactLONG = ""
+Else
+VCont = Forms![Sale Date BWW Contacts]!bgwcontact
+strsql = "select * from employees where EmployeeID = " & """" & VCont & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+contactLONG = rs!FirstName & " " & rs!LastName
+End If
+
+End Function
+
+Public Sub StartDoc(DocName As String)
+Dim Scr_hDC As Long, msg$
+Dim DocLocation
+
+Scr_hDC = GetDesktopWindow()
+
+DocLocation = GetDocPath(Forms![foreclosure database screen]!filenum)
+
+Select Case ShellExecute(Scr_hDC, "Open", DocName, vbNullString, DocLocation, SW_SHOWNORMAL)
+    Case ERROR_FILE_NOT_FOUND
+        msg$ = "File not found."
+    Case ERROR_PATH_NOT_FOUND
+        msg$ = "Path was not found."
+    Case ERROR_BAD_FORMAT
+        msg$ = "Invalid executable file format."
+    Case 31
+        msg$ = "No association for the specified file type."
+    Case Is > 32 ' success
+        Exit Sub
+    Case Else
+        msg$ = "Unexpected return code."
+End Select
+MsgBox "Cannot open " & DocName & vbNewLine & msg$, vbOKOnly + vbCritical
+
+End Sub
+
+Public Function AffidavitOpen()
+
+DoCmd.OpenForm ("NoticeDefault")
+
+End Function
+
+Public Function CreateSeniorLien()
+Dim rs, rsSL, rsPS, rsChk, rsMI, rsFC As RecordSet
+Dim strsql, VBGW_no As Long
+
+Set rs = CurrentDb.OpenRecordset("Cases", dbOpenDynaset, dbSeeChanges)
+Set rsSL = CurrentDb.OpenRecordset("SeniorLien", dbOpenDynaset, dbSeeChanges)
+Set rsPS = CurrentDb.OpenRecordset("Postsale", dbOpenDynaset, dbSeeChanges)
+Set rsFC = CurrentDb.OpenRecordset("foreclosure", dbOpenDynaset, dbSeeChanges)
+
+VBGW_no = GetAutoNumber("NextFileNumber")
+
+Dim rsAff As RecordSet
+Set rsAff = CurrentDb.OpenRecordset("affdebt", dbOpenDynaset, dbSeeChanges)
+With rsAff
+.AddNew
+!SubFileNum = VBGW_no
+!mism5 = 0#
+!mism6 = 0#
+!mism7 = 0#
+!miscm1 = 0#
+!miscm2 = 0#
+!Mism3 = 0#
+!Mism4 = 0#
+!mism8 = 0#
+!mism9 = 0#
+!mism10 = 0#
+!mism11 = 0#
+.Update
+.Close
+End With
+
+With rs
+    .AddNew
+    !filenum = VBGW_no
+    !Status = "Foreclosure"
+    !FirstNameDebtor1 = Forms![foreclosure database screen]!FirstNameDebtor1
+    !MiddleNameDebtor1 = Forms![foreclosure database screen]!MiddleNameDebtor1
+    !LastNameDebtor1 = Forms![foreclosure database screen]!LastNameDebtor1
+     !FirstNameDebtor2 = Forms![foreclosure database screen]!FirstNameDebtor2
+    !MiddleNameDebtor2 = Forms![foreclosure database screen]!MiddleNameDebtor2
+    !LastNameDebtor2 = Forms![foreclosure database screen]!LastNameDebtor2
+    !FirstNameDebtor3 = Forms![foreclosure database screen]!FirstNameDebtor3
+    !MiddleNameDebtor3 = Forms![foreclosure database screen]!MiddleNameDebtor3
+    !LastNameDebtor3 = Forms![foreclosure database screen]!LastNameDebtor3
+     !firstnamedebtor4 = Forms![foreclosure database screen]!firstnamedebtor4
+    !middlenamedebtor4 = Forms![foreclosure database screen]!middlenamedebtor4
+    !lastnamedebtor4 = Forms![foreclosure database screen]!lastnamedebtor4
+     !firstnameo1 = Forms![foreclosure database screen]!firstnameo1
+     !mnameo1 = Forms![foreclosure database screen]!mnameo1
+    !lastnameo1 = Forms![foreclosure database screen]!lastnameo1
+         !firstnameo2 = Forms![foreclosure database screen]!firstnameo2
+     !mnameo2 = Forms![foreclosure database screen]!mnameo2
+    !lastnameo2 = Forms![foreclosure database screen]!lastnameo2
+    !Ssno_1 = Forms![foreclosure database screen]!ssno1
+    !Ssno_2 = Forms![foreclosure database screen]!ssno2
+    !Ssno_3 = Forms![foreclosure database screen]!ssno3
+    !Ssno_4 = Forms![foreclosure database screen]!ssno4
+    !PropAddress = Forms![foreclosure database screen]![Property Address]
+    !propaddress2 = Forms![foreclosure database screen]!propaddress2
+    !PropertyCity = Forms![foreclosure database screen]![PropertyCity]
+    !PropertyState = Forms![foreclosure database screen]!PropertyState
+    !propzip = Forms![foreclosure database screen]!propzip
+    !Propertycounty = Forms![foreclosure database screen]!Propertycounty
+    ![Date Recieved] = Forms![foreclosure database screen]![Date Recieved]
+    '!Comments = "Opened as Senior Lien File"
+        ![Mailing Address] = Forms![foreclosure database screen]![Mailing Address]
+    ![Mailing Address2] = Forms![foreclosure database screen]![Mailing Address2]
+    ![Mailing City] = Forms![foreclosure database screen]![Mailing City]
+    ![Mailing State] = Forms![foreclosure database screen]![Mailing State]
+    ![Mailing Zip] = Forms![foreclosure database screen]![Mailing Zip]
+    !Status = "Senior Lien Sale"
+    !Screen_Change = "Senior Lien Sale"
+    !Client = Forms![foreclosure database screen]!Client
+    !ClientRefNumber = Forms![foreclosure database screen]!ClientRefNumber
+     .Update
+    End With
+    
+    Call AddJournalEntry(VBGW_no, "Opened as Senior Lien File")
+    
+    With rsSL
+    .AddNew
+    !filenum = VBGW_no
+    !SaleDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+    !lender_att = "BWW Law Group, LLC"
+    !CaseNumber = Forms![foreclosure database screen]!PostsaleSubForm.Form!CaseNo
+    !SurplusFunds = 0
+    !att1 = 0
+    !att2 = 0
+    !att3 = 0
+    !att4 = 0
+    !att5 = 0
+    !att6 = 0
+    !att7 = 0
+    !att8 = 0
+    !att9 = 0
+
+    .Update
+    End With
+    
+    With rsPS
+    .AddNew
+    !SubFileNum = VBGW_no
+    !taxid = Forms![foreclosure database screen]!PostsaleSubForm.Form!taxid
+    !CaseNo = Forms![foreclosure database screen]!PostsaleSubForm.Form!CaseNo
+    !bid_recd = Forms![foreclosure database screen]!PostsaleSubForm.Form!bid_recd
+    .Update
+    End With
+    
+     With rsFC
+    .AddNew
+    !SubFileNum = VBGW_no
+    !LegalDescription = Forms![foreclosure database screen]!ForeclosureSubForm.Form!LegalDescription
+    .Update
+    End With
+    
+    rsPS.Close
+    rs.Close
+rsSL.Close
+
+
+MsgBox "This File has been added into the Main Database as BWW#: " & VBGW_no & ".  Please select client info in new Senior Lien File.", vbOKOnly
+
+End Function
+Public Function ResumeNote() As String
+' Verify that the referenced form is still there
+If Not CurrentProject.AllForms("foreclosure database screen").IsLoaded Then Exit Function
+
+
+Dim strsql As String
+Dim rs As RecordSet
+Dim VRes As Integer
+
+VRes = 0
+strsql = "select * from resumes where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+
+Do While Not rs.EOF
+VRes = VRes + 1
+rs.MoveNext
+Loop
+
+If VRes = 1 Then
+
+ResumeNote = "This is a RESUME there is: " & VRes & " previous sale for BWW#: " & Forms![foreclosure database screen]!filenum & ", to access click PrevSales button"
+ElseIf VRes > 1 Then
+ResumeNote = "This is a RESUME there are: " & VRes & " previous sales for BWW# to access click PrevSales button"
+End If
+
+'MsgBox (ResumeNote)
+
+Else
+ResumeNote = ""
+
+End If
+
+rs.Close
+End Function
+Public Function CreateResumeFC()
+
+Dim rs, rsCOPYFeesCosts, rsFeesCosts, rsFC, rsCases, rsPS, rsChk, rsMI, rsRES, rscred As RecordSet
+Dim VState, strsql, strsqlFeesCosts, VBGW_no, BGNum As String
+
+Set rsCOPYFeesCosts = CurrentDb.OpenRecordset("Copy_Feescosts", dbOpenDynaset, dbSeeChanges)
+
+VBGW_no = GetAutoNumber("NextResume")
+BGNum = Forms![foreclosure database screen]!filenum
+VState = Forms![foreclosure database screen]!PropertyState
+
+strsqlFeesCosts = "select * from dba_feescosts where filenum = " & BGNum & ";"
+Set rsFeesCosts = CurrentDb.OpenRecordset(strsqlFeesCosts, dbOpenSnapshot)
+
+If Not rsFeesCosts.EOF Then
+With rsCOPYFeesCosts
+    .AddNew
+    ![PKey] = VBGW_no
+    !filenum = Forms![foreclosure database screen]!filenum
+    .Update
+    .Close
+End With
+End If
+
+DoCmd.OpenQuery ("ResumeUpdateFeesCosts")
+
+
+End Function
+Public Function resumelien()
+Dim strsqlCred As String
+Dim rsadd As RecordSet, rscred As RecordSet
+Dim VBGW_no
+
+
+strsqlCred = "select * from creditors where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rscred = CurrentDb.OpenRecordset(strsqlCred, dbOpenSnapshot)
+If Not rscred.EOF Then
+Set rsadd = CurrentDb.OpenRecordset("lienholder_resume", dbOpenDynaset, dbSeeChanges)
+VBGW_no = GetAutoNumber("NextResume")
+
+Do While Not rscred.EOF
+
+With rsadd
+.AddNew
+    ![PKey] = VBGW_no
+    !ID = GetAutoNumber("NextDemand")
+    !filenum = Forms![foreclosure database screen]!filenum
+    !OrganizationName = rscred!OrganizationName
+    !Address = rscred!Address
+    !Address2 = rscred!Address2
+    !City = rscred!City
+    !State = rscred!State
+    !PostalCode = rscred!PostalCode
+    !noticesent = rscred!noticesent
+    !Name2 = rscred!Name2
+    !noi = rscred!noi
+    !fdl = rscred!fdl
+    !Debtor = rscred!Debtor
+    !ContactID = rscred!ContactID
+.Update
+End With
+rscred.MoveNext
+Loop
+
+End If
+rscred.Close
+End Function
+Public Function InvestorIsCreditor()
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "Select * from qc where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+Dim rsqc As RecordSet
+
+If Not rs.EOF Then
+
+InvestorIsCreditor = rs!investor
+
+End If
+
+
+End Function
+Public Function ProcessServiceUPGRADE()
+
+Dim rsDebtorsAdd As RecordSet, rsDebtorsCHK As RecordSet
+Dim strsql As String
+Dim BGNum
+
+BGNum = Forms![foreclosure database screen]!filenum
+
+strsql = "select * from debtors where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsDebtorsCHK = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If rsDebtorsCHK.EOF Then
+
+Set rsDebtorsAdd = CurrentDb.OpenRecordset("Debtors", dbOpenDynaset, dbSeeChanges)
+With rsDebtorsAdd
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!DNumber = GetAutoNumber("NextDebtor")
+!FirstNameDebtor = Forms![foreclosure database screen]!FirstNameDebtor1
+If Not IsNull(Forms![foreclosure database screen]!MiddleNameDebtor1) Then
+!MiddleNamedebtor = Forms![foreclosure database screen]!MiddleNameDebtor1
+End If
+!LastNameDebtor = Forms![foreclosure database screen]!LastNameDebtor1
+!type = "Debtor"
+.Update
+.Close
+End With
+
+If Not IsNull(Forms![foreclosure database screen]!LastNameDebtor2) Then
+Set rsDebtorsAdd = CurrentDb.OpenRecordset("Debtors", dbOpenDynaset, dbSeeChanges)
+With rsDebtorsAdd
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!DNumber = GetAutoNumber("NextDebtor")
+!FirstNameDebtor = Forms![foreclosure database screen]!FirstNameDebtor2
+If Not IsNull(Forms![foreclosure database screen]!MiddleNameDebtor2) Then
+!MiddleNamedebtor = Forms![foreclosure database screen]!MiddleNameDebtor2
+End If
+!LastNameDebtor = Forms![foreclosure database screen]!LastNameDebtor2
+!type = "Debtor"
+.Update
+.Close
+End With
+End If
+
+
+If Not IsNull(Forms![foreclosure database screen]!LastNameDebtor3) Then
+Set rsDebtorsAdd = CurrentDb.OpenRecordset("Debtors", dbOpenDynaset, dbSeeChanges)
+With rsDebtorsAdd
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!DNumber = GetAutoNumber("NextDebtor")
+!FirstNameDebtor = Forms![foreclosure database screen]!FirstNameDebtor3
+If Not IsNull(Forms![foreclosure database screen]!MiddleNameDebtor3) Then
+!MiddleNamedebtor = Forms![foreclosure database screen]!MiddleNameDebtor3
+End If
+!LastNameDebtor = Forms![foreclosure database screen]!LastNameDebtor3
+!type = "Debtor"
+.Update
+.Close
+End With
+End If
+
+
+If Not IsNull(Forms![foreclosure database screen]!lastnamedebtor4) Then
+Set rsDebtorsAdd = CurrentDb.OpenRecordset("Debtors", dbOpenDynaset, dbSeeChanges)
+With rsDebtorsAdd
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!DNumber = GetAutoNumber("NextDebtor")
+!FirstNameDebtor = Forms![foreclosure database screen]!firstnamedebtor4
+If Not IsNull(Forms![foreclosure database screen]!middlenamedebtor4) Then
+!MiddleNamedebtor = Forms![foreclosure database screen]!middlenamedebtor4
+End If
+!LastNameDebtor = Forms![foreclosure database screen]!lastnamedebtor4
+!type = "Debtor"
+.Update
+.Close
+End With
+End If
+
+
+If Not IsNull(Forms![foreclosure database screen]!lastnamedebtor5) Then
+Set rsDebtorsAdd = CurrentDb.OpenRecordset("Debtors", dbOpenDynaset, dbSeeChanges)
+With rsDebtorsAdd
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!DNumber = GetAutoNumber("NextDebtor")
+!FirstNameDebtor = Forms![foreclosure database screen]!firstnamedebtor5
+If Not IsNull(Forms![foreclosure database screen]!middlenamedebtor5) Then
+!MiddleNamedebtor = Forms![foreclosure database screen]!middlenamedebtor5
+End If
+!LastNameDebtor = Forms![foreclosure database screen]!lastnamedebtor5
+!type = "Debtor"
+.Update
+.Close
+End With
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!lastnameo1) Then
+Set rsDebtorsAdd = CurrentDb.OpenRecordset("Debtors", dbOpenDynaset, dbSeeChanges)
+With rsDebtorsAdd
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!DNumber = GetAutoNumber("NextDebtor")
+!FirstNameDebtor = Forms![foreclosure database screen]!firstnameo1
+If Not IsNull(Forms![foreclosure database screen]!mnameo1) Then
+!MiddleNamedebtor = Forms![foreclosure database screen]!mnameo1
+End If
+!LastNameDebtor = Forms![foreclosure database screen]!lastnameo1
+!type = "Owner"
+.Update
+.Close
+End With
+End If
+
+
+If Not IsNull(Forms![foreclosure database screen]!lastnameo2) Then
+Set rsDebtorsAdd = CurrentDb.OpenRecordset("Debtors", dbOpenDynaset, dbSeeChanges)
+With rsDebtorsAdd
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!DNumber = GetAutoNumber("NextDebtor")
+!FirstNameDebtor = Forms![foreclosure database screen]!firstnameo2
+If Not IsNull(Forms![foreclosure database screen]!mnameo2) Then
+!MiddleNamedebtor = Forms![foreclosure database screen]!mnameo2
+End If
+!LastNameDebtor = Forms![foreclosure database screen]!lastnameo2
+!type = "Owner"
+.Update
+.Close
+End With
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!lastnameo3) Then
+Set rsDebtorsAdd = CurrentDb.OpenRecordset("Debtors", dbOpenDynaset, dbSeeChanges)
+With rsDebtorsAdd
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!DNumber = GetAutoNumber("NextDebtor")
+!FirstNameDebtor = Forms![foreclosure database screen]!firstnameo3
+If Not IsNull(Forms![foreclosure database screen]!mnameo3) Then
+!MiddleNamedebtor = Forms![foreclosure database screen]!mnameo3
+End If
+!LastNameDebtor = Forms![foreclosure database screen]!lastnameo3
+!type = "Owner"
+.Update
+.Close
+End With
+End If
+
+'DoCmd.Close acForm, "Foreclosure database screen"
+
+'DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & BGNum
+
+
+Else
+
+Dim VCntD As Integer, VCntTb As Integer
+VCntTb = 0
+VCntD = 1
+If Not IsNull(Forms![foreclosure database screen]!LastNameDebtor2) Then
+VCntD = VCntD + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!LastNameDebtor3) Then
+VCntD = VCntD + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!lastnamedebtor4) Then
+VCntD = VCntD + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!lastnamedebtor5) Then
+VCntD = VCntD + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!lastnameo1) Then
+VCntD = VCntD + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!lastnameo2) Then
+VCntD = VCntD + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!lastnameo3) Then
+VCntD = VCntD + 1
+End If
+
+Do While Not rsDebtorsCHK.EOF
+VCntTb = VCntTb + 1
+rsDebtorsCHK.MoveNext
+Loop
+rsDebtorsCHK.Close
+
+If VCntD <= VCntTb Then
+'rsDebtorsCHK.Close
+
+Exit Function
+
+Else
+
+'DoCmd.Close acForm, "Foreclosure database screen"
+
+'DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & BGNum
+
+
+End If
+
+
+End If
+
+
+End Function
+
+Public Function CreateResume()
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+Dim vClient
+vClient = Forms![foreclosure database screen]!Client
+Dim VFDLSent
+VFDLSent = Forms![foreclosure database screen]!ForeclosureSubForm.Form!fdl_sent
+
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+Dim VYesNo
+
+If vClient Like "Selene*" Then
+MsgBox ("If this is a Resume Amend you can only request $1250 and not $2100!")
+End If
+
+If Forms![foreclosure database screen]!Client Like "Ditech*" And _
+(IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleReportOrdered) Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleReportRecieved < Date - 364) Then
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "Brittney.Taylor@bww-law.com; Elijha.Marcano@bww-law.com"
+MyMail.Subject = "BWW#: " & GblFilenum & ": Green Tree Title Needed"
+MyMail.body = ""
+MyMail.Display
+Set MyMail = Nothing
+
+End If
+
+If Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+If Forms![foreclosure database screen]!PropertyState = "MD" Or Forms![foreclosure database screen]!PropertyState = "DC" Then
+MyMail.To = "joyce.white@bww-law.com"
+Else
+MyMail.To = "VAADRUsers@bww-law.com"
+End If
+MyMail.Subject = "BWW#: " & GblFilenum & ": Restart Instructions Rec'd"
+MyMail.body = ""
+'MyMail.body = "FHLMC#: " & Forms![foreclosure database screen]![HUD/VA Num] & vbCr & _
+"Prelim Docket Filed: " & [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![DocketSubform].[Form]!pre_docket_filed & vbCr & _
+"Final Docket Filed: " & [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![DocketSubform].[Form]!final_docket_filed & vbCr & _
+"Prelim Docket Filed: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!service_complete & vbCr & _
+"First Allowable Pub: " & [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![DocketSubform].[Form]!AllPub
+MyMail.Display
+'Fist Allowable Final Loss Mit Aff:  <date> and/or Final Docket Filed <date>
+'Service Completed: <date>
+'1st allowable pub date: <date>
+Set MyMail = Nothing
+
+End If
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FNMA*" Or _
+ Forms![foreclosure database screen]!TypeOfLoan Like "FHLMC*" Then
+VYesNo = MsgBox("This is an " & Forms![foreclosure database screen]!TypeOfLoan & " loan.  Do you want to send an email to request excess fee approval?", vbYesNo)
+If VYesNo = vbYes Then
+Call EmailFNMA
+End If
+End If
+
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FNMA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FHLM*") And Forms![foreclosure database screen]!PropertyState = "VA" Then
+MsgBox ("NEED TO SEND THE FNMA/FHLMC Letter!!!")
+
+End If
+
+If [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![title_button] = -1 Or _
+[Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![title_button] = 1 Then
+VYesNo = MsgBox("There is an IRS Lien, IRS Must Receive at LEAST 25 Days Notice, Set Sale Accordingly, Send Email?", vbYesNo)
+If VYesNo = vbYes Then
+Call EmailIRSResume
+End If
+End If
+
+Dim rs As RecordSet, rsCOPYFeesCosts As RecordSet, rsCOPYProc As RecordSet, rsFeesCosts As RecordSet, rsFC As RecordSet, rsCases As RecordSet, rsPS As RecordSet, rsChk As RecordSet, rsMI As RecordSet, rsRES As RecordSet, rscred As RecordSet, rsProc As RecordSet, rsDebtors As RecordSet
+Dim strsqlDebtors, strsqlProc, VState, strsql, strsqlFeesCosts, VBGW_no, BGNum As String
+Dim rsAD As RecordSet
+Dim VPO
+Dim VIt
+ 
+
+DoCmd.OpenQuery ("ResumeUpdateAffDebt")
+ 
+mySendKeys ("{F9}")
+
+Set rsAD = CurrentDb.OpenRecordset("ResumeUpdateAD", dbOpenSnapshot)
+If Not rsAD.EOF Then
+
+If Not IsNull(rsAD![interest thru]) Then
+VIt = rsAD![interest thru]
+Else
+VIt = Null
+End If
+If Not IsNull(rsAD![payoff]) Then
+VPO = rsAD![payoff]
+Else
+VPO = 0
+End If
+Else
+VIt = Null
+VPO = 0
+End If
+
+VBGW_no = GetAutoNumber("NextResume")
+VState = Forms![foreclosure database screen]!PropertyState
+
+vClient = Forms![foreclosure database screen]!Client
+rsAD.Close
+
+mySendKeys ("{F9}")
+
+'Msgbox ("AffDebt Restart")
+
+'======Resume Lienholders
+
+Dim strsqlCred As String
+Dim rsadd As RecordSet
+
+strsqlCred = "select * from creditors where filenum = " & GblFilenum & ";"
+Set rscred = CurrentDb.OpenRecordset(strsqlCred, dbOpenDynaset, dbSeeChanges)
+
+If Not rscred.EOF Then
+Set rsadd = CurrentDb.OpenRecordset("lienholder_resume", dbOpenDynaset, dbSeeChanges)
+rscred.MoveFirst
+
+Do While Not rscred.EOF
+
+With rsadd
+.AddNew
+    ![PKey] = VBGW_no
+    !ID = GetAutoNumber("NextDemand")
+    !filenum = GblFilenum
+    !OrganizationName = rscred!OrganizationName
+    !Address = rscred!Address
+    !Address2 = rscred!Address2
+    !City = rscred!City
+    !State = rscred!State
+    !PostalCode = rscred!PostalCode
+    !noticesent = rscred!noticesent
+    !Name2 = rscred!Name2
+    !noi = rscred!noi
+    !fdl = rscred!fdl
+    !Debtor = rscred!Debtor
+    !ContactID = rscred!ContactID
+    !Walz_Ref = rscred!Walz_Ref
+    
+.Update
+End With
+
+rscred.MoveNext
+Loop
+
+End If
+rscred.Close
+
+'Msgbox ("Lienholders Restart")
+
+'====resume WALZ
+
+'-----------RESUME Walz
+
+Dim strsqlWalz As String
+Dim rsWalz As RecordSet
+Dim rsWalzInfo As RecordSet
+
+strsqlWalz = "select * from walzinfo where filenum = " & GblFilenum & ";"
+Set rsWalz = CurrentDb.OpenRecordset(strsqlWalz, dbOpenDynaset, dbSeeChanges)
+
+If Not rsWalz.EOF Then
+
+Set rsWalzInfo = CurrentDb.OpenRecordset("walz_resume", dbOpenDynaset, dbSeeChanges)
+rsWalz.MoveFirst
+
+Do While Not rsWalz.EOF
+
+With rsWalzInfo
+.AddNew
+    ![PKey] = VBGW_no
+    !ID_No = GetAutoNumber("NextDemand")
+    !filenum = rsWalz!filenum
+    !Name1 = rsWalz!Name1
+    !Name2 = rsWalz!Name2
+    !Address1 = rsWalz!Address1
+    !Address2 = rsWalz!Address2
+    !citystatezip = rsWalz!citystatezip
+    !address3 = rsWalz!address3
+    !ri = rsWalz!ri
+    !WalzTracking = rsWalz!WalzTracking
+    !WalzDateMailed = rsWalz!WalzDateMailed
+    !WalzDateRec = rsWalz!WalzDateRec
+    !WalzDateUploaded = rsWalz!WalzDateUploaded
+    !WalzProblems = rsWalz!WalzProblems
+    !Tracking_No = rsWalz!Tracking_No
+    !employee = rsWalz!employee
+    !Notes = rsWalz!Notes
+    !reference = rsWalz!ID_No
+    !PostageFees = rsWalz!PostageFees
+    !ServiceFees = rsWalz!ServiceFees
+    !PostageFeesReg = rsWalz!PostageFeesReg
+    !bill_saledate = rsWalz!bill_saledate
+.Update
+End With
+
+rsWalz.MoveNext
+Loop
+
+End If
+rsWalz.Close
+
+'Msgbox ("Walz Restart")
+
+'DoCmd.OpenQuery ("Walzdeleteresumes")
+
+'------------RESUMEFeesCosts
+
+'======Resume FeesCosts Table
+Set rsCOPYFeesCosts = CurrentDb.OpenRecordset("Copy_Feescosts", dbOpenDynaset, dbSeeChanges)
+rsCOPYFeesCosts.MoveLast
+Dim VPkeyFC
+VPkeyFC = rsCOPYFeesCosts!PKey + 1
+
+strsqlFeesCosts = "select * from dba_feescosts where filenum = " & GblFilenum & ";"
+Set rsFeesCosts = CurrentDb.OpenRecordset(strsqlFeesCosts, dbOpenSnapshot)
+
+If Not rsFeesCosts.EOF Then
+With rsCOPYFeesCosts
+    .AddNew
+    ![PKey] = VPkeyFC
+    !filenum = GblFilenum
+    .Update
+    .Close
+End With
+End If
+
+DoCmd.OpenQuery ("ResumeUpdateFeesCosts")
+
+mySendKeys ("{F9}")
+
+'DoCmd.SetWarnings True
+
+'currentdb.execute ("delete * from dba_feescosts where filenum = " & GblFilenum)
+
+'Msgbox ("FeesCosts Restart")
+
+
+'======Resume Process Service Table
+'strsqlProc = "select * from ProcessService where subfilenum = " & gblfilenum & ";"
+'Set rsProc = CurrentDb.OpenRecordset(strsqlProc, dbopensnapshot)
+'Set rsCOPYProc = CurrentDb.OpenRecordset("ProcessService_RESUME", dbOpenDynaset, dbSeeChanges)
+
+'If Not rsProc.EOF Then
+'With rsCOPYProc
+'    .AddNew
+'    ![PKey] = VBGW_no
+'    !SubFileNum = gblfilenum
+'    .Update
+'    .Close
+'End With
+
+'DoCmd.OpenQuery ("Resumeprocessservice")
+
+'DoCmd.OpenQuery ("Resumeprocessservicezero")
+
+
+'End If
+
+
+'=====RESUME FORECLOSURE DATA
+Set rsRES = CurrentDb.OpenRecordset("Resumes", dbOpenDynaset, dbSeeChanges)
+
+
+With rsRES
+    .AddNew
+    ![Resume-ID] = VBGW_no
+    !filenum = GblFilenum
+    
+    If Forms![foreclosure database screen]!Client Like "Wells*" And Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!restart_fu) Then
+    !P_H = "P"
+    Else
+    !P_H = "H"
+    End If
+    
+    !noticesent_lien_table = Forms![foreclosure database screen]!ForeclosureSubForm.Form!noticesent_lien
+    !resume_recd = Forms![foreclosure database screen]!resume_recd
+    !Client_hold_req = Forms![foreclosure database screen]!Client_hold_req
+    !Client_hold_appr = Forms![foreclosure database screen]!Client_hold_appr
+    ![Title needed] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![Title needed]
+    !service_complete = Forms![foreclosure database screen]!ForeclosureSubForm.Form!service_complete
+    !TitleClaimSent = Forms![foreclosure database screen]!ForeclosureSubForm.Form!claimsent
+    !cl_notified_title = Forms![foreclosure database screen]!ForeclosureSubForm.Form!cl_notified_title
+    ![Title claim date acknowledged] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![date acknowledged]
+    !docsneeded_date = Forms![foreclosure database screen]!ForeclosureSubForm.Form!docsneeded_date
+    !docsrecd = Forms![foreclosure database screen]!ForeclosureSubForm.Form!docsrecd
+    !TitleClaimResolved = Forms![foreclosure database screen]!ForeclosureSubForm.Form!claimresolved
+    !Taxes_due = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Taxes_due
+    !Taxes_thru = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Taxes_thru
+    !In_tax_sale = Forms![foreclosure database screen]!ForeclosureSubForm.Form!In_tax_sale
+    !date_payable1 = Forms![foreclosure database screen]!ForeclosureSubForm.Form!payable1
+    !date_payable2 = Forms![foreclosure database screen]!ForeclosureSubForm.Form!payable2
+    !Client_notified = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Client_notified
+    '!titleissue = Forms![foreclosure database screen]!ForeclosureSubForm.Form!FC_Comments.Form!titleissue
+    ![Ad Proof Recd] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![Ad Proof Recd]
+    ![1ST Legal] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![1ST Legal]
+    ![1st_ad] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad]
+    !resume_proc = Forms![foreclosure database screen]!ForeclosureSubForm.Form!resume_proc
+    !bid_recd = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!bid_recd
+    ![breech_exp] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![breech_exp]
+    !breech_sent = Forms![foreclosure database screen]!ForeclosureSubForm.Form!breech_sent
+    !date_reset = Forms![foreclosure database screen]!ForeclosureSubForm.Form!date_reset
+    !DateAbsractSentToClient = Forms![foreclosure database screen]!ForeclosureSubForm.Form!DateAbsractSentToClient
+    !docket_ltrsent = Forms![foreclosure database screen]!ForeclosureSubForm.Form!docket_ltrsent
+     !NOC_Mailed = [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![DocketSubform].[Form]![NOC_Mailed]
+    !DocsRecClient = Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsRecClient
+    !mdaffs_sent = Forms![foreclosure database screen]!ForeclosureSubForm.Form!mdaffs_sent
+    !mdaffs_recd = Forms![foreclosure database screen]!ForeclosureSubForm.Form!mdaffs_recd
+    ![DocsSentClient] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentClient]
+    ![extra money] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![extra money]
+    ![fc_cooper] = Forms![foreclosure database screen]!ForeclosureSubForm.Form!fc_cooper
+    !feesimp = Forms![foreclosure database screen]!ForeclosureSubForm.Form!feesimp
+    !Hoc_Sent = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Hoc_Sent
+    ![firstam_comm] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![us_govt_sent]
+    !grent = Forms![foreclosure database screen]!ForeclosureSubForm.Form!grent
+    !Info = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Info
+    !IRSnotice = Forms![foreclosure database screen]!ForeclosureSubForm.Form!IRSnotice
+    !LoanDocsReceived = Forms![foreclosure database screen]!ForeclosureSubForm.Form!LoanDocsReceived
+    !loandocsreturned = Forms![foreclosure database screen]!ForeclosureSubForm.Form!loandocsreturned
+    !noticesent = Forms![foreclosure database screen]!ForeclosureSubForm.Form!noticesent
+    ![sale_cancelled] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![sale_cancelled]
+    ![Sale_cancelled_proc] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![Sale_cancelled_proc]
+    !SaleDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+    ![sale_cancelreason] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![salecancel_reason]
+    !notice_reviewed_by = Forms![foreclosure database screen]!ForeclosureSubForm.Form!notice_reviewed_by
+    ![Notice_reviewed] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![Notice_reviewed]
+    
+    ![int_rat] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![int_rat]
+    ![pub2] = Forms![foreclosure database screen]!ForeclosureSubForm.Form!pub2
+    ![pub3] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![pub3]
+    ![pub4] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![pub4]
+    !pub5 = Forms![foreclosure database screen]!ForeclosureSubForm.Form!pub5
+    !SaleTime = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleTime
+    !title_due = Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_due
+    !title_thru = Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_thru
+    '!titleissue = Forms![foreclosure database screen]!ForeclosureSubForm.Form!FC_Comments.Form!titleissue
+    !TitleReportOrdered = Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleReportOrdered
+    !TitleReportRecieved = Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleReportRecieved
+    !Update_Abstracted = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Update_Abstracted
+    !update_ord = Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_ord
+    !update_recd = Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_recd
+    !waterdue = Forms![foreclosure database screen]!ForeclosureSubForm.Form!waterdue
+    !doa_tocourt = Forms![foreclosure database screen]!ForeclosureSubForm.Form!doa_tocourt
+    !noticesent_lien = Forms![foreclosure database screen]!ForeclosureSubForm.Form!noticesent_lien
+    !notice_lien = Forms![foreclosure database screen]!ForeclosureSubForm.Form!notice_lien
+    !titleclaim_app = Forms![foreclosure database screen]!ForeclosureSubForm.Form!titleclaim_app
+    !fc_approved_fees = Forms![foreclosure database screen]!ForeclosureSubForm.Form!fc_approved_fees
+    !ad_costs = Forms![foreclosure database screen]!ForeclosureSubForm.Form!ad_costs
+    !reviewed_title = Forms![foreclosure database screen]!ForeclosureSubForm.Form!reviewed_title
+    !notice_processor = Forms![foreclosure database screen]!ForeclosureSubForm.Form!notice_processor
+    !app_reqd = Forms![foreclosure database screen]!ForeclosureSubForm.Form!app_reqd
+    !app_recd = Forms![foreclosure database screen]!ForeclosureSubForm.Form!app_recd
+    !va_advcosts = Forms![foreclosure database screen]!ForeclosureSubForm.Form!va_advcosts
+    !va_asapadcosts = Forms![foreclosure database screen]!ForeclosureSubForm.Form!va_asapadcosts
+    !cooper_fee = Forms![foreclosure database screen]!ForeclosureSubForm.Form!cooper_fee
+    !reviewed_update = Forms![foreclosure database screen]!ForeclosureSubForm.Form!reviewed_update
+    !vadeposit = Forms![foreclosure database screen]!ForeclosureSubForm.Form!vadeposit
+    !Buyer = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!Buyer
+    
+    !aff_pub_recd = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!aff_pub_recd
+    !Purchaser_Last = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!Purchaser_Last
+    !buyer_add1 = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!buyer_add1
+    !buyer_csz = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!buyer_csz
+    !buyer_abbr = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!buyer_abbr
+    !buyer_phone = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!buyer_phone
+    !SalePrice = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!SalePrice
+    
+    !bond_amt = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!bond_amt
+    !bond_number = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!bond_number
+    !bond_sent = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!bond_sent
+    
+    !bond_withdrawn = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!bond_withdrawn
+    !bond_rider = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!bond_rider
+    !bondrider_tocrt = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!bondrider_tocrt
+    !Part2filed = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!Part2filed
+    !cooper_pkg = Forms![foreclosure database screen]!ForeclosureSubForm.Form!taxidform.Form!cooper_pkg
+    
+    !DocsSentCourt = Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentCourt
+    !adproofrecdtopaper = Forms![foreclosure database screen]!ForeclosureSubForm.Form!adproofrecdtopaper
+    !resume_DA = Forms![foreclosure database screen]!ForeclosureSubForm.Form!resume_DA
+    !asap_ad_sent = Forms![foreclosure database screen]!ForeclosureSubForm.Form![asap_ad_sent]
+    !payoff = VPO
+    !interest_thru = VIt
+    .Update
+    .Close
+    
+    End With
+
+    If vClient Like "Seteru*" Then
+    
+    Dim Vask
+    Vask = InputBox("Seterus File: " & vbCr & vbCr & "Update Status to:" & vbCr & "1. Foreclosure" & vbCr & "2. NOI Only")
+    
+    If Vask = 1 And IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportOrdered]) Then
+    Call ordertitle
+    End If
+    
+    End If
+    
+
+    DoCmd.Close acForm, "Foreclosure database screen"
+    Call CloseForms
+    mySendKeys ("{F9}")
+
+    
+'Msgbox ("Moved data closed Restart")
+
+'=======Update Cases Table
+
+strsql = "select * from cases where filenum = " & GblFilenum & ";"
+Set rsCases = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+    With rsCases
+    .Edit
+   
+    
+    Dim VRestart
+    VRestart = InputBox("Enter Restart Date")
+    If Not IsNull(VRestart) Then
+    !resume_recd = VRestart
+    Else
+    !resume_recd = Null
+    End If
+    
+    !ClosedNum = Null
+    !resumeID = VBGW_no
+    !Walz_Mailed_NOS = Null
+    
+    If vClient Like "Seteru*" Then
+    If Vask = 2 Then
+    !Status = "NOI Only"
+    Else
+    !Status = "Foreclosure"
+    End If
+    
+'Seterus NOI count
+    Dim rsClient As RecordSet
+    Set rsClient = CurrentDb.OpenRecordset("clienttracking", dbOpenDynaset, dbSeeChanges)
+    With rsClient
+    .AddNew
+    !filenum = GblFilenum
+    !username = username()
+    !DateNoted = Date
+    !restartdate = VRestart
+    If Vask = 2 Then
+    !noi = 1
+    Else
+    !fc = 1
+    End If
+    .Update
+    .Close
+    End With
+    'Set rsCLient = Nothing
+    
+'End Seterus NOI Count
+
+    Else
+    
+     !Status = "Foreclosure"
+    End If
+    
+    !Screen_Change = "Foreclosure"
+    !Client_hold_req = Null
+    !Client_hold_appr = Null
+     .Update
+   .Close
+    End With
+    
+ mySendKeys ("{F9}")
+    
+    'Msgbox ("Cases Updated")
+    
+'=======Update Foreclosure Table
+
+strsql = "select * from foreclosure where subfilenum = " & GblFilenum & ";"
+Set rsFC = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+    With rsFC
+    .Edit
+     !FNMA_Fees_Recd = Null
+    !FNMA_Fees_Reqd = Null
+    If VState = "VA" Then
+    !QC2_Ready = Null
+    End If
+    
+    !verification_ltr_retd = Null
+   
+    !NoHamp = 0
+    '!part1_serv = Null
+    !Ref_Complete = Null
+    !noticesent = Null
+    !SaleDate = Null
+    !SaleTime = Null
+    !resume_DA = Null
+    ![Ad Proof Recd] = 0
+    '!correction_sent = Null
+    !resume_proc = Null
+    '!correction_recd = Null
+    !compass_id = 0
+    ![1ST Legal] = Null
+    ![1st_ad] = Null
+    
+    If VState <> "VA" Then
+    !Hoc_Sent = Null
+    End If
+    
+    !notice_lien = Null
+    !noticesent_lien = Null
+    !notice_processor = Null
+    
+    
+    !us_govt_sent = Null
+    !salecancel_reason = Null
+    !notice_reviewed_by = Null
+    !Notice_reviewed = Null
+    !date_reset = Null
+    
+    If VFDLSent Then
+    ![extra money] = 0
+    !POGoodThru = Null
+    End If
+    
+    ![fc_cooper] = Null
+    !IRSnotice = Null
+    ![sale_cancelled] = Null
+    !Sale_cancelled_proc = Null
+        !title_thru = Null
+    !asap_ad_sent = Null
+    !Update_Abstracted = Null
+    If VState = "MD" Then
+    !update_recd = Null
+    !update_ord = Null
+    !reviewed_update = Null
+    End If
+    !reviewed_update = Null
+   !pub2 = Null
+   !pub3 = Null
+   !pub4 = Null
+   !pub5 = Null
+   !asap_no = Null
+   !noticesent_lien = Null
+   !ad_costs = 0
+   !va_advcosts = 0
+   If VState = "MD" Then
+   !aom_notneeded = 0
+   End If
+   
+
+     ' !notice_processor = Null
+   !adproofrecdtopaper = Null
+   !va_asapadcosts = 0
+   If VState <> "VA" Then
+   !vadeposit = 0
+   End If
+   
+     .Update
+     .Close
+     
+    End With
+    
+'Msgbox ("FC Restart")
+
+'==========RESUME POSTSALE
+
+strsql = "select * from postsale where subfilenum = " & GblFilenum & ";"
+Set rsPS = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not IsNull(rsPS!sale_comments) Then
+Dim rstjournal As RecordSet
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = GblFilenum
+!EntryBy = Environ("username")
+!EntryDate = Now()
+!Entry = " Sale Day Comments Deleted on Restart: " & rsPS!sale_comments
+.Update
+.Close
+
+End With
+End If
+
+
+    With rsPS
+    .Edit
+    !Buyer = Null
+    !sale_comments = Null
+    !Purchaser_Last = Null
+    !payoff_recd = Null
+    !buyer_add1 = Null
+    !buyer_csz = Null
+    !buyer_abbr = Null
+    !buyer_phone = Null
+    !aff_pub_recd = Null
+    !payoff_recd = 0
+    !SalePrice = 0
+    !bond_amt = 0
+    !bond_number = 0
+    !bond_sent = Null
+    !bond_withdrawn = 0
+    !bond_rider = 0
+    !bonds_ver = Null
+    !bondrider_tocrt = Null
+    !Part2filed = Null
+    !cooper_pkg = Null
+    !RET_paid = 0
+   .Update
+   .Close
+   
+    End With
+    
+'Msgbox ("Postsale Restart")
+    
+    '==========RESUME FCTracking
+
+strsql = "select * from fctracking where filenum = " & GblFilenum & ";"
+Set rsPS = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rsPS.EOF Then
+    With rsPS
+    .Edit
+    !notice_uploaded = Null
+    !noi_prepared = Null
+    !fhlmc_activated = Null
+    !DODBilling = Null
+    !NOC_Mailed = Null
+    !lien = Null
+    !date_last_payment = Null
+    !last_applied = Null
+    !due_date = Null
+    !total_amt_owed = Null
+    !past_due_no = Null
+    !payamt_by = Null
+    !type1 = 0
+    !type2 = 0
+    !past_due_other = 0
+    !past_due_otherMISC = Null
+   .Update
+   .Close
+   
+    End With
+End If
+    
+'Msgbox ("FCTrackingDC Restart")
+
+strsql = "select * from fctrackingdc where filenum = " & GblFilenum & ";"
+Set rsPS = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rsPS.EOF Then
+    With rsPS
+    .Edit
+    !sale_set = Null
+    !setsalescreencheck = 0
+    !SentEmailOcwen = Null
+    .Update
+   .Close
+   
+    End With
+End If
+    
+'Msgbox ("FCTrackingDC Restart")
+mySendKeys ("{F9}")
+    
+MsgBox "The Previous Sale has been saved.  The screen has been prepared for the resume.  To access previous sales click PrevSales button at top of screen", vbOKOnly
+
+
+End Function
+
+Public Function CheckLitigation()
+Dim strsql As String
+Dim rs, rsFC As RecordSet
+
+strsql = "Select Litigation.SubFileNum FROM Litigation LEFT JOIN Foreclosure ON Litigation.SubFileNum = Foreclosure.SubFileNum WHERE (((Foreclosure.SubFileNum) Is Null));"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+Set rsFC = CurrentDb.OpenRecordset("Foreclosure", dbOpenDynaset, dbSeeChanges)
+
+If rs.EOF Then
+rs.Close
+rsFC.Close
+Else
+
+rs.MoveFirst
+Do While Not rs.EOF
+With rsFC
+.AddNew
+!SubFileNum = rs!SubFileNum
+ .Update
+ End With
+ rs.MoveNext
+ Loop
+ 
+rs.Close
+rsFC.Close
+End If
+
+'Check Litigation
+strsql = "select * from litdeftbl where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("litdeftbl", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+
+strsql = "select * from litexctbl where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("litexctbl", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+
+strsql = "select * from litrectbl where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("litrectbl", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+
+strsql = "select * from litmotiontbl where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("litmotiontbl", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+
+strsql = "select * from litdismissals where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("litdismissals", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+
+
+strsql = "select * from litstatusconftbl where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("litstatusconftbl", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+
+
+
+
+
+
+End Function
+Public Function FindInv()
+Dim VFind As String
+
+If VFind = "d" Then
+    Screen.PreviousControl.SetFocus
+    DoCmd.DoMenuItem acFormBar, acEditMenu, 10, , acMenuVer70
+Else
+Dim VINv, vFile As Integer
+Dim rs As RecordSet
+Dim Vsql, linkcriteria, VInvAdd, VAddress As String
+
+VInvAdd = InputBox("Search by: " & vbCr & "1.  Invoice" & vbCr & "2.  Address" & vbCr & "Please type in 1 or 2")
+DoCmd.Close acForm, "Deed Review Screen"
+
+If VInvAdd = 1 Then
+VINv = InputBox("Enter Invoice Number")
+Vsql = ("Select * from billing where customerid = " & VINv & ";")
+Set rs = CurrentDb.OpenRecordset(Vsql, dbOpenSnapshot)
+'If rs.EOF Then
+'  MsgBox ("No Deed Review has this Invoice Number")
+'  DoCmd.OpenForm "deed review screen"
+' Else
+'  linkcriteria = "[filenum] = " & rs!DRFileNum
+'  DoCmd.OpenForm "deed review screen", , , linkcriteria
+'  End If
+VAddress = ""
+
+Else
+
+VINv = 0
+VAddress = InputBox("Enter Beginning of Address")
+Vsql = ("Select * from deedreviews where address like " & """" & VAddress & "*""" & ";")
+Set rs = CurrentDb.OpenRecordset(Vsql, dbOpenSnapshot)
+ 
+ 
+ If rs.EOF Then
+  MsgBox ("No Deed Review matches close to this Address")
+  DoCmd.OpenForm "deed review screen"
+ Else
+  linkcriteria = "[filenum] = " & rs!filenum
+  DoCmd.OpenForm "deed review screen", , , linkcriteria
+  End If
+
+End If
+
+ 
+   
+    
+End If
+End Function
+Function AddPage() As Boolean
+    Dim frm As Form
+    Dim tbc As TabControl, pge As page
+
+
+    On Error GoTo Error_AddPage
+    DoCmd.OpenForm "ForeclosureSubForm", acDesign
+    
+     Set frm = Screen.ActiveForm
+    frm.Form.SetFocus
+
+    Set tbc = frm!TabCtl0
+
+    tbc.pages.ADD
+    DoCmd.Close acForm, "Foreclosuresubform", acSaveYes
+    DoCmd.OpenForm "Foreclosuresubform", acNormal
+    AddPage = True
+
+
+Exit_AddPage:
+    Exit Function
+
+
+Error_AddPage:
+    MsgBox Err & ": " & Err.description
+    AddPage = False
+    Resume Exit_AddPage
+End Function
+
+
+
+Public Function AddPostSale()
+Dim rs, rsPS As RecordSet
+Dim strsql As String
+
+Set rsPS = CurrentDb.OpenRecordset("Postsale", dbOpenDynaset, dbSeeChanges)
+
+Set rs = CurrentDb.OpenRecordset("Cases Without Matching PostSale", dbOpenSnapshot)
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+ With rsPS
+    .AddNew
+    !SubFileNum = rs!filenum
+    .Update
+    End With
+rs.MoveNext
+Loop
+
+End Function
+Public Function NewFileFAFID()
+Dim rsCases As RecordSet
+Dim rs As RecordSet
+Dim rsPS As RecordSet
+Dim rsProcess As RecordSet
+Dim rstitle As RecordSet
+Dim BGNum, TNum, VCheck, vopenedfile, VCheck2
+
+VCheck2 = InputBox("You are adding in a file that is already in the Main Database. Type in BWW# to Continue")
+VCheck = InputBox("BWW# is: " & VCheck2 & ", is that correct?  Type YES to continue")
+
+If VCheck = "YES" Then
+
+DoCmd.Close acForm, "first american/fidelity title orders screenNEW"
+
+Set rstitle = CurrentDb.OpenRecordset("Title", dbOpenDynaset, dbSeeChanges)
+
+TNum = GetAutoNumber("NextTitle")
+   
+With rstitle
+.AddNew
+!Prefix = Format(Date, "yy") & "-"
+!bgw_filenum = VCheck2
+!filenum = TNum
+.Update
+.Close
+End With
+
+DoCmd.OpenForm "First American/Fidelity Title Orders Screen", , , "[FIleNum] = " & TNum
+'DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & BGNum
+Else
+DoCmd.OpenForm "First American/Fidelity Title Orders Screen"
+
+
+End If
+
+End Function
+Public Function NewFileFA()
+Dim rsCases As RecordSet
+Dim rs As RecordSet
+Dim rsPS As RecordSet
+Dim rsProcess As RecordSet
+Dim rstitle As RecordSet
+Dim BGNum, TNum, VCheck, vopenedfile
+
+VCheck = InputBox("You are adding a new file this will also add into the Main Database. Have your queried for the loan number?  Do you want to add a new record? Type in YES or NO to continue")
+If VCheck = "YES" Then
+
+DoCmd.Close acForm, "first american/fidelity title orders screenNEW"
+
+vopenedfile = getEmployeeInitials(Environ("username"))
+
+Set rsCases = CurrentDb.OpenRecordset("Cases", dbOpenDynaset, dbSeeChanges)
+
+Set rs = CurrentDb.OpenRecordset("Foreclosure", dbOpenDynaset, dbSeeChanges)
+
+Set rsPS = CurrentDb.OpenRecordset("Postsale", dbOpenDynaset, dbSeeChanges)
+
+Set rsProcess = CurrentDb.OpenRecordset("ProcessService", dbOpenDynaset, dbSeeChanges)
+
+Set rstitle = CurrentDb.OpenRecordset("Title", dbOpenDynaset, dbSeeChanges)
+
+BGNum = GetAutoNumber("NextFileNumber")
+TNum = GetAutoNumber("NextTitle")
+   
+With rsCases
+.AddNew
+![filenum] = BGNum
+!fob = "F"
+!Status = "Foreclosure"
+!Screen_Change = "Foreclosure"
+![Date Recieved] = Date
+!imported_via = "FA"
+.Update
+.Close
+End With
+
+With rs
+.AddNew
+![SubFileNum] = BGNum
+!fc_opens = vopenedfile
+
+.Update
+End With
+
+With rsPS
+.AddNew
+!SubFileNum = BGNum
+.Update
+End With
+rsPS.Close
+
+With rstitle
+.AddNew
+!Prefix = Format(Date, "yy") & "-"
+!bgw_filenum = BGNum
+!filenum = TNum
+.Update
+End With
+
+Dim rsMI As RecordSet
+Set rsMI = CurrentDb.OpenRecordset("MissingInfo", dbOpenDynaset, dbSeeChanges)
+
+   With rsMI
+      .AddNew
+      ![filenum] = BGNum
+     .Update
+     .Close
+  End With
+  
+
+Dim rsAff As RecordSet
+Set rsAff = CurrentDb.OpenRecordset("AffDebt", dbOpenDynaset, dbSeeChanges)
+With rsAff
+.AddNew
+!SubFileNum = BGNum
+!mism5 = 0#
+!mism6 = 0#
+!mism7 = 0#
+!miscm1 = 0#
+!miscm2 = 0#
+!Mism3 = 0#
+!Mism4 = 0#
+!mism8 = 0#
+!mism9 = 0#
+!mism10 = 0#
+!mism11 = 0#
+.Update
+.Close
+End With
+
+'Call AddJournalEntry(BGNum, "Opened as New File via First American/Fidelity Screen")
+
+     
+DoCmd.OpenForm "First American/Fidelity Title Orders Screen", , , "[FIleNum] = " & TNum
+'DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & BGNum
+Else
+DoCmd.OpenForm "First American/Fidelity Title Orders Screen"
+
+
+End If
+
+End Function
+Public Sub EnterNewFile()
+'On Error GoTo ErrNewFile
+
+    
+'Dim FC As Recordset
+Dim s As RecordSet
+Dim t As RecordSet
+Dim BGNum As Long
+Dim sql As String
+Dim ws As Workspace
+Dim VarYN As String
+Dim rs1st As RecordSet
+Dim strsql1st As String
+Dim VarClient1st As String
+Dim rs, rsPS As RecordSet
+Dim vopenedfile As String
+Dim rsopens As RecordSet
+Dim strsqlopens, VOpens As String
+Dim VFCBk As String
+Dim rsProcess As RecordSet
+Dim rsETS As RecordSet
+Dim rsCases As RecordSet
+Dim rsqc As RecordSet
+Dim rsCom As RecordSet
+
+
+Forms!newfile!Status = "Adding new file to database..."
+DoEvents
+VarYN = MsgBox("You are adding a new record to the Database: " & vbCr & Forms!newfile!txtLastNameDebtor1 & ", " & Forms!newfile!txtFirstNameDebtor1 & vbCr & Forms!newfile!txtPropAddress & vbCr & "Loan#: " & Forms!newfile!txtClientRefNumber & vbCr & "CONTINUE?", vbYesNo)
+
+If VarYN = vbYes Then
+
+Dim rsAff As RecordSet
+Set rsAff = CurrentDb.OpenRecordset("AffDebt", dbOpenDynaset, dbSeeChanges)
+Dim rsMI As RecordSet
+Set rsMI = CurrentDb.OpenRecordset("MissingInfo", dbOpenDynaset, dbSeeChanges)
+Dim rsFC As RecordSet
+Dim rsFCDC As RecordSet
+Dim rsDU As RecordSet
+
+ 
+Set rs = CurrentDb.OpenRecordset("Foreclosure", dbOpenDynaset, dbSeeChanges)
+Set rsqc = CurrentDb.OpenRecordset("qc", dbOpenDynaset, dbSeeChanges)
+Set rsPS = CurrentDb.OpenRecordset("Postsale", dbOpenDynaset, dbSeeChanges)
+Set rsCom = CurrentDb.OpenRecordset("Comments", dbOpenDynaset, dbSeeChanges)
+Set rsProcess = CurrentDb.OpenRecordset("ProcessService", dbOpenDynaset, dbSeeChanges)
+Set rsCases = CurrentDb.OpenRecordset("Cases", dbOpenDynaset, dbSeeChanges)
+Set rsFC = CurrentDb.OpenRecordset("FCTracking", dbOpenDynaset, dbSeeChanges)
+Set rsDU = CurrentDb.OpenRecordset("docupload", dbOpenDynaset, dbSeeChanges)
+
+BGNum = GetAutoNumber("NextFileNumber")
+
+MsgBox ("New BWW#: " & BGNum)
+
+
+If Forms!newfile!cbxStatus = "Bankruptcy" Or Forms!newfile!txtFOB = "B" Then
+
+Dim rsBK As RecordSet
+Set rsBK = CurrentDb.OpenRecordset("Bankruptcy", dbOpenDynaset, dbSeeChanges)
+Dim rsbkar As RecordSet
+Set rsbkar = CurrentDb.OpenRecordset("BKArrearages", dbOpenDynaset, dbSeeChanges)
+
+
+Dim VBK As Long
+VBK = GetAutoNumber("NextBankruptcy")
+
+With rsBK
+.AddNew
+!SubFileNum = BGNum
+!counter = VBK
+.Update
+.Close
+End With
+
+With rsbkar
+.AddNew
+!SubFileNum = BGNum
+!counter = VBK
+.Update
+.Close
+End With
+
+Set rsbkar = Nothing
+
+End If
+'---------End of Adding Records for BK
+
+'Add Records into Postsale/Foreclosure/FCTracking/QC/Process Service (MD)/Comments/Missing Info/AffDebt
+With rsPS
+.AddNew
+!SubFileNum = BGNum
+.Update
+.Close
+End With
+Set rsPS = Nothing
+
+With rsFC
+.AddNew
+!filenum = BGNum
+.Update
+.Close
+End With
+Set rsFC = Nothing
+
+With rsDU
+.AddNew
+!filenum = BGNum
+.Update
+.Close
+End With
+Set rsDU = Nothing
+
+With rsqc
+.AddNew
+!filenum = BGNum
+.Update
+.Close
+End With
+Set rsqc = Nothing
+
+With rsCom
+.AddNew
+!filenum = BGNum
+.Update
+.Close
+End With
+Set rsCom = Nothing
+
+
+
+   With rsCases
+      .AddNew
+      ![filenum] = BGNum
+      !fob = Forms!newfile!txtFOB
+      !Status = Forms!newfile!cbxStatus
+      !Screen_Change = Forms!newfile!cbxStatus
+      ![Date Recieved] = Forms!newfile!txtDateReceived      '!date_updated = "F"
+      If IsNull(Forms!newfile!txtFirstNameDebtor1) Then
+      !FirstNameDebtor1 = Null
+      Else
+      !FirstNameDebtor1 = Forms!newfile!txtFirstNameDebtor1
+      End If
+      If IsNull(Forms!newfile!txtMiddleNameDebtor1) Then
+      !MiddleNameDebtor1 = Null
+      Else
+      !MiddleNameDebtor1 = Forms!newfile!txtMiddleNameDebtor1
+      End If
+      If IsNull(Forms!newfile!txtLastNameDebtor1) Then
+      !LastNameDebtor1 = Null
+      Else
+      !LastNameDebtor1 = Forms!newfile!txtLastNameDebtor1
+      End If
+      If IsNull(Forms!newfile!txtPropAddress) Then
+      !PropAddress = Null
+      Else
+      !PropAddress = Forms!newfile!txtPropAddress
+      End If
+      If IsNull(Forms!newfile!txtPropertyCity) Then
+      !PropertyCity = Null
+      Else
+      !PropertyCity = Forms!newfile!txtPropertyCity
+      End If
+      If IsNull(Forms!newfile!txtPropertyState) Then
+      !PropertyState = Null
+      Else
+      !PropertyState = Forms!newfile!txtPropertyState
+      End If
+      
+      If Forms!newfile!txtPropertyState = "MD" Then
+      !WDebtor1 = "12 Trustees"
+      End If
+      
+      If IsNull(Forms!newfile!txtPropzip) Then
+      !propzip = Null
+      Else
+      !propzip = Forms!newfile!txtPropzip
+      End If
+      If IsNull(Forms!newfile!txtCounty) Then
+      !Propertycounty = Null
+      Else
+      !Propertycounty = Forms!newfile!txtCounty
+      End If
+      If IsNull(Forms!newfile!cbxClient) Then
+      !Client = Null
+      Else
+      !Client = Forms!newfile!cbxClient
+      End If
+      If IsNull(Forms!newfile!txtClientRefNumber) Then
+      !ClientRefNumber = Null
+      Else
+      !ClientRefNumber = Forms!newfile!txtClientRefNumber
+      End If
+      If IsNull(Forms!newfile!txtSecuredParty) Then
+      !longsecured = Null
+      Else
+      !longsecured = Forms!newfile!txtSecuredParty
+      End If
+      .Update
+      .Close
+   End With
+Set rsCases = Nothing
+
+
+With rs
+      .AddNew
+      ![SubFileNum] = BGNum
+      If Forms!newfile!cbxStatus = "Foreclosure" Then
+      VFCBk = MsgBox("Is This File In FORECLOSURE Status?", vbYesNo)
+      If VFCBk = vbYes Then
+      If IsNull(Forms!newfile!cbxOpenedFile) Then
+      strsqlopens = "Select employeeid, [firstname] from employees where departmentname = " & """" & "information processing" & """" & ";"
+      Set rsopens = CurrentDb.OpenRecordset(strsqlopens, dbOpenSnapshot)
+        rsopens.MoveFirst
+        VOpens = "Invoice Processors:"
+        While Not rsopens.EOF
+        VOpens = VOpens + vbCr + rsopens![FirstName]
+        rsopens.MoveNext
+        Wend
+      vopenedfile = getEmployeeInitials(Environ("username"))
+      !fc_opens = vopenedfile
+      Else
+      !fc_opens = Forms!newfile!cbxOpenedFile
+      End If
+      End If
+      End If
+     
+      If IsNull(Forms!newfile!txtDateReceived) Then
+      Forms!newfile!txtDateReceived = Date
+      End If
+     .Update
+     .Close
+  End With
+Set rs = Nothing
+
+  With rsMI
+      .AddNew
+      ![filenum] = BGNum
+     .Update
+     .Close
+  End With
+Set rsMI = Nothing
+
+If Forms!newfile!txtPropertyState = "DC" Then
+Set rsFCDC = CurrentDb.OpenRecordset("FCTrackingdc", dbOpenDynaset, dbSeeChanges)
+
+With rsFCDC
+.AddNew
+!filenum = BGNum
+.Update
+.Close
+End With
+End If
+Set rsFCDC = Nothing
+
+  
+If Forms!newfile!txtPropertyState = "MD" Then
+With rsProcess
+.AddNew
+!SubFileNum = BGNum
+.Update
+.Close
+End With
+Set rsProcess = Nothing
+
+With rsAff
+.AddNew
+!SubFileNum = BGNum
+!mism5 = 0#
+!mism6 = 0#
+!mism7 = 0#
+!miscm1 = 0#
+!miscm2 = 0#
+!Mism3 = 0#
+!Mism4 = 0#
+!mism8 = 0#
+!mism9 = 0#
+!mism10 = 0#
+!mism11 = 0#
+.Update
+.Close
+End With
+End If
+Set rsAff = Nothing
+
+
+'End of adding records=====================================================
+
+'Add to Journal/Memo
+Call AddJournalEntry(BGNum, "Opened as New File Manually")
+
+
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & BGNum
+DoEvents
+
+DoCmd.Close acForm, "NewFile"
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & BGNum
+
+DoEvents
+
+
+Else
+
+Dim VarYN2 As String
+
+VarYN2 = MsgBox("Return to Foreclosure Screen and Do Not Add Record?", vbYesNo)
+
+If VarYN2 = vbYes Then
+DoCmd.Close acForm, "NewFile"
+DoCmd.OpenForm "Foreclosure Database Screen"
+Else
+Exit Sub
+End If
+
+
+End If
+
+
+'ErrNewFile:
+'    MsgBox Err.Description
+'    MsgBox ("File was not added please email error message to charlene.curley@bww-law.com")
+
+
+End Sub
+Public Function AddMissingInfo()
+Dim rs, rsMI As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("Cases Without Matching MissingInfo", dbOpenSnapshot)
+Set rsMI = CurrentDb.OpenRecordset("MissingInfo", dbOpenDynaset, dbSeeChanges)
+
+
+If rs.EOF Then
+
+Exit Function
+
+Else
+rs.MoveFirst
+
+Do While Not rs.EOF
+With rsMI
+.AddNew
+!filenum = rs!filenum
+.Update
+End With
+rs.MoveNext
+Loop
+
+End If
+
+End Function
+Public Function GetAutoNumber(WhichNumber As String) As Long
+'
+' Return the contents of the specified column in the AutoNumbers table.  Then increment that column.
+'
+Dim d As RecordSet, AutoNumber As Long, ErrorCount As Integer
+On Error GoTo GetAutoNumberErr
+
+Set d = CurrentDb.OpenRecordset("AutoNumbers", dbOpenDynaset, dbSeeChanges)
+d.MoveFirst
+d.Edit
+AutoNumber = d(WhichNumber)
+d(WhichNumber) = AutoNumber + 1
+d.Update
+d.Close
+'
+' Do any special processing here
+'
+Select Case WhichNumber
+    Case "NextFileNumber"
+    'logcase AutoNumber, "New BWW#"
+    
+    'Dim f, fso
+    'Set fso = CreateObject("Scripting.filesystemobject")
+    'Set f = fso.CreateFolder(GetDocPath(AutoNumber))
+    'Set fso = Nothing
+    'Set f = Nothing
+
+End Select
+GetAutoNumber = AutoNumber
+Exit Function
+
+GetAutoNumberErr:
+    If Err.Number = 3197 Then   ' this is the expected error -- another user attempting to update the same record
+        ErrorCount = ErrorCount + 1
+        If ErrorCount > 10 Then ' have to give up after a while
+        '    d.Close
+            MsgBox "GetAutoNumber: (" & WhichNumber & ") " & Err.description
+            Exit Function
+            DoCmd.Quit
+        End If
+        Call Wait(1, False)     ' wait 1 second
+        Resume
+    Else                        ' unexpected error
+       ' d.Close
+        MsgBox "GetAutoNumber: (" & WhichNumber & ") " & Err.description
+        Exit Function
+        DoCmd.Quit
+    End If
+End Function
+
+Public Function Wait(Seconds As Integer, Optional DispHrglass As Boolean)
+Dim delayend As Double
+
+DoCmd.Hourglass DispHrglass
+delayend = DateAdd("s", Seconds, Now)
+While DateDiff("s", Now, delayend) > 0
+    DoEvents
+Wend
+DoCmd.Hourglass False
+End Function
+
+Public Function CheckWeekend(VDate As Date)
+
+CheckWeekend = Format$(VDate, "dddd")
+
+If CheckWeekend = "Saturday" Or CheckWeekend = "Sunday" Then
+MsgBox ("Date falls on a weekend (" & CheckWeekend & ").")
+End If
+
+End Function
+
+Public Function GetDocPath(FileNumber As Long) As String
+Dim Base As Long, Bucket As String
+
+Base = Int(FileNumber \ 1000) * 1000
+Bucket = Format$(Base, "000000") & "-" & Format$(Base + 999, "000000")
+GetDocPath = DLookup("RootPath", "vwDocFileSystem", "Range='" & Bucket & "'") & "\" & Bucket & "\" & FileNumber & "\"
+End Function
+
+Public Function OpenAnnouncementList(ID As Long)
+
+    DoCmd.OpenForm "AnnouncementList", , , "ID=" & ID
+
+
+
+End Function
+
+Public Function OpenDocumentList(FileNumber As Long)
+
+If DCount("DocTypeName", "DocumentList", "CaseNo=" & FileNumber) > 0 Then
+    DoCmd.OpenForm "DocumentList", , , "CaseNo=" & FileNumber
+Else
+    MsgBox "No electronic documents for BWW # " & FileNumber, vbExclamation
+End If
+
+End Function
+Public Function OpenDocumentListBILL(FileNumber As Long)
+If DCount("DocTypeName", "DocumentListBILL", "CaseNo=" & FileNumber) > 0 Then
+    DoCmd.OpenForm "DocumentListBILL", , , "CaseNo=" & FileNumber
+Else
+    MsgBox "No electronic documents for BWW # " & FileNumber, vbExclamation
+End If
+End Function
+Public Function OpenDocumentListTable(FileNumber As Long)
+
+If DCount("DocTypeName", "DocumentList", "CaseNo=" & FileNumber) > 0 Then
+DoCmd.RunSQL "SELECT DocumentList.DocTypeName, DocumentList.Stamp, DocumentList.CaseNo INTO ClosedFileDocs from DocumentList WHERE DocumentList.CaseNo =" & FileNumber
+
+End If
+
+
+
+
+End Function
+Function currentfileVATrustee()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "VA Trustee Cover Ltr"
+    linkcriteria = "[cases.FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfileAcc()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "AccountingMain"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfileComplaint()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "Complaint"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfile502()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "502 Form"
+    linkcriteria = "[SubFileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+
+Function currentfileTitle()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from title where filenum = " & Forms![foreclosure database screen]![filenum] & ";"
+    Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+        
+    If rs.EOF Then
+    rs.Close
+    Set rs = CurrentDb.OpenRecordset("title", dbOpenDynaset, dbSeeChanges)
+
+    With rs
+    .AddNew
+    !filenum = Forms![foreclosure database screen]![filenum]
+    .Update
+    End With
+    End If
+    rs.Close
+    
+    Dim DocName As String
+    Dim linkcriteria As String
+   
+
+    DocName = "Title Policy Info"
+    linkcriteria = "[SubFileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+
+ Function currentfileACL()
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) And _
+IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!sale_cancelled) Then
+MsgBox ("Sale scheduled. Breach letter cannot be sent at this time.")
+Exit Function
+End If
+
+
+    Dim DocName, VCid As String
+    Dim linkcriteria As String
+    Dim Figures As String
+    Dim strsql As String
+    Dim rs As RecordSet
+    strsql = "select * from tblacl where filenum = " & Forms![foreclosure database screen]![filenum] & ";"
+    Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+        
+    If rs.EOF Then
+    rs.Close
+    Set rs = CurrentDb.OpenRecordset("tblacl", dbOpenDynaset, dbSeeChanges)
+    
+    VCid = GetAutoNumber("getnextabstractnum")
+    
+    With rs
+    .AddNew
+    !CustomerID = VCid
+    !filenum = Forms![foreclosure database screen]![filenum]
+    .Update
+    End With
+    End If
+    rs.Close
+    
+    DocName = "ACLMain"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfileReq()
+
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "Request for Additional Fees"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfileBlank()
+
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "Letter Blank"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+
+Function currentfileAffDebt()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+Call AffDebtScreen
+
+End Function
+Function currentfileTax()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "Property Tax Reporting"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfilebillLit()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "BillingLitigationMain"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfilebillEstate()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "BillingMainEstate"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfilePt2()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "Part2pkgMain"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+
+
+
+Function currentfileBilling()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "BillingMain"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfilefbs()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "fbsMain"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfileLienholder()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "Creditors"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfileTA()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "Title Abstract"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfileVAC()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "VAaccMain"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+Function currentfileBid()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "BidMain"
+    linkcriteria = "[FileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+
+Function currentfileSL()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+    Dim Figures As String
+
+    DocName = "SLienLtr"
+    linkcriteria = "[SubFileNum] = Forms![Foreclosure Database Screen]![FileNum]"
+    DoCmd.OpenForm DocName, , , linkcriteria
+   
+End Function
+
+Public Function DeedChecklist()
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+    DoCmd.OpenReport "Deed MD Checklist"
+Else
+    DoCmd.RunMacro "Deedmdchecklist"
+End If
+
+End Function
+

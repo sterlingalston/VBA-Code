@@ -1,0 +1,296 @@
+Attribute VB_Name = "CloseFile"
+Option Compare Database   'Use database order for string comparisons
+Public Function CloseFileQueueGeneration()
+ 
+DoCmd.OpenQuery "ClosedFileAuditQRY"
+DoCmd.OpenQuery "ClosedFileAudit-qc"
+DoCmd.OpenQuery "ClosedFileAudit-PS"
+Call OpenDocumentListTable(Forms!closedfilesqueue!filenum)
+
+Dim rs As RecordSet
+Dim rsDocs As RecordSet
+
+Set rsDocs = CurrentDb.OpenRecordset("ClosedFileDocs", dbOpenSnapshot)
+Set rs = CurrentDb.OpenRecordset("ClosedFileAudit", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rsDocs.EOF
+
+If rsDocs!DocTypeName = "SDat Search" Then
+With rs
+.Edit
+![SDat Search] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "SSDI Name" Then
+With rs
+.Edit
+![SSDI Name] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "SSDI SSN" Then
+With rs
+.Edit
+![SSDI SSN] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "Pacer Report" Then
+With rs
+.Edit
+![Pacer Report] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "DOD Search" Then
+With rs
+.Edit
+![DOD Search] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "Fair Debt Letter" Then
+With rs
+.Edit
+![Fair Debt Letter] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "NOI" Then
+With rs
+.Edit
+![noi] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "Title Search" Then
+With rs
+.Edit
+![Title Search] = rsDocs!Stamp
+.Update
+End With
+End If
+
+If rsDocs!DocTypeName = "QC3 Package" Then
+With rs
+.Edit
+![QC3 Package] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "Part 1 Package" Then
+With rs
+.Edit
+![Part 1 Package] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "Assignment" Then
+With rs
+.Edit
+![assignment] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "Recorded Assignment" Then
+With rs
+.Edit
+![Recorded Assignment] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "Recorded Deed" Then
+With rs
+.Edit
+![Recorded Deed] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "Trio Invoice" Then
+With rs
+.Edit
+![Trio Invoice] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "Compass Invoice" Then
+With rs
+.Edit
+![Compass Invoice] = rsDocs!Stamp
+.Update
+End With
+End If
+If rsDocs!DocTypeName = "BWW Invoice" Then
+With rs
+.Edit
+![BWW Invoice] = rsDocs!Stamp
+.Update
+End With
+End If
+
+
+
+
+rsDocs.MoveNext
+Loop
+
+
+
+End Function
+Public Function CloseOutFileBULK()
+Dim FCOpenfile As Long
+Dim ClosedEdit As String
+Dim ClosedNew As String
+Dim closeOpenno As String
+Dim ClosedNo As Integer
+Dim CLOSERS As RecordSet
+Dim linkcriteria As String
+Dim closeno As Integer
+Dim StrCriteria As String
+
+FCOpenfile = [Forms]![foreclosure database screen]![filenum]
+ClosedEdit = "ClosedSubFormEdit"
+ClosedNew = "ClosedSubForm"
+Dim closercheck As RecordSet
+
+StrCriteria = "select * from closedfiles where [openfilenum] = " & FCOpenfile
+Set closercheck = CurrentDb.OpenRecordset(StrCriteria, dbOpenSnapshot)
+  
+ If closercheck.EOF Then
+   closercheck.Close
+
+ 'ClosedNo = GetAutoNumber("NextClosedNumber")
+ Set CLOSERS = CurrentDb.OpenRecordset("closedfiles", dbOpenDynaset, dbSeeChanges)
+ 
+ GblFilenum = Forms![foreclosure database screen]!filenum
+ 
+ With CLOSERS
+ .AddNew
+ !OpenFileNum = GblFilenum
+ !Client = Forms![foreclosure database screen]!Client
+ !ClientRefNumber = Forms![foreclosure database screen]!ClientRefNumber
+!FirstNameDebtor1 = Forms![foreclosure database screen]!FirstNameDebtor1
+!LastNameDebtor1 = Forms![foreclosure database screen]!LastNameDebtor1
+!PropAddress = Forms![foreclosure database screen]!PropAddress
+!Propertycounty = Forms![foreclosure database screen]!Propertycounty
+!PropertyCity = Forms![foreclosure database screen]!PropertyCity
+!PropertyState = Forms![foreclosure database screen]!PropertyState
+!propzip = Forms![foreclosure database screen]!propzip
+![Date Recieved] = Forms![foreclosure database screen]![Date Recieved]
+!DateClosed = Date
+!TypeOfLoan = Forms![foreclosure database screen]!TypeOfLoan
+!Status = Forms![foreclosure database screen]!Status
+'MsgBox (Forms![foreclosure database screen]![Mailing Address] & " " & Forms![foreclosure database screen]![Mailing Address2] & ", " & Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip])
+If Forms![foreclosure database screen]![Mailing Address] <> "" Then
+![Mailing Address] = Forms![foreclosure database screen]![Mailing Address] & " " & Forms![foreclosure database screen]![Mailing Address2] & ", " & Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+End If
+.Update
+.Close
+End With
+
+
+
+If Forms![foreclosure database screen].Dirty = True Then
+DoCmd.RunCommand acCmdRefresh
+End If
+
+Dim VOpenScreen As String
+MsgBox ("File has been put on hold.")
+''logcase Forms![foreclosure database screen]!FileNum, "Closed File: " & Date
+
+linkcriteria = "[OpenFileNum] = Forms![Foreclosure Database Screen]![FIleNum]"
+DoCmd.OpenForm "ClosedSubFormEdit", , , linkcriteria
+Else
+
+MsgBox ("This file has been put on Hold previously.  Please check data and click Update to reinstate.")
+''logcase Forms![foreclosure database screen]!FileNum, "Re-Closed File: " & Date
+
+linkcriteria = "[OpenFileNum] = Forms![Foreclosure Database Screen]![FIleNum]"
+DoCmd.OpenForm "ClosedSubFormEdit", , , linkcriteria
+
+
+End If
+End Function
+
+
+Public Function RegisterMoniesCHECK()
+Dim rs As RecordSet, RsReg As RecordSet, rsTemp
+Dim strsql As String, VRegister As String
+
+Dim VBal
+
+Set rs = CurrentDb.OpenRecordset("ClosePostsale")
+rs.MoveFirst
+
+Do While Not rs.EOF
+strsql = "select * from Register where FileID = " & rs!filenum & ";"
+VRegister = ""
+VBal = 0
+Set RsReg = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not RsReg.EOF Then
+RsReg.MoveFirst
+GblFilenum = RsReg!FileID
+Do While Not RsReg.EOF
+VRegister = RsReg!AccountShortName
+VBal = RsReg!TransAmount + VBal
+RsReg.MoveNext
+Loop
+
+If VBal <> 0 Then
+With rs
+.Edit
+!filenum = GblFilenum
+!register = VRegister
+!Bal_Money = VBal
+.Update
+'.Close
+End With
+End If
+End If
+
+
+rs.MoveNext
+Loop
+
+
+End Function
+
+Function CloseFile()
+
+Dim FCOpenfile As String, ClosedEdit As String, ClosedNew As String
+Dim closeOpenno As String
+Dim CloseDB As Database
+Dim CLOSERS As RecordSet
+Dim linkcriteria As String
+Dim closeno As Integer
+Dim StrCriteria As String
+
+FCOpenfile = [Forms]![foreclosure database screen]![filenum]
+Forms![foreclosure database screen]!Status = "Hold"
+Forms![foreclosure database screen]!Screen_Change = "Hold"
+
+ClosedEdit = "ClosedSubFormEdit"
+ClosedNew = "ClosedSubForm"
+
+
+    ' Return reference to current database.
+    Set CloseDB = DBEngine.Workspaces(0).Databases(0)
+    ' Define search criteria.
+    StrCriteria = "[OpenFileNum] = " & FCOpenfile
+    ' Create a dynaset-type Recordset object based on Orders table.
+    Set CLOSERS = CloseDB.OpenRecordset("ClosedFiles", dbOpenDynaset, dbSeeChanges)
+    ' Find first matching record.
+    CLOSERS.FindFirst StrCriteria
+    ' Check if record is found.
+ If CLOSERS.NoMatch Then
+        DoCmd.RunMacro "CloseFile2"
+    Else
+        
+        linkcriteria = "[OpenFileNum] = Forms![Foreclosure Database Screen]![FIleNum]"
+        DoCmd.OpenForm ClosedEdit, , , linkcriteria
+    End If
+
+
+End Function
+

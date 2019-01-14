@@ -1,0 +1,38 @@
+<html>
+<head>
+<HTA:APPLICATION ID="CalendarTagBld" BORDER="thin" BORDERSTYLE="complex" maximizeButton="yes" minimizeButton="yes" />
+<script type="text/vbscript">
+  Public Sub ConcatTag()
+	Dim prefix_sel 
+	Dim suffix_sel 
+	Dim prefix_val 
+	Dim suffix_val 
+
+    prefix_sel = document.getElementById("prefix").selectedIndex
+	MsgBox document.getElementById("prefix").options(prefix_sel).value
+  End Sub
+</script>
+<title>Calendar Tag Builder</title>
+</head>
+<body>
+<table width="100%">
+    <tr>
+        <td>
+            <!--Your content here!-->
+            <H1>Hello World!</H1>
+            <input type="Button" onClick="ConcatTag()" value="Hello" />
+        </td>
+    </tr>
+</table>
+<H1>Select Prefix</H1>
+  <select id="prefix">
+    <option value="[SUP]">SUP</option>
+    <option value="[BAB]">BAB</option>
+    <option value="[MTG]">MTG</option>
+    <option value="[CONSULTATION]">CONSULTATION</option>
+	<option value="[TRAINING]">TRAINING</option>
+	<option value="[TRAIN]">TRAIN</option>
+  </select>
+
+</body>
+</html>

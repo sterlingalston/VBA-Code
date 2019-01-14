@@ -1,0 +1,39 @@
+Attribute VB_Name = "FormAuditing"
+Option Compare Database
+
+Sub FormAudit()
+
+Dim i As Integer
+Dim ctrl As Integer
+Dim ctrlct As Integer
+
+ DoCmd.SetWarnings False
+CurrentDb.Execute ("delete from FormControls")
+
+For i = 0 To CurrentProject.AllForms.Count - 1
+   
+    DoCmd.OpenForm CurrentProject.AllForms(i).name, acDesign
+    ctrlct = Forms(CurrentProject.AllForms(i).name).Controls.Count - 1
+    
+    For ctrl = 0 To ctrlct
+        
+        If Forms(CurrentProject.AllForms(i).name).Controls(ctrl) _
+            .ControlType = acLabel Then
+            'Debug.Print Forms(CurrentProject.AllForms(i).name).Controls(ctrl).ControlType
+           ' If Forms(CurrentProject.AllForms(i).name).Controls(ctrl).caption Like "sale*held*" Then
+            DoCmd.SetWarnings False
+                 CurrentDb.Execute ("insert into FormControls values(" & """" & _
+                    CurrentProject.AllForms(i).name & """" & "," & _
+                    """" & Replace(Forms(CurrentProject.AllForms(i).name).Controls(ctrl).Caption, Chr(34), "") & """" & ")")
+                
+            'End If
+            
+        End If
+        
+        
+    Next ctrl
+    
+    DoCmd.Close acForm, CurrentProject.AllForms(i).name
+Next i
+
+End Sub

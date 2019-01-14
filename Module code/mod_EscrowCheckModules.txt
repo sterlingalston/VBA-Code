@@ -1,0 +1,1145 @@
+Attribute VB_Name = "EscrowCheckModules"
+Option Compare Database
+Public Function EscHoldingFundsVA()
+CurrentDb.Execute "DELETE * FROM tempescrowcheck;", dbFailOnError
+If Not IsTable("VAAcctApprovedHoldingFunds") Then
+DoCmd.DeleteObject acTable, "VAAcctApprovedHoldingFunds"
+End If
+
+DoCmd.OpenQuery ("VAAcctApprovedHoldingFundsMT")
+DoCmd.OpenQuery ("VAAcctApprovedEscMTALL")
+DoCmd.OpenQuery ("VAAcctApprovedEsc3MTUPDATE")
+DoCmd.OpenQuery ("VAAcctApprovedEsc4MTUPDATE")
+DoCmd.OpenQuery ("VAAcctApprovedEsc4 Without Matching TempEscrowCheck")
+DoCmd.OpenQuery ("VAAcctApprovedEsc2MTUPDATE")
+DoCmd.OpenQuery ("VAAcctApprovedEsc2 Without Matching TempEscrowCheck")
+DoCmd.OpenQuery ("VAAcctApprovedEqOp2MTUPDATE")
+DoCmd.OpenQuery ("VAAcctApprovedEqOp2 Without Matching TempEscrowCheck")
+DoCmd.OpenQuery ("ChecksEscAcctApproved")
+
+
+End Function
+Public Function EscBGWAll()
+vtobgw = InputBox("All entries on screen go to BWW?  Type YES to continue")
+VPrep = Forms![escrow checksinitial]!preparer
+
+If vtobgw = "YES" Then
+DoCmd.Close acForm, "Escrow checks"
+
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "Select * from temptblescrow where preparer = " & """" & VPrep & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+With rs
+.Edit
+!Payment_To = 2
+!amt_bgw = !TOTAL
+!amt_client = 0
+'!Payment_To =
+.Update
+End With
+rs.MoveNext
+Loop
+
+DoCmd.OpenForm "Escrow checks"
+End If
+
+End Function
+Public Function EscSplitALL()
+VAmt = InputBox("Enter Balance to Split")
+vtobgw = InputBox("Enter to BWW")
+vtoclient = InputBox("Enter to Client")
+VPrep = Forms![escrow checksinitial]!preparer
+
+DoCmd.Close acForm, "Escrow checks"
+
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "Select * from temptblescrow where total = " & VAmt & " and preparer = " & """" & VPrep & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+With rs
+.Edit
+!Payment_To = 3
+!amt_bgw = vtobgw
+!amt_client = vtoclient
+!Payment_To = 5
+.Update
+End With
+rs.MoveNext
+Loop
+
+DoCmd.OpenForm "Escrow checks"
+
+
+End Function
+Public Function EscCloseReopen()
+DoCmd.Close acForm, "Escrow checksBGW"
+DoCmd.OpenForm "Escrow checksbgw"
+End Function
+Public Function EscCloseReopenFC()
+DoCmd.Close acForm, "Escrow checksBGW-Input"
+DoCmd.OpenForm "Escrow checksbgw-input"
+
+End Function
+Public Function EscCloseReopenCHKS()
+DoCmd.Close acForm, "Escrow checks"
+DoCmd.OpenForm "Escrow checks"
+
+End Function
+Public Function ChkScrInd()
+
+GblFilenum = Forms![foreclosure database screen]!filenum
+Dim strsql
+Dim rs As RecordSet
+strsql = "select * from temptblescrow where filenum = " & GblFilenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+If Not rs.EOF Then
+MsgBox ("BWW# " & Forms![foreclosure database screen]!filenum & " already in Temporary Table will not add")
+rs.Close
+Else
+rs.Close
+DoCmd.OpenQuery ("ChecksEscrow3BGW-Ind")
+DoCmd.OpenQuery ("ChecksUpdEqOp2")
+DoCmd.OpenQuery ("ChecksUpdEqEsc2")
+DoCmd.OpenQuery ("ChecksUpdEsc3")
+DoCmd.OpenQuery ("ChecksUpdEsc4")
+End If
+
+DoCmd.OpenForm ("escrow checksbgw-input")
+
+End Function
+Public Function PrintEscrowChecks()
+Dim rsAcct As RecordSet
+Dim VDump As String
+Dim rsDump As RecordSet
+Dim VINv, VDup As String
+Dim strsqlDUMP As String
+Dim vClient As String
+
+vPT = InputBox("Dump all data and print out checks, type YES to continue")
+If vPT = "YES" Then
+
+
+Set rsAcct = CurrentDb.OpenRecordset("tblacdc", dbOpenDynaset, dbSeeChanges)
+Set rsDump = CurrentDb.OpenRecordset("escrowchecks")
+
+Vfilename = Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "EscrowBGWChecks.xls"
+
+DoCmd.OpenReport "EscrowCheckToBGW-Complete", acViewPreview
+DoCmd.OpenReport "EscrowCheckToClients-Complete", acViewPreview
+DoCmd.OutputTo acOutputQuery, "EscrowBGWChecks-Sent", acFormatXLS, "\\rvdv-fs01\DataTransfer2\EscrowBackUpSpreadsheets\BGW_" & Vfilename
+DoCmd.OutputTo acOutputQuery, "EscrowChecksClients-Complete", acFormatXLS, "\\rvdv-fs01\DataTransfer2\EscrowBackUpSpreadsheets\CLIENTS_" & Vfilename
+DoCmd.OutputTo acOutputTable, "Escrowchecks", acFormatXLS, "\\rvdv-fs01\DataTransfer2\EscrowBackUpSpreadsheets\TBL_" & Vfilename
+
+If Not rsDump.EOF Then
+rsDump.MoveFirst
+DoCmd.SetWarnings False
+
+CurrentDb.Execute ("delete * from tblacdc where filenum = " & rsDump!filenum & " and total = " & rsDump!TOTAL & " and payee = " & """" & rsDump!Payee & """")
+End If
+
+Do While Not rsDump.EOF
+
+With rsAcct
+.AddNew
+!primary_key = GetAutoNumber("NextEscCheckPK")
+!CustomerID = rsDump!CustomerID
+!ClientRefNumber = rsDump!ClientRefNumber
+!ACCOUNT = rsDump!ACCOUNT
+!TOTAL = rsDump!TOTAL
+!filenum = rsDump!filenum
+!Category = rsDump!Category
+!LastNameDebtor1 = rsDump!LastNameDebtor1
+If rsDump!Payee Like "Citimor*" Then
+!Payee = "CitiMortgage, Inc."
+Else
+!Payee = rsDump!Payee
+End If
+!PropertyState = rsDump!PropertyState
+!PropAddress = rsDump!PropAddress
+!Rpt_Date = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!Rpt_timestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!Rpt = rsDump!Rpt
+!TOTALFees = 0
+!TotalCosts = rsDump!TOTAL
+!check_memo = rsDump!memo_sec
+.Update
+End With
+
+rsDump.MoveNext
+Loop
+
+rsAcct.Close
+rsDump.Close
+
+Dim VDel
+VDel = InputBox("DELETE the Escrow Check Table that generated these checks? TYPE YES")
+If VDel = "YES" Then
+CurrentDb.Execute "DELETE * FROM escrowchecks;", dbFailOnError
+End If
+
+
+End If
+
+
+End Function
+Public Function CreateEscScreen()
+Dim Vselect
+Dim VNewScrn
+Dim VPS
+Dim Vini
+
+If Forms![escrow checksinitial]!checklist = 2 Then
+DoCmd.OpenForm ("Escrow Checks")
+
+Else
+
+
+vnw = Format(Now(), "d/m/yyh:mm")
+Dim VAmt1 As Double
+Dim VAmt2 As Double
+Dim VAcctAppr As Integer
+
+VAccount = Forms![escrow checksinitial]!AccountList
+vClient = Forms![escrow checksinitial]!Client
+GblFilenum = Forms![escrow checksinitial]!filenum
+vpreparer = Forms![escrow checksinitial]!preparer
+
+If Forms![escrow checksinitial]!acct_appr = 1 Or Forms![escrow checksinitial]!acct_appr = -1 Then
+VAcctAppr = 1
+Else
+VAcctAppr = 0
+End If
+
+If Forms![escrow checksinitial]!amt1 = 0 Or IsNull(Forms![escrow checksinitial]!amt1) Then
+VAmt1 = 0
+Else
+VAmt1 = Forms![escrow checksinitial]!amt1
+End If
+
+If Forms![escrow checksinitial]!amt2 = 0 Or IsNull(Forms![escrow checksinitial]!amt2) Then
+VAmt2 = 10000000
+Else
+VAmt2 = Forms![escrow checksinitial]!amt2
+End If
+
+'MsgBox (vnw & " / " & VAccount & " / " & VAmt1 & " / " & VAmt2)
+If VAcctAppr = 0 Then
+
+If VAccount = "Escrow III Account" Then
+DoCmd.OpenQuery ("ChecksEscrow3Scr")
+ElseIf VAccount = "Escrow IV Account" Then
+DoCmd.OpenQuery ("ChecksEscrow4Scr")
+ElseIf VAccount = "EquityEsc2" Then
+DoCmd.OpenQuery ("ChecksEqEsc2Scr")
+ElseIf VAccount = "EquityOp2" Then
+DoCmd.OpenQuery ("ChecksEqOp2Scr")
+End If
+
+Else
+If VAccount = "Escrow III Account" Then
+DoCmd.OpenQuery ("ChecksEscrow3Scr-AcctAppr")
+ElseIf VAccount = "Escrow IV Account" Then
+DoCmd.OpenQuery ("ChecksEscrow4Scr-AcctAppr")
+ElseIf VAccount = "EquityEsc2" Then
+DoCmd.OpenQuery ("ChecksEqEsc2Scr-AcctAppr")
+ElseIf VAccount = "EquityOp2" Then
+DoCmd.OpenQuery ("ChecksEqOp2Scr-AcctAppr")
+End If
+
+
+End If
+
+
+DoCmd.OpenQuery ("ChecksUpdEqOp2")
+DoCmd.OpenQuery ("ChecksUpdEqEsc2")
+DoCmd.OpenQuery ("ChecksUpdEsc3")
+DoCmd.OpenQuery ("ChecksUpdEsc4")
+
+DoCmd.OpenForm ("Escrow Checks")
+
+
+End If
+
+End Function
+
+Public Function DumpEscCheckBGW()
+
+Dim rs As RecordSet, rsE As RecordSet
+Dim strsql As String
+If IsNull(Forms![escrow checksbgw]!preparer) Or Forms![escrow checksbgw]!preparer = "" Then
+MsgBox ("Have to have initals input in the top portion to dump the data, please input and try again")
+Exit Function
+
+Else
+
+Vinitial = Forms![escrow checksbgw]!preparer
+strsql = "select * from temptblescrow where preparer = " & """" & Vinitial & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+Set rsE = CurrentDb.OpenRecordset("EscrowChecks", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+If rs!amt_bgw > 0 Or rs!amt_client > 0 Then
+If rs!Payment_To = 1 Or (rs!Payment_To = 4 And rs!amt_client > 0) Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_client
+!filenum = rs!filenum
+!ACCOUNT = "Escrow III Account"
+!memo_sec = rs!memo_sec
+!Rpt = "REFUND"
+!Rpt_Date = Date
+!LastNameDebtor1 = rs!LastNameDebtor1
+!primary_key = GetAutoNumber("NextEscCheckPK")
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_client
+If rs!Payee Like "Citimor*" Then
+!Payee = "CitiMortgage, Inc."
+Else
+!Payee = rs!Payee
+End If
+!Payment_To = rs!Payment_To
+!preparer = rs!preparer
+.Update
+End With
+End If
+
+If rs!Payment_To = 2 Or (rs!Payment_To = 4 And rs!amt_bgw > 0) Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!LastNameDebtor1 = rs!LastNameDebtor1
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_bgw
+!filenum = rs!filenum
+!ACCOUNT = "Escrow III Account"
+!memo_sec = rs!memo_sec
+!Rpt = "BGWEsc3"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "BG"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_bgw
+!Payee = "Bierman, Geesing & Ward"
+!Payment_To = rs!Payment_To
+!preparer = rs!preparer
+.Update
+End With
+End If
+
+If rs!Payment_To = 3 Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!LastNameDebtor1 = rs!LastNameDebtor1
+!TOTAL = rs!amt_bgw
+!filenum = rs!filenum
+!ACCOUNT = "Escrow III Account"
+!memo_sec = rs!memo_sec
+!Rpt = "BGWEsc3"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "BG"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_bgw
+!Payee = "Bierman, Geesing & Ward"
+!Payment_To = rs!Payment_To
+!preparer = rs!preparer
+.Update
+End With
+
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!LastNameDebtor1 = rs!LastNameDebtor1
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_client
+!filenum = rs!filenum
+!ACCOUNT = "Escrow III Account"
+!memo_sec = rs!memo_sec
+!Rpt = "REFUND"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "CL"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_client
+If rs!Payee Like "Citimor*" Then
+!Payee = "CitiMortgage, Inc."
+Else
+!Payee = rs!Payee
+End If
+!Payment_To = rs!Payment_To
+!preparer = rs!preparer
+
+.Update
+End With
+End If
+End If
+
+
+If rs!amt_bgw4 > 0 Or rs!amt_client4 > 0 Then
+If rs!payment_to4 = 1 Or (rs!payment_to4 = 4 And rs!amt_client4 > 0) Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_client4
+!filenum = rs!filenum
+!ACCOUNT = "Escrow IV Account"
+!memo_sec = rs!memo_sec4
+!Rpt = "REFUND"
+!Rpt_Date = Date
+!LastNameDebtor1 = rs!LastNameDebtor1
+!primary_key = GetAutoNumber("NextEscCheckPK")
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_client4
+If rs!Payee Like "Citimor*" Then
+!Payee = "CitiMortgage, Inc."
+Else
+!Payee = rs!Payee
+End If
+!Payment_To = rs!payment_to4
+!preparer = rs!preparer
+
+.Update
+End With
+End If
+
+If rs!payment_to4 = 2 Or (rs!payment_to4 = 4 And rs!amt_bgw4 > 0) Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!LastNameDebtor1 = rs!LastNameDebtor1
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_bgw4
+!filenum = rs!filenum
+!ACCOUNT = "Escrow IV Account"
+!memo_sec = rs!memo_sec4
+!Rpt = "BGWEsc4"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "BG"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_bgw4
+!Payee = "Bierman, Geesing & Ward"
+!Payment_To = rs!payment_to4
+!preparer = rs!preparer
+
+.Update
+End With
+End If
+
+If rs!payment_to4 = 3 Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!LastNameDebtor1 = rs!LastNameDebtor1
+!TOTAL = rs!amt_bgw4
+!filenum = rs!filenum
+!ACCOUNT = "Escrow IV Account"
+!memo_sec = rs!memo_sec4
+!Rpt = "BGWEsc4"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "BG"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_bgw4
+!Payee = "Bierman, Geesing & Ward"
+!Payment_To = rs!payment_to4
+!preparer = rs!preparer
+
+.Update
+End With
+
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!LastNameDebtor1 = rs!LastNameDebtor1
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_client4
+!filenum = rs!filenum
+!ACCOUNT = "Escrow IV Account"
+!memo_sec = rs!memo_sec4
+!Rpt = "REFUND"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "CL"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_client4
+If rs!Payee Like "Citimor*" Then
+!Payee = "CitiMortgage, Inc."
+Else
+!Payee = rs!Payee
+End If
+!Payment_To = rs!payment_to4
+!preparer = rs!preparer
+
+.Update
+End With
+End If
+End If
+
+If rs!amt_bgwEE2 > 0 Or rs!amt_clientEE2 > 0 Then
+If rs!payment_toee2 = 1 Or (rs!payment_toee2 = 4 And rs!amt_clientEE2 > 0) Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_clientEE2
+!filenum = rs!filenum
+!ACCOUNT = "EqEsc2"
+!memo_sec = rs!memo_secee2
+!Rpt = "REFUND"
+!Rpt_Date = Date
+!LastNameDebtor1 = rs!LastNameDebtor1
+!primary_key = GetAutoNumber("NextEscCheckPK")
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_clientEE2
+If rs!Payee Like "Citimor*" Then
+!Payee = "CitiMortgage, Inc."
+Else
+!Payee = rs!Payee
+End If
+!Payment_To = rs!payment_toee2
+!preparer = rs!preparer
+
+.Update
+End With
+End If
+
+If rs!payment_toee2 = 2 Or (rs!payment_toee2 = 4 And rs!amt_bgwEE2 > 0) Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!LastNameDebtor1 = rs!LastNameDebtor1
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_bgwEE2
+!filenum = rs!filenum
+!ACCOUNT = "EqEsc2"
+!memo_sec = rs!memo_secee2
+!Rpt = "BGWEscE2"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "BG"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_bgwEE2
+!Payee = "Bierman, Geesing & Ward"
+!Payment_To = rs!payment_toee2
+!preparer = rs!preparer
+
+.Update
+End With
+End If
+
+If rs!payment_toee2 = 3 Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!LastNameDebtor1 = rs!LastNameDebtor1
+!TOTAL = rs!amt_bgwEE2
+!filenum = rs!filenum
+!ACCOUNT = "EqEsc2"
+!memo_sec = rs!memo_secee2
+!Rpt = "BGWEscE2"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "BG"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_bgwEE2
+!Payee = "Bierman, Geesing & Ward"
+!Payment_To = rs!payment_toee2
+!preparer = rs!preparer
+
+.Update
+End With
+
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!LastNameDebtor1 = rs!LastNameDebtor1
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_clientEE2
+!filenum = rs!filenum
+!ACCOUNT = "EqEsc2"
+!memo_sec = rs!memo_secee2
+!Rpt = "REFUND"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "CL"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_clientEE2
+If rs!Payee Like "Citimor*" Then
+!Payee = "CitiMortgage, Inc."
+Else
+!Payee = rs!Payee
+End If
+!preparer = rs!preparer
+
+!Payment_To = rs!payment_toee2
+.Update
+End With
+End If
+End If
+
+If rs!amt_bgwEo2 > 0 Or rs!amt_clientEo2 > 0 Then
+If rs!payment_toeo2 = 1 Or (rs!payment_toeo2 = 4 And rs!amt_clientEo2 > 0) Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_clientEo2
+!filenum = rs!filenum
+!ACCOUNT = "EqOp2"
+!memo_sec = rs!memo_seceo2
+!Rpt = "REFUND"
+!Rpt_Date = Date
+!LastNameDebtor1 = rs!LastNameDebtor1
+!primary_key = GetAutoNumber("NextEscCheckPK")
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_clientEo2
+If rs!Payee Like "Citimor*" Then
+!Payee = "CitiMortgage, Inc."
+Else
+!Payee = rs!Payee
+End If
+!Payment_To = rs!payment_toeo2
+!preparer = rs!preparer
+
+.Update
+End With
+End If
+
+If rs!payment_toeo2 = 2 Or (rs!payment_toeo2 = 4 And rs!amt_bgwEo2 > 0) Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!LastNameDebtor1 = rs!LastNameDebtor1
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_bgwEo2
+!filenum = rs!filenum
+!ACCOUNT = "EqOp2"
+!memo_sec = rs!memo_seceo2
+!Rpt = "BGWEscEo2"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "BG"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_bgwEo2
+!Payee = "Bierman, Geesing & Ward"
+!Payment_To = rs!payment_toeo2
+!preparer = rs!preparer
+
+.Update
+End With
+End If
+
+If rs!payment_toeo2 = 3 Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!LastNameDebtor1 = rs!LastNameDebtor1
+!TOTAL = rs!amt_bgwEo2
+!filenum = rs!filenum
+!ACCOUNT = "EqOp2"
+!memo_sec = rs!memo_seceo2
+!Rpt = "BGWEscEo2"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "BG"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_bgwEo2
+!Payee = "Bierman, Geesing & Ward"
+!preparer = rs!preparer
+
+!Payment_To = rs!payment_toeo2
+.Update
+End With
+
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!LastNameDebtor1 = rs!LastNameDebtor1
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_clientEo2
+!filenum = rs!filenum
+!ACCOUNT = "EqOp2"
+!memo_sec = rs!memo_seceo2
+!Rpt = "REFUND"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "CL"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_clientEo2
+If rs!Payee Like "Citimor*" Then
+!Payee = "CitiMortgage, Inc."
+Else
+!Payee = rs!Payee
+End If
+!Payment_To = rs!payment_toeo2
+!preparer = rs!preparer
+
+.Update
+End With
+End If
+End If
+
+
+
+rs.MoveNext
+Loop
+
+End If
+
+
+End Function
+Public Function DumpEscCheck()
+Dim rs As RecordSet, rsE As RecordSet
+Dim strsql As String
+Dim VBGWesc
+
+Vinitial = Forms![escrow checksinitial]!preparer
+strsql = "select * from temptblescrow where preparer = " & """" & Vinitial & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+Set rsE = CurrentDb.OpenRecordset("EscrowChecks", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+If rs!ACCOUNT = "Escrow III Account" Then
+VBGWesc = "BGWEsc3"
+ElseIf rs!ACCOUNT = "Escrow IV Account" Then
+VBGWesc = "BGWEsc4"
+ElseIf rs!ACCOUNT = "EqEsc2" Then
+VBGWesc = "BGWEscE2"
+ElseIf rs!ACCOUNT = "Equity Op2 Account" Then
+VBGWesc = "BGWEqEo2"
+End If
+
+If rs!Payment_To = 1 Or ((rs!Payment_To = 4 Or rs!Payment_To = 5) And rs!amt_client > 0) Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_client
+!filenum = rs!filenum
+!ACCOUNT = rs!ACCOUNT
+If rs!Payment_To = 5 And (rs!Payee Like "OneWest Bank*" Or rs!Payee Like "OneWest Bank*") Then
+!Rpt = "EqOpIN"
+!Payee = "OneWest Bank, FSB"
+Else
+!Rpt = "REFUND"
+
+If rs!Payee Like "Citimor*" Then
+!Payee = "CitiMortgage, Inc."
+Else
+!Payee = rs!Payee
+End If
+
+End If
+!memo_sec = rs!memo_sec
+!Rpt_Date = Date
+!LastNameDebtor1 = rs!LastNameDebtor1
+!primary_key = GetAutoNumber("NextEscCheckPK")
+!preparer = rs!preparer
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_client
+!Payment_To = rs!Payment_To
+.Update
+End With
+End If
+
+If rs!Payment_To = 2 Or ((rs!Payment_To = 4 Or rs!Payment_To = 5) And rs!amt_bgw > 0) Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!memo_sec = rs!memo_sec
+!PropertyState = rs!PropertyState
+!LastNameDebtor1 = rs!LastNameDebtor1
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_bgw
+!filenum = rs!filenum
+!ACCOUNT = rs!ACCOUNT
+!Rpt = VBGWesc
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "BG"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_bgw
+!Payee = "Bierman, Geesing & Ward"
+!Payment_To = rs!Payment_To
+!preparer = rs!preparer
+.Update
+End With
+End If
+
+If rs!Payment_To = 3 Then
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!LastNameDebtor1 = rs!LastNameDebtor1
+!memo_sec = rs!memo_sec
+!TOTAL = rs!amt_bgw
+!filenum = rs!filenum
+!ACCOUNT = rs!ACCOUNT
+!Rpt = VBGWesc
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "BG"
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_bgw
+!Payee = "Bierman, Geesing & Ward"
+!Payment_To = rs!Payment_To
+!preparer = rs!preparer
+.Update
+End With
+
+With rsE
+.AddNew
+!SaleDate = rs![SaleDate]
+!PropertyState = rs!PropertyState
+!LastNameDebtor1 = rs!LastNameDebtor1
+!CustomerID = rs!CustomerID
+!Category = rs!Category
+!ClientRefNumber = rs!ClientRefNumber
+!TOTAL = rs!amt_client
+!filenum = rs!filenum
+!ACCOUNT = rs!ACCOUNT
+!Rpt = "REFUND"
+!Rpt_Date = Date
+!primary_key = rs!primary_key + "CL"
+!memo_sec = rs!memo_sec
+!Rpt_timestamp = Date
+!TotalCosts = rs!amt_client
+!Payee = rs!Payee
+!Payment_To = rs!Payment_To
+!preparer = rs!preparer
+
+.Update
+End With
+
+End If
+
+rs.MoveNext
+Loop
+
+
+
+End Function
+
+Public Function CreateIndEscScreen()
+Dim Vselect
+Dim VNewScrn
+Dim VPS
+VPS = InputBox("PASSWORD")
+If VPS = "charlene" Then
+Vselect = InputBox("1. Escrow3 " & vbCr & "2. Escrow4 " & vbCr & "3. EqOp2" & vbCr & "4. EqEsc2")
+If Vselect = 1 Then
+DoCmd.OpenQuery ("ChecksEscrow3Ind")
+ElseIf Vselect = 2 Then
+DoCmd.OpenQuery ("ChecksEscrow4Ind")
+ElseIf Vselect = 3 Then
+DoCmd.OpenQuery ("ChecksEqOp2Ind")
+ElseIf Vselect = 2 Then
+DoCmd.OpenQuery ("ChecksEqEsc2Ind")
+End If
+DoCmd.OpenForm ("Escrow ChecksInd")
+End If
+
+End Function
+
+
+Public Function TotalBGW()
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from TempTblEscrow where preparer = " & """" & Forms![escrow checksinitial]!preparer & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+TotalBGW = rs!amt_bgw + TotalBGW
+rs.MoveNext
+Loop
+End If
+End Function
+
+Public Function Totalclients()
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from TempTblEscrow where preparer = " & """" & Forms![escrow checksinitial]!preparer & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+Totalclients = rs!amt_client + Totalclients
+rs.MoveNext
+Loop
+End If
+End Function
+Public Function CheckToBGW()
+
+Dim Vselect
+
+Set rsAcct = CurrentDb.OpenRecordset("TBLACDC", dbOpenDynaset, dbSeeChanges)
+
+Set rsDump = CurrentDb.OpenRecordset("RegisterEqualsTotal")
+
+rsDump.MoveFirst
+
+Do While Not rsDump.EOF
+
+With rsAcct
+.AddNew
+!primary_key = GetAutoNumber("NextEscCheckPK")
+!CustomerID = rsDump!CustomerID
+!ClientRefNumber = rsDump!ClientRefNumber
+!ACCOUNT = rsDump!ACCOUNT
+!TOTAL = rsDump!TOTAL
+!filenum = rsDump!filenum
+!Category = rsDump!Category
+!LastNameDebtor1 = rsDump!LastNameDebtor1
+!Payee = "BWW Law Group, LLC"
+!PropertyState = rsDump!PropertyState
+!Rpt_Date = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!Rpt_timestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!Rpt = "BGWRefund"
+!TOTALFees = rsDump!TOTALFees
+!TotalCosts = rsDump!TotalCosts
+.Update
+End With
+
+rsDump.MoveNext
+Loop
+
+
+
+End Function
+Public Function EscrowCheckBGW()
+
+Dim Vselect
+
+CurrentDb.Execute "DELETE * FROM TempTblacdc;", dbFailOnError
+
+Vselect = InputBox("1. Escrow3 " & vbCr & "2. Escrow4 " & vbCr & "3. EqOp2" & vbCr & "4. EqEsc2")
+If Vselect = 1 Then
+DoCmd.OpenQuery ("ChecksEscrow3")
+ElseIf Vselect = 2 Then
+DoCmd.OpenQuery ("ChecksEscrow4")
+ElseIf Vselect = 3 Then
+DoCmd.OpenQuery ("ChecksEqOp2")
+ElseIf Vselect = 4 Then
+DoCmd.OpenQuery ("ChecksEqEsc2")
+End If
+
+Dim VAddChk
+VAddChk = MsgBox("Adding checks into Accounting Database for printing.  CONTINUE?", vbYesNoCancel)
+
+If VAddChk = vbYes Then
+
+Dim rsAcct As RecordSet
+Dim VDump As String
+Dim rsDump As RecordSet
+Dim VINv, VDup As String
+Dim strsqlDUMP As String
+Dim vClient As String
+
+Set rsAcct = CurrentDb.OpenRecordset("TBLACDC", dbOpenDynaset, dbSeeChanges)
+Set rsDump = CurrentDb.OpenRecordset("temptblacdc")
+If rsDump.EOF Then
+MsgBox ("No Checks for this Account.")
+Exit Function
+
+Else
+rsDump.MoveFirst
+
+Do While Not rsDump.EOF
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from tblacdc where filenum = " & rsDump!filenum & " and category = " & """" & rsDump!Category & """" & " and total = " & rsDump!TOTAL & " and rpt = " & """" & "BGWREFUND" & """" & ";")
+
+With rsAcct
+.AddNew
+!primary_key = GetAutoNumber("NextEscCheckPK")
+!CustomerID = rsDump!CustomerID
+!ClientRefNumber = rsDump!ClientRefNumber
+!ACCOUNT = rsDump!ACCOUNT
+!TOTAL = rsDump!TOTAL
+!filenum = rsDump!filenum
+!Category = rsDump!Category
+!LastNameDebtor1 = rsDump!LastNameDebtor1
+!Payee = "BWW Law Group, LLC"
+!PropertyState = rsDump!PropertyState
+!PropAddress = rsDump!PropAddress
+!Rpt_Date = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!Rpt_timestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!Rpt = "BGWRefund"
+!TOTALFees = 0
+!TotalCosts = rsDump!TOTAL
+.Update
+End With
+''logcase rsDump!FIleNum, "Added Check for : BWW for Account: " & rsDump!account & " Amt: " & rsDump!total
+
+rsDump.MoveNext
+Loop
+CurrentDb.Execute "DELETE * FROM TempTblacdc;", dbFailOnError
+End If
+
+End If
+
+
+End Function
+Public Function BulkEscrowChecks()
+Dim Vselect, VSelect2
+
+CurrentDb.Execute "DELETE * FROM TempTblacdc;", dbFailOnError
+
+Vselect = InputBox("1. Escrow3 " & vbCr & "2. Escrow4 " & vbCr & "3. EqOp2" & vbCr & "4. EqEsc2")
+VSelect2 = MsgBox("Virginia Accounting Approved?", vbYesNo)
+
+If Vselect = 1 Then
+
+If Vselect = vbYes Then
+DoCmd.OpenQuery ("ChecksEscrow3-AcctAppr")
+Else
+DoCmd.OpenQuery ("ChecksEscrow3")
+End If
+
+ElseIf Vselect = 2 Then
+If Vselect = vbYes Then
+DoCmd.OpenQuery ("ChecksEscrow4-AcctAppr")
+Else
+DoCmd.OpenQuery ("ChecksEscrow4")
+End If
+
+ElseIf Vselect = 3 Then
+If Vselect = vbYes Then
+DoCmd.OpenQuery ("ChecksEqOp2-AcctAppr")
+Else
+DoCmd.OpenQuery ("ChecksEqOp2")
+End If
+
+ElseIf Vselect = 2 Then
+If Vselect = vbYes Then
+DoCmd.OpenQuery ("ChecksEqEsc2-AcctAppr")
+Else
+DoCmd.OpenQuery ("ChecksEqEsc2")
+End If
+
+End If
+
+Dim VAddChk
+VAddChk = MsgBox("Adding checks into Accounting Database for printing.  CONTINUE?", vbYesNoCancel)
+
+If VAddChk = vbYes Then
+
+Dim VOne As String
+VOne = InputBox("1. Individual Checks" & vbCr & "2. Combined Check")
+
+Dim rsAcct As RecordSet
+Dim VDump As String
+Dim rsDump As RecordSet
+Dim VINv, VDup As String
+Dim strsqlDUMP As String
+Dim vClient As String
+
+Set rsAcct = CurrentDb.OpenRecordset("TBLACDC", dbOpenDynaset, dbSeeChanges)
+Set rsDump = CurrentDb.OpenRecordset("temptblacdc")
+
+rsDump.MoveFirst
+
+Do While Not rsDump.EOF
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from tblacdc where filenum = " & rsDump!filenum & " and category = " & """" & rsDump!Category & """" & " and total = " & rsDump!TOTAL & " and rpt = " & """" & "REFUND" & """" & ";")
+
+With rsAcct
+.AddNew
+!primary_key = GetAutoNumber("NextEscCheckPK")
+!CustomerID = rsDump!CustomerID
+!ClientRefNumber = rsDump!ClientRefNumber
+!ACCOUNT = rsDump!ACCOUNT
+!TOTAL = rsDump!TOTAL
+!filenum = rsDump!filenum
+!Category = rsDump!Category
+!LastNameDebtor1 = rsDump!LastNameDebtor1
+If rsDump!Payee Like "Citimor*" Then
+!Payee = "CitiMortgage, Inc."
+Else
+!Payee = rsDump!Payee
+End If
+!PropertyState = rsDump!PropertyState
+!PropAddress = rsDump!PropAddress
+!Rpt_Date = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!Rpt_timestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+If VOne = 1 Then
+!Rpt = "Refund"
+Else
+!Rpt = "ClOp"
+End If
+!TOTALFees = 0
+!TotalCosts = rsDump!TOTAL
+.Update
+End With
+''logcase rsDump!FIleNum, "Added Check for : " & rsDump!Payee & " Account: " & rsDump!account & " Amt: " & rsDump!total
+
+rsDump.MoveNext
+Loop
+CurrentDb.Execute "DELETE * FROM TempTblacdc;", dbFailOnError
+End If
+
+
+
+End Function

@@ -1,0 +1,370 @@
+Attribute VB_Name = "AccountingModules"
+Option Compare Database
+
+Public Function AddLien()
+
+Dim strsqlCred As String
+Dim rscred As RecordSet
+Dim rs As RecordSet
+
+Dim VConID As Long
+
+Set rs = CurrentDb.OpenRecordset("Creditors", dbOpenDynaset, dbSeeChanges)
+rs.MoveLast
+VConID = rs!ContactID + 1
+rs.Close
+Set rs = CurrentDb.OpenRecordset("Owners")
+Set rsadd = CurrentDb.OpenRecordset("creditors", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+With rsadd
+.AddNew
+    !ContactID = VConID
+    !filenum = rs!filenum
+    If Not IsNull(rs!mnameo1) Then
+    !OrganizationName = rs!firstnameo1 & " " & rs!mnameo1 & " " & rs!lastnameo1
+    Else
+    !OrganizationName = rs!firstnameo1 & " " & rs!lastnameo1
+    End If
+    !Address = rs![Mailing Address]
+    !Address2 = rs![Mailing Address2]
+     !City = rs![Mailing City]
+    !State = rs![Mailing State]
+    !PostalCode = rs![Mailing Zip]
+.Update
+End With
+VConID = VConID + 1
+rs.MoveNext
+Loop
+
+End Function
+Public Function PrtChecks()
+Dim VPkey As Integer
+Dim rs, rschks As RecordSet
+Dim vCounty As String
+Dim strsqlCL, strsql As String
+Dim rsCL As RecordSet
+
+VPrt = InputBox("Print Checks, (YES or NO)")
+If VPrt = "YES" Then
+
+Set rschks = CurrentDb.OpenRecordset("tblchks")
+
+If Not rschks.EOF Then
+rschks.MoveLast
+VPkey = rschks!PKey + 1
+Else
+VPkey = 1
+End If
+
+If Forms![foreclosure database screen]!Propertycounty = "James City" Then
+vCounty = "City of Williamsburg and County of James City"
+Else
+If Forms![foreclosure database screen]!Propertycounty Like "*City" Or _
+Forms![foreclosure database screen]!Propertycounty Like "City*" Then
+vCounty = Forms![foreclosure database screen]!Propertycounty
+Else
+vCounty = Forms![foreclosure database screen]!Propertycounty & " County"
+End If
+End If
+
+
+strsqlCL = "Select customerid, FF_Abbr from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsCL = CurrentDb.OpenRecordset(strsqlCL, dbOpenSnapshot)
+
+strsql = "Select * from jurisdiction where state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & " and county = " & """" & Forms![foreclosure database screen]!Propertycounty & """"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Forms![foreclosure database screen]![PropertyState] <> "VA" And Forms![foreclosure database screen]![PropertyState] <> "DC" And Forms![foreclosure database screen]![PropertyState] <> "MD" Then
+Dim VAcct, VAcct2 As String
+VAcct = InputBox("This is NOT a MD, DC or VA file which account should this be drawn on?" & vbCr & "1.  Filing Fee MD Account" & vbCr & "2.  Filing Fee DC/VA Account?")
+If VAcct = "1" Then
+VAcct2 = "Filing Fee"
+Else
+VAcct2 = "Filing Fee"
+End If
+End If
+
+If Forms![foreclosure database screen]!PropertyState <> "DC" And _
+Forms![foreclosure database screen]!PropertyState <> "VA" Then
+With rschks
+
+.AddNew
+!PKey = VPkey
+!Client = rsCL!FF_Abbr
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!ACCOUNT = "Filing Fee"
+Else
+!ACCOUNT = VAcct2
+End If
+
+!Category = "Docketing Fee"
+!Loan_No = Forms![foreclosure database screen]!ClientRefNumber
+!filenum = Forms![foreclosure database screen]!filenum
+!Amt = rs!docketing_fee
+!LastName = Forms![foreclosure database screen]!LastNameDebtor1
+!DatePaid = Date
+!taxid = Forms![foreclosure database screen]!PostsaleSubForm.Form!taxid
+If Forms![foreclosure database screen]![PropertyState] = "DC" Then
+!Payee = "D.C. Treasurer"
+ElseIf Forms![foreclosure database screen]![PropertyState] = "MD" Then
+!Payee = "Clerk of Court for " & vCounty
+Else
+!Payee = "Circuit Court Clerk for " & vCounty
+End If
+!datestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+.Update
+End With
+End If
+
+
+With rschks
+.AddNew
+!PKey = VPkey
+!Client = rsCL!FF_Abbr
+!ACCOUNT = "Filing Fee"
+!Category = "DOA Recording Fee"
+!Loan_No = Forms![foreclosure database screen]!ClientRefNumber
+!filenum = Forms![foreclosure database screen]!filenum
+!Amt = rs!doa_recording
+!LastName = Forms![foreclosure database screen]!LastNameDebtor1
+!DatePaid = Date
+!taxid = Forms![foreclosure database screen]!PostsaleSubForm.Form!taxid
+If Forms![foreclosure database screen]![PropertyState] = "DC" Then
+!Payee = "D.C. Treasurer"
+ElseIf Forms![foreclosure database screen]![PropertyState] = "MD" Then
+!Payee = "Clerk of Court for " & vCounty
+Else
+!Payee = "Circuit Court Clerk for " & vCounty
+End If
+!datestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+.Update
+End With
+
+'With rschks
+'.AddNew
+'!PKey = VPkey
+'!Client = rsCL!FF_Abbr
+'!account = "Filing Fee"
+'!category = "DOA Recording Fee"
+'!Loan_No = Forms![foreclosure database screen]!ClientRefNumber
+'!FIleNum = Forms![foreclosure database screen]!FIleNum
+'!Amt = 5#
+'!LastName = Forms![foreclosure database screen]!LastNameDebtor1
+'!DatePaid = Date
+'!taxid = Forms![foreclosure database screen]!PostsaleSubForm.Form!taxid
+'If Forms![foreclosure database screen]![PropertyState] = "DC" Then
+'!Payee = "D.C. Treasurer"
+'ElseIf Forms![foreclosure database screen]![PropertyState] = "MD" Then
+'!Payee = "Clerk of Court for " & VCounty
+'Else
+'!Payee = "Circuit Court Clerk for " & VCounty
+'End If
+'!DateStamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+''.Update
+'End With
+
+If Forms![foreclosure database screen]!Client Like "Citi Res*" Then
+vprtass = MsgBox("This is an Citi(RL) Client. Print Check for Assignment?", vbYesNo)
+If vprtass = vbNo Then
+vmessage = "2 Checks have been sent to the Accounting:" & vbCr & "Docketing Fee: " & rs!docketing_fee & vbCr & "DOA Recording Fee: " & rs!doa_recording
+Else
+vmessage = "3 Checks have been sent to the Accounting:" & vbCr & "Docketing Fee: " & rs!docketing_fee & vbCr & "DOA Recording Fee: " & rs!doa_recording & vbCr & "Assignment: " & rs!doa_recording
+
+
+With rschks
+.AddNew
+!PKey = VPkey
+!Client = rsCL!FF_Abbr
+!ACCOUNT = "Filing Fee"
+!Category = "Assignment"
+!Loan_No = Forms![foreclosure database screen]!ClientRefNumber
+!filenum = Forms![foreclosure database screen]!filenum
+!Amt = rs!doa_recording
+!LastName = Forms![foreclosure database screen]!LastNameDebtor1
+!DatePaid = Date
+!taxid = Forms![foreclosure database screen]!PostsaleSubForm.Form!taxid
+If Forms![foreclosure database screen]![PropertyState] = "DC" Then
+!Payee = "D.C. Treasurer"
+ElseIf Forms![foreclosure database screen]![PropertyState] = "MD" Then
+!Payee = "Clerk of Court for " & vCounty
+Else
+!Payee = "Circuit Court Clerk for " & vCounty
+End If
+!datestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+.Update
+End With
+
+
+End If
+Else
+vmessage = "2 Checks have been sent to the Accounting:" & vbCr & "Docketing Fee: " & rs!docketing_fee & vbCr & "DOA Recording Fee: " & rs!doa_recording
+
+End If
+
+
+'Dump to Accounting Section
+
+Dim rsAcct As RecordSet
+Dim VDump As String
+Dim rsDump As RecordSet
+Dim VINv, VDup As String
+Dim strsqlDUMP As String
+Dim vClient As String
+
+Set rsAcct = CurrentDb.OpenRecordset("TblFilingFees", dbOpenDynaset, dbSeeChanges)
+Set rsDump = CurrentDb.OpenRecordset("tblchks")
+
+rsDump.MoveFirst
+vClient = rsDump!Client
+rsDump.MoveFirst
+
+Do While Not rsDump.EOF
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from tblfilingfees where filenum = " & rsDump!filenum & " and category = " & """" & rsDump!Category & """" & " and total = " & rsDump!Amt & ";")
+
+With rsAcct
+.AddNew
+!PKey = GetAutoNumber("NextDepNum")
+!Loan_No = rsDump!Loan_No
+!Client = rsDump!Client
+!ACCOUNT = rsDump!Category
+!TOTAL = rsDump!Amt
+!filenum = rsDump!filenum
+!Category = rsDump!Category
+!LastNameDebtor1 = rsDump!LastName
+!Paid = rsDump!DatePaid
+!taxid = rsDump!taxid
+!Payee = rsDump!Payee
+!PropertyState = Forms![foreclosure database screen]!PropertyState
+!datestamp = Format(Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+.Update
+End With
+'logcase rsDump!FIleNum, "Added Check for : " & rsDump!category & " Date: " & rsDump!DatePaid
+rsDump.MoveNext
+Loop
+CurrentDb.Execute "DELETE * FROM tblchks;", dbFailOnError
+
+'End of Accounting Section
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+MsgBox (vmessage)
+Else
+MsgBox ("1 Check has been sent to the Accounting:" & vbCr & "DOA Recording Fee: " & rs!doa_recording)
+End If
+
+rsCL.Close
+rs.Close
+rschks.Close
+rsDump.Close
+rsAcct.Close
+
+Else
+
+MsgBox ("CHECKS WILL NOT PRINT")
+Exit Function
+
+End If
+End Function
+Public Function PrintCheck()
+Dim VPrintChk As String
+VPrintChk = MsgBox("Print Check in the Amount of " & Format(Report![BGW]!OverallGTotal, "$###,##0.00"), vbYesNo)
+If VPrintChk = vbYes Then
+Dim AppName As String
+AppName = SysCmd(acSysCmdAccessDir) & "msaccess.exe c:\4closure\operating.mdb /x PrtCheck"
+Call Shell(AppName)
+Else
+Exit Function
+End If
+End Function
+
+Public Function MultipleChks()
+Dim VCheck As String
+Dim VAmt As Currency
+Dim rs As RecordSet
+Dim VChk As Currency
+
+Set rs = CurrentDb.OpenRecordset("tblchecks")
+
+Dim VStop As Integer
+Dim VRsum As Currency
+Dim VPkey As Integer
+
+VPkey = 1
+VStop = 0
+VRsum = 0
+VChk = 0
+
+Do While VStop = 0
+
+VCheck = InputBox("Enter Check Number:")
+
+
+If VChk = 0 Then
+VAmt = InputBox("Enter Amount of Check:")
+Else
+VAmt = VChk
+End If
+
+VRsum = VRsum + VAmt
+VPkey = VPkey + 1
+
+With rs
+.AddNew
+![Inv#] = Forms![unpaid bill screen]!CustomerID
+![check#] = VCheck
+!amt_paid = VAmt
+!PKey = VPkey
+.Update
+End With
+rs.Close
+
+Dim VYsNo As String
+
+Dim Vtotal As Currency
+
+If Forms![unpaid bill screen]!FCBill > 0 Then
+Vtotal = Forms![unpaid bill screen]!FCBill - VRsum
+Else
+Vtotal = Forms![unpaid bill screen]!OtherBill - VRsum
+End If
+
+If Vtotal <> 0 Then
+VYsNo = MsgBox("Balance Due is: " & Vtotal & ", do you want to Enter another Check#?", vbYesNo)
+If VYsNo = vbYes Then
+VYsNo = 0
+
+VYsNo = MsgBox("Is the total of the next check: " & Vtotal & "?", vbYesNo)
+If VYsNo = vbYes Then
+VChk = Vtotal
+Else
+VChk = 0
+End If
+
+VStop = 0
+Else
+VStop = 1
+End If
+End If
+
+If Vtotal = 0 Then
+VStop = 1
+Forms![unpaid bill screen]!BillPaid = -1
+End If
+
+Loop
+
+ 
+If Forms![unpaid bill screen]!FCBill > 0 Then
+Forms![unpaid bill screen]!bill_amt_paid = Forms![unpaid bill screen]!FCBill - Vtotal
+End If
+
+If Forms![unpaid bill screen]!OtherBill > 0 Then
+Forms![unpaid bill screen]!bill_amt_paid = Forms![unpaid bill screen]!OtherBill - Vtotal
+End If
+
+Forms![unpaid bill screen]!Check_No = 0
+
+
+End Function
+

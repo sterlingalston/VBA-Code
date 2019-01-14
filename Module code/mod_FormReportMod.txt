@@ -1,0 +1,83 @@
+Attribute VB_Name = "FormReportMod"
+Option Compare Database
+
+Public Function FormReportAuditExec()
+
+ 
+CurrentDb.Execute ("delete from FormAuditReporttbl")
+
+'On Error GoTo handler
+
+Call FormReportAudit(Screen.ActiveForm)
+DoCmd.OpenReport "FormAuditRpt", acViewPreview
+Exit Function
+
+handler:
+
+If Err.Number = 2475 Then MsgBox "There are no screens open!" & vbCrLf & _
+    "Please have a screen open before running this report!", vbExclamation, "No Screens Found"
+
+End Function
+Sub FormReportAudit(currentForm As Form)
+
+Dim i As Integer
+Dim ctrl As Integer
+Dim ctrlct As Integer
+ 
+' Set currentForm = Screen.ActiveForm.Controls("ForeclosureSubForm").Form
+    
+
+    ctrlct = currentForm.Controls.Count - 1
+    
+    For ctrl = 0 To ctrlct
+    If (currentForm.Controls(ctrl).ControlType = acCheckBox _
+    Or currentForm.Controls(ctrl).ControlType = acComboBox _
+    Or currentForm.Controls(ctrl).ControlType = acTextBox _
+    Or currentForm.Controls(ctrl).ControlType = acOptionButton _
+    Or currentForm.Controls(ctrl).ControlType = acOptionGroup _
+    Or currentForm.Controls(ctrl).ControlType = acToggleButton _
+    Or currentForm.Controls(ctrl).ControlType = acListBox _
+    ) _
+    And currentForm.Controls(ctrl).Visible Then
+    'acCheckBox* or acComboBox* or acOptionButton* or acOptionGroup* or acTextBox* or acToggleButton* or acListBox
+    On Error Resume Next
+     '  MsgBox "Form name: " & currentForm.name & vbCrLf _
+        & "Control name: " & currentForm.Controls(ctrl).name & vbCrLf _
+        & "Control value: " & currentForm.Controls(ctrl).Value & vbCrLf _
+        & "Control caption: " & GetCtrlLabel(currentForm.Controls(ctrl))
+    'On Error GoTo 0
+                 CurrentDb.Execute ("insert Into FormAuditReporttbl values(" & """" & _
+                    Trim(currentForm.name) & """" & "," & _
+                    """" & Trim(currentForm.Controls(ctrl).name) & """" & "," & _
+                    """" & Trim(GetCtrlLabel(currentForm.Controls(ctrl))) & """" & "," & _
+                    """" & Trim(currentForm.Controls(ctrl).ControlSource) & """" & "," & _
+                    """" & Trim(currentForm.Controls(ctrl).Value) & """" & _
+                    ")")
+            End If
+        'gets access to controls in subform
+        If currentForm.Controls(ctrl).ControlType = acSubform And currentForm.Controls(ctrl).Visible Then FormReportAudit (currentForm.Controls(ctrl).Form)
+    Next ctrl
+    
+
+End Sub
+
+
+Public Function GetCtrlLabel(ctrl As control) As String
+
+On Error GoTo handler
+
+    GetCtrlLabel = ctrl.Controls.Item(0).Caption
+    Exit Function
+handler:
+    GetCtrlLabel = ""
+Exit Function
+End Function
+
+Public Function ActiveForm() As String
+On Error GoTo handler
+    ActiveForm = Screen.ActiveForm.Caption
+    Exit Function
+handler:
+    ActiveForm = ""
+    
+End Function

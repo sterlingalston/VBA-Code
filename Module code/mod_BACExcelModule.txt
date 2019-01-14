@@ -1,0 +1,1412 @@
+Attribute VB_Name = "BACExcelModule"
+Option Compare Database
+
+Function FileExists(ByVal FileToTest As String) As Boolean
+   FileExists = (dir(FileToTest) <> "")
+End Function
+
+Sub DeleteFile(ByVal FileToDelete As String)
+   If FileExists(FileToDelete) Then 'See above
+      SetAttr FileToDelete, vbNormal
+      Kill FileToDelete
+   End If
+End Sub
+
+Public Function BACEmailExcelREVIEW()
+Dim filelocation As String
+filelocation = "\\rvdv-fs01\shared\Spreadsheets\BACFirmCapacity\"
+'filelocation = pathuser() & "\"
+'Dim VPsd
+'VPsd = InputBox("Enter Password to run Capacity Report")
+'If VPsd = "bac" Then
+
+Call DeleteFile(filelocation & "BACFirmCapacityNEW.xls")
+Call fixXLBACReview
+Call fixXLBACEvicDIL
+
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+
+Dim Email As String
+Dim emailsubject As String
+Dim emailmessage As String
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BACFirmCapacityNEW", filelocation & "BACFirmCapacityNEW.xls", True, "BK,FCL & Eviction Capacity"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BACFirmCapacityEvDILNEW", filelocation & "BACFirmCapacityNEW.xls", True, "MRT & DILCapacity"
+
+Set xl = CreateObject("Excel.Application")
+
+
+
+xl.DisplayAlerts = False
+Set xlBook = xl.Workbooks.Open(filelocation & "BACFirmCapacityNEW.xls")
+'xl.Visible = True
+'xlBook.Sheets(1).Delete
+'xlBook.Sheets(2).Delete
+Set xlSheet = xlBook.Sheets(1)
+
+xlSheet.name = "BK,FCL & Eviction Capacity"
+
+xlSheet.Cells(1, 1).Value = "Reporting Period (previous month)"
+xlSheet.Cells(1, 2).Value = "LOB (BK- POC, BK- MFR, FCL, Eviction FHA/HUD or Eviction REO)"
+xlSheet.Cells(1, 3).Value = "State Services Provided"
+xlSheet.Cells(1, 4).Value = "Firm's Full Legal Entity Name"
+xlSheet.Cells(1, 5).Value = "Maximum Available Capacity for All Client Referrals  (reporting period only)"
+xlSheet.Cells(1, 6).Value = "Actual Total All Client Referrals Received  (reporting period only)"
+xlSheet.Cells(1, 7).Value = "Percentage Capacity All Clients Referrals Used"
+xlSheet.Cells(1, 8).Value = "Max Net New Referrals All Clients (Column E minus F)"
+xlSheet.Cells(1, 9).Value = "Maximum Available Capacity for BAC Referrals (reporting period only)"
+xlSheet.Cells(1, 10).Value = "Actual Total BAC Referrals  Received  (reporting period only)"
+xlSheet.Cells(1, 11).Value = "Percentage Capacity BAC Referrals Used"
+xlSheet.Cells(1, 12).Value = "Max Net New Referrals BAC (Column I minus J)"
+xlSheet.Cells(1, 13).Value = "30 Days Projected Available Capacity (All Clients)"
+xlSheet.Cells(1, 14).Value = "30 Days Projected Available Capacity (BAC)"
+xlSheet.Cells(1, 15).Value = "If BAC referrals increased by 30% in the next 30 days, is the firm able to accommodate? (Y / N)"
+xlSheet.Cells(1, 16).Value = "If no, approximate how long (in months) to accommodate"
+xlSheet.Cells(1, 17).Value = "Transfer Type (BK)"
+xlSheet.Cells(1, 18).Value = "Transfer Type (EV)"
+xlSheet.Cells(1, 19).Value = "Transfer Type (FC)"
+
+xlSheet.Range(xlSheet.Cells(1, 1).Address, xlSheet.Cells(1, 19).Address).Font.Color = 16777215
+xlSheet.Range(xlSheet.Cells(1, 1).Address, xlSheet.Cells(1, 19).Address).Font.Bold = True
+xlSheet.Range(xlSheet.Cells(1, 1).Address, xlSheet.Cells(1, 19).Address).Interior.Color = 8669793
+
+    xlSheet.UsedRange.Borders(xlDiagonalDown).LineStyle = xlNone
+    xlSheet.UsedRange.Borders(xlDiagonalUp).LineStyle = xlNone
+    xlSheet.UsedRange.Borders(xlEdgeLeft).LineStyle = xlContinuous
+    xlSheet.UsedRange.Borders(xlEdgeTop).LineStyle = xlContinuous
+    xlSheet.UsedRange.Borders(xlEdgeBottom).LineStyle = xlContinuous
+     xlSheet.UsedRange.Borders(xlEdgeRight).LineStyle = xlContinuous
+     xlSheet.UsedRange.Borders(xlInsideVertical).LineStyle = xlContinuous
+     xlSheet.UsedRange.Borders(xlInsideHorizontal).LineStyle = xlContinuous
+
+xlSheet.Rows("1:1").Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+xlSheet.Range("E1:L1").WrapText = True
+xlSheet.Range("E1:L1").Merge
+xlSheet.Range("E1").Value = "Reporting Period Monthly Capacity"
+xlSheet.Range("E1").Interior.Color = 5296274
+xlSheet.Range("E1").Font.Size = 18
+xlSheet.Range("E1").Font.Bold = True
+xlSheet.Range("E1").Font.Color = 16777215
+
+xlSheet.Range("M1:N1").WrapText = True
+xlSheet.Range("M1:N1").Merge
+xlSheet.Range("M1").Value = "Current Monthly Capacity"
+xlSheet.Range("M1").Interior.Color = 255
+xlSheet.Range("M1").Font.Size = 18
+xlSheet.Range("M1").Font.Bold = True
+xlSheet.Range("M1").Font.Color = 16777215
+
+xlSheet.Range("o1:o2").WrapText = True
+xlSheet.Range("o1:o2").Merge
+
+xlSheet.Range("p1:p2").WrapText = True
+xlSheet.Range("p1:p2").Merge
+
+xlSheet.Range("a1:a2").WrapText = True
+xlSheet.Range("a1:a2").Merge
+xlSheet.Columns("a:a").ColumnWidth = 14.5
+
+xlSheet.Range("b1:b2").WrapText = True
+xlSheet.Range("b1:b2").Merge
+xlSheet.Columns("b:b").ColumnWidth = 17.5
+
+xlSheet.Range("c1:c2").WrapText = True
+xlSheet.Range("c1:c2").Merge
+xlSheet.Columns("c:c").ColumnWidth = 13.29
+
+xlSheet.Range("d1:d2").WrapText = True
+xlSheet.Range("d1:d2").Merge
+xlSheet.Columns("d:d").ColumnWidth = 29.14
+xlSheet.Columns("e:l").ColumnWidth = 18.43
+xlSheet.Columns("m:n").ColumnWidth = 27.29
+xlSheet.Columns("o:p").ColumnWidth = 18.43
+
+xlSheet.Rows("1:1").RowHeight = 45.75
+xlSheet.Rows("2:2").RowHeight = 135.75
+
+With xlSheet.UsedRange
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .Font.name = "Arial"
+        .WrapText = True
+End With
+
+xlSheet.UsedRange.Borders(xlDiagonalDown).LineStyle = xlNone
+    xlSheet.UsedRange.Borders(xlDiagonalUp).LineStyle = xlNone
+    xlSheet.UsedRange.Borders(xlEdgeLeft).LineStyle = xlContinuous
+    xlSheet.UsedRange.Borders(xlEdgeTop).LineStyle = xlContinuous
+    xlSheet.UsedRange.Borders(xlEdgeBottom).LineStyle = xlContinuous
+     xlSheet.UsedRange.Borders(xlEdgeRight).LineStyle = xlContinuous
+     xlSheet.UsedRange.Borders(xlInsideVertical).LineStyle = xlContinuous
+     xlSheet.UsedRange.Borders(xlInsideHorizontal).LineStyle = xlContinuous
+
+xlSheet.Range("e:h").EntireColumn.Hidden = True
+xlSheet.Range("k:p").EntireColumn.Hidden = True
+
+Set xlSheet = xlBook.Sheets(2)
+
+xlSheet.name = "MRT & DILCapacity"
+
+xlSheet.Cells(1, 1).Value = "Reporting Period (previous month)"
+xlSheet.Cells(1, 2).Value = "LOB (MRT or DIL)"
+xlSheet.Cells(1, 3).Value = "State Services Provided"
+xlSheet.Cells(1, 4).Value = "Firm's Full Legal Entity Name"
+xlSheet.Cells(1, 5).Value = "Maximum Total Available Capacity for BAC"
+xlSheet.Cells(1, 6).Value = "Current BAC Total Open Caseload"
+xlSheet.Cells(1, 7).Value = "Percentage Capacity BAC Case Volume Used"
+xlSheet.Cells(1, 8).Value = "Max Net New Cases BAC (Column E minus F)"
+
+xlSheet.Range(xlSheet.Cells(1, 1).Address, xlSheet.Cells(1, 8).Address).Font.Color = 16777215
+xlSheet.Range(xlSheet.Cells(1, 1).Address, xlSheet.Cells(1, 16).Address).Font.Bold = True
+xlSheet.Range(xlSheet.Cells(1, 1).Address, xlSheet.Cells(1, 6).Address).Interior.Color = 8669793
+xlSheet.Range(xlSheet.Cells(1, 7).Address, xlSheet.Cells(1, 8).Address).Interior.Color = 9720124
+
+xlSheet.UsedRange.Borders(xlDiagonalDown).LineStyle = xlNone
+xlSheet.UsedRange.Borders(xlDiagonalUp).LineStyle = xlNone
+xlSheet.UsedRange.Borders(xlEdgeLeft).LineStyle = xlContinuous
+xlSheet.UsedRange.Borders(xlEdgeTop).LineStyle = xlContinuous
+xlSheet.UsedRange.Borders(xlEdgeBottom).LineStyle = xlContinuous
+xlSheet.UsedRange.Borders(xlEdgeRight).LineStyle = xlContinuous
+xlSheet.UsedRange.Borders(xlInsideVertical).LineStyle = xlContinuous
+xlSheet.UsedRange.Borders(xlInsideHorizontal).LineStyle = xlContinuous
+
+xlSheet.Rows("1:1").Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+xlSheet.Range("E1:h1").WrapText = True
+xlSheet.Range("E1:h1").Merge
+xlSheet.Range("E1").Value = "MRT and DIL Total Inventory Capacity"
+xlSheet.Range("E1").Interior.Color = 5296274
+
+xlSheet.Range("a1:a2").WrapText = True
+xlSheet.Range("a1:a2").Merge
+
+xlSheet.Range("b1:b2").WrapText = True
+xlSheet.Range("b1:b2").Merge
+
+xlSheet.Range("c1:c2").WrapText = True
+xlSheet.Range("c1:c2").Merge
+
+xlSheet.Range("d1:d2").WrapText = True
+xlSheet.Range("d1:d2").Merge
+
+xlSheet.Range("E1").Font.Size = 18
+xlSheet.Range("E1").Font.Bold = True
+xlSheet.Range("E1").Font.Color = 16777215
+
+xlSheet.Columns("a:a").ColumnWidth = 14.5
+xlSheet.Columns("b:b").ColumnWidth = 27.29
+xlSheet.Columns("c:c").ColumnWidth = 14.5
+xlSheet.Columns("d:e").ColumnWidth = 27.29
+xlSheet.Columns("f:f").ColumnWidth = 18.43
+xlSheet.Columns("g:g").ColumnWidth = 14.5
+xlSheet.Columns("h:h").ColumnWidth = 18.43
+
+xlSheet.Rows("1:1").RowHeight = 45.75
+xlSheet.Rows("2:2").RowHeight = 135.75
+
+With xlSheet.UsedRange
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .Font.name = "Arial"
+        .WrapText = True
+End With
+
+
+xlSheet.UsedRange.Borders(xlDiagonalDown).LineStyle = xlNone
+    xlSheet.UsedRange.Borders(xlDiagonalUp).LineStyle = xlNone
+    xlSheet.UsedRange.Borders(xlEdgeLeft).LineStyle = xlContinuous
+    xlSheet.UsedRange.Borders(xlEdgeTop).LineStyle = xlContinuous
+    xlSheet.UsedRange.Borders(xlEdgeBottom).LineStyle = xlContinuous
+     xlSheet.UsedRange.Borders(xlEdgeRight).LineStyle = xlContinuous
+     xlSheet.UsedRange.Borders(xlInsideVertical).LineStyle = xlContinuous
+     xlSheet.UsedRange.Borders(xlInsideHorizontal).LineStyle = xlContinuous
+
+xlSheet.Columns("i:p").Borders(xlDiagonalDown).LineStyle = xlNone
+xlSheet.Columns("i:p").Borders(xlDiagonalUp).LineStyle = xlNone
+xlSheet.Columns("i:p").Borders(xlEdgeLeft).LineStyle = xlNone
+xlSheet.Columns("i:p").Borders(xlEdgeTop).LineStyle = xlNone
+xlSheet.Columns("i:p").Borders(xlEdgeBottom).LineStyle = xlNone
+xlSheet.Columns("i:p").Borders(xlEdgeRight).LineStyle = xlNone
+xlSheet.Columns("i:p").Borders(xlInsideVertical).LineStyle = xlNone
+xlSheet.Columns("i:p").Borders(xlInsideHorizontal).LineStyle = xlNone
+
+xlBook.Save
+xlBook.Close
+xl.Quit
+
+
+emailsubject = "BAC Firm Capacity FC/BK"
+
+Dim from, varemailto, varsendemail As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "jennifer.rice@bww-law.com"
+
+'MyMail.To = "howie.bierman@bww-law.com"
+MyMail.CC = ""
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD filelocation & "BACFirmCapacityNEW.xls"
+MyMail.Display
+
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+Exit Function
+
+handler:
+MsgBox Err.Number & " " & Err.description
+Exit Function
+
+
+
+End Function
+
+
+Public Function fixXLBACEvicDIL()
+
+'On Error Resume Next
+ 
+
+
+CurrentDb.Execute "DELETE * FROM BACFirmCapacityEvDILNEW;", dbFailOnError
+
+Dim strsql As String
+Dim VCount
+Dim VCountBAC
+Dim VcountBKMd
+Dim VCountBKVa
+Dim VCountBKDC
+Dim VCountBKBacDc
+Dim VCountBKBacVa
+Dim VCountBKBacMd
+Dim VcountLitDC
+Dim VcountBACLitDC
+Dim VCountLitVA
+Dim VCountBACLitVA
+Dim VCountLitMD
+Dim VCountBACLitMD
+Dim MaxCapacity
+
+VcountBK = 0
+VCount = 0
+VCountBAC = 0
+VcountBKMd = 0
+VCountBKVa = 0
+VCountBKDC = 0
+VCountBKBacDc = 0
+VCountBKBacVa = 0
+VCountBKBacMd = 0
+VcountLitDC = 0
+VcountBACLitDC = 0
+VCountLitVA = 0
+VCountBACLitVA = 0
+VCountLitMD = 0
+VCountBACLitMD = 0
+MaxCapacity = 0
+
+Dim rs As RecordSet
+Dim rsCount As RecordSet
+Set rsCount = CurrentDb.OpenRecordset("BACFirmCapacityEvDILNEW", dbOpenDynaset, dbSeeChanges)
+
+Dim vARDate
+vARDate = InputBox("Review period: (ex: 3/1/11)")
+
+DoCmd.OpenQuery ("BACFirmDIL")
+
+strsql = "select * from NewRefQryNEW where propertystate = " & """" & "DC" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 150
+
+Do While Not rs.EOF
+VCountBKDC = VCountBKDC + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBKBacDc = VCountBKBacDc + 1
+End If
+
+rs.MoveNext
+Loop
+rs.Close
+
+
+With rsCount
+.AddNew
+![Reporting Period (previous month)] = Format(vARDate, "MMM-YY")
+![LOB (MRT or DIL)] = "DIL"
+![State Services Provided] = "DC"
+![Firm's Full Legal Entity] = "BWW Law Group, LLC"
+![Maximum Total Available Capacity for BAC] = MaxCapacity
+![Current BAC Total Open Caseload] = VCountBKBacDc
+![Percent Capacity BAC Case Volume Used] = VCountBKBacDc / MaxCapacity * 100
+![Max Net New Cases BAC] = IIf((MaxCapacity - VCountBKBacDc) > 0, (MaxCapacity - VCountBKBacDc), 0)
+.Update
+End With
+
+strsql = "select * from NewRefQryNEW where Propertystate = " & """" & "VA" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 150
+
+Do While Not rs.EOF
+VCountBKVa = VCountBKVa + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBKBacVa = VCountBKBacVa + 1
+End If
+rs.MoveNext
+Loop
+rs.Close
+
+With rsCount
+.AddNew
+![Reporting Period (previous month)] = Format(vARDate, "MMM-YY")
+![LOB (MRT or DIL)] = "DIL"
+![State Services Provided] = "VA"
+![Firm's Full Legal Entity] = "BWW Law Group, LLC"
+![Maximum Total Available Capacity for BAC] = MaxCapacity
+![Current BAC Total Open Caseload] = VCountBKBacVa
+![Percent Capacity BAC Case Volume Used] = VCountBKBacVa / MaxCapacity * 100
+![Max Net New Cases BAC] = IIf((MaxCapacity - VCountBKBacVa) > 0, (MaxCapacity - VCountBKBacVa), 0)
+.Update
+End With
+
+strsql = "select * from NewRefQryNEW where Propertystate = " & """" & "MD" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 150
+
+Do While Not rs.EOF
+VcountBKMd = VcountBKMd + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBKBacMd = VCountBKBacMd + 1
+End If
+rs.MoveNext
+Loop
+rs.Close
+
+With rsCount
+.AddNew
+![Reporting Period (previous month)] = Format(vARDate, "MMM-YY")
+![LOB (MRT or DIL)] = "DIL"
+![State Services Provided] = "MD"
+![Firm's Full Legal Entity] = "BWW Law Group, LLC"
+![Maximum Total Available Capacity for BAC] = MaxCapacity
+![Current BAC Total Open Caseload] = VCountBKBacMd
+![Percent Capacity BAC Case Volume Used] = VCountBKBacMd / MaxCapacity * 100
+![Max Net New Cases BAC] = IIf((MaxCapacity - VCountBKBacMd) > 0, (MaxCapacity - VCountBKBacMd), 0)
+.Update
+End With
+
+DoCmd.OpenQuery ("BACCapacityQRYlit")
+
+strsql = "select * from NewRefQryNEW where propertystate = " & """" & "DC" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 20
+
+
+Do While Not rs.EOF
+VcountLitDC = VcountLitDC + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VcountBACLitDC = VcountBACLitDC + 1
+End If
+
+rs.MoveNext
+Loop
+rs.Close
+
+With rsCount
+.AddNew
+![Reporting Period (previous month)] = Format(vARDate, "MMM-YY")
+![LOB (MRT or DIL)] = "MRT"
+![State Services Provided] = "DC"
+![Firm's Full Legal Entity] = "BWW Law Group, LLC"
+![Maximum Total Available Capacity for BAC] = MaxCapacity
+![Current BAC Total Open Caseload] = VcountBACLitDC
+![Percent Capacity BAC Case Volume Used] = VcountBACLitDC / MaxCapacity * 100
+![Max Net New Cases BAC] = IIf((MaxCapacity - VcountBACLitDC) > 0, (MaxCapacity - VcountBACLitDC), 0)
+.Update
+End With
+
+strsql = "select * from NewRefQryNEW where Propertystate = " & """" & "VA" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 50
+
+Do While Not rs.EOF
+VCountLitVA = VCountLitVA + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBACLitVA = VCountBACLitVA + 1
+End If
+rs.MoveNext
+Loop
+rs.Close
+
+With rsCount
+.AddNew
+![Reporting Period (previous month)] = Format(vARDate, "MMM-YY")
+![LOB (MRT or DIL)] = "MRT"
+![State Services Provided] = "VA"
+![Firm's Full Legal Entity] = "BWW Law Group, LLC"
+![Maximum Total Available Capacity for BAC] = MaxCapacity
+![Current BAC Total Open Caseload] = VCountBACLitVA
+![Percent Capacity BAC Case Volume Used] = VCountBACLitVA / MaxCapacity * 100
+![Max Net New Cases BAC] = IIf((MaxCapacity - VCountBACLitVA) > 0, (MaxCapacity - VCountBACLitVA), 0)
+.Update
+End With
+
+strsql = "select * from NewRefQryNEW where Propertystate = " & """" & "MD" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 50
+
+Do While Not rs.EOF
+VCountLitMD = VCountLitMD + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBACLitMD = VCountBACLitMD + 1
+End If
+rs.MoveNext
+Loop
+rs.Close
+
+With rsCount
+.AddNew
+![Reporting Period (previous month)] = Format(vARDate, "MMM-YY")
+![LOB (MRT or DIL)] = "MRT"
+![State Services Provided] = "MD"
+![Firm's Full Legal Entity] = "BWW Law Group, LLC"
+![Maximum Total Available Capacity for BAC] = MaxCapacity
+![Current BAC Total Open Caseload] = VCountBACLitMD
+![Percent Capacity BAC Case Volume Used] = VCountBACLitMD / MaxCapacity * 100
+![Max Net New Cases BAC] = IIf((MaxCapacity - VCountBACLitMD) > 0, (MaxCapacity - VCountBACLitMD), 0)
+.Update
+End With
+
+End Function
+
+
+Public Function fixXLBACReview()
+
+'On Error Resume Next
+ 
+Call WarningsNowFalse
+
+CurrentDb.Execute "DELETE * FROM BACFirmCapacityNEW;", dbFailOnError
+Dim strsql As String
+Dim VCount
+Dim VCountBAC
+Dim VcountBKMd
+Dim VCountBKVa
+Dim VCountBKDC
+Dim VCountBKBacDc
+Dim VCountBKBacVa
+Dim VCountBKBacMd
+Dim VcountLitDC
+Dim VCountLitVA
+Dim VCountLitMD
+Dim VcountBACLitDC
+Dim VCountBACLitVA
+Dim VCountBACLitMD
+Dim MaxCapacity
+Dim VTransCountBK As Double
+Dim VTransCountEV As Double
+Dim VTransCountFC As Double
+
+VcountBK = 0
+VCount = 0
+VCountBAC = 0
+VcountBKMd = 0
+VCountBKVa = 0
+VCountBKDC = 0
+VCountBKBacDc = 0
+VCountBKBacVa = 0
+VCountBKBacMd = 0
+VcountLitDC = 0
+VCountLitVA = 0
+VCountLitMD = 0
+VcountBACLitDC = 0
+VCountBACLitVA = 0
+VCountBACLitMD = 0
+MaxCapacity = 0
+
+Dim rs As RecordSet
+Dim rsCount As RecordSet
+Set rsCount = CurrentDb.OpenRecordset("BACFirmCapacityNEW", dbOpenDynaset, dbSeeChanges)
+
+Dim vARDate
+vARDate = InputBox("Review Period: (ex: 3/1/11)")
+Dim vARDateEND
+'-----BK Section MFR
+
+'DoCmd.OpenQuery ("BACCapacityQRYBK")
+On Error Resume Next
+    CurrentDb.Execute ("drop table NewRefQryNew")
+On Error GoTo 0
+
+With CurrentDb.QueryDefs("BACCapacityQRYBK")
+    .Parameters("Enter Start Date") = DateValue(vARDate)
+    .Execute
+End With
+
+
+strsql = "select * from NewRefQryNEW where propertystate = " & """" & "DC" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 75
+'inserting records for DC
+
+Do While Not rs.EOF
+VCountBKDC = VCountBKDC + 1
+
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBKBacDc = VCountBKBacDc + 1
+End If
+
+
+'If IsNull(rs!Transferred_Revd_Date) = False Then MsgBox rs!Transferred_Revd_Date
+
+If rs!Transferred_Revd_Date >= DateValue(vARDate) And rs!Transferred_Revd_Date <= Date + 1 Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+''MsgBox VTransCountBK & "/" & VTransCountEV & "/" & VTransCountFC
+
+rs.MoveNext
+Loop
+rs.Close
+
+'for BK in DC
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "BK-MFR"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "DC"
+![Actual Total All Client Refs Recv'd (report pd)] = VCountBKDC
+![Percentage Capacity All Clients Referrals Used] = VCountBKDC / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCountBKDC) > 0, (MaxCapacity - VCountBKDC), VCountBKDC)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBKBacDc
+![Percent Capacity BAC Referrals Used] = VCountBKBacDc / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBKBacDc) > 0, (MaxCapacity - VCountBKBacDc), VCountBKBacDc)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+strsql = "select * from NewRefQryNEW where Propertystate = " & """" & "VA" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 250
+
+Do While Not rs.EOF
+VCountBKVa = VCountBKVa + 1
+
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBKBacVa = VCountBKBacVa + 1
+End If
+
+
+'If IsNull(rs!Transferred_Revd_Date) = False Then MsgBox rs!Transferred_Revd_Date
+
+If rs!Transferred_Revd_Date >= DateValue(vARDate) And rs!Transferred_Revd_Date <= Date + 1 Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+rs.MoveNext
+Loop
+rs.Close
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "BK-MFR"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "VA"
+![Actual Total All Client Refs Recv'd (report pd)] = VCountBKVa
+![Percentage Capacity All Clients Referrals Used] = VCountBKVa / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCountBKVa) > 0, (MaxCapacity - VCountBKVa), VCountBKVa)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBKBacVa
+![Percent Capacity BAC Referrals Used] = VCountBKBacVa / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBKBacVa) > 0, (MaxCapacity - VCountBKBacVa), VCountBKBacVa)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+strsql = "select * from NewRefQryNEW where Propertystate = " & """" & "MD" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 250
+
+Do While Not rs.EOF
+VcountBKMd = VcountBKMd + 1
+
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBKBacMd = VCountBKBacMd + 1
+End If
+
+
+'If IsNull(rs!Transferred_Revd_Date) = False Then MsgBox rs!Transferred_Revd_Date
+
+If rs!Transferred_Revd_Date >= DateValue(vARDate) And rs!Transferred_Revd_Date <= Date + 1 Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+rs.MoveNext
+Loop
+rs.Close
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "BK-MFR"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "MD"
+![Actual Total All Client Refs Recv'd (report pd)] = VcountBKMd
+![Percentage Capacity All Clients Referrals Used] = VcountBKMd / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VcountBKMd) > 0, (MaxCapacity - VcountBKMd), VcountBKMd)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBKBacMd
+![Percent Capacity BAC Referrals Used] = VCountBKBacMd / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBKBacMd) > 0, (MaxCapacity - VCountBKBacMd), VCountBKBacMd)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+'BK Section POC.............
+'DoCmd.OpenQuery ("BACCapacityQRYbkPOC")
+On Error Resume Next
+    CurrentDb.Execute ("drop table NewRefQryNew")
+On Error GoTo 0
+
+With CurrentDb.QueryDefs("BACCapacityQRYbkPOC")
+    .Parameters("Enter Start Date") = DateValue(vARDate)
+    .Execute
+End With
+
+strsql = "select * from NewRefQryNEW where propertystate = " & """" & "DC" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 75
+
+Do While Not rs.EOF
+VCountBKDC = VCountBKDC + 1
+
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBKBacDc = VCountBKBacDc + 1
+End If
+
+
+'If IsNull(rs!Transferred_Revd_Date) = False Then MsgBox rs!Transferred_Revd_Date
+
+If rs!Transferred_Revd_Date >= DateValue(vARDate) And rs!Transferred_Revd_Date <= Date + 1 Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+rs.MoveNext
+Loop
+rs.Close
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "BK-POC"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "DC"
+![Actual Total All Client Refs Recv'd (report pd)] = VCountBKDC
+![Percentage Capacity All Clients Referrals Used] = VCountBKDC / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCountBKDC) > 0, (MaxCapacity - VCountBKDC), VCountBKDC)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBKBacDc
+![Percent Capacity BAC Referrals Used] = VCountBKBacDc / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBKBacDc) > 0, (MaxCapacity - VCountBKBacDc), VCountBKBacDc)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+strsql = "select * from NewRefQryNEW where Propertystate = " & """" & "VA" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 250
+
+Do While Not rs.EOF
+VCountBKVa = VCountBKVa + 1
+
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBKBacVa = VCountBKBacVa + 1
+End If
+
+
+'If IsNull(rs!Transferred_Revd_Date) = False Then MsgBox rs!Transferred_Revd_Date
+
+If rs!Transferred_Revd_Date >= DateValue(vARDate) And rs!Transferred_Revd_Date <= Date + 1 Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+rs.MoveNext
+Loop
+rs.Close
+
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "BK-POC"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "VA"
+![Actual Total All Client Refs Recv'd (report pd)] = VCountBKVa
+![Percentage Capacity All Clients Referrals Used] = VCountBKVa / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCountBKVa) > 0, (MaxCapacity - VCountBKVa), VCountBKVa)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBKBacVa
+![Percent Capacity BAC Referrals Used] = VCountBKBacVa / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBKBacVa) > 0, (MaxCapacity - VCountBKBacVa), VCountBKBacVa)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+strsql = "select * from NewRefQryNEW where Propertystate = " & """" & "MD" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 250
+
+Do While Not rs.EOF
+VcountBKMd = VcountBKMd + 1
+
+
+
+'If IsNull(rs!Transferred_Revd_Date) = False Then MsgBox rs!Transferred_Revd_Date
+
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBKBacMd = VCountBKBacMd + 1
+End If
+
+If rs!Transferred_Revd_Date >= DateValue(vARDate) And rs!Transferred_Revd_Date <= Date + 1 Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+
+rs.MoveNext
+Loop
+rs.Close
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "BK-POC"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "MD"
+![Actual Total All Client Refs Recv'd (report pd)] = VcountBKMd
+![Percentage Capacity All Clients Referrals Used] = VcountBKMd / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VcountBKMd) > 0, (MaxCapacity - VcountBKMd), VcountBKMd)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBKBacMd
+![Percent Capacity BAC Referrals Used] = VCountBKBacMd / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBKBacMd) > 0, (MaxCapacity - VCountBKBacMd), VCountBKBacMd)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+'----------- FCL Section -----------------'
+
+
+'DoCmd.OpenQuery ("BACCapacityQRY")
+
+vARDate = InputBox("Enter Start Date")
+vARDateEND = InputBox("Enter End Date")
+
+On Error Resume Next
+    CurrentDb.Execute ("drop table NewRefQryNew")
+On Error GoTo 0
+
+With CurrentDb.QueryDefs("BACCapacityQRY")
+    .Parameters("Enter Start Date") = DateValue(vARDate)
+     .Parameters("Enter End Date") = DateValue(vARDateEND)
+    .Execute
+End With
+
+strsql = "select * from NewRefQryNEW where Propertystate = " & """" & "DC" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+MaxCapacity = 200
+
+Do While Not rs.EOF
+VCount = VCount + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBAC = VCountBAC + 1
+End If
+
+
+'If IsNull(rs!Transferred_Revd_Date) = False Then MsgBox rs!Transferred_Revd_Date
+
+If rs!Transferred_Revd_Date >= DateValue(vARDate) And rs!Transferred_Revd_Date <= DateValue(vARDateEND) Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+
+rs.MoveNext
+Loop
+rs.Close
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "FCL"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "DC"
+![Actual Total All Client Refs Recv'd (report pd)] = VCount
+![Percentage Capacity All Clients Referrals Used] = VCount / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCount) > 0, (MaxCapacity - VCount), VCount)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBAC
+![Percent Capacity BAC Referrals Used] = VCountBAC / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBAC) > 0, (MaxCapacity - VCountBAC), VCountBAC)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+strsql = "select * from NewRefQryNEW where Propertystate = " & """" & "VA" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+VCount = 0
+VCountBAC = 0
+MaxCapcity = 1500
+
+Do While Not rs.EOF
+VCount = VCount + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBAC = VCountBAC + 1
+End If
+
+If rs!Transferred_Revd_Date >= DateValue(vARDate) And rs!Transferred_Revd_Date <= DateValue(vARDateEND) Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+
+rs.MoveNext
+Loop
+rs.Close
+
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "FCL"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "VA"
+![Actual Total All Client Refs Recv'd (report pd)] = VCount
+![Percentage Capacity All Clients Referrals Used] = VCount / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCount) > 0, (MaxCapacity - VCount), VCount)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBAC
+![Percent Capacity BAC Referrals Used] = VCountBAC / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBAC) > 0, (MaxCapacity - VCountBAC), VCountBAC)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+
+strsql = "select * from NewRefQryNEW where Propertystate = " & """" & "MD" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+VCount = 0
+VCountBAC = 0
+MaxCapcity = 1250
+
+Do While Not rs.EOF
+VCount = VCount + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBAC = VCountBAC + 1
+End If
+
+If rs!Transferred_Revd_Date >= DateValue(vARDate) And rs!Transferred_Revd_Date <= DateValue(vARDateEND) Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+
+rs.MoveNext
+Loop
+rs.Close
+
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "FCL"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "MD"
+![Actual Total All Client Refs Recv'd (report pd)] = VCount
+![Percentage Capacity All Clients Referrals Used] = VCount / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCount) > 0, (MaxCapacity - VCount), VCount)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBAC
+![Percent Capacity BAC Referrals Used] = VCountBAC / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBAC) > 0, (MaxCapacity - VCountBAC), VCountBAC)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+
+'-------------Eviction REO section
+On Error Resume Next
+    CurrentDb.Execute ("drop table NewRefQryNew")
+On Error GoTo 0
+
+DoCmd.OpenQuery ("BACFirmEviction")
+
+strsql = "select * from NewRefQryNEW where (typeofloan is null or typeofloan <> " & """" & "FHA" & """" & ") and Propertystate = " & """" & "DC" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+VCount = 0
+VCountBAC = 0
+MaxCapacity = 25
+
+Do While Not rs.EOF
+VCount = VCount + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBAC = VCountBAC + 1
+End If
+
+If rs!Transferred_Revd_Date >= Date - 30 And rs!Transferred_Revd_Date <= Date Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+rs.MoveNext
+Loop
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "Eviction REO"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "DC"
+![Actual Total All Client Refs Recv'd (report pd)] = VCount
+![Percentage Capacity All Clients Referrals Used] = VCount / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCount) > 0, (MaxCapacity - VCount), VCount)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBAC
+![Percent Capacity BAC Referrals Used] = VCountBAC / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBAC) > 0, (MaxCapacity - VCountBAC), VCountBAC)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+
+strsql = "select * from NewRefQryNEW where (typeofloan is null or typeofloan <> " & """" & "FHA" & """" & ") and Propertystate = " & """" & "VA" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+VCount = 0
+VCountBAC = 0
+MaxCapacity = 350
+
+Do While Not rs.EOF
+VCount = VCount + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBAC = VCountBAC + 1
+End If
+
+If rs!Transferred_Revd_Date >= Date - 30 And rs!Transferred_Revd_Date <= Date Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+
+rs.MoveNext
+Loop
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "Eviction REO"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "VA"
+![Actual Total All Client Refs Recv'd (report pd)] = VCount
+![Percentage Capacity All Clients Referrals Used] = VCount / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCount) > 0, (MaxCapacity - VCount), VCount)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBAC
+![Percent Capacity BAC Referrals Used] = VCountBAC / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBAC) > 0, (MaxCapacity - VCountBAC), VCountBAC)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+strsql = "select * from NewRefQryNEW where (typeofloan is null or typeofloan <> " & """" & "FHA" & """" & ") and Propertystate = " & """" & "MD" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+VCount = 0
+VCountBAC = 0
+MaxCapacity = 350
+
+Do While Not rs.EOF
+VCount = VCount + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBAC = VCountBAC + 1
+End If
+
+If rs!Transferred_Revd_Date >= Date - 30 And rs!Transferred_Revd_Date <= Date Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+rs.MoveNext
+Loop
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "Eviction REO"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "MD"
+![Actual Total All Client Refs Recv'd (report pd)] = VCount
+![Percentage Capacity All Clients Referrals Used] = VCount / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCount) > 0, (MaxCapacity - VCount), VCount)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBAC
+![Percent Capacity BAC Referrals Used] = VCountBAC / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBAC) > 0, (MaxCapacity - VCountBAC), VCountBAC)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+'Evictions FHA/HUD--------------
+
+strsql = "select * from NewRefQryNEW where typeofloan = " & """" & "FHA" & """" & " and Propertystate = " & """" & "DC" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+VCount = 0
+VCountBAC = 0
+MaxCapacity = 25
+
+Do While Not rs.EOF
+VCount = VCount + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBAC = VCountBAC + 1
+End If
+
+If rs!Transferred_Revd_Date >= Date - 30 And rs!Transferred_Revd_Date <= Date Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+
+rs.MoveNext
+Loop
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "Eviction FHA/HUD"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "DC"
+![Actual Total All Client Refs Recv'd (report pd)] = VCount
+![Percentage Capacity All Clients Referrals Used] = VCount / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCount) > 0, (MaxCapacity), VCount)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBAC
+![Percent Capacity BAC Referrals Used] = VCountBAC / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBAC) > 0, (MaxCapacity), VCountBAC)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+
+strsql = "select * from NewRefQryNEW where typeofloan = " & """" & "FHA" & """" & " and Propertystate = " & """" & "VA" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+VCount = 0
+VCountBAC = 0
+MaxCapacity = 350
+
+Do While Not rs.EOF
+VCount = VCount + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBAC = VCountBAC + 1
+End If
+
+If rs!Transferred_Revd_Date >= Date - 30 And rs!Transferred_Revd_Date <= Date Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+rs.MoveNext
+Loop
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "Eviction FHA/HUD"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "VA"
+![Actual Total All Client Refs Recv'd (report pd)] = VCount
+![Percentage Capacity All Clients Referrals Used] = VCount / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCount) > 0, (MaxCapacity - VCount), VCount)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBAC
+![Percent Capacity BAC Referrals Used] = VCountBAC / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBAC) > 0, (MaxCapacity - VCountBAC), VCountBAC)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+VTransCountBK = 0
+VTransCountEV = 0
+VTransCountFC = 0
+
+
+
+strsql = "select * from NewRefQryNEW where typeofloan = " & """" & "FHA" & """" & " and Propertystate = " & """" & "MD" & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+VCount = 0
+VCountBAC = 0
+MaxCapacity = 350
+
+Do While Not rs.EOF
+VCount = VCount + 1
+If rs!Client Like "Bank of Am*" Or rs!Client Like "Bank of Am*" Then
+VCountBAC = VCountBAC + 1
+End If
+
+If rs!Transferred_Revd_Date >= Date - 30 And rs!Transferred_Revd_Date <= Date Then
+
+If rs!Transferred = "BK" Then VTransCountBK = VTransCountBK + 1
+If rs!Transferred = "EV" Then VTransCountEV = VTransCountEV + 1
+If rs!Transferred = "FC" Then VTransCountFC = VTransCountFC + 1
+
+End If
+
+rs.MoveNext
+Loop
+
+With rsCount
+.AddNew
+![Reporting Period] = Format(vARDate, "MMM-YY")
+!lob = "Eviction FHA/HUD"
+![Firm's Full Legal Entity Name] = "BWW Law Group, LLC"
+![Maximum Avail Capacity All Client Referrals (report pd)] = MaxCapacity
+![State Services Provided] = "MD"
+![Actual Total All Client Refs Recv'd (report pd)] = VCount
+![Percentage Capacity All Clients Referrals Used] = VCount / MaxCapacity * 100
+![Max net new referrals All Clients] = IIf((MaxCapacity - VCount) > 0, (MaxCapacity - VCount), VCount)
+![Maximum Available Capacity for BAC Referrals] = MaxCapacity
+![Actual Total BAC Refs Recv'd (rept pd)] = VCountBAC
+![Percent Capacity BAC Referrals Used] = VCountBAC / MaxCapacity * 100
+![Max Net New Referrals BAC] = IIf((MaxCapacity - VCountBAC) > 0, (MaxCapacity - VCountBAC), VCountBAC)
+![30 Days Projected Available Capacity (All Clients)] = MaxCapacity
+![30 Days Projected Monthly Volume (BAC)] = MaxCapacity
+![Work increased by 30% next month, is Supplier able to accomodate] = "Y"
+![If no, approximate how long to accomodate] = ""
+
+![Transfer Type (BK)] = VTransCountBK
+![Transfer Type (EV)] = VTransCountEV
+![Transfer Type (FC)] = VTransCountFC
+.Update
+End With
+
+
+'BAC transfer query created: BACCapacityTransfersQry
+ 
+ 
+End Function
+

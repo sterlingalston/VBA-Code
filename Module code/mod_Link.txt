@@ -1,0 +1,124 @@
+Attribute VB_Name = "Link"
+Option Compare Database
+Option Explicit
+Sub RenameTables()
+Dim i As Integer
+Dim dbRename As Database
+
+    
+    Set dbRename = OpenDatabase("c:\fc.mdb")
+
+    dbRename.CreateTableDef
+    
+              
+    For i = 0 To dbRename.TableDefs.Count - 1
+      If Left(dbRename.TableDefs(i).name, 4) = "dbo_" Then
+          dbRename.TableDefs(i).name = Replace(dbRename.TableDefs(i).name, "dbo_", "")
+      End If
+    Next i
+   
+    dbRename.Close
+    Set dbRename = Nothing
+
+End Sub
+
+
+Public Sub LinkTablesSQL()
+LinkTable "Abstractors"
+LinkTable "Archives"
+LinkTable "Archived Litigation Bills"
+LinkTable "Attorneys"
+LinkTable "Autonumbers"
+LinkTable "Bankruptcy"
+LinkTable "Billing"
+LinkTable "BRTrustees"
+LinkTable "BKInvNo"
+LinkTable "Cases"
+LinkTable "Clients"
+LinkTable "ClosedFiles"
+LinkTable "Creditors"
+LinkTable "ConsentTable"
+LinkTable "DCline"
+LinkTable "DeedReviews"
+LinkTable "defendants"
+LinkTable "DeletedItems"
+LinkTable "Demand Letter"
+LinkTable "Diary"
+LinkTable "Employees"
+LinkTable "Eviction"
+LinkTable "FC Reason Codes"
+LinkTable "feescosts"
+LinkTable "Foreclosure"
+LinkTable "Investor"
+LinkTable "InvoiceNumbering"
+LinkTable "Jurisdiction"
+LinkTable "LineItem"
+LinkTable "Litigation"
+LinkTable "Login"
+LinkTable "MDline"
+LinkTable "NewInvoice Table"
+LinkTable "NI Invoice Types"
+LinkTable "Ocwen Investors"
+LinkTable "PostSale"
+LinkTable "SecuredParty"
+LinkTable "Servicer Table"
+LinkTable "Searchcasenumber"
+LinkTable "Searchdebtornames"
+LinkTable "Searchinvoice"
+LinkTable "SeniorLien"
+LinkTable "tblFidelity"
+LinkTable "tblinput"
+LinkTable "tbluser"
+LinkTable "Title"
+LinkTable "TitleAb"
+LinkTable "TitleDeeds"
+LinkTable "titleissue"
+LinkTable "TitleJudgments"
+LinkTable "TitleLiens"
+LinkTable "Titletaxes"
+LinkTable "Title Companies"
+LinkTable "VA Appraisers"
+LinkTable "Valine"
+LinkTable "dba_BKDebtorsAttorneys"
+LinkTable "dba_court_auditors"
+
+MsgBox ("ALL TABLES LINKED!!")
+
+End Sub
+Public Sub LinkDBATables()
+LinkView "dba_noticedeadline"
+LinkView "dba_saledate_client"
+LinkView "dba_viewbk"
+LinkView "dba_viewPart1"
+LinkView "dba_viewPart1_nocounty"
+LinkView "dba_viewPart2"
+LinkView "SearchCaseNumber"
+LinkView "SearchDebtorNames"
+LinkView "SearchInvoice"
+
+End Sub
+Public Sub LinkTable(TableName As String)
+Dim TDF As TableDef
+
+CurrentDb.TableDefs.Delete TableName
+
+Set TDF = CurrentDb.CreateTableDef(TableName, _
+                    dbAttachSavePWD, _
+                    TableName, _
+                    "ODBC;DSN=FCdata")
+CurrentDb.TableDefs.Append TDF
+CurrentDb.TableDefs.Refresh
+
+End Sub
+
+Public Sub LinkView(ViewName As String)
+Dim TDF As TableDef
+
+'CurrentDb.TableDefs.Delete ViewName
+
+Set TDF = CurrentDb.CreateTableDef(ViewName, dbAttachSavePWD, ViewName, "ODBC;DSN=FCdata")
+CurrentDb.TableDefs.Append TDF
+CurrentDb.TableDefs.Refresh
+
+End Sub
+

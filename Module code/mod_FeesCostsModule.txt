@@ -1,0 +1,269 @@
+Attribute VB_Name = "FeesCostsModule"
+Option Compare Database
+Public Function FeesCosts()
+
+Dim vEditAdd As String
+Dim vDoNI As String
+Dim DocName As String
+Dim linkcriteria As String
+Dim Figures As String
+Dim fee0 As String
+Dim estate As String
+Dim rs As RecordSet
+Dim db As Database
+Dim vClient As String
+Dim strsql As String
+Dim VNI As String
+Dim VBill As String
+Dim rsbill, rsfees As RecordSet
+Dim strsqlBill, sqlfees As String
+Dim vcustomerid, GblFilenum As Long
+
+
+Set db = CurrentDb()
+vClient = [Forms]![foreclosure database screen]![Client]
+strsql = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """"
+Set rs = db.OpenRecordset(strsql, dbOpenSnapshot)
+
+vEditAdd = InputBox("'E'dit this Bill or 'A'dd New Bill? E/A")
+
+
+rs.Close
+Set rs = Nothing
+
+DocName = "BillingMainEdit"
+
+
+If vEditAdd = "e" Then
+
+Call BillNotes
+
+If Forms![billingmain]!BillingSubForm.Form!Category = "Eviction" Then
+DocName = "BillingmaineditEviction"
+ElseIf Forms![billingmain]!BillingSubForm.Form!slm_fee > 0 Or _
+Forms![billingmain]!BillingSubForm.Form!slm_bid > 0 Or _
+Forms![billingmain]!BillingSubForm.Form!slm_motion > 0 Then
+DocName = "billingmaineditslm"
+Else
+DocName = "BillingMainEdit"
+End If
+
+If (IsNull(Forms!billingmain!BillingSubForm.Form!bill_paid) _
+Or Forms!billingmain!BillingSubForm.Form!bill_paid = "") And _
+(IsNull(Forms!billingmain!BillingSubForm.Form!Bill_Uploaded) _
+Or Forms!billingmain!BillingSubForm.Form!Bill_Uploaded = "") And _
+(IsNull(Forms!billingmain!BillingSubForm.Form!Sent) _
+Or Forms!billingmain!BillingSubForm.Form!Sent = "") Then
+
+vcustomerid = Forms!billingmain!BillingSubForm.Form!CustomerID
+GblFilenum = Forms![foreclosure database screen]![filenum]
+linkcriteria = "[CustomerID] =  " & vcustomerid & " And FIleNum = " & GblFilenum
+DoCmd.OpenForm DocName, , , linkcriteria
+DoCmd.RunMacro ("closebillingmain")
+'db.Close
+
+Else
+
+
+DoCmd.OpenForm ("PasswordbilLling")
+
+
+End If
+
+ElseIf vEditAdd = "a" Then
+Call InterimBillCheck
+
+Call BillNotes
+DoCmd.Close acForm, "billingmain"
+
+BILLDateCalc = Date
+
+Call AddNewBill
+
+End If
+
+
+End Function
+
+Public Function CalcAdCostsFeesCosts()
+
+
+If Forms![FeesCosts]!PropertyState = "VA" Then
+If Forms![FeesCosts]!va_asapadcosts > 0 Then
+CalcAdCostsFeesCosts = Forms![FeesCosts]![va_asapadcosts]
+ElseIf Forms![FeesCosts]!va_advcosts > 0 Then
+CalcAdCostsFeesCosts = Forms![FeesCosts]!va_advcosts
+End If
+End If
+
+
+ If Forms![FeesCosts]!PropertyState <> "VA" Then
+ 
+ stateT = Forms![FeesCosts]![PropertyState]
+ countyT = Forms![FeesCosts]![Propertycounty]
+ sqljd = "Select * from jurisdiction where state = " & """" & stateT & """" & " and county = " & """" & countyT & """"
+ Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+Calccosts = js!adv_costs
+js.Close
+'MsgBox (calclosts & " from Jurisdiction")
+
+If Forms![FeesCosts]!ad_costs > 0 Then
+Calccosts = Forms![FeesCosts]!ad_costs
+End If
+
+If IsNull(Forms!FeesCosts!good_thru3) And IsNull(Forms!FeesCosts!good_thru2) Then
+vcalcdate = Forms!FeesCosts!Good_Thru
+ElseIf IsNull(Forms!FeesCosts!good_thru3) And Not IsNull(Forms!FeesCosts!good_thru2) Then
+vcalcdate = Forms!FeesCosts!good_thru2
+Else
+vcalcdate = Forms!FeesCosts!good_thru3
+End If
+
+ 'MsgBox (vcalcdate)
+
+
+vaddate1 = Forms![FeesCosts]![1st_ad] - 3
+
+If Forms![FeesCosts]!PropertyState = "MD" Then
+vadcosts = Calccosts / 3
+
+vaddate2 = (Forms![FeesCosts]![1st_ad] + 7) - 3
+vaddate3 = (Forms![FeesCosts]![1st_ad] + 14) - 3
+
+If vcalcdate >= vaddate3 Then
+CalcAdCostsFeesCosts = vadcosts * 3
+End If
+
+If vcalcdate < vaddate3 And vcalcdate >= vaddate2 Then
+CalcAdCostsFeesCosts = vadcosts * 2
+'MsgBox ("*2")
+End If
+
+If vcalcdate < vaddate2 And vcalcdate >= vaddate1 Then
+CalcAdCostsFeesCosts = vadcosts
+End If
+
+
+ElseIf Forms![FeesCosts]!PropertyState = "DC" Then
+vadcosts = Calccosts / 5
+vaddate2 = (Forms![FeesCosts]![1st_ad] + 2) - 3
+vaddate3 = (Forms![FeesCosts]![1st_ad] + 4) - 3
+vaddate4 = (Forms![FeesCosts]![1st_ad] + 6) - 3
+vaddate5 = (Forms![FeesCosts]![1st_ad] + 8) - 3
+
+If vcalcdate >= vaddate5 Then
+CalcAdCostsFeesCosts = vadcosts * 5
+End If
+
+If vcalcdate < vaddate5 And vcalcdate >= vaddate4 Then
+CalcAdCostsFeesCosts = vadcosts * 4
+End If
+
+If vcalcdate < vaddate4 And vcalcdate >= vaddate3 Then
+CalcAdCostsFeesCosts = vadcosts * 3
+End If
+
+If vcalcdate < vaddate3 And vcalcdate >= vaddate2 Then
+CalcAdCostsFeesCosts = vadcosts * 2
+End If
+
+If vcalcdate < vaddate2 And vcalcdate >= vaddate1 Then
+CalcAdCostsFeesCosts = vadcosts
+End If
+
+
+End If
+
+
+End If
+
+End Function
+
+
+Public Function FeesCostsCODE()
+'Set fs = CreateObject("Scripting.FileSystemObject")
+'Set A = fs.CreateTextFile("c:\4closure\" & Forms![FORECLOSURE DATABASE SCREEN]!FIleNum & "_FeesCstQte.txt", True)
+
+'A.WriteLine ("BGW Fees/Costs Quote created on: " & Date)
+'A.WriteLine (mtext2)
+'A.WriteLine (mtext3)
+'A.WriteLine (mtext4)
+'A.WriteLine (mtext5)
+'A.WriteLine (mtext6)
+'A.WriteLine (mtext7)
+'A.WriteLine (mtext8)
+'A.WriteLine (mtext9)
+'A.WriteLine (mtext10)
+'A.WriteLine (mtext11)
+'A.WriteLine (mtext32)
+'A.WriteLine (mtext12)
+'A.WriteLine (mtext13)
+'A.WriteLine (mtext14)
+'A.WriteLine (mtext15)
+'A.WriteLine (mtext31)
+'A.WriteLine (mtext16)
+'A.WriteLine (mtext17)
+'A.WriteLine (mtext18)
+'A.WriteLine (mtext19)
+'A.WriteLine (mtext20)
+'A.WriteLine (mtext21)
+'A.WriteLine (mtext21a)
+'A.WriteLine (mtext21b)
+'A.WriteLine (mtext22)
+'A.WriteLine (mtext23)
+'A.WriteLine (mtext24)
+'A.WriteLine (mtext25)
+'A.WriteLine (mtext26)
+'A.WriteLine (mtext27)
+'A.WriteLine (mtext28)
+'A.WriteLine (mtext29)
+'A.WriteLine (mtext30)
+'A.WriteLine (mtext31)
+
+'A.WriteLine (m2text2)
+'A.WriteLine (m2text3)
+'A.WriteLine (m2text4)
+'A.WriteLine (m2text5)
+'A.WriteLine (m2text6)
+'A.WriteLine (m2text7)
+'A.WriteLine (m2text8)
+'A.WriteLine (m2text9)
+'A.WriteLine (m2text10)
+'A.WriteLine (m2text11)
+'A.WriteLine (m2text32)
+'A.WriteLine (m2text12)
+'A.WriteLine (m2text13)
+'A.WriteLine (m2text14)
+'A.WriteLine (m2text15)
+'A.WriteLine (m2text31)
+'A.WriteLine (m2text16)
+'A.WriteLine (m2text17)
+'A.WriteLine (m2text18)
+'A.WriteLine (m2text19)
+'A.WriteLine (m2text20)
+'A.WriteLine (m2text21)
+'A.WriteLine (m2text21a)
+'A.WriteLine (m2text21b)
+'A.WriteLine (m2text22)
+'A.WriteLine (m2text23)
+'A.WriteLine (m2text24)
+'A.WriteLine (m2text25)
+'A.WriteLine (m2text26)
+'A.WriteLine (m2text27)
+'A.WriteLine (m2text28)
+'A.WriteLine (m2text29)
+
+'A.Close
+
+
+
+'txtname = Forms![FORECLOSURE DATABASE SCREEN]!FIleNum & "_FeesCstQte.PDF"
+'DocsFLDR = AutoIndexPath & "FeesCstQte\"
+'sourcefile = "c:\4closure\" & Forms![FORECLOSURE DATABASE SCREEN]!FIleNum & "_FeesCstQte.pdf"
+'Destinationfile = DocsFLDR & txtname
+
+'FileCopy sourcefile, Destinationfile    ' Copy source to target.
+
+
+End Function
+

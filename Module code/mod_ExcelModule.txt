@@ -1,0 +1,935 @@
+Attribute VB_Name = "ExcelModule"
+Option Compare Database
+Public Function ExcelSaveAsQRY(queryname As String)
+
+On Error GoTo handler
+
+Dim savepath As String
+Dim rs As RecordSet
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+If Len(savepath) = 0 Then Exit Function
+
+
+DoCmd.OutputTo acOutputQuery, queryname, acFormatXLS, savepath & ".xls"
+ShellExecuteFileOpen (savepath & ".xls")
+MsgBox ("The Excel Spreadsheet you will find in preview and saved in: " & savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Report Not Exported", vbCritical, "End Report"
+
+Exit Function
+
+End Function
+Public Function ExcelSaveAsTBL(tblname As String)
+
+Dim savepath As String
+Application.FileDialog(msoFileDialogSaveAs).Show
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+DoCmd.OutputTo acOutputTable, tblname, acFormatXLS, savepath & ".xls"
+ShellExecuteFileOpen (savepath & ".xls")
+MsgBox ("The Excel Spreadsheet you will find in preview and saved in: " & savepath)
+
+End Function
+
+Public Function callExcelVericrest()
+
+txtname = "\ForeclosureCompletionChecklist.xls"
+docsfldr = pathuser()
+sourcefile = "\\rvdv-fs01\datatransfer\Templates\Excel\ForeclosureCompletionChecklist.xls"
+destinationfile = docsfldr & txtname
+FileCopy sourcefile, destinationfile
+
+fixXLS ("c:\4closure\ForeclosureCompletionChecklist.xls")
+
+End Function
+
+Function fixXLFNMA2(mySheetPath)
+
+'On Error Resume Next
+ 
+
+If dir(mySheetPath) = "" Then
+  MsgBox "Can't find '" & mySheetPath & "'"
+  Exit Function
+End If
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Dim xlSheetMain As Excel.Worksheet
+Dim xlSheetParties As Excel.Worksheet
+DoCmd.OpenQuery ("FNMAQueryFC")
+DoCmd.OpenQuery ("FNMAQueryBK")
+
+Set xl = CreateObject("Excel.Application")
+xl.Visible = True
+Set xlBook = xl.Workbooks.Open(mySheetPath)
+Set xlSheet = xlBook.Worksheets(2)
+Set xlSheetMain = xlBook.Worksheets(1)
+
+Dim strsql
+Dim rs As RecordSet
+Dim vFile
+Dim VCellNo
+VCellNo = 2
+'Foreclosure
+Dim rsF As RecordSet
+Dim strsqlF As String
+
+Set rs = CurrentDb.OpenRecordset("fnmaqueryf", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+
+strsqlF = "select * from FNMAUpdateResumeSaleDateCheck where filenum = " & rs!filenum & " order by saledate ASC;"
+Set rsF = CurrentDb.OpenRecordset(strsqlF, dbOpenSnapshot)
+
+Do While Not rsF.EOF
+With rs
+.Edit
+!OldSaleDate = rsF!SaleDate
+!oldreason = rsF!sale_cancelreason
+!oldcancel = rsF!sale_cancelled
+.Update
+End With
+rsF.MoveNext
+Loop
+
+rs.MoveNext
+Loop
+
+rsF.Close
+
+rs.MoveFirst
+Do While Not rs.EOF
+VCa = "a" & VCellNo
+xlSheetMain.Range(VCa).Value = "BWW Law Group, LLC"
+VCa = "b" & VCellNo
+xlSheetMain.Range(VCa).Value = "1012"
+VCa = "c" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!PropertyState
+VCa = "d" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!Propertycounty
+VCa = "e" & VCellNo
+xlSheetMain.Range(VCa).Value = rs![Investor#]
+VCa = "f" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!Client
+VCa = "g" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!ClientRefNumber
+VCa = "h" & VCellNo
+xlSheetMain.Range(VCa).Value = rs![referral/resume]
+VCa = "l" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!SaleDate
+VCa = "k" & VCellNo
+rs.MoveNext
+VCellNo = VCellNo + 1
+
+Loop
+
+
+Set rs = CurrentDb.OpenRecordset("fnmaqueryb")
+VCellNo = 2
+
+rs.MoveFirst
+Do While Not rs.EOF
+VCa = "a" & VCellNo
+xlSheet.Range(VCa).Value = "BWW Law Group, LLC"
+VCa = "b" & VCellNo
+xlSheet.Range(VCa).Value = "1012"
+VCa = "c" & VCellNo
+xlSheet.Range(VCa).Value = rs!PropertyState
+VCa = "d" & VCellNo
+xlSheet.Range(VCa).Value = rs!Propertycounty
+VCa = "e" & VCellNo
+xlSheet.Range(VCa).Value = rs![Investor#]
+VCa = "f" & VCellNo
+xlSheet.Range(VCa).Value = rs!Client
+VCa = "g" & VCellNo
+xlSheet.Range(VCa).Value = rs!ClientRefNumber
+VCa = "h" & VCellNo
+xlSheet.Range(VCa).Value = rs![BK Referral Date]
+VCa = "i" & VCellNo
+xlSheet.Range(VCa).Value = rs!chapter
+VCa = "j" & VCellNo
+xlSheet.Range(VCa).Value = rs![BKY Case Number]
+VCa = "k" & VCellNo
+xlSheet.Range(VCa).Value = rs!Jurisdiction
+VCa = "l" & VCellNo
+xlSheet.Range(VCa).Value = rs!PropertyState
+
+rs.MoveNext
+VCellNo = VCellNo + 1
+
+Loop
+
+xlBook.Save
+xlBook.Close
+xl.Quit
+
+ 
+End Function
+Public Function callExcelFNMA2()
+
+Dim Vab
+If Format(Date <= 5) Then
+Vab = "A"
+ElseIf Format(Date > 5) Then
+Vab = "B"
+End If
+
+
+txtname = "\1012-" & Format(Date, "yyyy") & "-" & Format(Date, "mm") & "-" & Vab & "-01.xls"
+docsfldr = pathuser()
+sourcefile = "\\rvdv-fs01\datatransfer\Templates\Excel\FNMAMonthlyInventory.xls"
+destinationfile = docsfldr & txtname
+FileCopy sourcefile, destinationfile
+
+fixXLFNMA2 (destinationfile)
+
+End Function
+
+
+Public Function FNMAEmailExcelNEW()
+
+If Format(Date, "dd") = 4 Or Format(Date, "dd") = 15 Then
+Call callExcelFNMA
+
+Dim rsF As RecordSet
+Dim rsB As RecordSet
+Dim E1 As String
+Dim VF
+Dim VB
+VF = 0
+VB = 0
+
+Set rsF = CurrentDb.OpenRecordset("FNMAQueryF")
+Set rsB = CurrentDb.OpenRecordset("FNMAQueryB")
+rsF.MoveFirst
+rsB.MoveFirst
+
+Do While Not rsF.EOF
+VF = VF + 1
+rsF.MoveNext
+Loop
+
+Do While Not rsB.EOF
+VB = VB + 1
+rsB.MoveNext
+Loop
+
+E1 = "Foreclosure " & VF & " loan, Bankruptcy " & VB & " loans"
+
+
+Set MyMail = Nothing
+End If
+Call FNMAEmailExcel2
+
+End Function
+
+Public Function FNMAEmailExcel2()
+
+If Format(Date, "dd") = 4 Or Format(Date, "dd") = 16 Then
+Call callExcelFNMA2
+
+Dim rsF As RecordSet
+Dim rsB As RecordSet
+Dim E1 As String
+Dim VF
+Dim VB
+VF = 0
+VB = 0
+
+Set rsF = CurrentDb.OpenRecordset("FNMAQueryF")
+Set rsB = CurrentDb.OpenRecordset("FNMAQueryB")
+rsF.MoveFirst
+rsB.MoveFirst
+
+Do While Not rsF.EOF
+VF = VF + 1
+rsF.MoveNext
+Loop
+
+Do While Not rsB.EOF
+VB = VB + 1
+rsB.MoveNext
+Loop
+
+E1 = "Foreclosure " & VF & " loan, Bankruptcy " & VB & " loans"
+
+
+Set MyMail = Nothing
+End If
+
+End Function
+Public Function callFNMAProject()
+Dim VPswd
+VPswd = InputBox("Password")
+If VPswd = "FNMA" Then
+
+txtname = "\RanWorksheet.xls"
+docsfldr = pathuser()
+sourcefile = "\\rvdv-fs01\datatransfer\Templates\Excel\RanWorksheet.xls"
+destinationfile = docsfldr & txtname
+FileCopy sourcefile, destinationfile
+
+fixXLSFNMAProject ("c:\4closure\RanWorksheet.xls")
+End If
+
+End Function
+Function fixXLSFNMAProject(mySheetPath)
+
+If dir(mySheetPath) = "" Then
+  MsgBox "Can't find '" & mySheetPath & "'"
+  Exit Function
+End If
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Set xl = CreateObject("Excel.Application")
+xl.Visible = True
+Set xlBook = xl.Workbooks.Open(mySheetPath)
+Set xlSheet = xlBook.Worksheets(1)
+Dim strsql
+Dim rs As RecordSet
+Dim vFile
+Dim Vtotal As Currency
+Dim VTotalFNMA As Currency
+VTotalFNMA = 0
+Vtotal = 0
+Dim VTotalB As Currency
+Dim VTotalFNMAB As Currency
+VTotalFNMAB = 0
+VTotalB = 0
+Dim VTotalDIL As Currency
+Dim VTotalFNMADIL As Currency
+VTotalFNMADIL = 0
+VTotalDIL = 0
+Dim VTotalEv As Currency
+Dim VTotalFNMAEv As Currency
+VTotalFNMAEv = 0
+VTotalEv = 0
+Dim VTotRef
+Dim VTotRefB
+Dim VTotRefA
+Dim VTotRefBa
+
+Dim VTotRef2
+Dim VTotRefB2
+Dim VTotRefA2
+Dim VTotRefBa2
+
+Dim VTotRefE
+Dim VTotRefDIL
+Dim VTotRefEA
+Dim VTotRefDILA
+Dim VTotRefE2
+Dim VTotRefDIL2
+Dim VTotRefEA2
+Dim VTotRefDILA2
+Dim VTotRef41
+Dim VTotRef41B
+Dim VTotRef41E
+
+VTotRef = 0
+VTotRefB = 0
+VTotRefA = 0
+VTotRefBa = 0
+
+VTotRefE = 0
+VTotRefDIL = 0
+VTotRefEA = 0
+VTotRefDILA = 0
+
+VTotRefE2 = 0
+VTotRefDIL2 = 0
+VTotRefEA2 = 0
+VTotRefDILA2 = 0
+VTotRef41 = 0
+VTotRef41B = 0
+
+Set rs = CurrentDb.OpenRecordset("FNMA08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotalFNMA = VTotalFNMA + rs!TOTAL
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMAAllOthers08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+Vtotal = Vtotal + rs!TOTAL
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMABK08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotalFNMAB = VTotalFNMAB + rs!TOTAL
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMAbkAllOthers08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotalB = VTotalB + rs!TOTAL
+rs.MoveNext
+Loop
+rs.Close
+Set rs = CurrentDb.OpenRecordset("FNMAdil08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotalFNMADIL = VTotalFNMADIL + rs!TOTAL
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMAdilAllOthers08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotalDIL = VTotalDIL + rs!TOTAL
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMAev08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotalFNMAEv = VTotalFNMAEv + rs!TOTAL
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMAevAllOthers08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotalEv = VTotalEv + rs!TOTAL
+rs.MoveNext
+Loop
+rs.Close
+'----Referrals
+Set rs = CurrentDb.OpenRecordset("FNMA08-09Ref")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRef = VTotRef + 1
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMA08-09refall")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefA = VTotRefA + 1
+rs.MoveNext
+Loop
+
+rs.Close
+'Referral 08/9 BK
+
+Set rs = CurrentDb.OpenRecordset("FNMA08-09Refb")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefB = VTotRefB + 1
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMA08-09Refball")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefBa = VTotRefBa + 1
+rs.MoveNext
+Loop
+rs.Close
+
+'Referral 08/9 EV
+
+Set rs = CurrentDb.OpenRecordset("FNMAEv08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefE = VTotRefE + 1
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMAEvAllOthers08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefEA = VTotRefEA + 1
+rs.MoveNext
+Loop
+rs.Close
+
+
+'Referral 08/9 DIL
+
+Set rs = CurrentDb.OpenRecordset("FNMADIL08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefDIL = VTotRefDIL + 1
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMADILallOthers08-09")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefDILA = VTotRefDILA + 1
+rs.MoveNext
+Loop
+rs.Close
+
+'Section #4.1
+
+Set rs = CurrentDb.OpenRecordset("FNMA08-09RefBSec4")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRef41B = VTotRef41B + 1
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMA08-09RefSec4")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRef41 = VTotRef41 + 1
+rs.MoveNext
+Loop
+rs.Close
+
+Set rs = CurrentDb.OpenRecordset("FNMA08-09RefEvSec4")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRef41E = VTotRef41E + 1
+rs.MoveNext
+Loop
+rs.Close
+
+
+xlSheet.Range("c7").Value = VTotalFNMA
+xlSheet.Range("e7").Value = Vtotal
+
+xlSheet.Range("c9").Value = VTotalFNMAB
+xlSheet.Range("e9").Value = VTotalB
+
+xlSheet.Range("c11").Value = VTotalFNMAEv
+xlSheet.Range("e11").Value = VTotalEv
+
+xlSheet.Range("c12").Value = VTotalFNMADIL
+xlSheet.Range("e12").Value = VTotalDIL
+
+xlSheet.Range("c21").Value = VTotRef
+xlSheet.Range("e21").Value = VTotRefA
+
+xlSheet.Range("c23").Value = VTotRefB
+xlSheet.Range("e23").Value = VTotRefBa
+
+xlSheet.Range("c25").Value = VTotRefE
+xlSheet.Range("e25").Value = VTotRefEA
+
+xlSheet.Range("c101").Value = VTotRef41B
+xlSheet.Range("c98").Value = "MD"
+xlSheet.Range("c103").Value = VTotRef41E
+xlSheet.Range("c99").Value = VTotRef41E
+
+'----Referrals Projection
+Set rs = CurrentDb.OpenRecordset("FNMA09-10Ref")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRef2 = VTotRef2 + 1
+rs.MoveNext
+Loop
+rs.Close
+VTotRef2 = VTotRef2 * 2.5
+VTotRef2 = VTotRef2 - VTotRef
+VTotRef2 = VTotRef2 / 100
+
+Set rs = CurrentDb.OpenRecordset("FNMA09-10refall")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefA2 = VTotRefA2 + 1
+rs.MoveNext
+Loop
+rs.Close
+'MsgBox ("total: " & VTotRefA2)
+
+VTotRefA2 = VTotRefA2 * 2.5
+'MsgBox ("Total*2.5: " & VTotRefA2)
+
+VTotRefA2 = VTotRefA2 - VTotRefA
+'MsgBox ("Total 2 minus total 8/9: " & VTotRefA2)
+
+VTotRefA2 = VTotRefA2 / 100
+'MsgBox ("total/100: " & VTotRefA2)
+
+'Referral BK
+
+Set rs = CurrentDb.OpenRecordset("FNMA09-10Refb")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefB2 = VTotRefB2 + 1
+rs.MoveNext
+Loop
+rs.Close
+VTotRefB2 = VTotRefB2 * 2.5
+VTotRefB2 = VTotRefB2 - VTotRefB
+VTotRefB2 = VTotRefB2 / 100
+
+Set rs = CurrentDb.OpenRecordset("FNMA09-10Refball")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefBa2 = VTotRefBa2 + 1
+rs.MoveNext
+Loop
+rs.Close
+VTotRefBa2 = VTotRefBa2 * 2.5
+VTotRefBa2 = VTotRefBa2 - VTotRefBa
+VTotRefBa2 = VTotRefBa2 / 100
+
+'Referral EV
+
+Set rs = CurrentDb.OpenRecordset("FNMAEv09-10")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefE2 = VTotRefE2 + 1
+rs.MoveNext
+Loop
+rs.Close
+VTotRefE2 = VTotRefE2 * 2.5
+VTotRefE2 = VTotRefE2 - VTotRefE
+VTotRefE2 = VTotRefE2 / 100
+
+Set rs = CurrentDb.OpenRecordset("FNMAEvAllOthers09-10")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefEA2 = VTotRefEA2 + 1
+rs.MoveNext
+Loop
+rs.Close
+VTotRefEA2 = VTotRefEA2 * 2.5
+VTotRefEA2 = VTotRefEA2 - VTotRefBa
+VTotRefEA2 = VTotRefEA2 / 100
+
+'Referral Proj DIL
+Set rs = CurrentDb.OpenRecordset("FNMAdil09-10")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefDIL2 = VTotRefDIL2 + 1
+rs.MoveNext
+Loop
+rs.Close
+VTotRefDIL2 = VTotRefDIL2 * 2.5
+VTotRefDIL2 = VTotRefDIL2 - VTotRefDIL
+VTotRefDIL2 = VTotRefDIL2 / 100
+
+Set rs = CurrentDb.OpenRecordset("FNMAdilAllOthers09-10")
+rs.MoveFirst
+
+Do While Not rs.EOF
+VTotRefEA2 = VTotRefEA2 + 1
+rs.MoveNext
+Loop
+rs.Close
+VTotRefDILA2 = VTotRefDILA2 * 2.5
+VTotRefDILA2 = VTotRefDILA2 - VTotRefDILA
+VTotRefDILA2 = VTotRefDILA2 / 100
+
+'Fill Cells
+
+xlSheet.Range("c32").Value = VTotRef2
+xlSheet.Range("e32").Value = VTotRefA2
+xlSheet.Range("c34").Value = VTotRefB2
+xlSheet.Range("e34").Value = VTotRefBa2
+xlSheet.Range("c36").Value = VTotRefE2
+xlSheet.Range("e36").Value = VTotRefEA2
+xlSheet.Range("c37").Value = VTotRefDIL2
+xlSheet.Range("e37").Value = VTotRefDILA2
+
+End Function
+
+Function fixXLSHC(mySheetPath)
+
+If dir(mySheetPath) = "" Then
+  MsgBox "Can't find '" & mySheetPath & "'"
+  Exit Function
+End If
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Dim xlSheetMain As Excel.Worksheet
+Dim xlSheetParties As Excel.Worksheet
+
+Set xl = CreateObject("Excel.Application")
+xl.Visible = True
+Set xlBook = xl.Workbooks.Open(mySheetPath)
+Set xlSheet = xlBook.Worksheets(2)
+Set xlSheetMain = xlBook.Worksheets(1)
+Set xlSheetParties = xlBook.Worksheets(3)
+
+Dim strsql
+Dim rs As RecordSet
+Dim vFile
+
+Set rs = CurrentDb.OpenRecordset("hcacct")
+'Letter Page
+
+xlSheetMain.Range("b7").Value = Date
+xlSheetMain.Range("d13").Value = rs!CaseNo
+xlSheetMain.Range("d14").Value = rs!PropAddress
+xlSheetMain.Range("d15").Value = rs![PropertyCity] & ", " & rs![PropertyState] & "  " & rs![propzip]
+xlSheetMain.Range("d16").Value = rs!RatDateMD
+
+'Parties
+xlSheetParties.Range("b1").Value = rs!Client
+xlSheetParties.Range("b8").Value = "Howard N. Bierman, et al."
+xlSheetParties.Range("b9").Value = "6003 Executive Blvd."
+xlSheetParties.Range("b10").Value = "Suite 200"
+xlSheetParties.Range("b11").Value = "Rockville, MD 20852"
+xlSheetParties.Range("b3").Value = "Howard N. Bierman, et al."
+
+xlSheetParties.Range("b18").Value = BKAtt()
+xlSheetParties.Range("b19").Value = BKAttAdd1()
+xlSheetParties.Range("b20").Value = BKAttAdd2()
+xlSheetParties.Range("b21").Value = BKAttCSZ()
+
+xlSheetParties.Range("b23").Value = Purchaser()
+xlSheetParties.Range("b24").Value = purchaseradd()
+xlSheetParties.Range("b25").Value = purchaseradd()
+xlSheetParties.Range("b26").Value = purchasercsz()
+
+xlSheetParties.Range("b23").Value = Purchaser()
+xlSheetParties.Range("b24").Value = purchaseradd()
+xlSheetParties.Range("b25").Value = purchaseradd()
+xlSheetParties.Range("b26").Value = purchasercsz()
+
+Dim VOparty1, VOparty2, VOparty3, VOparty4, VOparty5
+If Not IsNull([Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![IRSnotice]) Then
+VOparty1 = "District Director of I.R.S."
+VOparty2 = "Special Procedures Division"
+VOparty3 = "31 Hopkins Plaza"
+VOparty4 = "11th Floor, Room 1150"
+VOparty5 = "Baltimore, MD  21201"
+
+xlSheetParties.Range("b45").Value = VOparty1
+xlSheetParties.Range("b46").Value = VOparty2
+xlSheetParties.Range("b47").Value = VOparty3
+xlSheetParties.Range("b48").Value = VOparty4
+xlSheetParties.Range("b49").Value = VOparty5
+End If
+
+'Accounting
+
+xlSheet.Range("d1").Value = rs!CaseNo
+xlSheet.Range("D2").Value = rs!PropAddress
+
+xlSheet.Range("F5").Value = rs!DOD
+xlSheet.Range("F6").Value = rs!noi_sent
+xlSheet.Range("F7").Value = rs!DocsSentCourt
+xlSheet.Range("F8").Value = rs![SaleDate]
+xlSheet.Range("F9").Value = rs!RatDateMD
+xlSheet.Range("F10").Value = rs!DOS
+
+xlSheet.Range("F13").Value = rs!OrgAmount
+xlSheet.Range("F14").Value = rs![extra text]
+xlSheet.Range("F15").Value = rs!CMP
+xlSheet.Range("F16").Value = rs![LCRate]
+xlSheet.Range("F17").Value = rs!LCM
+xlSheet.Range("F18").Value = rs!MLC
+xlSheet.Range("F19").Value = rs!TCR
+
+xlSheet.Range("H22").Value = rs![SalePrice]
+xlSheet.Range("F23").Value = rs!vadeposit
+xlSheet.Range("F24").Value = rs![AI]
+xlSheet.Range("C25").Value = rs!RST1
+xlSheet.Range("F25").Value = rs!RSM1
+xlSheet.Range("C26").Value = rs!RST2
+xlSheet.Range("F26").Value = rs!RSM2
+xlSheet.Range("C27").Value = rs!RST2
+xlSheet.Range("F27").Value = rs!RSM2
+'xlSheet.Range("H27").Value = rs![AI] + rs![RSM1] + rs![RSM2] + rs![RSM3]
+'xlSheet.Range("H28").Value = (rs![AI] + rs![RSM1] + rs![RSM2] + rs![RSM3]) + (rs![SalePrice] - rs![vadeposit])
+
+xlSheet.Range("F32").Value = rs![acc_filing]
+xlSheet.Range("F33").Value = rs!acc_recording
+xlSheet.Range("C34").Value = rs![CCT1]
+
+xlSheet.Range("F65").Value = rs![FSC]
+
+xlSheet.Range("F34").Value = rs![CCM1]
+'xlSheet.Range("H34").Value = (rs![acc_filing] + rs!acc_recording + rs!CCM1)
+
+xlSheet.Range("F36").Value = rs![acc_title]
+xlSheet.Range("F37").Value = rs!TEC
+xlSheet.Range("C38").Value = rs![TEM1]
+xlSheet.Range("F38").Value = rs![CCM1]
+'xlSheet.Range("H38").Value = rs![acc_title] + rs![TEC] + rs![TEM1]
+
+xlSheet.Range("F39").Value = rs![acc_bondprem]
+xlSheet.Range("H39").Value = rs!acc_bondprem
+
+xlSheet.Range("F41").Value = rs![acc_adv]
+xlSheet.Range("F42").Value = rs![acc_adv_nisi]
+'xlSheet.Range("H42").Value = rs![acc_adv] + rs![acc_adv_nisi]
+xlSheet.Range("F43").Value = rs![acc_auctfee]
+'xlSheet.Range("H43").Value = rs![acc_auctfee]
+
+xlSheet.Range("C45").Value = rs![acc_misc2]
+xlSheet.Range("F45").Value = rs![acc_misc_amt2]
+xlSheet.Range("C46").Value = rs![acc_misc4]
+xlSheet.Range("F46").Value = rs![acc_misc_amt4]
+xlSheet.Range("C47").Value = rs![acc_misc7]
+xlSheet.Range("F47").Value = rs![acc_misc_amt7]
+'xlSheet.Range("H47").Value = rs![acc_misc_amt2] + rs!acc_misc_amt4 + rs!acc_misc_amt7
+
+xlSheet.Range("F49").Value = rs![acc_attorney]
+xlSheet.Range("F50").Value = rs![FCA]
+'xlSheet.Range("H50").Value = rs![acc_attorney] + rs![FCA]
+
+'xlSheet.Range("H52").Value = rs![acc_attorney] + rs![FCA]
+xlSheet.Range("H55").Value = rs![acc_attorney] + rs![Principal Balance]
+
+xlSheet.Range("f57").Value = rs![acc_attorney] + rs!FINT
+xlSheet.Range("F58").Value = rs![acc_attorney] + rs![interest amt]
+xlSheet.Range("F58").Value = rs![acc_attorney] + rs![extra date]
+
+If rs!escbal > 0 Then
+xlSheet.Range("b74").Value = "Escrow Balance"
+End If
+xlSheet.Range("f74").Value = rs![escbal]
+If rs![Late charge] > 0 Then
+xlSheet.Range("b75").Value = "Late Charges"
+End If
+xlSheet.Range("f75").Value = rs![Late charge]
+
+If rs![lender advance] > 0 Then
+xlSheet.Range("b76").Value = "Lender Advances"
+End If
+
+xlSheet.Range("f76").Value = rs![lender advance]
+
+If rs![interest on advance] > 0 Then
+xlSheet.Range("b79").Value = "Interest Arrearages"
+End If
+
+xlSheet.Range("f79").Value = rs![interest on advance]
+
+If rs![nsf charge] > 0 Then
+xlSheet.Range("b80").Value = "NSF Charge"
+End If
+
+xlSheet.Range("f80").Value = rs![OIM2]
+
+If rs![foreb] > 0 Then
+xlSheet.Range("b81").Value = "Forbearance Charge"
+End If
+
+xlSheet.Range("f81").Value = rs![OIM3]
+
+xlSheet.Range("b84").Value = rs![mist1]
+xlSheet.Range("f84").Value = rs![miscm1]
+xlSheet.Range("b85").Value = rs![mist2]
+xlSheet.Range("f85").Value = rs![miscm2]
+xlSheet.Range("b86").Value = rs![Mist3]
+xlSheet.Range("f86").Value = rs![Mism3]
+xlSheet.Range("b87").Value = rs![Mist4]
+xlSheet.Range("f87").Value = rs![Mism4]
+xlSheet.Range("b88").Value = rs![mist5]
+xlSheet.Range("f88").Value = rs![mism5]
+xlSheet.Range("b89").Value = rs![mist6]
+xlSheet.Range("f89").Value = rs![mism6]
+xlSheet.Range("b90").Value = rs![mist7]
+xlSheet.Range("f90").Value = rs![mism7]
+xlSheet.Range("b91").Value = rs![mist8]
+xlSheet.Range("f91").Value = rs![mism8]
+xlSheet.Range("b92").Value = rs![mist9]
+xlSheet.Range("f92").Value = rs![mism9]
+xlSheet.Range("b93").Value = rs![mist10]
+xlSheet.Range("f93").Value = rs![mism10]
+xlSheet.Range("b94").Value = rs![mist11]
+xlSheet.Range("f94").Value = rs![mism11]
+
+
+
+End Function
+Public Function callExcelHC()
+
+txtname = "\HowardCountyAudit.xls"
+docsfldr = pathuser()
+sourcefile = "\\rvdv-fs01\datatransfer\Templates\Excel\HowardCountyAudit.xls"
+destinationfile = docsfldr & txtname
+FileCopy sourcefile, destinationfile
+
+fixXLSHC ("c:\4closure\HowardCountyAudit.xls")
+
+End Function
+Function fixXLS(mySheetPath)
+
+If dir(mySheetPath) = "" Then
+  MsgBox "Can't find '" & mySheetPath & "'"
+  Exit Function
+End If
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Set xl = CreateObject("Excel.Application")
+xl.Visible = True
+Set xlBook = xl.Workbooks.Open(mySheetPath)
+Set xlSheet = xlBook.Worksheets(1)
+Dim strsql
+Dim rs As RecordSet
+Dim vFile
+vFile = Forms![foreclosure database screen]!filenum
+
+strsql = "Select cases.lastnamedebtor1, cases.resume_recd, cases.typeofloan, cases.clientrefnumber, cases.propertystate, " & _
+" cases.client, foreclosure.dotdate, foreclosure.saledate, foreclosure.[principal balance], foreclosure.saledate, cases.[date recieved], cases.propertycounty " & _
+" from ((Cases inner join foreclosure on cases.filenum = foreclosure.subfilenum) " & _
+" INNER JOIN jurisdiction ON (Cases.PropertyState = jurisdiction.State) " & _
+" AND (Cases.PropertyCounty = jurisdiction.County))" & _
+" where cases.filenum = " & vFile & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+xlSheet.Range("B4").Value = rs!ClientRefNumber
+xlSheet.Range("B6").Value = rs!LastNameDebtor1
+xlSheet.Range("B12").Value = rs!PropertyState
+xlSheet.Range("D4").Value = rs![Principal Balance]
+xlSheet.Range("D6").Value = rs!DOTDate
+xlSheet.Range("B18").Value = rs!SaleDate
+
+End Function
+
+
+
+
+

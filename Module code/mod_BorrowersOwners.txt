@@ -1,0 +1,2986 @@
+Attribute VB_Name = "BorrowersOwners"
+
+Option Compare Database
+
+Public Function CurrentOwnerButtons()
+If (IsNull(Forms![foreclosure database screen]![co1]) Or Forms![foreclosure database screen]![co1] = 0) And _
+(IsNull(Forms![foreclosure database screen]![co2]) Or Forms![foreclosure database screen]![co2] = 0) And _
+(IsNull(Forms![foreclosure database screen]![co3]) Or Forms![foreclosure database screen]![co3] = 0) And _
+(IsNull(Forms![foreclosure database screen]![co4]) Or Forms![foreclosure database screen]![co4] = 0) And _
+(IsNull(Forms![foreclosure database screen]![co5]) Or Forms![foreclosure database screen]![co5] = 0) And _
+(IsNull(Forms![foreclosure database screen]![co6]) Or Forms![foreclosure database screen]![co6] = 0) And _
+(IsNull(Forms![foreclosure database screen]![co7]) Or Forms![foreclosure database screen]![co7] = 0) And _
+(IsNull(Forms![foreclosure database screen]![co8]) Or Forms![foreclosure database screen]![co8] = 0) Then
+CurrentOwnerButtons = 0
+Else
+CurrentOwnerButtons = 1
+End If
+
+End Function
+Public Function CurrentOwner1()
+
+If Forms![foreclosure database screen]![co1] = 1 Or Forms![foreclosure database screen]![co1] = -1 Then
+CurrentOwner1 = firstdebtor()
+ElseIf CurrentOwnerButtons() = 0 And owner1() <> "" Then
+CurrentOwner1 = firstdebtor()
+Else
+CurrentOwner1 = ""
+End If
+
+
+End Function
+Public Function CurrentOwner2()
+
+If Forms![foreclosure database screen]![co2] = 1 Or Forms![foreclosure database screen]![co2] = -1 Then
+CurrentOwner2 = secondDebtor()
+ElseIf CurrentOwnerButtons() = 0 And owner1() <> "" Then
+CurrentOwner2 = secondDebtor()
+Else
+CurrentOwner2 = ""
+End If
+
+
+End Function
+Public Function CurrentOwner3()
+
+If Forms![foreclosure database screen]![co3] = 1 Or Forms![foreclosure database screen]![co3] = -1 Then
+CurrentOwner3 = thirddebtor()
+ElseIf CurrentOwnerButtons() = 0 And owner1() <> "" Then
+CurrentOwner3 = thirddebtor()
+Else
+CurrentOwner3 = ""
+End If
+
+
+End Function
+Public Function CurrentOwner4()
+
+If Forms![foreclosure database screen]![co4] = 1 Or Forms![foreclosure database screen]![co4] = -1 Then
+CurrentOwner4 = fourthdebtor()
+ElseIf CurrentOwnerButtons() = 0 And owner1() <> "" Then
+CurrentOwner4 = fourthdebtor()
+Else
+CurrentOwner4 = ""
+End If
+
+
+End Function
+Public Function CurrentOwner4Q()
+If Forms![pud queue]![co4] = 1 Or Forms![pud queue]![co4] = -1 Then
+CurrentOwner4Q = fourthdebtor()
+ElseIf CurrentOwnerButtons() = 0 And owner1() <> "" Then
+CurrentOwner4Q = fourthdebtor()
+Else
+CurrentOwner4Q = ""
+End If
+
+End Function
+Public Function CurrentOwner5()
+
+If Forms![foreclosure database screen]![co5] = 1 Or Forms![foreclosure database screen]![co5] = -1 Then
+CurrentOwner5 = fifthdebtor()
+ElseIf CurrentOwnerButtons() = 0 And owner1() <> "" Then
+CurrentOwner5 = fifthdebtor()
+Else
+CurrentOwner5 = ""
+End If
+
+
+End Function
+Public Function CurrentOwner6()
+
+If Forms![foreclosure database screen]![co6] = 1 Or Forms![foreclosure database screen]![co6] = -1 Then
+CurrentOwner6 = owner1()
+ElseIf CurrentOwnerButtons() = 0 And owner1() <> "" Then
+CurrentOwner6 = owner1()
+Else
+CurrentOwner6 = ""
+End If
+
+
+End Function
+Public Function CurrentOwner7()
+
+If Forms![foreclosure database screen]![co7] = 1 Or Forms![foreclosure database screen]![co7] = -1 Then
+CurrentOwner7 = owner2()
+ElseIf CurrentOwnerButtons() = 0 And owner2() <> "" Then
+CurrentOwner7 = owner2()
+Else
+CurrentOwner7 = ""
+End If
+
+
+End Function
+Public Function CurrentOwner8()
+
+If Forms![foreclosure database screen]![co8] = 1 Or Forms![foreclosure database screen]![co8] = -1 Then
+CurrentOwner8 = owner3()
+ElseIf CurrentOwnerButtons() = 0 And owner3() <> "" Then
+CurrentOwner8 = owner3()
+Else
+CurrentOwner8 = ""
+End If
+
+
+End Function
+Public Function AliasFiles()
+AliasFiles = 0
+
+Dim strsql
+Dim rs
+strsql = "Select * from aka where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+AliasFiles = 1
+End If
+
+rs.Close
+
+Dim strsqlB
+Dim rsB
+strsqlB = "Select * from borrowers where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsB = CurrentDb.OpenRecordset(strsqlB, dbOpenSnapshot)
+
+If Not rsB.EOF Then
+AliasFiles = AliasFiles + 1
+End If
+
+rsB.Close
+
+
+End Function
+Public Function Deceased()
+Dim Dcnt As Integer
+
+Dcnt = 0
+
+If Forms![foreclosure database screen]!dec1 = 1 Or Forms![foreclosure database screen]!dec1 = -1 Then
+Deceased = Dcnt + 1
+End If
+If Forms![foreclosure database screen]!dec2 = 1 Or Forms![foreclosure database screen]!dec2 = -1 Then
+Deceased = Dcnt + 1
+End If
+If Forms![foreclosure database screen]!dec3 = 1 Or Forms![foreclosure database screen]!dec3 = -1 Then
+Deceased = Dcnt + 1
+End If
+If Forms![foreclosure database screen]!dec4 = 1 Or Forms![foreclosure database screen]!dec4 = -1 Then
+Deceased = Dcnt + 1
+End If
+If Forms![foreclosure database screen]!dec5 = 1 Or Forms![foreclosure database screen]!dec5 = -1 Then
+Deceased = Dcnt + 1
+End If
+
+End Function
+
+Public Function EmailDeceased()
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+Dim HTMLtable As String
+varmailto = "anfm.dcn@bankofamerica.com"
+ 
+Dim VStatus
+If Forms![foreclosure database screen]!Status = "Foreclosure" Then
+VStatus = "Foreclosure"
+ElseIf Forms![foreclosure database screen]!Status = "Bankruptcy" Then
+VStatus = "Bankruptcy"
+ElseIf Forms![foreclosure database screen]!Status = "BK-Hold" Then
+VStatus = "Bankruptcy"
+ElseIf Forms![foreclosure database screen]!Status = "PostSale" Then
+VStatus = "Post Sale REO"
+ElseIf Forms![foreclosure database screen]!Status = "Eviction" Then
+VStatus = "FHA Evictions"
+ElseIf Forms![foreclosure database screen]!Status = "Deed in Lieu" Then
+VStatus = "DIL"
+ElseIf Forms![foreclosure database screen]!Status = "Mediation" Then
+VStatus = "State Mediation"
+ElseIf Forms![foreclosure database screen]!Status = "Litigation" Then
+VStatus = "MRT"
+Else
+VStatus = "Post Sale REO"
+End If
+
+'------------------------begin HTML CODE----------------------------
+
+HTMLtable = HTMLtable & "<table border=""0"" cellpadding=""0"" cellspacing=""0"" style=""color: rgb(0, 0, 0); font-family: Arial, verdana, Helvetica, sans-serif; font-size: 12px; line-height: 14.399999618530273px; width: 495.25pt; margin-left: 5.15pt; border-collapse: collapse;"" width=""660"">"
+HTMLtable = HTMLtable & "   <tbody>"
+HTMLtable = HTMLtable & "       <tr style=""height: 15.75pt;"">"
+HTMLtable = HTMLtable & "           <td style=""width: 235pt; border-style: solid; border-color: windowtext windowtext windowtext black; border-width: 1pt; padding: 0in 5.4pt; height: 15.75pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""313"">"
+HTMLtable = HTMLtable & "           <p align=""right"" style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif; text-align: right;""><span>Your Firm&rsquo;s Legal Entity Name</span><span style=""font-size: 11pt; font-family: Calibri, sans-serif;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "           <td style=""width: 260.25pt; border-style: solid solid solid none; border-top-color: windowtext; border-top-width: 1pt; border-bottom-color: windowtext; border-bottom-width: 1pt; border-right-color: black; border-right-width: 1pt; padding: 0in 5.4pt; height: 15.75pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""347"">"
+HTMLtable = HTMLtable & "           <p style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif;""><span>&nbsp;</span><span style=""color: black;"">BWW Law Group</span><span style=""font-size: 11pt; font-family: Calibri, sans-serif; color: black;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "       </tr>"
+HTMLtable = HTMLtable & "       <tr style=""height: 15.75pt;"">"
+HTMLtable = HTMLtable & "           <td style=""width: 235pt; border-style: none solid solid; border-left-color: black; border-left-width: 1pt; border-bottom-color: windowtext; border-bottom-width: 1pt; border-right-color: windowtext; border-right-width: 1pt; padding: 0in 5.4pt; height: 15.75pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""313"">"
+HTMLtable = HTMLtable & "           <p align=""right"" style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif; text-align: right;""><span>State</span><span style=""font-size: 11pt; font-family: Calibri, sans-serif;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "           <td style=""width: 260.25pt; border-style: none solid solid none; border-bottom-color: windowtext; border-bottom-width: 1pt; border-right-color: black; border-right-width: 1pt; padding: 0in 5.4pt; height: 15.75pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""347"">"
+HTMLtable = HTMLtable & "           <p style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif;""><span>&nbsp;</span><span style=""color: black;"">(state)</span><span style=""font-size: 11pt; font-family: Calibri, sans-serif; color: black;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "       </tr>"
+HTMLtable = HTMLtable & "       <tr style=""height: 15.75pt;"">"
+HTMLtable = HTMLtable & "           <td style=""width: 235pt; border-style: none solid solid; border-left-color: black; border-left-width: 1pt; border-bottom-color: windowtext; border-bottom-width: 1pt; border-right-color: windowtext; border-right-width: 1pt; padding: 0in 5.4pt; height: 15.75pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""313"">"
+HTMLtable = HTMLtable & "           <p align=""right"" style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif; text-align: right;""><span>Loan #</span><span style=""font-size: 11pt; font-family: Calibri, sans-serif;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "           <td style=""width: 260.25pt; border-style: none solid solid none; border-bottom-color: windowtext; border-bottom-width: 1pt; border-right-color: black; border-right-width: 1pt; padding: 0in 5.4pt; height: 15.75pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""347"">"
+HTMLtable = HTMLtable & "           <p style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif;""><span>&nbsp;</span><span style=""color: black;"">(loan number)</span><span style=""font-size: 11pt; font-family: Calibri, sans-serif; color: black;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "       </tr>"
+HTMLtable = HTMLtable & "       <tr style=""height: 15.75pt;"">"
+HTMLtable = HTMLtable & "           <td style=""width: 235pt; border-style: none solid solid; border-left-color: black; border-left-width: 1pt; border-bottom-color: windowtext; border-bottom-width: 1pt; border-right-color: windowtext; border-right-width: 1pt; padding: 0in 5.4pt; height: 15.75pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""313"">"
+HTMLtable = HTMLtable & "           <p align=""right"" style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif; text-align: right;""><span>Name of Deceased Customer</span><span style=""font-size: 11pt; font-family: Calibri, sans-serif;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "           <td style=""width: 260.25pt; border-style: none solid solid none; border-bottom-color: windowtext; border-bottom-width: 1pt; border-right-color: black; border-right-width: 1pt; padding: 0in 5.4pt; height: 15.75pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""347"">"
+HTMLtable = HTMLtable & "           <p style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif;""><span>&nbsp;</span><span style=""color: black;"">(name of deceased)</span><span style=""font-size: 11pt; font-family: Calibri, sans-serif; color: black;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "       </tr>"
+HTMLtable = HTMLtable & "       <tr style=""height: 15.75pt;"">"
+HTMLtable = HTMLtable & "           <td style=""width: 235pt; border-style: none solid solid; border-left-color: black; border-left-width: 1pt; border-bottom-color: windowtext; border-bottom-width: 1pt; border-right-color: windowtext; border-right-width: 1pt; padding: 0in 5.4pt; height: 15.75pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""313"">"
+HTMLtable = HTMLtable & "           <p align=""right"" style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif; text-align: right;""><span>Date Your Firm Was Notified of Death</span><span style=""font-size: 11pt; font-family: Calibri, sans-serif;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "           <td style=""width: 260.25pt; border-style: none solid solid none; border-bottom-color: windowtext; border-bottom-width: 1pt; border-right-color: black; border-right-width: 1pt; padding: 0in 5.4pt; height: 15.75pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""347"">"
+HTMLtable = HTMLtable & "           <p style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif;""><span>&nbsp;</span><span style=""color: black;"">(today&rsquo;s date)</span><span style=""font-size: 11pt; font-family: Calibri, sans-serif; color: black;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "       </tr>"
+HTMLtable = HTMLtable & "       <tr style=""height: 19.5pt;"">"
+HTMLtable = HTMLtable & "           <td rowspan=""2"" style=""width: 235pt; border-style: none solid solid; border-left-color: black; border-left-width: 1pt; border-bottom-color: black; border-bottom-width: 1pt; border-right-color: windowtext; border-right-width: 1pt; padding: 0in 5.4pt; height: 19.5pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""313"">"
+HTMLtable = HTMLtable & "           <p align=""right"" style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif; text-align: right;""><span>Manner in which notification was received</span><span style=""font-size: 11pt; font-family: Calibri, sans-serif;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "           <td style=""width: 260.25pt; border-style: none solid none none; border-right-color: black; border-right-width: 1pt; padding: 0in 5.4pt; height: 19.5pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""347"">"
+HTMLtable = HTMLtable & "           <p style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif;""><span style=""font-family: Symbol;"">&rsquo;</span><span>Email&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style=""font-family: Symbol;"">&rsquo;</span><span>Mail&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style=""font-family: Symbol;"">&rsquo;</span><span>Phone&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style=""font-family: Symbol;"">&rsquo;</span><span>Fax&nbsp;</span><span style=""font-size: 11pt; font-family: Symbol;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "       </tr>"
+HTMLtable = HTMLtable & "       <tr style=""height: 15.75pt;"">"
+HTMLtable = HTMLtable & "           <td style=""width: 260.25pt; border-style: none solid solid none; border-bottom-color: windowtext; border-bottom-width: 1pt; border-right-color: black; border-right-width: 1pt; padding: 0in 5.4pt; height: 15.75pt; background-image: initial; background-attachment: initial; background-size: initial; background-origin: initial; background-clip: initial; background-position: initial; background-repeat: initial;"" valign=""top"" width=""347"">"
+HTMLtable = HTMLtable & "           <p style=""margin: 0in 0in 0.0001pt; font-size: 12pt; font-family: 'Times New Roman', serif;""><span style=""font-family: Symbol;"">&rsquo;</span><span style=""font-weight:bold;"">Other &nbsp;&nbsp; </span><span style=""color: black;"" ""font-weight:bold;"">SSDI search</span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;         </span><span style=""font-size: 11pt; font-family: Symbol;""><o:p></o:p></span></p>"
+HTMLtable = HTMLtable & "           </td>"
+HTMLtable = HTMLtable & "       </tr>"
+HTMLtable = HTMLtable & "   </tbody>"
+HTMLtable = HTMLtable & "</table>"
+
+'------------------------end HTML CODE----------------------------
+
+emailsubject = "Deceased Customer Notification - " & VStatus
+
+HTMLtable = Replace(HTMLtable, "(state)", Forms![foreclosure database screen]![PropertyState])
+HTMLtable = Replace(HTMLtable, "(loan number)", Forms![foreclosure database screen]![ClientRefNumber])
+HTMLtable = Replace(HTMLtable, "(name of deceased)", VDecBor)
+HTMLtable = Replace(HTMLtable, "(today&rsquo;s date)", Format(Date, "dddd mmm dd, yyyy"))
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+
+With MyMail
+.To = varmailto
+.Subject = emailsubject
+.BodyFormat = olFormatHTML
+'.body = "BWW#: " & Forms![foreclosure database screen]!Filenum & vbCr & vbCr & "Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr & vbCr & "This office has learned that the borrower " & VDecBor & " is deceased.  Supporting documentation is attached."
+.HTMLBody = "BWW#: " & Forms![foreclosure database screen]!filenum & vbCr & vbCr & "<br><br> Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr & vbCr & "<br><br> This office has learned that the borrower " & VDecBor & " is deceased.  <br><br> Supporting documentation is attached.<br><br>" & _
+    HTMLtable & "<br><br>I affirm this information is correct to the best of my knowledge."
+.Display
+
+End With
+
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+End Function
+
+Public Function EmailDeceased_old()
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+
+varmailto = "anfm.dcn@bankofamerica.com"
+ 
+Dim VStatus
+If Forms![foreclosure database screen]!Status = "Litigation" Then
+VStatus = "MRT"
+ElseIf Forms![foreclosure database screen]!Status = "eviction" Then
+VStatus = "REO"
+ElseIf Forms![foreclosure database screen]!Status = "Deed in Lieu" Then
+VStatus = "Deed in Lieu"
+Else
+VStatus = "Postsale"
+End If
+
+
+emailsubject = "Deceased Borrower Notification - " & VStatus
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.Subject = emailsubject
+MyMail.body = "BWW#: " & Forms![foreclosure database screen]!filenum & vbCr & vbCr & "Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr & vbCr & "This office has learned that the borrower " & VDecBor & " is deceased.  Supporting documentation is attached."
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+End Function
+Public Function ExportDebtorsOwners()
+Dim VSaleHeld, VNewspaper, VNew1, VNew2 As String
+
+Dim rs, rsnotice, rspropertycounty, rsClient, rsletter As RecordSet
+Dim strsql, sqlpropertycounty, sqlclient, sqlLetter As String
+
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+Call DebtorsPropOnly
+Call ExportNoticesOWNERS
+End Function
+Public Function debtorsNOTICEMD() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+Dim FirstOwner As String
+Dim SecondOwner As String
+Dim owners As String
+Dim fo As String
+Dim so As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If IsNull(Forms![foreclosure database screen]![mnameo1]) Then
+FirstOwner = Trim(Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]![lastnameo1])
+Else
+FirstOwner = Trim(Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]![mnameo1] & " " & Forms![foreclosure database screen]![lastnameo1])
+End If
+
+If IsNull(Forms![foreclosure database screen]![mnameo2]) Then
+SecondOwner = Trim(Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]![lastnameo2])
+Else
+SecondOwner = Trim(Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]![mnameo2] & " " & Forms![foreclosure database screen]![lastnameo2])
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" And FirstOwner = "" Then
+FF = " and "
+End If
+
+If FirstOwner <> "" And (IsNull(SecondOwner) Or SecondOwner = "") Then
+fo = " and " & FirstOwner
+End If
+
+If FirstOwner <> "" And SecondOwner <> "" Then
+so = ",  " & FirstOwner & " and " & SecondOwner
+End If
+
+If FirstOwner <> "" Then
+
+If secondDebtor <> "" Then
+fs = ", "
+End If
+If thirddebtor <> "" Then
+st = ", "
+End If
+If fourthdebtor <> "" Then
+tf = ", "
+End If
+If fifthdebtor <> "" Then
+FF = ", "
+End If
+
+debtorsNOTICEMD = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor & fo & so
+Else
+debtorsNOTICEMD = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+End If
+
+
+End Function
+
+Public Function debtorsMrMrs() As String
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+firstdebtor = Forms![foreclosure database screen]!Mr_Mrs_Ms & " " & Forms![foreclosure database screen]![LastNameDebtor1]
+If Forms![foreclosure database screen]![LastNameDebtor2] <> "" Then
+secondDebtor = Forms![foreclosure database screen]!Mr_Mrs_Ms2 & " " & Forms![foreclosure database screen]![LastNameDebtor2]
+End If
+If Forms![foreclosure database screen]![LastNameDebtor3] <> "" Then
+thirddebtor = Forms![foreclosure database screen]!Mr_Mrs_Ms3 & " " & Forms![foreclosure database screen]![LastNameDebtor3]
+End If
+If Forms![foreclosure database screen]![lastnamedebtor4] <> "" Then
+fourthdebtor = Forms![foreclosure database screen]![lastnamedebtor4]
+End If
+
+If Forms![foreclosure database screen]![lastnamedebtor5] <> "" Then
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+End If
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+FF = " and "
+End If
+
+
+debtorsMrMrs = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+
+End Function
+Public Function debtorsFullNameCAPS() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor1]))
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor1]))
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor2]))
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor2]))
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor3]))
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor3]))
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & UCase(Forms![foreclosure database screen]![lastnamedebtor4]))
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & UCase(Forms![foreclosure database screen]![lastnamedebtor4]))
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & UCase(Forms![foreclosure database screen]![lastnamedebtor5]))
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & UCase(Forms![foreclosure database screen]![lastnamedebtor5]))
+End If
+
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+FF = " and "
+End If
+
+
+debtorsFullNameCAPS = UCase(firstdebtor) & fs & UCase(secondDebtor) & st & UCase(thirddebtor) & tf & UCase(fourthdebtor) & FF & UCase(fifthdebtor)
+End Function
+
+Public Function debtorsCAPS() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor1]))
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor1]))
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor2]))
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor2]))
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor3]))
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & UCase(Forms![foreclosure database screen]![LastNameDebtor3]))
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & UCase(Forms![foreclosure database screen]![lastnamedebtor4]))
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & UCase(Forms![foreclosure database screen]![lastnamedebtor4]))
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & UCase(Forms![foreclosure database screen]![lastnamedebtor5]))
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & UCase(Forms![foreclosure database screen]![lastnamedebtor5]))
+End If
+
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+FF = " and "
+End If
+
+
+debtorsCAPS = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+End Function
+Public Function debtorsforeOwners()
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+Dim powner1 As String
+Dim powner2 As String
+Dim pwoner3 As String
+
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+Dim fsx As String
+Dim fff As String
+Dim ggg As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+fsx = ""
+fff = ""
+ggg = ""
+
+If IsNull(Forms![foreclosure database screen]!lastnameo1) Then
+powner1 = ""
+Else
+powner1 = owner1()
+End If
+
+If IsNull(Forms![foreclosure database screen]!lastnameo2) Then
+powner2 = ""
+Else
+powner2 = owner2()
+End If
+
+If IsNull(Forms![foreclosure database screen]!lastnameo3) Then
+powner3 = ""
+Else
+powner3 = owner3()
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Or powner1 <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Or powner1 <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Or powner1 <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+If powner1 <> "" Then
+fff = ", "
+Else
+fff = " and "
+End If
+End If
+
+If powner1 <> "" Then
+If powner2 <> "" Then
+FF = ", "
+Else
+FF = " and "
+End If
+End If
+
+If powner2 <> "" Then
+If powner3 <> "" Then
+fsx = ", "
+Else
+fsx = " and "
+End If
+End If
+
+If powner3 <> "" Then
+ggg = " and "
+End If
+
+debtorsforeOwners = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & fff & fifthdebtor & FF & powner1 & fsx & powner2 & ggg & powner3
+
+
+'MsgBox (debtorsforeowners)
+
+End Function
+
+Public Function recordowners()
+
+Dim powner1 As String
+Dim powner2 As String
+Dim pwoner3 As String
+
+Dim fsx As String
+Dim fff As String
+Dim ggg As String
+
+
+fsx = ""
+fff = ""
+ggg = ""
+
+If IsNull(Forms![foreclosure database screen]!lastnameo1) Then
+powner1 = ""
+Else
+powner1 = owner1()
+End If
+
+If IsNull(Forms![foreclosure database screen]!lastnameo2) Then
+powner2 = ""
+Else
+powner2 = owner2()
+End If
+
+If IsNull(Forms![foreclosure database screen]!lastnameo3) Then
+powner3 = ""
+Else
+powner3 = owner3()
+End If
+
+
+If powner1 <> "" Then
+If powner2 <> "" Then
+FF = ", "
+Else
+FF = " and "
+End If
+End If
+
+If powner2 <> "" Then
+If powner3 <> "" Then
+fsx = ", "
+Else
+fsx = " and "
+End If
+End If
+
+If powner3 <> "" Then
+ggg = " and "
+End If
+
+If powner1 = "" Then
+recordowners = ""
+Else
+recordowners = powner1 & fsx & powner2 & ggg & powner3
+End If
+
+
+'MsgBox (debtorsforeowners)
+
+End Function
+
+Public Function debtorsFORETExam() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If IsNull(Forms![titleform]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![titleform]![FirstNameDebtor1] & " " & Forms![titleform]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![titleform]![FirstNameDebtor1] & " " & Forms![titleform]![MiddleNameDebtor1] & " " & Forms![titleform]![LastNameDebtor1])
+End If
+
+If IsNull(Forms![titleform]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![titleform]![FirstNameDebtor2] & " " & Forms![titleform]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![titleform]![FirstNameDebtor2] & " " & Forms![titleform]![MiddleNameDebtor2] & " " & Forms![titleform]![LastNameDebtor2])
+End If
+
+If IsNull(Forms![titleform]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![titleform]![FirstNameDebtor3] & " " & Forms![titleform]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![titleform]![FirstNameDebtor3] & " " & Forms![titleform]![MiddleNameDebtor3] & " " & Forms![titleform]![LastNameDebtor3])
+End If
+
+If IsNull(Forms![titleform]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![titleform]![firstnamedebtor4] & " " & Forms![titleform]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![titleform]![firstnamedebtor4] & " " & Forms![titleform]![middlenamedebtor4] & " " & Forms![titleform]![lastnamedebtor4])
+End If
+
+If IsNull(Forms![titleform]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![titleform]![firstnamedebtor5] & " " & Forms![titleform]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![titleform]![firstnamedebtor5] & " " & Forms![titleform]![middlenamedebtor5] & " " & Forms![titleform]![lastnamedebtor5])
+End If
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+FF = " and "
+End If
+
+
+
+
+debtorsFORETExam = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+
+End Function
+
+Public Function debtorsQC2() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If IsNull(Forms![qcscreenqc2]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![qcscreenqc2]![FirstNameDebtor1] & " " & Forms![qcscreenqc2]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![qcscreenqc2]![FirstNameDebtor1] & " " & Forms![qcscreenqc2]![MiddleNameDebtor1] & " " & Forms![qcscreenqc2]![LastNameDebtor1])
+End If
+
+If IsNull(Forms![qcscreenqc2]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![qcscreenqc2]![FirstNameDebtor2] & " " & Forms![qcscreenqc2]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![qcscreenqc2]![FirstNameDebtor2] & " " & Forms![qcscreenqc2]![MiddleNameDebtor2] & " " & Forms![qcscreenqc2]![LastNameDebtor2])
+End If
+
+If IsNull(Forms![qcscreenqc2]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![qcscreenqc2]![FirstNameDebtor3] & " " & Forms![qcscreenqc2]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![qcscreenqc2]![FirstNameDebtor3] & " " & Forms![qcscreenqc2]![MiddleNameDebtor3] & " " & Forms![qcscreenqc2]![LastNameDebtor3])
+End If
+
+If IsNull(Forms![qcscreenqc2]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![qcscreenqc2]![firstnamedebtor4] & " " & Forms![qcscreenqc2]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![qcscreenqc2]![firstnamedebtor4] & " " & Forms![qcscreenqc2]![middlenamedebtor4] & " " & Forms![qcscreenqc2]![lastnamedebtor4])
+End If
+
+If IsNull(Forms![qcscreenqc2]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![qcscreenqc2]![firstnamedebtor5] & " " & Forms![qcscreenqc2]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![qcscreenqc2]![firstnamedebtor5] & " " & Forms![qcscreenqc2]![middlenamedebtor5] & " " & Forms![qcscreenqc2]![lastnamedebtor5])
+End If
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+FF = " and "
+End If
+
+
+
+
+debtorsQC2 = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+'MsgBox (debtorsFORE)
+
+End Function
+
+Public Function debtorsFORE() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+FF = " and "
+End If
+
+
+
+
+debtorsFORE = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+'MsgBox (debtorsFORE)
+
+End Function
+Public Function debtorsOPEN() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+FF = " and "
+End If
+
+
+
+
+debtorsOPEN = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+'MsgBox (debtorsOPEN)
+
+
+End Function
+
+Public Function debtorListing() As String
+
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from cases where filenum = " & Forms![DILForm]!filenum
+
+Else
+strsql = "select * from cases where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If IsNull(rs![MiddleNameDebtor1]) Then
+firstdebtor = Trim(rs![FirstNameDebtor1] & " " & rs![LastNameDebtor1])
+Else
+firstdebtor = Trim(rs![FirstNameDebtor1] & " " & rs![MiddleNameDebtor1] & " " & rs![LastNameDebtor1])
+End If
+
+If IsNull(rs![MiddleNameDebtor2]) Then
+secondDebtor = Trim(rs![FirstNameDebtor2] & " " & rs![LastNameDebtor2])
+Else
+secondDebtor = Trim(rs![FirstNameDebtor2] & " " & rs![MiddleNameDebtor2] & " " & rs![LastNameDebtor2])
+End If
+
+If IsNull(rs![MiddleNameDebtor3]) Then
+thirddebtor = Trim(rs![FirstNameDebtor3] & " " & rs![LastNameDebtor3])
+Else
+thirddebtor = Trim(rs![FirstNameDebtor3] & " " & rs![MiddleNameDebtor3] & " " & rs![LastNameDebtor3])
+End If
+
+If IsNull(rs![middlenamedebtor4]) Then
+fourthdebtor = Trim(rs![firstnamedebtor4] & " " & rs![lastnamedebtor4])
+Else
+fourthdebtor = Trim(rs![firstnamedebtor4] & " " & rs![middlenamedebtor4] & " " & rs![lastnamedebtor4])
+End If
+
+If IsNull(rs![middlenamedebtor5]) Then
+fifthdebtor = Trim(rs![firstnamedebtor5] & " " & rs![lastnamedebtor5])
+Else
+fifthdebtor = Trim(rs![firstnamedebtor5] & " " & rs![middlenamedebtor5] & " " & rs![lastnamedebtor5])
+End If
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+FF = " and "
+End If
+
+
+rs.Close
+
+
+debtorListing = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+'MsgBox (debtorsOPEN)
+
+
+End Function
+Public Function debtorsActiveMil() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim fifthdebtor As String
+Dim FF As String
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+firstdebtor = ""
+secondDebtor = ""
+thirddebtor = ""
+fourthdebtor = ""
+fifthdebtor = ""
+
+
+
+If Forms![foreclosure database screen]!Jfc_1 = 1 Or Forms![foreclosure database screen]!Jfc_1 = -1 Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+End If
+End If
+
+If Forms![foreclosure database screen]!Jfc_2 = 1 Or Forms![foreclosure database screen]!Jfc_2 = -1 Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+End If
+
+If Forms![foreclosure database screen]!Jfc_3 = 1 Or Forms![foreclosure database screen]!Jfc_3 = -1 Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+End If
+
+If Forms![foreclosure database screen]!Jfc_4 = 1 Or Forms![foreclosure database screen]!Jfc_4 = -1 Then
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+End If
+
+If Forms![foreclosure database screen]!Jfc_5 = 1 Or Forms![foreclosure database screen]!Jfc_5 - 1 Then
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+End If
+
+If firstdebtor <> "" And secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor <> "" And fourthdebtor = "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor = "" And fourthdebtor <> "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor <> "" Then
+fs = " and "
+ElseIf firstdebtor = "" Then
+fs = ""
+End If
+
+If firstdebtor <> "" And secondDebtor <> "" And (thirddebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And thirddebtor <> "" And (secondDebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And fourthdebtor <> "" And (thirddebtor <> "" Or secondDebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And fifthdebtor <> "" And (secondDebtor <> "" Or thirddebtor <> "" Or fourthdebtor <> "") Then
+fs = ","
+End If
+
+If secondDebtor <> "" And thirddebtor <> "" And fourthdebtor = "" And fifthdebtor = "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor <> "" And fifthdebtor = "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor <> "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor = "" Then
+st = ""
+ElseIf secondDebtor = "" Then
+st = ""
+End If
+
+If secondDebtor <> "" And (thirddebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+st = ", "
+End If
+
+If thirddebtor <> "" And fourthdebtor <> "" And fifthdebtor <> "" Then
+tf = ", "
+ElseIf thirddebtor <> "" And fourthdebtor = "" And fifthdebtor <> "" Then
+tf = " and "
+ElseIf thirddebtor <> "" And fourthdebtor <> "" And fifthdebtor = "" Then
+tf = " and "
+ElseIf thirddebtor = "" Then
+tf = ""
+End If
+
+If fourthdebtor <> "" And fifthdebtor <> "" Then
+FF = " and "
+Else
+FF = ""
+End If
+
+
+debtorsActiveMil = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+'MsgBox ("fs: " & fs & " st: " & st & " tf: " & tf & " ff: " & ff & debtorsOPENDNS)
+
+End Function
+
+Public Function debtorsDidNotSignNote() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim fifthdebtor As String
+Dim FF As String
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+firstdebtor = ""
+secondDebtor = ""
+thirddebtor = ""
+fourthdebtor = ""
+fifthdebtor = ""
+
+
+
+If Forms![foreclosure database screen]!DNS1 = 1 Or Forms![foreclosure database screen]!DNS1 = -1 Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+End If
+End If
+
+If Forms![foreclosure database screen]!DNS2 = 1 Or Forms![foreclosure database screen]!DNS2 = -1 Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+End If
+
+If Forms![foreclosure database screen]!DNS3 = 1 Or Forms![foreclosure database screen]!DNS3 = -1 Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+End If
+
+If Forms![foreclosure database screen]!DNS4 = 1 Or Forms![foreclosure database screen]!DNS4 = -1 Then
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+End If
+
+If Forms![foreclosure database screen]!dns5 = 1 Or Forms![foreclosure database screen]!dns5 - 1 Then
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+End If
+
+If firstdebtor <> "" And secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor <> "" And fourthdebtor = "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor = "" And fourthdebtor <> "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor <> "" Then
+fs = " and "
+ElseIf firstdebtor = "" Then
+fs = ""
+End If
+
+If firstdebtor <> "" And secondDebtor <> "" And (thirddebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And thirddebtor <> "" And (secondDebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And fourthdebtor <> "" And (thirddebtor <> "" Or secondDebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And fifthdebtor <> "" And (secondDebtor <> "" Or thirddebtor <> "" Or fourthdebtor <> "") Then
+fs = ","
+End If
+
+If secondDebtor <> "" And thirddebtor <> "" And fourthdebtor = "" And fifthdebtor = "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor <> "" And fifthdebtor = "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor <> "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor = "" Then
+st = ""
+ElseIf secondDebtor = "" Then
+st = ""
+End If
+
+If secondDebtor <> "" And (thirddebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+st = ", "
+End If
+
+If thirddebtor <> "" And fourthdebtor <> "" And fifthdebtor <> "" Then
+tf = ", "
+ElseIf thirddebtor <> "" And fourthdebtor = "" And fifthdebtor <> "" Then
+tf = " and "
+ElseIf thirddebtor <> "" And fourthdebtor <> "" And fifthdebtor = "" Then
+tf = " and "
+ElseIf thirddebtor = "" Then
+tf = ""
+End If
+
+If fourthdebtor <> "" And fifthdebtor <> "" Then
+FF = " and "
+Else
+FF = ""
+End If
+
+
+debtorsDidNotSignNote = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+'MsgBox ("fs: " & fs & " st: " & st & " tf: " & tf & " ff: " & ff & debtorsOPENDNS)
+
+End Function
+
+Public Function DebtorsOwnersDNS() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim fifthdebtor As String
+Dim FF As String
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+firstdebtor = ""
+secondDebtor = ""
+thirddebtor = ""
+fourthdebtor = ""
+fifthdebtor = ""
+
+Dim fowner, sowner, towner
+fowner = owner1()
+sowner = owner2()
+towner = owner3()
+
+
+DebtorsOwnersDNS = ""
+
+If Forms![foreclosure database screen]!DNS1 = 1 Or Forms![foreclosure database screen]!DNS1 = -1 Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+End If
+End If
+
+If Forms![foreclosure database screen]!DNS2 = 1 Or Forms![foreclosure database screen]!DNS2 = -1 Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+End If
+
+If Forms![foreclosure database screen]!DNS3 = 1 Or Forms![foreclosure database screen]!DNS3 = -1 Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+End If
+
+If Forms![foreclosure database screen]!DNS4 = 1 Or Forms![foreclosure database screen]!DNS4 = -1 Then
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+End If
+
+If Forms![foreclosure database screen]!dns5 = 1 Or Forms![foreclosure database screen]!dns5 - 1 Then
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+End If
+
+If firstdebtor <> "" And secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor <> "" And fourthdebtor = "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor = "" And fourthdebtor <> "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor <> "" Then
+fs = " and "
+ElseIf firstdebtor = "" Then
+fs = ""
+End If
+
+If firstdebtor <> "" And secondDebtor <> "" And (thirddebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And thirddebtor <> "" And (secondDebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And fourthdebtor <> "" And (thirddebtor <> "" Or secondDebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And fifthdebtor <> "" And (secondDebtor <> "" Or thirddebtor <> "" Or fourthdebtor <> "") Then
+fs = ","
+End If
+
+If secondDebtor <> "" And thirddebtor <> "" And fourthdebtor = "" And fifthdebtor = "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor <> "" And fifthdebtor = "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor <> "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor = "" Then
+st = ""
+ElseIf secondDebtor = "" Then
+st = ""
+End If
+
+If secondDebtor <> "" And (thirddebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+st = ", "
+End If
+
+If thirddebtor <> "" And fourthdebtor <> "" And fifthdebtor <> "" Then
+tf = ", "
+ElseIf thirddebtor <> "" And fourthdebtor = "" And fifthdebtor <> "" Then
+tf = " and "
+ElseIf thirddebtor <> "" And fourthdebtor <> "" And fifthdebtor = "" Then
+tf = " and "
+ElseIf thirddebtor = "" Then
+tf = ""
+End If
+
+If fourthdebtor <> "" And fifthdebtor <> "" Then
+FF = " and "
+Else
+FF = ""
+End If
+
+If debtorsDidNotSignNote() = "" Then
+DebtorsOwnersDNS = recordowners()
+ElseIf recordowners() = "" Then
+DebtorsOwnersDNS = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+ElseIf owner1() <> "" And owner2() = "" And owner3() = "" Then
+DebtorsOwnersDNS = owner1() & ", " & firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+ElseIf owner1() <> "" And owner2() <> "" And owner3() = "" Then
+DebtorsOwnersDNS = owner1() & ", " & owner2() & ", " & firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+ElseIf owner1() <> "" And owner2() <> "" And owner3() <> "" Then
+DebtorsOwnersDNS = owner1() & ", " & owner2() & ", " & ", " & owner3() & ", " & firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+End If
+
+End Function
+
+Public Function debtorsOPENDNS() As String
+
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim fifthdebtor As String
+Dim FF As String
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+firstdebtor = ""
+secondDebtor = ""
+thirddebtor = ""
+fourthdebtor = ""
+fifthdebtor = ""
+
+
+If Forms![foreclosure database screen]!DNS1 = 0 Or IsNull(Forms![foreclosure database screen]!DNS1) Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+End If
+End If
+
+If Forms![foreclosure database screen]!DNS2 = 0 Or IsNull(Forms![foreclosure database screen]!DNS2) Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+End If
+
+If Forms![foreclosure database screen]!DNS3 = 0 Or IsNull(Forms![foreclosure database screen]!DNS3) Then
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+End If
+
+If Forms![foreclosure database screen]!DNS4 = 0 Or IsNull(Forms![foreclosure database screen]!DNS4) Then
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+End If
+
+If Forms![foreclosure database screen]!dns5 = 0 Or IsNull(Forms![foreclosure database screen]!dns5) Then
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+End If
+
+If firstdebtor <> "" And secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor <> "" And fourthdebtor = "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor = "" And fourthdebtor <> "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor <> "" Then
+fs = " and "
+ElseIf firstdebtor = "" Then
+fs = ""
+End If
+
+If firstdebtor <> "" And secondDebtor <> "" And (thirddebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And thirddebtor <> "" And (secondDebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And fourthdebtor <> "" And (thirddebtor <> "" Or secondDebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And fifthdebtor <> "" And (secondDebtor <> "" Or thirddebtor <> "" Or fourthdebtor <> "") Then
+fs = ","
+End If
+
+If secondDebtor <> "" And thirddebtor <> "" And fourthdebtor = "" And fifthdebtor = "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor <> "" And fifthdebtor = "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor <> "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor = "" Then
+st = ""
+ElseIf secondDebtor = "" Then
+st = ""
+End If
+
+If secondDebtor <> "" And (thirddebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+st = ", "
+End If
+
+If thirddebtor <> "" And fourthdebtor <> "" And fifthdebtor <> "" Then
+tf = ", "
+ElseIf thirddebtor <> "" And fourthdebtor = "" And fifthdebtor <> "" Then
+tf = " and "
+ElseIf thirddebtor <> "" And fourthdebtor <> "" And fifthdebtor = "" Then
+tf = " and "
+ElseIf thirddebtor = "" Then
+tf = ""
+End If
+
+If fourthdebtor <> "" And fifthdebtor <> "" Then
+FF = " and "
+Else
+FF = ""
+End If
+
+
+debtorsOPENDNS = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+'MsgBox ("fs: " & fs & " st: " & st & " tf: " & tf & " ff: " & ff & debtorsOPENDNS)
+
+End Function
+
+Public Function NotDeceasedDebtors()
+Dim first As String
+Dim second As String
+Dim third As String
+Dim Fourth As String
+Dim Fifth As String
+
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+Dim Vest As String
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+Vest = ""
+
+If Forms![foreclosure database screen]!dec1 = 0 Or Forms![foreclosure database screen]!dec1 = -1 Then
+first = firstdebtor()
+End If
+If Forms![foreclosure database screen]!dec2 = 0 Or IsNull(Forms![foreclosure database screen]!dec2) Then
+second = secondDebtor()
+End If
+If Forms![foreclosure database screen]!dec3 = 0 Or IsNull(Forms![foreclosure database screen]!dec3) Then
+third = thirddebtor()
+End If
+If Forms![foreclosure database screen]!dec4 = 0 Or IsNull(Forms![foreclosure database screen]!dec4) Then
+Fourth = fourthdebtor()
+End If
+If Forms![foreclosure database screen]!dec5 = 0 Or IsNull(Forms![foreclosure database screen]!dec5) Then
+Fifth = fifthdebtor()
+End If
+
+
+If second <> "" Then
+If third <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If third <> "" Then
+If Fourth <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If Fourth <> "" Then
+If Fifth <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If Fifth <> "" Then
+FF = " and "
+End If
+
+
+
+
+NotDeceasedDebtors = first & fs & second & st & third & tf & Fourth & FF & Fifth
+
+
+
+End Function
+
+Public Function debtorsSS() As String
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+Dim SS1, ss2, ss3, ss4, ss5 As String
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If IsNull(Forms![foreclosure database screen]!ssno1) Then
+SS1 = ""
+Else
+SS1 = ", SS#: " & "xxx-xx" & Right(Forms![foreclosure database screen]!ssno1, 4)
+
+
+End If
+If IsNull(Forms![foreclosure database screen]!ssno2) Then
+ss2 = ""
+Else
+ss2 = ", SS#: " & "xxx-xx" & Right(Forms![foreclosure database screen]!ssno2, 4)
+End If
+If IsNull(Forms![foreclosure database screen]!ssno3) Then
+ss3 = ""
+Else
+ss3 = ", SS#: " & "xxx-xx" & Right(Forms![foreclosure database screen]!ssno3, 4)
+End If
+If IsNull(Forms![foreclosure database screen]!ssno4) Then
+ss4 = ""
+Else
+ss4 = ", SS#: " & "xxx-xx" & Right(Forms![foreclosure database screen]!ssno4, 4)
+End If
+If IsNull(Forms![foreclosure database screen]!ssno_5) Then
+ss5 = ""
+Else
+ss5 = ", SS#: " & "xxx-xx" & Right(Forms![foreclosure database screen]!ssno_5, 4)
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1]) & SS1
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1]) & SS1
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2]) & ss2
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2]) & ss2
+End If
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3]) & ss3
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3]) & ss3
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4]) & ss4
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4]) & ss4
+End If
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5]) & ss5
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5]) & ss5
+End If
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+FF = " and "
+End If
+
+
+
+debtorsSS = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+
+End Function
+
+Public Function Include1()
+
+If (Forms![foreclosure database screen]!DNS1 = -1 Or Forms![foreclosure database screen]!DNS1 = 1) Or _
+(Forms![foreclosure database screen]!dec1 = -1 Or Forms![foreclosure database screen]!dec1 = 1) Then
+Include1 = 1
+Else
+Include1 = 0
+End If
+
+End Function
+
+Public Function Include2()
+
+If (Forms![foreclosure database screen]!DNS2 = -1 Or Forms![foreclosure database screen]!DNS2 = 1) Or _
+(Forms![foreclosure database screen]!dec2 = -1 Or Forms![foreclosure database screen]!dec2 = 1) Then
+Include2 = 1
+Else
+Include2 = 0
+End If
+
+End Function
+Public Function Include3()
+
+If (Forms![foreclosure database screen]!DNS3 = -1 Or Forms![foreclosure database screen]!DNS3 = 1) Or _
+(Forms![foreclosure database screen]!dec3 = -1 Or Forms![foreclosure database screen]!dec3 = 1) Then
+Include3 = 1
+Else
+Include3 = 0
+End If
+
+End Function
+
+Public Function Include4()
+
+If (Forms![foreclosure database screen]!DNS4 = -1 Or Forms![foreclosure database screen]!DNS4 = 1) Or _
+(Forms![foreclosure database screen]!dec4 = -1 Or Forms![foreclosure database screen]!dec4 = 1) Then
+Include4 = 1
+Else
+Include4 = 0
+End If
+
+End Function
+Public Function Include5()
+
+If (Forms![foreclosure database screen]!dns5 = -1 Or Forms![foreclosure database screen]!dns5 = 1) Or _
+(Forms![foreclosure database screen]!dec5 = -1 Or Forms![foreclosure database screen]!dec5 = 1) Then
+Include5 = 1
+Else
+Include5 = 0
+End If
+
+End Function
+Public Function CntDebtorsOwners()
+Call CntDebtors
+If Not IsNull(Forms![foreclosure database screen]![lastnameo1]) And _
+Forms![foreclosure database screen]![lastnameo1] <> "" Then
+gnodebtors = 1 + gnodebtors
+End If
+
+If Not IsNull(Forms![foreclosure database screen]![lastnameo2]) And _
+Forms![foreclosure database screen]![lastnameo2] <> "" Then
+gnodebtors = 1 + gnodebtors
+End If
+
+If Not IsNull(Forms![foreclosure database screen]![lastnameo3]) And _
+Forms![foreclosure database screen]![lastnameo3] <> "" Then
+gnodebtors = 1 + gnodebtors
+End If
+
+CntDebtorsOwners = gnodebtors
+
+End Function
+Public Function CntDebtors()
+
+gnodebtors = 0
+
+If Not IsNull(Forms![foreclosure database screen]![LastNameDebtor1]) And _
+Forms![foreclosure database screen]![LastNameDebtor1] <> "" Then
+gnodebtors = 1 + gnodebtors
+End If
+
+If Not IsNull(Forms![foreclosure database screen]![LastNameDebtor2]) And _
+Forms![foreclosure database screen]![LastNameDebtor2] <> "" Then
+gnodebtors = 1 + gnodebtors
+End If
+
+If Not IsNull(Forms![foreclosure database screen]![LastNameDebtor3]) And _
+Forms![foreclosure database screen]![LastNameDebtor3] <> "" Then
+gnodebtors = 1 + gnodebtors
+End If
+
+If Not IsNull(Forms![foreclosure database screen]![lastnamedebtor4]) And _
+Forms![foreclosure database screen]![lastnamedebtor4] <> "" Then
+gnodebtors = 1 + gnodebtors
+End If
+
+If Not IsNull(Forms![foreclosure database screen]![lastnamedebtor5]) And _
+Forms![foreclosure database screen]![lastnamedebtor5] <> "" Then
+gnodebtors = 1 + gnodebtors
+End If
+
+CntDebtors = gnodebtors
+
+End Function
+
+Public Function firstdebtorNOI() As String
+
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtorNOI = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+Else
+firstdebtorNOI = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+End If
+
+
+
+End Function
+Public Function owner1NOI() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo1]) Or _
+(Forms![foreclosure database screen]!bk1 = -1 Or Forms![foreclosure database screen]!bk1 = 1) Then
+owner1NOI = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo1]) Then
+owner1NOI = Trim(Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]![lastnameo1])
+Else
+owner1NOI = Trim(Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]![mnameo1] & " " & Forms![foreclosure database screen]![lastnameo1])
+End If
+End If
+
+End Function
+Public Function owner2NOI() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo2]) Or _
+(Forms![foreclosure database screen]!bk2 = -1 Or Forms![foreclosure database screen]!bk2 = 1) Then
+
+owner2NOI = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo2]) Then
+owner2NOI = Trim(Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]![lastnameo2])
+Else
+owner2NOI = Trim(Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]![mnameo2] & " " & Forms![foreclosure database screen]![lastnameo2])
+End If
+End If
+
+
+End Function
+Public Function owner2aNOI()
+
+If IsNull(Forms![foreclosure database screen]![lastnameo3]) Or _
+(Forms![foreclosure database screen]!bk3 = -1 Or Forms![foreclosure database screen]!bk3 = 1) Then
+owner2aNOI = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo3]) Then
+owner2aNOI = Trim(Forms![foreclosure database screen]![firstnameo3] & " " & Forms![foreclosure database screen]![lastnameo3])
+Else
+owner2aNOI = Trim(Forms![foreclosure database screen]![firstnameo3] & " " & Forms![foreclosure database screen]![mnameo3] & " " & Forms![foreclosure database screen]![lastnameo3])
+End If
+End If
+
+End Function
+Public Function secondDebtorNOI() As String
+
+If IsNull(Forms![foreclosure database screen]![LastNameDebtor2]) Then
+secondDebtorNOI = ""
+Else
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtorNOI = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+secondDebtorNOI = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+End If
+'MsgBox (seconddebtor)
+
+End Function
+Public Function owner4NOI() As String
+If Forms![foreclosure database screen]!DNS2 = -1 Or Forms![foreclosure database screen]!DNS2 = 1 Then
+
+If IsNull(Forms![foreclosure database screen]![LastNameDebtor2]) Then
+owner4NOI = ""
+Else
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+owner4NOI = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+owner4NOI = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+End If
+'MsgBox (seconddebtor)
+End If
+
+End Function
+
+Public Function thirdDebtorNOI() As String
+
+If IsNull(Forms![foreclosure database screen]![LastNameDebtor3]) Then
+thirdDebtorNOI = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirdDebtorNOI = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+thirdDebtorNOI = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+
+End If
+
+End Function
+Public Function owner5NOI() As String
+If Forms![foreclosure database screen]!DNS3 = -1 Or Forms![foreclosure database screen]!DNS3 = 1 Then
+
+If IsNull(Forms![foreclosure database screen]![LastNameDebtor3]) Then
+owner5NOI = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+owner5NOI = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+owner5NOI = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+
+End If
+End If
+
+End Function
+
+Public Function fourthdebtorNOI() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnamedebtor4]) Then
+fourthdebtorNOI = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtorNOI = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+fourthdebtorNOI = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+End If
+
+End Function
+
+Public Function fifthdebtorNOI() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnamedebtor5]) Then
+fifthdebtorNOI = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtorNOI = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtorNOI = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+End If
+
+End Function
+
+Public Function owner6NOI() As String
+If Forms![foreclosure database screen]!DNS4 = -1 Or Forms![foreclosure database screen]!DNS4 = 1 Then
+
+If IsNull(Forms![foreclosure database screen]![lastnamedebtor4]) Then
+owner6NOI = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+owner6NOI = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+owner6NOI = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+End If
+End If
+
+End Function
+Public Function owner7NOI() As String
+If Forms![foreclosure database screen]!dns5 = -1 Or Forms![foreclosure database screen]!dns5 = 1 Then
+
+If IsNull(Forms![foreclosure database screen]![lastnamedebtor5]) Then
+owner7NOI = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+owner7NOI = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+owner7NOI = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+End If
+End If
+
+End Function
+Public Function owner3NOI() As String
+If IsNull(Forms![foreclosure database screen]![lastnameo3]) Then
+owner3NOI = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo3]) Then
+owner3NOI = Trim(Forms![foreclosure database screen]![firstnameo3] & " " & Forms![foreclosure database screen]![lastnameo3])
+Else
+owner3NOI = Trim(Forms![foreclosure database screen]![firstnameo3] & " " & Forms![foreclosure database screen]![mnameo3] & " " & Forms![foreclosure database screen]![lastnameo3])
+End If
+End If
+
+End Function
+Public Function firstdebtorDIL() As String
+
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "select * from DeedInLieu where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+
+If rs!Escrow = 0 Then
+firstdebtorDIL = firstdebtor()
+ElseIf (rs!Escrow = -1 Or rs!Escrow = 1) And (Forms![foreclosure database screen]!dec1 = -1 Or Forms![foreclosure database screen]!dec1 = 1) And (Not IsNull(rs!POA1)) Then
+firstdebtorDIL = rs!POA1
+ElseIf rs!POA <> "" Or Not IsNull(rs!POA1) Then
+firstdebtorDIL = firstdebtor() & rs!POA1
+Else
+firstdebtorDIL = firstdebtor()
+End If
+End If
+
+rs.Close
+
+
+'=IIf([escrow]=0,firstdebtor(),IIf(([escrow]=-1 Or [escrow]=1) And ([dec1]=1 Or [dec1]=-1),[poa1],IIf([poa1]<>"" Or [poa1] Is Not Null,firstdebtor() & [poa1],firstdebtor())))
+
+End Function
+Public Function firstdebtor() As String
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor1] & " " & Forms![foreclosure database screen]![MiddleNameDebtor1] & " " & Forms![foreclosure database screen]![LastNameDebtor1])
+End If
+
+End Function
+
+Public Function fifthdebtor() As String
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) And Forms![foreclosure database screen]![middlenamedebtor5] = "" Then
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor5] & " " & Forms![foreclosure database screen]![middlenamedebtor5] & " " & Forms![foreclosure database screen]![lastnamedebtor5])
+End If
+
+End Function
+Public Function owner1() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo1]) Then
+owner1 = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo1]) Then
+owner1 = Trim(Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]![lastnameo1])
+Else
+owner1 = Trim(Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]![mnameo1] & " " & Forms![foreclosure database screen]![lastnameo1])
+End If
+End If
+
+
+End Function
+Public Function owner3() As String
+If IsNull(Forms![foreclosure database screen]![lastnameo3]) Then
+owner3 = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo3]) Then
+owner3 = Trim(Forms![foreclosure database screen]![firstnameo3] & " " & Forms![foreclosure database screen]![lastnameo3])
+Else
+owner3 = Trim(Forms![foreclosure database screen]![firstnameo3] & " " & Forms![foreclosure database screen]![mnameo3] & " " & Forms![foreclosure database screen]![lastnameo3])
+End If
+End If
+
+End Function
+Public Function owner2() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo2]) Then
+owner2 = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo2]) Then
+owner2 = Trim(Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]![lastnameo2])
+Else
+owner2 = Trim(Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]![mnameo2] & " " & Forms![foreclosure database screen]![lastnameo2])
+End If
+End If
+
+
+End Function
+
+Public Function owner2a() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo3]) Then
+owner2a = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo3]) Then
+owner2a = Trim(Forms![foreclosure database screen]![firstnameo3] & " " & Forms![foreclosure database screen]![lastnameo3])
+Else
+owner2a = Trim(Forms![foreclosure database screen]![firstnameo3] & " " & Forms![foreclosure database screen]![mnameo3] & " " & Forms![foreclosure database screen]![lastnameo3])
+End If
+End If
+
+
+End Function
+Public Function secondDebtor() As String
+
+If IsNull(Forms![foreclosure database screen]![LastNameDebtor2]) Then
+secondDebtor = ""
+Else
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor2] & " " & Forms![foreclosure database screen]![MiddleNameDebtor2] & " " & Forms![foreclosure database screen]![LastNameDebtor2])
+End If
+End If
+'MsgBox (seconddebtor)
+
+End Function
+Public Function ClaimsCC()
+Dim VClaims As String
+ClaimsCC = InputBox("Judgment(s)/Lienholder(s) Claims have not been established")
+
+End Function
+Public Function thirddebtor() As String
+
+If IsNull(Forms![foreclosure database screen]![LastNameDebtor3]) Then
+thirddebtor = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![foreclosure database screen]![FirstNameDebtor3] & " " & Forms![foreclosure database screen]![MiddleNameDebtor3] & " " & Forms![foreclosure database screen]![LastNameDebtor3])
+End If
+
+End If
+
+End Function
+Public Function fourthdebtor() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnamedebtor4]) Then
+fourthdebtor = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![foreclosure database screen]![firstnamedebtor4] & " " & Forms![foreclosure database screen]![middlenamedebtor4] & " " & Forms![foreclosure database screen]![lastnamedebtor4])
+End If
+End If
+
+End Function
+Public Function FirstOwner() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo1]) Then
+FirstOwner = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo1]) Then
+FirstOwner = Trim(Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]![lastnameo1])
+Else
+FirstOwner = Trim(Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]![mnameo1] & " " & Forms![foreclosure database screen]![lastnameo1])
+End If
+End If
+End Function
+Public Function SecondOwner() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo2]) Then
+SecondOwner = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo2]) Then
+SecondOwner = Trim(Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]![lastnameo2])
+Else
+SecondOwner = Trim(Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]![mnameo2] & " " & Forms![foreclosure database screen]![lastnameo2])
+End If
+End If
+End Function
+Public Function ThirdOwner() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo3]) Then
+ThirdOwner = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo3]) Then
+ThirdOwner = Trim(Forms![foreclosure database screen]![firstnameo3] & " " & Forms![foreclosure database screen]![lastnameo3])
+Else
+ThirdOwner = Trim(Forms![foreclosure database screen]![firstnameo3] & " " & Forms![foreclosure database screen]![mnameo3] & " " & Forms![foreclosure database screen]![lastnameo3])
+End If
+End If
+End Function
+Public Function Owner1PropOnly()
+Dim rsnotice As RecordSet
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+
+If IsNull(Forms![foreclosure database screen]!lastnameo1) Or Forms![foreclosure database screen]!lastnameo1 = "" Then
+Else
+With rsnotice
+.AddNew
+!NoticeTo = owner1()
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+!Salutation = Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]!lastnameo1
+!extra = Forms![foreclosure database screen]![PropAddress]
+.Update
+End With
+
+
+If IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+Else
+If IsNull(MailA) Or MailA = "Owner1" Or MailA = "All Owners" Or MailA = "All" Or MailA = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner1()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing Address]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+!Salutation = Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]!lastnameo1
+!extra = Forms![foreclosure database screen]![Mailing Address]
+.Update
+End With
+End If
+End If
+
+
+If IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+Else
+If IsNull(MailB) Or MailB = "Owner1" Or MailB = "All Owners" Or MailB = "All" Or MailB = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner1()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing AddressB]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2B]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing CityB] & ", " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB]
+!Salutation = Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]!lastnameo1
+!extra = Forms![foreclosure database screen]![Mailing AddressB]
+.Update
+End With
+End If
+End If
+
+'MsgBox (MailSDat)
+
+
+If MailSDat = "Owner1" Or MailSDat = "All Owners" Or MailSDat = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner1()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![SDatAddress]
+!NoticeAdd2 = Forms![foreclosure database screen]![SDatAddress2]
+!NoticeCSZ = Forms![foreclosure database screen]![SDatCity] & ", " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip]
+!Salutation = Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]!lastnameo1
+!extra = Forms![foreclosure database screen]![SDatAddress]
+.Update
+End With
+End If
+End If
+
+rsnotice.Close
+
+End Function
+Public Function Owner2PropOnlyNOBk()
+Dim rsnotice As RecordSet
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+
+If IsNull(Forms![foreclosure database screen]!lastnameo2) Or _
+(Forms![foreclosure database screen]!bk2 = 1 Or Forms![foreclosure database screen]!bk2 = -1) Then
+Else
+With rsnotice
+.AddNew
+!NoticeTo = owner2()
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+!Salutation = Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]!lastnameo2
+!extra = Forms![foreclosure database screen]![PropAddress]
+.Update
+End With
+
+
+
+If IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+Else
+If IsNull(MailB) Or MailB = "Owner2" Or MailB = "All Owners" Or MailB = "All" Or MailB = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner2()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing AddressB]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2B]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing CityB] & ", " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB]
+!Salutation = Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]!lastnameo2
+!extra = Forms![foreclosure database screen]![Mailing AddressB]
+.Update
+End With
+End If
+End If
+
+If MailSDat = "Owner2" Or MailSDat = "All Owners" Or MailSDat = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner2()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![SDatAddress]
+!NoticeAdd2 = Forms![foreclosure database screen]![SDatAddress2]
+!NoticeCSZ = Forms![foreclosure database screen]![SDatCity] & ", " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip]
+!Salutation = Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]!lastnameo2
+!extra = Forms![foreclosure database screen]![SDatAddress]
+.Update
+End With
+End If
+
+
+If IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+Else
+If IsNull(MailA) Or MailA = "Owner2" Or MailA = "All Owners" Or MailA = "All" Or MailA = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner2()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing Address]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+!Salutation = Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]!lastnameo2
+!extra = Forms![foreclosure database screen]![Mailing Address]
+.Update
+End With
+End If
+End If
+
+End If
+
+rsnotice.Close
+
+End Function
+
+Public Function Owner2PropOnly()
+Dim rsnotice As RecordSet
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+
+If IsNull(Forms![foreclosure database screen]!lastnameo2) Or Forms![foreclosure database screen]!lastnameo2 = "" Then
+Else
+With rsnotice
+.AddNew
+!NoticeTo = owner2()
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+!Salutation = Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]!lastnameo2
+!extra = Forms![foreclosure database screen]![PropAddress]
+.Update
+End With
+
+
+
+If IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+Else
+If IsNull(MailB) Or MailB = "Owner2" Or MailB = "All Owners" Or MailB = "All" Or MailB = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner2()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing AddressB]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2B]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing CityB] & ", " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB]
+!Salutation = Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]!lastnameo2
+!extra = Forms![foreclosure database screen]![Mailing AddressB]
+.Update
+End With
+End If
+End If
+
+If MailSDat = "Owner2" Or MailSDat = "All Owners" Or MailSDat = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner2()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![SDatAddress]
+!NoticeAdd2 = Forms![foreclosure database screen]![SDatAddress2]
+!NoticeCSZ = Forms![foreclosure database screen]![SDatCity] & ", " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip]
+!Salutation = Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]!lastnameo2
+!extra = Forms![foreclosure database screen]![SDatAddress]
+.Update
+End With
+End If
+
+
+If IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+Else
+If IsNull(MailA) Or MailA = "Owner2" Or MailA = "All Owners" Or MailA = "All" Or MailA = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner2()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing Address]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+!Salutation = Forms![foreclosure database screen]![firstnameo2] & " " & Forms![foreclosure database screen]!lastnameo2
+!extra = Forms![foreclosure database screen]![Mailing Address]
+.Update
+End With
+End If
+End If
+
+End If
+
+rsnotice.Close
+
+End Function
+Public Function Owner3PropOnlyNOBk()
+
+Dim rsnotice As RecordSet
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+
+If (Not IsNull(Forms![foreclosure database screen]!lastnameo3) Or _
+Forms![foreclosure database screen]!lastnameo3 <> "") And _
+(Forms![foreclosure database screen]!bk3 = 0 Or IsNull(Forms![foreclosure database screen]!bk3)) Then
+With rsnotice
+.AddNew
+!NoticeTo = owner3()
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+!extra = Forms![foreclosure database screen]![PropAddress]
+
+.Update
+End With
+
+If IsNull(MailB) Or MailB = "Owner3" Or MailB = "All Owners" Or MailB = "All" Or MailB = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner3()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing AddressB]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2B]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing CityB] & ", " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB]
+!extra = Forms![foreclosure database screen]![Mailing AddressB]
+
+.Update
+End With
+End If
+
+If MailSDat = "Owner3" Or MailSDat = "All Owners" Or MailSDat = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner3()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![SDatAddress]
+!NoticeAdd2 = Forms![foreclosure database screen]![SDatAddress2]
+!NoticeCSZ = Forms![foreclosure database screen]![SDatCity] & ", " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip]
+!extra = Forms![foreclosure database screen]![SDatAddress]
+
+.Update
+End With
+End If
+
+
+If IsNull(MailA) Or MailA = "Owner3" Or MailA = "all owners" Or MailA = "all" Or MailB = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner3()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing Address]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+!extra = Forms![foreclosure database screen]![Mailing Address]
+
+.Update
+End With
+End If
+End If
+rsnotice.Close
+
+End Function
+
+
+Public Function Owner3PropOnly()
+
+Dim rsnotice As RecordSet
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+
+If Not IsNull(Forms![foreclosure database screen]!lastnameo3) Or Forms![foreclosure database screen]!lastnameo3 = "" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner3()
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+!extra = Forms![foreclosure database screen]![PropAddress]
+
+.Update
+End With
+
+If IsNull(MailB) Or MailB = "Owner3" Or MailB = "All Owners" Or MailB = "All" Or MailB = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner3()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing AddressB]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2B]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing CityB] & ", " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB]
+!extra = Forms![foreclosure database screen]![Mailing AddressB]
+
+.Update
+End With
+End If
+
+If MailSDat = "Owner3" Or MailSDat = "All Owners" Or MailSDat = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner3()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![SDatAddress]
+!NoticeAdd2 = Forms![foreclosure database screen]![SDatAddress2]
+!NoticeCSZ = Forms![foreclosure database screen]![SDatCity] & ", " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip]
+!extra = Forms![foreclosure database screen]![SDatAddress]
+
+.Update
+End With
+End If
+
+
+If IsNull(MailA) Or MailA = "Owner3" Or MailA = "all owners" Or MailA = "all" Or MailB = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner3()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing Address]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+!extra = Forms![foreclosure database screen]![Mailing Address]
+
+.Update
+End With
+End If
+End If
+rsnotice.Close
+
+End Function
+
+
+
+Public Function Owner1PropOnlyNOBk()
+Dim rsnotice As RecordSet
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+
+If IsNull(Forms![foreclosure database screen]!lastnameo1) Or _
+(Forms![foreclosure database screen]!bk1 = -1 Or Forms![foreclosure database screen]!bk1 = 1) Then
+
+Else
+With rsnotice
+.AddNew
+!NoticeTo = owner1()
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+!Salutation = Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]!lastnameo1
+!extra = Forms![foreclosure database screen]![PropAddress]
+.Update
+End With
+
+
+If IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+Else
+If IsNull(MailA) Or MailA = "Owner1" Or MailA = "All Owners" Or MailA = "All" Or MailA = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner1()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing Address]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+!Salutation = Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]!lastnameo1
+!extra = Forms![foreclosure database screen]![Mailing Address]
+.Update
+End With
+End If
+End If
+
+
+If IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+Else
+If IsNull(MailB) Or MailB = "Owner1" Or MailB = "All Owners" Or MailB = "All" Or MailB = "Grantors/Owners" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner1()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing AddressB]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2B]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing CityB] & ", " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB]
+!Salutation = Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]!lastnameo1
+!extra = Forms![foreclosure database screen]![Mailing AddressB]
+.Update
+End With
+End If
+End If
+
+
+If MailSDat = "Owner1" Or MailSDat = "All Owners" Or MailSDat = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = owner1()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![SDatAddress]
+!NoticeAdd2 = Forms![foreclosure database screen]![SDatAddress2]
+!NoticeCSZ = Forms![foreclosure database screen]![SDatCity] & ", " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip]
+!Salutation = Forms![foreclosure database screen]![firstnameo1] & " " & Forms![foreclosure database screen]!lastnameo1
+!extra = Forms![foreclosure database screen]![SDatAddress]
+.Update
+End With
+End If
+End If
+
+rsnotice.Close
+
+End Function
+

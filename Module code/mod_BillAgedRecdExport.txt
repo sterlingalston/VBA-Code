@@ -1,0 +1,45 @@
+Attribute VB_Name = "BillAgedRecdExport"
+Option Compare Database
+
+Public Function BillAgedRecExcelExport()
+
+On Error GoTo handler
+
+ 
+
+DoCmd.OpenQuery "BillsDueClientExport"
+DoCmd.SetWarnings False
+CurrentDb.Execute ("alter table tblmonies alter column [fba] date")
+DoCmd.OpenQuery "BillAgedReceivablesClientNotPaid"
+
+DoCmd.OpenQuery "BillsDueClientPaidExport"
+DoCmd.SetWarnings False
+CurrentDb.Execute ("alter table tblmonies alter column [fba] date")
+DoCmd.OpenQuery "BillAgedReceivablesClientPaid"
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BillAgedReceivablesPaidNotPaid", filepath & "BillAgedReceivablesClientsPaidNotPaid.xls", True, "MainData"
+
+ 
+   
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_BillAgedReceivablesClientsPaidNotPaid.xls"
+
+sourcefile = filepath & "BillAgedReceivablesClientsPaidNotPaid.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated", vbCritical, "Report Error"
+ 
+
+End Function
+
+

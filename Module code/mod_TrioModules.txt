@@ -1,0 +1,1804 @@
+Attribute VB_Name = "TrioModules"
+Option Compare Database
+Public Function TitleGradeVIEW()
+Dim strsql
+Dim rs As RecordSet
+
+strsql = "select ta_grade from tblfidelity where filenum = " & GblFilenum & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not rs.EOF Then
+If Not IsNull(rs!ta_grade) Then
+TitleGradeVIEW = "Title Grade: " & rs!ta_grade
+End If
+End If
+
+
+rs.Close
+End Function
+Public Function ReadyForService()
+Dim VTo As String, VCCTo As String, VFROM As String, emailsubject As String, emailmessage As String
+Dim Vfilename As String
+Dim VEmail As String, Tmessage As String
+Dim rs As RecordSet
+Dim strsql As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim rsAlt As RecordSet, rsAlt2 As RecordSet, rsAlt3 As RecordSet
+
+VFROM = "servicepackage@trioservices.net"
+VCCTo = ""
+VEmail = ""
+
+Dim VPreFin
+
+'VPreFin = InputBox("Docketed with" & vbCr & "1. Preliminary Aff" & vbCr & "2. Final Aff" & vbCr & vbCr & "type in 1 or 2")
+Dim strsqlfc As String
+Dim rsFC As RecordSet
+
+strsqlfc = "select * from FCTRACKING where FILENUM = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+
+If Not IsNull(rsFC!final_docket_filed) Then
+
+VPreFin = 2
+VConvRpt = "RequestforMediation"
+Call ConvertPDFALL
+rsFC.Close
+
+Else
+
+If IsNull(rsFC!final_docket_filed) And IsNull(rsFC!pre_docket_filed) Then
+MsgBox ("Check Docket!")
+End If
+
+End If
+
+
+
+VTo = VEmail
+emailsubject = "Services Package for: " & Trim(PROP())
+
+emailmessage = "Please find service package attached" & vbCr & Tmessage & vbCr & TrioAltEMAIL()
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+
+If VPreFin = 2 Then
+MyMail.Attachments.ADD "c:\4closure\RequestforMediation.pdf"
+End If
+
+If BrowseFLDR() <> "" Then
+MyMail.Attachments.ADD BrowseFLDR()
+End If
+If BrowseFLDREvic() <> "" Then
+MyMail.Attachments.ADD BrowseFLDREvic()
+End If
+
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+
+'Else
+'MsgBox ("Generating an Eviction Process Service Package")
+
+'Set MyOutlook = New Outlook.Application
+'Set MyMail = MyOutlook.CreateItem(olMailItem)
+'MyMail.To = VTo
+
+'MyMail.Attachments.ADD "C:\4closure\LogSheetEvic.pdf"
+'MyMail.Attachments.ADD "C:\4closure\AffidavitServiceMailing.pdf"
+'MyMail.Subject = emailsubject
+'MyMail.Body = emailmessage
+'MyMail.Display
+'Set MyMail = Nothing
+
+
+
+
+
+
+End Function
+
+
+Private Sub Part1_sent_service2_AfterUpdate()
+Dim VTo As String, VCCTo As String, VFROM As String, emailsubject As String, emailmessage As String
+Dim Vfilename As String
+Dim VEmail As String, Tmessage As String
+
+VFROM = "servicepackage@trioservices.net"
+VCCTo = ""
+Dim rs As RecordSet
+Dim strsql As String
+VEmail = ""
+
+'Process Service Code
+Dim strsqlP As String
+Dim rsP As RecordSet
+strsqlP = "select * from processservice where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsP = CurrentDb.OpenRecordset(strsqlP, dbOpenDynaset, dbSeeChanges)
+Dim VTfile, VNameServer
+VTfile = rsP!trio_filenum
+VNameServer = rsP!NameServer
+rsP.Close
+
+
+strsql = "select * from processservers where [id] = " & """" & VNameServer & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not rs.EOF Then
+If IsNull(rs!Email) Then
+VEmail = ""
+Else
+VEmail = rs!Email
+End If
+End If
+
+VTo = VEmail
+
+emailsubject = "Services Package for: " & Trim(PROP()) & ", " & numdef() & " Defendants"
+If TRIOaltAdd() <> "" Then
+Tmessage = "PLEASE ATTEMPT SERVICE AT ALTERNATE ADDRESS IF UNSUCCESSFUL POST AT PROPERTY ADDRESS IN THE CAPTION OF THE LAWSUIT."
+Else
+Tmessage = ""
+End If
+
+emailmessage = "Please find service package attached" & vbCr & Tmessage & vbCr & TRIOaltAdd()
+Call ExportEnvelopes
+
+
+DoCmd.OutputTo acOutputReport, "LogSheet", acFormatSNP, "C:\4closure\LogSheet.snp"
+Dim rsAlt, rsAlt2 As RecordSet
+Set rsAlt = CurrentDb.OpenRecordset("triologsheet_alt")
+Set rsAlt2 = CurrentDb.OpenRecordset("triologsheet_alt2nd")
+
+
+If Not rsAlt.EOF Then
+DoCmd.OutputTo acOutputReport, "LogSheet_Alt", acFormatSNP, "C:\4closure\LogSheet_Alt.snp"
+End If
+
+If Not rsAlt2.EOF Then
+DoCmd.OutputTo acOutputReport, "LogSheet_Alt2nd", acFormatSNP, "C:\4closure\LogSheet_Alt2nd.snp"
+End If
+
+DoCmd.OutputTo acOutputReport, "TrioAffidavitService2nd", acFormatSNP, "C:\4closure\AffidavitService.snp"
+
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+'MyMail.Reply = "servicepackage@trioservices.net"
+'MyMail.Attachments.Add FileLocation & "\" & BucketName(Forms![foreclosure database screen]!FIleNum) & Forms![foreclosure database screen]!FIleNum & "\" & Forms![foreclosure database screen]!FIleNum & "_Part1Pkg_01.pdf"
+If BrowseFLDR() <> "" Then
+MyMail.Attachments.ADD BrowseFLDR()
+End If
+
+MyMail.Attachments.ADD "C:\4closure\LogSheet.snp"
+MyMail.Attachments.ADD "C:\4closure\AffidavitService.snp"
+If Not rsAlt.EOF Then
+MyMail.Attachments.ADD "C:\4closure\LogSheet_Alt.snp"
+End If
+rsAlt.Close
+If Not rsAlt2.EOF Then
+MyMail.Attachments.ADD "C:\4closure\LogSheet_Alt2nd.snp"
+End If
+rsAlt2.Close
+
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+'MsgBox ("Email Sent")
+'Else
+'MsgBox ("No Email Sent")
+'End If
+
+End Sub
+
+
+Public Function TrioName()
+TrioName = "Trio Services, LLC"
+End Function
+Public Function TrioAdd()
+TrioAdd = "P.O. Box 30560"
+End Function
+Public Function TrioCSZ()
+TrioCSZ = "Bethesda, MD 20824"
+End Function
+Public Function TrioPhone()
+TrioPhone = "(301) 469-3525"
+End Function
+
+Public Function TrioNamesAddressesDataExport()
+Dim rsTrioName, rsTrioAdd, RsTrioDates As RecordSet
+Dim strsql As String
+Dim rsfile As RecordSet
+
+
+CurrentDb.Execute ("Delete * from trioexportnames")
+CurrentDb.Execute ("Delete * from trioexportaddresses")
+CurrentDb.Execute ("Delete * from trioexportdates")
+
+
+strsql = "select * from cases where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsfile = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+Set rsTrioName = CurrentDb.OpenRecordset("TrioexportNames", dbOpenDynaset, dbSeeChanges)
+Set rsTrioAdd = CurrentDb.OpenRecordset("TrioexportAddresses", dbOpenDynaset, dbSeeChanges)
+Set RsTrioDates = CurrentDb.OpenRecordset("TrioExportDates", dbOpenDynaset, dbSeeChanges)
+
+With rsTrioName
+.AddNew
+![First Name] = rsfile!FirstNameDebtor1
+![middle name] = rsfile!MiddleNameDebtor1
+![Last Name] = rsfile!LastNameDebtor1
+![bww id] = rsfile!filenum
+If rsfile!dec1 = 1 Or rsfile!dec1 = -1 Then
+!Status = "deceased"
+Else
+!Status = "not deceased"
+End If
+
+!classification = "Borrower"
+.Update
+End With
+
+If Not IsNull(rsfile!LastNameDebtor2) Then
+With rsTrioName
+.AddNew
+![First Name] = rsfile!FirstNameDebtor2
+![middle name] = rsfile!MiddleNameDebtor2
+![Last Name] = rsfile!LastNameDebtor2
+![bww id] = rsfile!filenum
+If rsfile!dec2 = 1 Or rsfile!dec2 = -1 Then
+!Status = "deceased"
+Else
+!Status = "not deceased"
+End If
+!classification = "Borrower"
+.Update
+End With
+End If
+
+
+If Not IsNull(rsfile!LastNameDebtor3) Then
+With rsTrioName
+.AddNew
+![First Name] = rsfile!FirstNameDebtor3
+![middle name] = rsfile!MiddleNameDebtor3
+![Last Name] = rsfile!LastNameDebtor3
+![bww id] = rsfile!filenum
+If rsfile!dec3 = 1 Or rsfile!dec3 = -1 Then
+!Status = "deceased"
+Else
+!Status = "not deceased"
+End If
+!classification = "Borrower"
+.Update
+End With
+End If
+
+
+If Not IsNull(rsfile!lastnamedebtor4) Then
+With rsTrioName
+.AddNew
+![First Name] = rsfile!firstnamedebtor4
+![middle name] = rsfile!middlenamedebtor4
+![Last Name] = rsfile!lastnamedebtor4
+![bww id] = rsfile!filenum
+If rsfile!dec4 = 1 Or rsfile!dec4 = -1 Then
+!Status = "deceased"
+Else
+!Status = "not deceased"
+End If
+!classification = "Borrower"
+.Update
+End With
+End If
+
+
+If Not IsNull(rsfile!lastnamedebtor5) Then
+With rsTrioName
+.AddNew
+![First Name] = rsfile!firstnamedebtor5
+![middle name] = rsfile!middlenamedebtor5
+![Last Name] = rsfile!lastnamedebtor5
+![bww id] = rsfile!filenum
+If rsfile!dec5 = 1 Or rsfile!dec5 = -1 Then
+!Status = "deceased"
+Else
+!Status = "not deceased"
+End If
+!classification = "Borrower"
+.Update
+End With
+End If
+
+
+If Not IsNull(rsfile!lastnameo1) Then
+With rsTrioName
+.AddNew
+![First Name] = rsfile!firstnameo1
+![middle name] = rsfile!mnameo1
+![Last Name] = rsfile!lastnameo1
+![bww id] = rsfile!filenum
+!Status = "unknown"
+!classification = "Owner"
+.Update
+End With
+End If
+
+If Not IsNull(rsfile!lastnameo2) Then
+With rsTrioName
+.AddNew
+![First Name] = rsfile!firstnameo2
+![middle name] = rsfile!mnameo2
+![Last Name] = rsfile!lastnameo2
+![bww id] = rsfile!filenum
+!Status = "unknown"
+!classification = "Owner"
+.Update
+End With
+End If
+
+
+If Not IsNull(rsfile!lastnameo3) Then
+With rsTrioName
+.AddNew
+![First Name] = rsfile!firstnameo3
+![middle name] = rsfile!mnameo3
+![Last Name] = rsfile!lastnameo3
+![bww id] = rsfile!filenum
+!Status = "unknown"
+!classification = "Owner"
+.Update
+End With
+End If
+
+rsTrioName.Close
+
+
+'Addresses
+
+With rsTrioAdd
+.AddNew
+If IsNull(rsfile![unit_no]) Or _
+rsfile![unit_no] = "" Then
+![address line one] = rsfile![PropAddress]
+Else
+![address line one] = rsfile![PropAddress] & ", Unit # " & rsfile![unit_no]
+End If
+![address line two] = rsfile!propaddress2
+![City] = rsfile!PropertyCity
+!State = rsfile!PropertyState
+!zip = rsfile!propzip
+!classification = "Property"
+![bww id] = rsfile!filenum
+.Update
+End With
+
+If Not IsNull(rsfile![SDatAddress]) Then
+With rsTrioAdd
+.AddNew
+![bww id] = rsfile!filenum
+![address line one] = rsfile![SDatAddress]
+![address line two] = rsfile![SDatAddress2]
+!City = rsfile![SDatCity]
+!State = rsfile![SDatState]
+!zip = rsfile![SDatZip]
+!classification = "SDAT"
+.Update
+End With
+End If
+
+
+If Not IsNull(rsfile![Mailing Address]) Then
+With rsTrioAdd
+.AddNew
+![bww id] = rsfile!filenum
+![address line one] = rsfile![Mailing Address]
+![address line two] = rsfile![Mailing Address2]
+!City = rsfile![Mailing City]
+!State = rsfile![Mailing State]
+!zip = rsfile![Mailing Zip]
+!classification = "Mailing"
+!Status = rsfile!MailA_To
+.Update
+End With
+End If
+
+
+If Not IsNull(rsfile![Mailing AddressB]) Then
+With rsTrioAdd
+.AddNew
+![bww id] = rsfile!filenum
+![address line one] = rsfile![Mailing AddressB]
+![address line two] = rsfile![Mailing Address2B]
+!City = rsfile![Mailing CityB]
+!State = rsfile![Mailing StateB]
+!zip = rsfile![Mailing ZipB]
+!classification = "Mailing"
+!Status = rsfile!MailtB_To
+.Update
+End With
+End If
+
+
+
+rsTrioAdd.Close
+
+
+With RsTrioDates
+.AddNew
+![bww id] = rsfile!filenum
+![date of referral] = rsfile![Date Recieved]
+.Update
+End With
+
+RsTrioDates.Close
+
+
+'Update LMA and Case #
+
+DoCmd.OpenQuery ("TrioExportUpdateLma")
+DoCmd.OpenQuery ("TrioExportUpdateCaseNo")
+
+'Export Tables
+DoCmd.RunMacro ("trioexport")
+'Move Text Files
+dumpname = Forms![foreclosure database screen]!filenum & "_Persons.txt"
+sourcefile = "c:\4closure\Persons.txt"
+txtname = dumpname
+destinationfile = "\\trioserver\data\Textfiles\" & txtname
+FileCopy sourcefile, destinationfile
+
+dumpname = Forms![foreclosure database screen]!filenum & "_caseinformation.txt"
+sourcefile = "c:\4closure\caseinformation.txt"
+txtname = dumpname
+destinationfile = "\\trioserver\data\Textfiles\" & txtname
+FileCopy sourcefile, destinationfile
+
+
+dumpname = Forms![foreclosure database screen]!filenum & "_addresses.txt"
+sourcefile = "c:\4closure\addresses.txt"
+txtname = dumpname
+destinationfile = "\\trioserver\data\Textfiles\" & txtname
+FileCopy sourcefile, destinationfile
+
+
+
+End Function
+
+
+Public Function NOI_AttachmentsTRIO()
+Dim VFileTimeDownload, vfiletime As Date
+Dim vtime As String
+Dim txtname As String
+Dim Vhamp
+Dim txtname2 As String
+
+ 
+
+
+dumpname = Forms![foreclosure database screen]!filenum
+
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+Call CertDebtorsOwnersNOTDeceased
+Call CertMailingNOIROChecked
+
+Call NOITrioTracking
+
+'MsgBox ("Data entered into Trio Tracking System")
+
+End Function
+Public Function NOITrioTracking()
+VLtr = "TRIO_NOI"
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("Notices")
+
+Dim rsWalz As RecordSet
+Set rsWalz = CurrentDb.OpenRecordset("walzinfo", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+VcountLtr = VcountLtr + 1
+!reference = Forms![NOI Information Screen]!filenum & VLtr & VcountLtr
+!PostageFeesReg = 0
+!PostageFees = 0
+!ServiceFees = 0
+!WalzDateUploaded = Date
+!WalzDateMailed = Forms![NOI Information Screen]!NOITabs!noi_prepared
+!ri = VLtr
+!filenum = Forms![NOI Information Screen]!filenum
+!Name1 = rs!NoticeTo
+!Name2 = ""
+!Address1 = rs!NoticeAdd
+!Address2 = rs!NoticeAdd2
+!citystatezip = rs!NoticeCSZ
+!ExportTrio = True
+'!reference = Forms![noi information screen]!FileNum & "lh" & VNo
+.Update
+End With
+
+rs.MoveNext
+Loop
+
+
+End Function
+
+
+Public Function NOIReturnLabels()
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("NOIReturnLabels", dbOpenSnapshot)
+Dim Vcnt As Integer
+Vcnt = 0
+
+Dim VSelprt
+
+VSelprt = 3
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+docsfldr = "\\rvdv-fs01\LabelRequests\"
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+Vcnt = Vcnt + 1
+txtname = rs!filenum & "_" & Vcnt & "_NOIReturnLabel.txt"
+Set A = fs.CreateTextFile(docsfldr & txtname, True)
+
+A.WriteLine ("|PRINTER 2")
+A.WriteLine ("|FONTSIZE 10")
+A.WriteLine ("|USER " & username() & ", Address Label, File " & rs!filenum)
+A.WriteLine (rs!NoticeTo)
+A.WriteLine (rs!NoticeAdd)
+If Not IsNull(rs!NoticeAdd2) Then
+A.WriteLine (rs!NoticeAdd2)
+End If
+A.WriteLine (rs!NoticeCSZ)
+A.WriteLine ("|NEWLINE")
+A.WriteLine ("|NEWLINE")
+A.WriteLine ("BWW#: " & rs!filenum)
+rs.MoveNext
+Loop
+End If
+End Function
+
+Public Function ExportTrioPService()
+
+DoCmd.OpenQuery ("ExportTrioFC")
+DoCmd.OpenQuery ("ExportTrioLH")
+Dim rs As RecordSet
+Dim Vname
+Dim Vname2
+
+Set rs = CurrentDb.OpenRecordset("TrioPServiceLienholders")
+
+If Not rs.EOF Then
+Vname2 = (Format$(Now(), "mmddyyyyhhnnss")) & "_PServeLH.txt"
+DoCmd.TransferText acExportDelim, "TrioPServiceLH", "TrioPServiceLienholders", "\\Trioserver\Data\PService\" & Vname2
+End If
+
+Vname = (Format$(Now(), "mmddyyyyhhnnss")) & "_PServe.txt"
+DoCmd.TransferText acExportDelim, "TrioPService", "TrioPService", "\\Trioserver\Data\PService\" & Vname
+
+End Function
+Public Function CheckPSDates()
+Dim VPssword
+VPssword = InputBox("Password to run query")
+If VPssword = "EKRD" Then
+DoCmd.OpenQuery ("TrioSentServfcnotps")
+End If
+
+End Function
+Public Function ExportLogSheet()
+Dim VSaleHeld, VNewspaper, VNew1, VNew2 As String
+
+Dim rs, rsnotice, rspropertycounty, rsClient, rsletter As RecordSet
+Dim strsql, sqlpropertycounty, sqlclient, sqlLetter As String
+
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+Call DebtorsPropOnly
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+Call ExportLienholderRO_Serve
+
+End Function
+Public Function TrioWalzMonies()
+Dim rs As RecordSet
+Dim strsql As String
+
+vFileNo = Forms![foreclosure database screen]!filenum
+
+strsql = "SELECT WALZInfo.RI, WALZInfo.PostageFees, WALZInfo.ServiceFees, WALZInfo.PostageFeesReg, " _
+& " WALZInfo.Filenum, [postagefees]+[servicefees]+[postagefeesreg] AS TOTALWalz from WALZInfo where walzinfo.ri = " & """" & "P1PKG" & """" & " and " _
+& " walzinfo.filenum = " & vFileNo & ";"
+
+
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+TrioWalzMonies = TrioWalzMonies + rs!totalwalz
+rs.MoveNext
+Loop
+End If
+
+
+End Function
+Public Function TrioWalzMoniesPRINT()
+Dim rs As RecordSet
+Dim strsql As String
+
+vFileNo = Forms![foreclosure database screen]!filenum
+
+strsql = "SELECT WALZInfo.RI, WALZInfo.PostageFees, WALZInfo.ServiceFees, WALZInfo.PostageFeesReg, " _
+& " WALZInfo.Filenum, [postagefees]+[servicefees]+[postagefeesreg] AS TOTALWalz from WALZInfo where walzinfo.ri = " & """" & "P1PKG" & """" & " and " _
+& " walzinfo.filenum = " & vFileNo & ";"
+
+
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+TrioWalzMoniesPRINT = TrioWalzMoniesPRINT + "1x" & rs!totalwalz & "|"
+rs.MoveNext
+Loop
+End If
+rs.Close
+
+'MsgBox (TrioWalzMoniesPRINT)
+End Function
+Public Function TrioDocumentsEVIC()
+DocsFldrTRIO = "\\mailserver\TrioDocuments\"
+'Process Service Code
+Dim strsqlP As String
+Dim rsP As RecordSet
+strsqlP = "select * from processservice where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsP = CurrentDb.OpenRecordset(strsqlP, dbOpenDynaset, dbSeeChanges)
+Dim VTfile, VFcEvic
+VTfile = rsP!trio_filenum
+VFcEvic = rsP!FC_Evic
+rsP.Close
+
+DoCmd.OutputTo acOutputReport, "LogSheetEvic", acFormatSNP, DocsFldrTRIO & VTfile & "_ServiceLogSheet.snp"
+DoCmd.OutputTo acOutputReport, "AffidavitServiceMailing", acFormatSNP, DocsFldrTRIO & VTfile & "_AffidavitService.snp"
+
+If BrowseFLDREvic() <> "" Then
+sourcefile = BrowseFLDREvic()
+destinationfile = DocsFldrTRIO & VTfile & "_EvicPart1.PDF"
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+End If
+
+End Function
+Public Function TrioDocuments()
+DocsFldrTRIO = "\\mailserver\TrioDocuments\"
+'Call ExportLogSheet
+'Process Service Code
+Dim strsqlP As String
+Dim rsP As RecordSet
+strsqlP = "select * from processservice where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsP = CurrentDb.OpenRecordset(strsqlP, dbOpenDynaset, dbSeeChanges)
+Dim VTfile, VFcEvic
+VTfile = rsP!trio_filenum
+VFcEvic = rsP!FC_Evic
+rsP.Close
+
+
+DoCmd.OutputTo acOutputReport, "LogSheet", acFormatSNP, DocsFldrTRIO & VTfile & "_LogSheet.snp"
+
+'remark out
+If PreFinal() = "PRE" Then
+DoCmd.OutputTo acOutputReport, "TrioAffidavitServicePre", acFormatSNP, DocsFldrTRIO & VTfile & "_AffidavitService.snp"
+ElseIf PreFinal() = "FINAL" Then
+DoCmd.OutputTo acOutputReport, "TrioAffidavitServiceFinal", acFormatSNP, DocsFldrTRIO & VTfile & "_AffidavitService.snp"
+End If
+
+
+'DoCmd.OutputTo acOutputReport, "TrioAffidavitService", acFormatSNP, DocsFldrTRIO & vtfile & "_AffidavitService.snp"
+
+Dim rsAlt, rsAlt2 As RecordSet
+Set rsAlt = CurrentDb.OpenRecordset("triologsheet_alt")
+Set rsAlt2 = CurrentDb.OpenRecordset("triologsheet_alt2nd")
+If Not rsAlt.EOF Then
+DoCmd.OutputTo acOutputReport, "LogSheet_Alt", acFormatSNP, DocsFldrTRIO & VTfile & "_LogSheetALT.snp"
+End If
+If Not rsAlt2.EOF Then
+DoCmd.OutputTo acOutputReport, "LogSheet_Alt2nd", acFormatSNP, DocsFldrTRIO & VTfile & "_LogSheetALT2nd.snp"
+End If
+
+If BrowseFLDR() <> "" Then
+sourcefile = BrowseFLDR()
+destinationfile = DocsFldrTRIO & VTfile & "_Part1.PDF"
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+End If
+'BrowseFLDR = fldr & vFName
+
+End Function
+Public Function PSLabels()
+Call ExportEnvelopes
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("Notices")
+Dim VUser
+Dim Vcnt
+Vcnt = 1
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+Set fs = CreateObject("Scripting.FileSystemObject")
+txtname = Forms![foreclosure database screen]!filenum & "_" & Vcnt & "_PSLabel.txt"
+docsfldr = "\\rvdv-fs01\LabelRequests\"
+Set A = fs.CreateTextFile(docsfldr & txtname, True)
+A.WriteLine ("|PRINTER 7")
+A.WriteLine ("|FONTSIZE 10")
+A.WriteLine ("|USER " & username() & ", Address Label, File " & rs!filenum)
+A.WriteLine (rs!NoticeTo)
+A.WriteLine (rs!NoticeAdd)
+If Not IsNull(rs!NoticeAdd2) Then
+A.WriteLine (rs!NoticeAdd2)
+End If
+A.WriteLine (rs!NoticeCSZ)
+A.WriteLine ("|NEWLINE")
+A.WriteLine ("|NEWLINE")
+A.WriteLine ("BWW#: " & rs!filenum)
+
+A.Close
+Vcnt = Vcnt + 1
+Set fs = CreateObject("Scripting.FileSystemObject")
+txtname = Forms![foreclosure database screen]!filenum & "_" & Vcnt & "_PSLabel.txt"
+docsfldr = "\\rvdv-fs01\LabelRequests\"
+Set A = fs.CreateTextFile(docsfldr & txtname, True)
+A.WriteLine ("|PRINTER 7")
+A.WriteLine ("|FONTSIZE 10")
+A.WriteLine ("|USER " & username() & ", Address Label, File " & rs!filenum)
+A.WriteLine (rs!NoticeTo)
+A.WriteLine (rs!NoticeAdd)
+If Not IsNull(rs!NoticeAdd2) Then
+A.WriteLine (rs!NoticeAdd2)
+End If
+A.WriteLine (rs!NoticeCSZ)
+A.WriteLine ("|NEWLINE")
+A.WriteLine ("|NEWLINE")
+A.WriteLine ("BWW#: " & rs!filenum)
+
+A.Close
+Vcnt = Vcnt + 1
+rs.MoveNext
+Loop
+
+MsgBox ("Labels Sent to Label Printer")
+Else
+MsgBox ("No labels to generate from this BWW#")
+End If
+
+                 
+End Function
+Public Function numdef()
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from debtors where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+If rs.EOF Then
+Exit Function
+Else
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+numdef = numdef + 1 * rs!Add_Served
+
+rs.MoveNext
+
+
+Loop
+
+End If
+
+rs.Close
+
+'MsgBox (numdef)
+
+End Function
+Public Function TrioSBM()
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from debtors where eff1 = " & -1 & " and subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+If rs.EOF Then
+trioslm = 0
+Exit Function
+Else
+rs.MoveFirst
+
+Do While Not rs.EOF
+TrioSBM = TrioSBM + 1 * rs!Add_Served
+rs.MoveNext
+Loop
+End If
+
+End Function
+Public Function TrioFilenumber()
+'Process Service Code
+Dim strsqlP As String
+Dim rsP As RecordSet
+strsqlP = "select * from processservice where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsP = CurrentDb.OpenRecordset(strsqlP, dbOpenDynaset, dbSeeChanges)
+
+If Not rsP.EOF Then
+Dim VTfile
+VTfile = rsP!trio_filenum
+End If
+
+rsP.Close
+
+
+
+If IsNull(VTfile) Then
+TrioFilenumber = 0
+Else
+TrioFilenumber = VTfile
+End If
+End Function
+Public Function TrioEVIC()
+Dim strsql As String
+Dim rs As RecordSet
+
+vmessage = MsgBox("Create Screen for Eviction Process Service?", vbYesNo)
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+If vmessage = vbYes Then
+strsql = "Select * from processservice where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not rs.EOF Then
+VMessage2 = InputBox("There is data on the Process Service Screen.  This will be saved into the Previous Data Screen. Continue (type YES)?")
+If VMessage2 = "YES" Then
+DoCmd.OpenQuery ("TrioAppendPService")
+End If
+vmessage3 = InputBox("The data on the Process Service Screen will NOW be deleted and regenerated and ready to enter Eviction Information. Reopen the FC Screen. Continue (type YES)?")
+If VMessage2 = "YES" Then
+
+Forms!pservsubform!Part1_Recd_Service = Null
+Forms!pservsubform!comments = Null
+Forms!pservsubform!NameServer = Null
+Forms!pservsubform!Part1_sent_service = Null
+Forms!pservsubform!paidserver1 = Null
+Forms!pservsubform!paidchk1 = Null
+Forms!pservsubform!nameserver2 = Null
+Forms!pservsubform!part1_recd_service2 = Null
+Forms!pservsubform!Part1_sent_service2 = Null
+Forms!pservsubform!paidserver2 = Null
+Forms!pservsubform!paidchk2 = Null
+Forms!pservsubform!trio_inv_amt = Null
+Forms!pservsubform!FC_Evic = 2
+Forms!pservsubform!acknowledged = Null
+Forms!pservsubform!completedbyserver = Null
+Forms!pservsubform!Aff_Service_completed = Null
+Forms!pservsubform!Server_Log_recd = Null
+Forms!pservsubform!Aff_service_recd = Null
+Forms!pservsubform!service_complete = Null
+Forms!pservsubform!Aff_service_court = Null
+Forms!pservsubform!Court_stamped = Null
+Forms!pservsubform!PM_Server_Log_recd = Null
+Forms!pservsubform!PM_Aff_Service_Recd = Null
+Forms!pservsubform!photos_recd = Null
+Forms!pservsubform!date_posted = Null
+Forms!pservsubform!PM_part1_mailed = Null
+Forms!pservsubform!PM_Service_Completed = Null
+Forms!pservsubform!pm_aff_service_pred = Null
+
+End If
+
+
+End If
+
+Else
+
+
+End If
+
+End Function
+Public Function ExportProcServ()
+Dim VSaleHeld, VNewspaper, VNew1, VNew2 As String
+
+Dim rs, rsnotice, rspropertycounty, rsClient, rsletter As RecordSet
+Dim strsql, sqlpropertycounty, sqlclient, sqlLetter As String
+
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsql = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & ";"
+Set rspropertycounty = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsnotice = CurrentDb.OpenRecordset("Notices", dbOpenDynaset, dbSeeChanges)
+
+
+With rsnotice
+.AddNew
+!NoticeTo = firstdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or _
+Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+.Update
+End With
+
+
+If MailA() = "Grantor1" Or MailA() = "All Grantors" Or MailA() = "ALL" Then
+With rsnotice
+.AddNew
+!NoticeTo = firstdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing Address]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+.Update
+End With
+End If
+
+If MailB() = "Grantor1" Or MailB() = "All Grantors" Or MailB() = "ALL" Then
+With rsnotice
+.AddNew
+!NoticeTo = firstdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing AddressB]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2B]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing CityB] & ", " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB]
+.Update
+End With
+End If
+
+If MailSDat = "Grantor1" Or MailSDat = "All Grantors" Or MailSDat = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = firstdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![SDatAddress]
+!NoticeAdd2 = Forms![foreclosure database screen]![SDatAddress2]
+!NoticeCSZ = Forms![foreclosure database screen]![SDatCity] & ", " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip]
+.Update
+End With
+End If
+
+
+If Not IsNull(Forms![foreclosure database screen]!LastNameDebtor2) Or _
+Forms![foreclosure database screen]!LastNameDebtor2 <> "" Then
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+.Update
+End With
+
+
+If MailA() = "Grantor2" Or MailA() = "All Grantors" Or MailA() = "ALL" Then
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing Address]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+!PropertyState = Forms![foreclosure database screen]!PropertyState
+.Update
+End With
+End If
+
+If MailB() = "Grantor2" Or MailB() = "All Grantors" Or MailB() = "ALL" Then
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing AddressB]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2B]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing CityB] & ", " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB]
+.Update
+End With
+End If
+
+If MailSDat = "Grantor2" Or MailSDat = "All Grantors" Or MailSDat = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![SDatAddress]
+!NoticeAdd2 = Forms![foreclosure database screen]![SDatAddress2]
+!NoticeCSZ = Forms![foreclosure database screen]![SDatCity] & ", " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip]
+.Update
+End With
+End If
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!LastNameDebtor3) Or _
+Forms![foreclosure database screen]!LastNameDebtor3 <> "" Then
+With rsnotice
+.AddNew
+!NoticeTo = thirddebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+.Update
+End With
+
+
+
+If MailA() = "Grantor3" Or MailA() = "All Grantors" Or MailA() = "ALL" Then
+With rsnotice
+.AddNew
+!NoticeTo = thirddebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing Address]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+.Update
+End With
+End If
+
+If MailB() = "Grantor3" Or MailB() = "All Grantors" Or MailB() = "ALL" Then
+With rsnotice
+.AddNew
+!NoticeTo = thirddebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing AddressB]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2B]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing CityB] & ", " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB]
+.Update
+End With
+End If
+
+If MailSDat = "Grantor3" Or MailSDat = "All Grantors" Or MailSDat = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = thirddebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![SDatAddress]
+!NoticeAdd2 = Forms![foreclosure database screen]![SDatAddress2]
+!NoticeCSZ = Forms![foreclosure database screen]![SDatCity] & ", " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip]
+.Update
+End With
+End If
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!lastnamedebtor4) Or _
+Forms![foreclosure database screen]!lastnamedebtor4 <> "" Then
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+!PropertyState = Forms![foreclosure database screen]!PropertyState
+.Update
+End With
+
+
+
+If MailA() = "Grantor4" Or MailA() = "All Grantors" Or MailA() = "ALL" Then
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing Address]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+.Update
+End With
+End If
+
+If MailB() = "Grantor4" Or MailB() = "All Grantors" Or MailB() = "ALL" Then
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing AddressB]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2B]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing CityB] & ", " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB]
+.Update
+End With
+End If
+If MailSDat = "Grantor4" Or MailSDat = "All Grantors" Or MailSDat = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![SDatAddress]
+!NoticeAdd2 = Forms![foreclosure database screen]![SDatAddress2]
+!NoticeCSZ = Forms![foreclosure database screen]![SDatCity] & ", " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip]
+.Update
+End With
+End If
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!lastnamedebtor5) Or _
+Forms![foreclosure database screen]!lastnamedebtor5 <> "" Then
+With rsnotice
+.AddNew
+!NoticeTo = fifthdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+!PropertyState = Forms![foreclosure database screen]!PropertyState
+.Update
+End With
+
+
+
+If MailA() = "Grantor5" Or MailA() = "All Grantors" Or MailA() = "ALL" Then
+With rsnotice
+.AddNew
+!NoticeTo = fifthdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing Address]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing City] & ", " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+.Update
+End With
+End If
+
+If MailB() = "Grantor5" Or MailB() = "All Grantors" Or MailB() = "ALL" Then
+With rsnotice
+.AddNew
+!NoticeTo = fifthdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![Mailing AddressB]
+!NoticeAdd2 = Forms![foreclosure database screen]![Mailing Address2B]
+!NoticeCSZ = Forms![foreclosure database screen]![Mailing CityB] & ", " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB]
+.Update
+End With
+End If
+If MailSDat = "Grantor5" Or MailSDat = "All Grantors" Or MailSDat = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = fifthdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Forms![foreclosure database screen]![SDatAddress]
+!NoticeAdd2 = Forms![foreclosure database screen]![SDatAddress2]
+!NoticeCSZ = Forms![foreclosure database screen]![SDatCity] & ", " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip]
+.Update
+End With
+End If
+End If
+
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+
+
+Dim rsLienHolders As RecordSet
+Dim strsqlLIEN As String
+
+strsqlLIEN = "SELECT * FROM creditors WHERE Creditors.noi = Yes And creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenDynaset, dbSeeChanges)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+rsLienHolders.MoveNext
+Loop
+
+End If
+
+
+
+rsnotice.Close
+
+End Function
+Public Function exportSkipTrace()
+
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "select * from skiptrace where skip_verified = " & -1 & " and filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+Set rsnotice = CurrentDb.OpenRecordset("Notices", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+
+With rsnotice
+.AddNew
+!NoticeTo = firstdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rs!Address
+!NoticeAdd2 = rs!Address2
+!NoticeCSZ = rs!City & "  " & rs!State & "  " & rs!PostalCode & vbCr
+.Update
+End With
+
+If Not IsNull(Forms![foreclosure database screen]!LastNameDebtor2) Or Forms![foreclosure database screen]!LastNameDebtor2 <> "" Then
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rs!Address
+!NoticeAdd2 = rs!Address2
+!NoticeCSZ = rs!City & "  " & rs!State & "  " & rs!PostalCode & vbCr
+.Update
+End With
+End If
+
+If IsNull(Forms![foreclosure database screen]!LastNameDebtor3) Then
+With rsnotice
+.AddNew
+!NoticeTo = thirddebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rs!Address
+!NoticeAdd2 = rs!Address2
+!NoticeCSZ = rs!City & "  " & rs!State & "  " & rs!PostalCode & vbCr
+.Update
+End With
+End If
+
+If IsNull(Forms![foreclosure database screen]!lastnamedebtor4) Then
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rs!Address
+!NoticeAdd2 = rs!Address2
+!NoticeCSZ = rs!City & "  " & rs!State & "  " & rs!PostalCode & vbCr
+.Update
+End With
+End If
+
+
+
+rs.MoveNext
+Loop
+
+rs.Close
+rsnotice.Close
+
+End If
+
+
+
+End Function
+Public Function TrioAltEMAIL()
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("trioalternate")
+If Not rs.EOF Then
+Do While Not rs.EOF
+TrioAltEMAIL = TrioAltEMAIL + vbCr + rs!NoticeTo & ", " & rs!NoticeAdd & " " & rs!NoticeAdd2 & " " & rs!NoticeCSZ
+rs.MoveNext
+Loop
+End If
+
+
+'MsgBox (TrioAltEMAIL)
+End Function
+Public Function TRIOaltAdd()
+
+If Forms![foreclosure database screen]![Mailing Address] <> "" Then
+TRIOaltAdd = Forms![foreclosure database screen]![Mailing Address] & " " & Forms![foreclosure database screen]![Mailing Address2] & ", " & Forms![foreclosure database screen]![Mailing City] & "  " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip] & vbCr
+End If
+
+If Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+TRIOaltAdd = TRIOaltAdd + Forms![foreclosure database screen]![Mailing AddressB] & " " & Forms![foreclosure database screen]![Mailing Address2] & ", " & Forms![foreclosure database screen]![Mailing City] & "  " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB] & vbCr
+End If
+
+If Forms![foreclosure database screen]![SDatAddress] <> "" Then
+TRIOaltAdd = TRIOaltAdd + Forms![foreclosure database screen]![SDatAddress] & " " & Forms![foreclosure database screen]![SDatAddress2] & ", " & Forms![foreclosure database screen]![SDatCity] & "  " & Forms![foreclosure database screen]![SDatState] & "  " & Forms![foreclosure database screen]![SDatZip] & vbCr
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!lastnameo1) Or Not IsNull(Forms![foreclosure database screen]!lastnameo2) Then
+TRIOaltAdd = TRIOaltAdd + vbCr & "PLEASE ALSO SERVE THE FOLLOWING OWNERS.  IF ANY OWNERS HAVE AN ADDRESS LISTED PLEASE ATTEMPT TO SERVE THEM AT THIS ADDRESS FIRST THEN POST THE PROPERTY IF UNSUCCESFUL." & vbCr
+
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!lastnameo1) Then
+TRIOaltAdd = TRIOaltAdd + Forms![foreclosure database screen]!firstnameo1 & " " & Forms![foreclosure database screen]!lastnameo1
+If Forms![foreclosure database screen]![Mailing Address] <> "" Then
+TRIOaltAdd = TRIOaltAdd + ", " & Forms![foreclosure database screen]![Mailing Address] & " " & Forms![foreclosure database screen]![Mailing Address2] & ", " & Forms![foreclosure database screen]![Mailing City] & "  " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+TRIOaltAdd = TRIOaltAdd + " AND " & Forms![foreclosure database screen]![Mailing AddressB] & " " & Forms![foreclosure database screen]![Mailing Address2] & ", " & Forms![foreclosure database screen]![Mailing City] & "  " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB] & vbCr
+End If
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!lastnameo2) Then
+TRIOaltAdd = TRIOaltAdd + Forms![foreclosure database screen]!firstnameo2 & " " & Forms![foreclosure database screen]!lastnameo2 & vbCr
+If Forms![foreclosure database screen]![Mailing Address] <> "" Then
+TRIOaltAdd = TRIOaltAdd + ", " & Forms![foreclosure database screen]![Mailing Address] & " " & Forms![foreclosure database screen]![Mailing Address2] & ", " & Forms![foreclosure database screen]![Mailing City] & "  " & Forms![foreclosure database screen]![Mailing State] & "  " & Forms![foreclosure database screen]![Mailing Zip]
+End If
+If Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+TRIOaltAdd = TRIOaltAdd + " AND " & Forms![foreclosure database screen]![Mailing AddressB] & " " & Forms![foreclosure database screen]![Mailing Address2] & ", " & Forms![foreclosure database screen]![Mailing City] & "  " & Forms![foreclosure database screen]![Mailing StateB] & "  " & Forms![foreclosure database screen]![Mailing ZipB] & vbCr
+End If
+End If
+
+strsql = "SELECT * FROM creditors WHERE (creditors.[record_owner] = -1 or creditors.[record_owner] = 1 or Creditors.[noi] = -1 or creditors.[noi] = 1) And creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not rs.EOF Then
+Do While Not rs.EOF
+TRIOaltAdd = TRIOaltAdd + rs!OrganizationName & " " & rs!Address & " " & rs!Address2 & ", " & rs!City & "  " & rs!State & "  " & rs!PostalCode & vbCr
+rs.MoveNext
+Loop
+End If
+
+
+End Function
+Public Function TrioPSInvNONStandard()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("TrioInvoices", dbOpenDynaset, dbSeeChanges)
+Dim VYes, Vyes2
+Dim VINv
+
+VYes = MsgBox("Adding new Invoice for Trio Process Service", vbYesNo)
+If VYes = vbYes Then
+'Process Service Code
+Dim strsqlP As String
+Dim rsP As RecordSet
+strsqlP = "select * from processservice where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsP = CurrentDb.OpenRecordset(strsqlP, dbOpenDynaset, dbSeeChanges)
+Dim VTfile, VFcEvic
+If Not rsP.EOF Then
+VTfile = rsP!trio_filenum
+VFcEvic = rsP!FC_Evic
+Else
+VTfile = 0
+VFcEvic = 0
+End If
+
+rsP.Close
+
+VINv = GetAutoNumber("NextDef")
+
+Dim Vnumdef
+Vnumdef = InputBox("Enter Number of Packages Sent")
+
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+!SaleDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+End If
+If VFcEvic = 2 Then
+!Bill_amt = 0
+!DATE_BILLED = Date
+!bill_amt2 = 0
+!bill_amt3 = 0
+!bill_amt4 = 0
+!bill_amt4_Text = ""
+!Inv_No = VINv
+!Notes = ""
+!d_servbymail = 0
+
+Else
+
+!Bill_amt = numdef() * 75
+!DATE_BILLED = Date
+!bill_amt2 = 0
+!bill_amt3 = 0
+!bill_amt4 = 25
+!bill_amt4_Text = "Process Service and Filing"
+!Inv_No = VINv
+!Notes = ""
+End If
+
+
+!sbm_notes = Vnumdef & " Pkgs Sent x $20.00 per: " & Format(Vnumdef * 20, "$###,##0.00")
+'(" & Format(TrioWalzMoniesPRINT(), "$###,##0.00") & ")"
+!d_servbymail = Format(Vnumdef * 20, "$###,##0.00")
+
+
+!trio_filenum = VTfile
+.Update
+.Close
+End With
+
+linkcriteria = "[inv_no] = " & VINv
+DoCmd.OpenForm "TrioInvoicesNON", , , linkcriteria
+
+End If
+
+End Function
+Public Function TrioInvoiceBGW()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("TrioInvoices", dbOpenDynaset, dbSeeChanges)
+Dim VYes, Vyes2
+Dim VINv
+
+VYes = MsgBox("Adding new Invoice for Trio Process Service", vbYesNo)
+If VYes = vbYes Then
+
+VINv = GetAutoNumber("NextDef")
+
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!Bill_amt = 0
+!DATE_BILLED = Date
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+!SaleDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+End If
+!bill_amt2 = 0
+!bill_amt3 = 0
+!bill_amt4 = 0
+!bill_amt4_Text = ""
+!Inv_No = VINv
+!Notes = ""
+.Update
+.Close
+End With
+
+linkcriteria = "[inv_no] = " & VINv
+DoCmd.OpenForm "TrioInvoicesBGW", , , linkcriteria
+
+End If
+End Function
+Public Function TrioPSInv()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("TrioInvoices", dbOpenDynaset, dbSeeChanges)
+Dim VYes, Vyes2
+Dim VINv
+Dim vsm
+
+'Process Service Code
+Dim strsqlP As String
+Dim rsP As RecordSet
+strsqlP = "select * from processservice where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsP = CurrentDb.OpenRecordset(strsqlP, dbOpenDynaset, dbSeeChanges)
+Dim VTfile
+Dim VFcEvic
+VTfile = rsP!trio_filenum
+VFcEvic = rsP!FC_Evic
+
+
+VYes = MsgBox("Adding new Invoice for Trio Process Service", vbYesNo)
+If VYes = vbYes Then
+
+Dim Vnumdef
+Vnumdef = InputBox("Enter Number of Packages Sent")
+
+VINv = GetAutoNumber("NextDef")
+
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+If VFcEvic = 2 Then
+!Bill_amt = 80
+!Notes = "Eviction Package"
+!bill_amt4 = 0
+vsm = InputBox("Enter Mailing Costs, if any")
+!d_servbymail = vsm
+Else
+
+!sbm_notes = Vnumdef & " Pkgs Sent x $15.00 per: " & Format(Vnumdef * 15, "$###,##0.00")
+!d_servbymail = Format(Vnumdef * 15, "$###,##0.00")
+!Bill_amt = numdef() * 75
+!Notes = numdef() & " x $75.00"
+!bill_amt4 = 25
+!bill_amt4_Text = "Service Filing"
+End If
+
+!DATE_BILLED = Date
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+!SaleDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+End If
+!bill_amt2 = 0
+!bill_amt3 = 0
+!Inv_No = VINv
+!trio_filenum = VTfile
+.Update
+.Close
+End With
+
+If rsP!trio_inv_amt = 0 Or IsNull(rsP!trio_inv_amt) Then
+rsP!trio_inv_amt = TrioSBM() + (numdef() * 75) + 25
+End If
+rsP.Close
+
+
+
+strsql = "select * from trioinvoice where inv_no = " & VINv
+
+DocName = "TrioInvoiceauto"
+
+Vyes2 = MsgBox("Preview Invoice", vbYesNo)
+If Vyes2 = vbYes Then
+DoCmd.OpenReport DocName, acViewPreview, , "inv_no =" & VINv
+Vyes3 = MsgBox("Send to BWW Docs", vbYesNo)
+
+If Vyes3 = vbYes Then
+CopyDocToBGWWDocs DocName, "TrioInvoic", "_TrioInvoice.PDF"
+
+'DoCmd.OutputTo acOutputReport, DocName, acFormatSNP, DocsFldr & Forms![foreclosure database screen]!FIleNum & "_TrioInvoice.snp"
+End If
+
+End If
+
+End If
+
+End Function
+Public Function TrioAutomatedPSInv(BWWnbr As Integer)
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("TrioInvoices", dbOpenDynaset, dbSeeChanges)
+Dim VYes, Vyes2
+Dim VINv
+Dim vsm
+
+'Process Service Code
+Dim strsqlP As String
+Dim rsP As RecordSet
+strsqlP = "select * from processservice where subfilenum = " & BWWnbr
+Set rsP = CurrentDb.OpenRecordset(strsqlP, dbOpenDynaset, dbSeeChanges)
+Dim VTfile
+Dim VFcEvic
+VTfile = rsP!trio_filenum
+VFcEvic = rsP!FC_Evic
+
+'Insert number of pkges
+
+Dim Vnumdef
+Vnumdef = InputBox("Enter Number of Packages Sent")
+
+VINv = GetAutoNumber("NextDef")
+
+With rs
+.AddNew
+!filenum = BWWnbr
+If VFcEvic = 2 Then
+!Bill_amt = 80
+!Notes = "Eviction Package"
+!bill_amt4 = 0
+
+'Insert Mailing costs
+vsm = InputBox("Enter Mailing Costs, if any")
+!d_servbymail = vsm
+Else
+
+!sbm_notes = Vnumdef & " Pkgs Sent x $15.00 per: " & Format(Vnumdef * 15, "$###,##0.00")
+!d_servbymail = Format(Vnumdef * 15, "$###,##0.00")
+!Bill_amt = numdef() * 75
+!Notes = numdef() & " x $75.00"
+!bill_amt4 = 25
+!bill_amt4_Text = "Service Filing"
+End If
+
+!DATE_BILLED = Date
+
+'convert to Dlookup
+If Not IsNull(DLookup("saledate", "foreclosure", "subfilenum=" & BWWnbr)) Then
+!SaleDate = DLookup("saledate", "foreclosure", "subfilenum=" & BWWnbr)
+End If
+'If Not IsNull(Forms![Foreclosure Database Screen]!ForeclosureSubForm.Form!SaleDate) Then
+'!SaleDate = Forms![Foreclosure Database Screen]!ForeclosureSubForm.Form!SaleDate
+'End If
+!bill_amt2 = 0
+!bill_amt3 = 0
+!Inv_No = VINv
+!trio_filenum = VTfile
+.Update
+.Close
+End With
+
+If rsP!trio_inv_amt = 0 Or IsNull(rsP!trio_inv_amt) Then
+rsP!trio_inv_amt = TrioSBM() + (numdef() * 75) + 25
+End If
+rsP.Close
+
+strsql = "select * from trioinvoice where inv_no = " & VINv
+
+DocName = "TrioInvoiceauto"
+
+DoCmd.OpenReport DocName, acViewPreview, , "inv_no =" & VINv
+
+CopyDocToBGWWDocs DocName, "TrioInvoic", "_TrioInvoice.PDF"
+
+'DoCmd.OutputTo acOutputReport, DocName, acFormatSNP, DocsFldr & Forms![foreclosure database screen]!FIleNum & "_TrioInvoice.snp"
+
+
+
+End Function
+Public Function TrioInvDOCKET()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("TrioInvoices", dbOpenDynaset, dbSeeChanges)
+Dim VYes, Vyes2
+Dim VINv
+
+VYes = MsgBox("Adding new Invoice for Trio Process Service", vbYesNo)
+If VYes = vbYes Then
+
+'Process Service Code
+Dim strsqlP As String
+Dim rsP As RecordSet
+strsqlP = "select * from processservice where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsP = CurrentDb.OpenRecordset(strsqlP, dbOpenDynaset, dbSeeChanges)
+Dim VTfile, VFcEvic
+VTfile = rsP!trio_filenum
+VFcEvic = rsP!FC_Evic
+rsP.Close
+
+VINv = GetAutoNumber("NextDef")
+
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!Bill_amt = 25
+!DATE_BILLED = Date
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+!SaleDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+End If
+!bill_amt2 = 0
+!bill_amt3 = 0
+!Inv_No = VINv
+!Notes = "DOCKET"
+!d_servbymail = 0
+!trio_filenum = VTfile
+.Update
+.Close
+End With
+
+strsql = "select * from trioinvoice where inv_no = " & VINv
+
+DocName = "TrioInvoiceDOCKET"
+
+Vyes2 = MsgBox("Preview Invoice", vbYesNo)
+If Vyes2 = vbYes Then
+DoCmd.OpenReport DocName, acViewPreview, , "inv_no =" & VINv
+Vyes3 = MsgBox("Send to BWW Docs", vbYesNo)
+If Vyes3 = vbYes Then
+CopyDocToBGWWDocs DocName, "trioinvoic", "_TrioInvoiceDocket.PDF"
+
+'DoCmd.OutputTo acOutputReport, DocName, acFormatRTF, DocsFldr & Forms![foreclosure database screen]!FIleNum & "_TrioInvoiceDOCKET.rtf"
+End If
+
+End If
+
+End If
+
+End Function
+Public Function TrioAbsScreen()
+
+Dim rs As RecordSet
+
+Dim strsql As String
+
+strsql = "select * from tblbeneficiary where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("tblbeneficiary", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!TblID = GetAutoNumber("nexttitlelien")
+!filenum = Forms![foreclosure database screen]!filenum
+!ta_lender = Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgLender
+!ta_trustee = Forms![foreclosure database screen]!ForeclosureSubForm.Form!orgtrustee
+!ta_orgloan = Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgAmount
+!ta_dotdate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!DOTDate
+!ta_recorded = Forms![foreclosure database screen]!ForeclosureSubForm.Form![dot recorded]
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+!ta_book = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Book
+!ta_page = Forms![foreclosure database screen]!ForeclosureSubForm.Form!VAPage
+Else
+!ta_book = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Liber
+!ta_page = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Folio
+End If
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!InstrumentNo) Then
+!ta_ini = Forms![foreclosure database screen]!ForeclosureSubForm.Form!InstrumentNo
+End If
+![type] = 9
+.Update
+.Close
+End With
+End If
+
+
+DoCmd.OpenForm ("trio title abstract")
+End Function
+Public Function TrioBULK()
+Dim rs As RecordSet
+Dim Rpt As Report
+
+Set rs = CurrentDb.OpenRecordset("TrioExtraBills")
+docsfldr = AutoIndexPath & "\TrioInvoic\"
+
+Do While Not rs.EOF
+GblFilenum = rs!filenum
+
+strsql = "SELECT Billing.process_service, Billing.FileNum, ProcessService_Resume.trio_filenum, " _
+& " Billing.BillingDate, CASES.FirstNameDebtor1, CASES.LastNameDebtor1 FROM (Billing INNER JOIN " _
+& " ProcessService_Resume ON Billing.FileNum = ProcessService_resume.subfilenum) INNER JOIN CASES ON Billing.FileNum = CASES.FileNum " _
+& " WHERE Billing.process_service > 0 And Billing.FIleNum = " & GblFilenum & ";"
+
+DoCmd.OpenReport "trioinvoicebulk", acViewDesign
+Reports![trioinvoicebulk].recordsource = strsql
+DoCmd.Close acReport, "trioinvoicebulk", acSaveYes
+'DoCmd.OutputTo acOutputReport, "TrioInvoiceBulk", acFormatSNP, DocsFldr & Forms![foreclosure database screen]!FIleNum & "_TrioInvoice.snp"
+'DoCmd.OutputTo acOutputReport, "TrioInvoiceBulk", acFormatSNP, "C:\4closure\TrioBills\" & rs!FIleNum & "_TrioInvoice.snp"
+DoCmd.OutputTo acOutputReport, "TrioInvoiceBulk", acFormatSNP, docsfldr & rs!filenum & "_TrioInvoice.snp"
+
+rs.MoveNext
+
+Loop
+
+
+End Function
+Public Function TrioAddBills()
+Dim rs As RecordSet
+Dim rsTrio As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("TrioInvoices", dbOpenDynaset, dbSeeChanges)
+Set rsTrio = CurrentDb.OpenRecordset("trioextrabills")
+
+Do While Not rsTrio.EOF
+
+VINv = GetAutoNumber("NextDef")
+
+With rs
+.AddNew
+!filenum = rsTrio!filenum
+!Bill_amt = rsTrio!process_service
+!DATE_BILLED = rsTrio!billingdate
+!Date_Paid = rsTrio!bill_paid
+!SaleDate = rsTrio!SaleDate
+!bill_amt2 = 0
+!bill_amt3 = 0
+!bill_amt4 = 0
+!Inv_No = VINv
+!d_servbymail = 0
+!trio_filenum = rsTrio!trio_filenum
+.Update
+End With
+
+rsTrio.MoveNext
+Loop
+
+
+End Function
+

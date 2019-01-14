@@ -1,0 +1,39 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "MaxField"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+Option Compare Database
+
+Private mfname As String
+Private mfvalue As Variant
+Private mfcol As New Dictionary
+Private doer As Variant
+
+Property Get MaxFieldName() As String
+    For Each fldval In mfcol.keys
+        If mfcol.Item(fldval) > doer Then
+            doer = mfcol.Item(fldval)
+            mfname = fldval
+        End If
+    Next fldval
+        MaxFieldName = mfname
+End Property
+Property Get MaxFieldValue() As Variant
+    For Each fldval In mfcol.keys
+        If mfcol.Item(fldval) > mfvalue Then
+            mfvalue = mfcol.Item(fldval)
+        End If
+    Next fldval
+        MaxFieldValue = mfvalue
+End Property
+
+Public Function AddField(ByVal FieldName As String, ByVal FieldValue As Variant) As Dictionary
+    mfcol.ADD FieldName, FieldValue
+End Function
+
+

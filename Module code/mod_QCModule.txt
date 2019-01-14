@@ -1,0 +1,627 @@
+Attribute VB_Name = "QCModule"
+Option Compare Database
+Public Function CHECKDupsAdd()
+Dim INV As String
+Dim rsinv, rsClient, rsDup, rsDupSS As RecordSet
+Dim VF_A, VNI As String
+Dim db As Database
+Dim sp As RecordSet
+Dim VAppType
+
+VAppType = "[" & AppType & "]"
+VProp = "forms!" & VAppType & "!propaddress"
+VLoan = "forms!" & VAppType & "!clientrefnumber"
+GblFilenum = "forms!" & VAppType & "!filenum"
+
+Dim sqlresumes, sqlstr, sqlclient, sqlDup, sqlDupSS, VDupProp, VDupSS As String
+
+
+sqlDup = "select * from searchprop " _
+& " where (propaddress like " & """" & VProp & """" & ") or " _
+& " (clientrefnumber = " & """" & VLoan & """" & ");"
+Set rsDup = CurrentDb.OpenRecordset(sqlDup, dbOpenSnapshot)
+
+If Not rsDup.EOF Then
+rsDup.MoveFirst
+End If
+
+Do While Not rsDup.EOF
+
+If Not IsNull(VLoan) Then
+If VLoan <> rsDup!filenum Then
+VDupProp = VDupProp & rsDup!filenum & "  "
+End If
+
+End If
+
+rsDup.MoveNext
+Loop
+rsDup.Close
+Set rsDup = Nothing
+
+vpropa = "forms!" & VAppType & "!propaddress"
+
+vpropa = VDupProp
+
+
+End Function
+Public Function CheckDupsSSNo()
+VAppType = "[" & AppType & "]"
+vssno1 = "forms!" & VAppType & "!ssno_1"
+vssno2 = "forms!" & VAppType & "!ssno_2"
+GblFilenum = "forms!" & VAppType & "!filenum"
+'SSNO CHECK
+
+MsgBox (GblFilenum)
+MsgBox (VDupSS)
+
+sqlDupSS = "select * from searchssno " _
+& " where (ssno_1 like " & """" & vssno1 & """" & ") or " _
+& " (ssno_2 = " & """" & vssno1 & """" & ");"
+Set rsDupSS = CurrentDb.OpenRecordset(sqlDupSS, dbOpenSnapshot)
+
+If Not rsDupSS.EOF Then
+rsDupSS.MoveFirst
+End If
+
+Do While Not rsDupSS.EOF
+
+If Not IsNull(GblFilenum) Then
+If GblFilenum <> rsDupSS!filenum Then
+VDupSS = VDupSS & rsDupSS!filenum & "  "
+End If
+
+End If
+
+rsDupSS.MoveNext
+Loop
+rsDupSS.Close
+Set rsDupSS = Nothing
+
+
+
+vss = "forms!" & VAppType & "!ss1"
+
+vss = VDupSS
+
+
+
+End Function
+Public Function AddQCAll()
+
+Dim strsql As String
+
+Set rs = CurrentDb.OpenRecordset("QCAddFile", dbOpenDynaset, dbSeeChanges)
+
+Dim rsqc As RecordSet
+Set rsqc = CurrentDb.OpenRecordset("qc", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+
+With rsqc
+.AddNew
+!filenum = rs!filenum
+.Update
+End With
+rs.MoveNext
+
+Loop
+
+
+
+End Function
+Public Function AddFCTracking()
+Dim strsql As String
+
+Set rs = CurrentDb.OpenRecordset("FCTrackingAddFile", dbOpenDynaset, dbSeeChanges)
+
+Dim rsFC As RecordSet
+Set rsFC = CurrentDb.OpenRecordset("fctracking", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+
+With rsFC
+.AddNew
+!filenum = rs!SubFileNum
+.Update
+End With
+rs.MoveNext
+
+Loop
+
+End Function
+
+Public Function AddQC()
+Dim strsql As String
+
+Set rs = CurrentDb.OpenRecordset("Query21NM", dbOpenDynaset, dbSeeChanges)
+
+Dim rsqc As RecordSet
+Set rsqc = CurrentDb.OpenRecordset("qc", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+
+With rsqc
+.AddNew
+!filenum = rs!filenum
+.Update
+End With
+rs.MoveNext
+
+Loop
+
+
+End Function
+Public Function GoToQC3()
+Dim vFile As Long
+Dim strsql As String
+Dim rs As RecordSet
+Dim rsqc As RecordSet
+
+vFile = Forms![Quality Controlqc3]![BGW]
+VState = Forms![Quality Controlqc3]![State]
+
+DocName = "QCScreenqc2Md"
+linkcriteria = "[FileNum] = " & vFile
+
+
+strsql = "Select * from qc_edits where filenum = " & vFile
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If rs.EOF Then
+rs.Close
+Set rsqc = CurrentDb.OpenRecordset("qc_edits", dbOpenDynaset, dbSeeChanges)
+
+With rsqc
+.AddNew
+!filenum = vFile
+.Update
+.Close
+End With
+
+End If
+DoCmd.Close acForm, "Quality Controlqc3"
+
+If LockFile(vFile) Then DoCmd.OpenForm DocName, , , linkcriteria
+End Function
+Public Function GoToQC2()
+Dim vFileNo As Long
+
+vFileNo = Forms![Quality Control]![BGW]
+VState = Forms![Quality Control]![State]
+
+If VState = "MD" Then
+DocName = "QCScreenqc2Md"
+linkcriteria = "[FileNum] = " & vFileNo
+
+Else
+DocName = "assignmentformva"
+linkcriteria = "[subFileNum] = " & vFileNo
+
+End If
+
+DoCmd.Close acForm, "Quality Control"
+
+
+If LockFile(vFileNo) Then DoCmd.OpenForm DocName, , , linkcriteria
+End Function
+Public Function GoToQCScreens()
+Dim rs As RecordSet
+Dim strsql As String
+
+
+GblFilenum = Forms![foreclosure database screen]!filenum
+Call AAA
+
+strsql = "Select * from qc where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+Dim rsqc As RecordSet
+
+If rs.EOF Then
+rs.Close
+Set rsqc = CurrentDb.OpenRecordset("qc", dbOpenDynaset, dbSeeChanges)
+
+With rsqc
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+
+End If
+
+strsql = "Select * from qc_edits where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If rs.EOF Then
+rs.Close
+Set rsqc = CurrentDb.OpenRecordset("qc_edits", dbOpenDynaset, dbSeeChanges)
+
+With rsqc
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+
+End If
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+VSelState = 3
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+VSelState = 2
+Else
+VSelState = 1
+End If
+
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Or Forms![foreclosure database screen]!PropertyState = "DC" Then
+
+VScreen = InputBox("1. QC1" & vbCr & "2. QC2")
+
+If VScreen = 1 Then
+DocName = "QCScreenQC1VA"
+ElseIf VScreen = 2 Then
+
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+    DocName = "QCScreenQC2DC"
+Else
+DocName = "assignmentformva"
+
+End If
+End If
+
+
+Else
+
+
+VScreen = InputBox("1. QC1 FDL" & vbCr & "2. QC2 (NOI)" & vbCr & "3. QC3")
+If VScreen = 1 Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+DocName = "QCScreenQC1FDL"
+'Else
+'DocName = "QCScreenQC1FDLDC"
+End If
+
+ElseIf VScreen = 2 Then
+DocName = "QCScreenQC1NOI"
+
+ElseIf VScreen = 3 Then
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+DocName = "QCscreenqc2MD"
+'Else
+'DocName = "QCScreenqc2"
+End If
+
+End If
+End If
+
+If DocName = "assignmentformva" Or DocName = "QCScreenQC2DC" Then
+linkcriteria = "[subFileNum] = " & GblFilenum
+Else
+linkcriteria = "[FileNum] = " & GblFilenum
+End If
+
+'DoCmd.Close acForm, "foreclosure database screen"
+Call CloseFormsQC
+
+If LockFile(GblFilenum) Then DoCmd.OpenForm DocName, , , linkcriteria
+
+End Function
+Public Function GoToQCFDL()
+
+Dim vFile As Long
+
+vFile = Forms![quality ControlFDL]![filenum]
+Dim rs As RecordSet
+Dim rsqc As RecordSet
+Dim strsql As String
+
+strsql = "Select * from qc where filenum = " & vFile
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+If rs.EOF Then
+rs.Close
+Set rsqc = CurrentDb.OpenRecordset("qc", dbOpenDynaset, dbSeeChanges)
+
+With rsqc
+.AddNew
+!filenum = vFile
+.Update
+.Close
+End With
+
+End If
+
+strsql = "Select * from qc_edits where filenum = " & vFile
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If rs.EOF Then
+rs.Close
+Set rsqc = CurrentDb.OpenRecordset("qc_edits", dbOpenDynaset, dbSeeChanges)
+
+With rsqc
+.AddNew
+!filenum = vFile
+.Update
+.Close
+End With
+
+End If
+
+If VSelState = 1 Then
+DocName = "QCScreenQC1FDL"
+'ElseIf VSelState = 2 Then
+'DocName = "QCScreenQC1FDLdc"
+
+ElseIf VSelState = 3 Or VSelState = 2 Then
+DocName = "QCScreenQC1VA"
+End If
+
+
+
+linkcriteria = "[FileNum] = " & vFile
+
+DoCmd.Close acForm, "Quality ControlFDL"
+
+If LockFile(vFile) Then DoCmd.OpenForm DocName, , , linkcriteria
+  'If LockFile(VFile) Then DoCmd.OpenForm DocName, , , linkcriteria
+
+End Function
+Public Function GoToQCNOIBWW()
+Dim vFile As Long
+Dim strsql As String
+Dim rs As RecordSet
+Dim rsqc As RecordSet
+
+
+DocName = "QCScreenQC1NOI"
+vFile = Forms![Quality ControlNOI-BWW]![filenum]
+
+linkcriteria = "[FileNum] = " & vFile
+
+strsql = "Select * from qc_edits where filenum = " & vFile
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If rs.EOF Then
+rs.Close
+Set rsqc = CurrentDb.OpenRecordset("qc_edits", dbOpenDynaset, dbSeeChanges)
+
+With rsqc
+.AddNew
+!filenum = vFile
+.Update
+.Close
+End With
+
+End If
+
+DoCmd.Close acForm, "Quality ControlNOI-BWW"
+If LockFile(vFile) Then DoCmd.OpenForm DocName, , , linkcriteria
+    
+End Function
+Public Function GoToQCNOI()
+Dim vFile As Long
+Dim strsql As String
+Dim rs As RecordSet
+Dim rsqc As RecordSet
+
+
+DocName = "QCScreenQC1NOI"
+vFile = Forms![Quality ControlNOI]![filenum]
+
+strsql = "Select * from qc_edits where filenum = " & vFile
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If rs.EOF Then
+rs.Close
+Set rsqc = CurrentDb.OpenRecordset("qc_edits", dbOpenDynaset, dbSeeChanges)
+
+With rsqc
+.AddNew
+!filenum = vFile
+.Update
+.Close
+End With
+
+End If
+
+
+linkcriteria = "[FileNum] = " & vFile
+
+DoCmd.Close acForm, "Quality ControlNOI"
+
+If LockFile(vFile) Then DoCmd.OpenForm DocName, , , linkcriteria
+
+End Function
+Public Function CloseQC1NOI()
+Dim VScreen
+VScreen = InputBox("Go to: " & vbCr & vbCr & "1. Foreclosure Screen" & vbCr & "2. Quality Control Queue BWW Sent" & vbCr & "3. Quality Control Queue Client Sent" & vbCr & vbCr & "enter 1, 2 or 3")
+
+Dim vFile As Long
+
+vFile = Forms![QCScreenQC1noi]!filenum
+Call CloseFormsQC
+
+If VScreen = 1 Then
+If LockFile(vFile) Then DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & vFile
+ElseIf VScreen = 2 Then
+If LockFile(vFile) Then DoCmd.OpenForm "QUality ControlNOI-BWW"
+ElseIf VScreen = 3 Then
+If LockFile(vFile) Then DoCmd.OpenForm "QUality ControlNOI"
+End If
+End Function
+
+Public Function CloseQC1FDLDC()
+Dim VScreen
+VScreen = InputBox("Go to: " & vbCr & vbCr & "1. Foreclosure Screen" & vbCr & "2. Quality Control Queue" & vbCr & vbCr & "enter 1 or 2")
+
+Dim vFile As Long
+
+vFile = Forms![qcscreenqc1fdldc]!filenum
+'DoCmd.Close acForm, "QCScreenQC1FDLDC"
+Call CloseFormsQC
+
+If VScreen = 1 Then
+If LockFile(vFile) Then DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & vFile
+Else
+
+DoCmd.OpenForm "QUality ControlFDL"
+End If
+End Function
+
+
+Public Function CloseQC1FDL()
+Dim VScreen
+VScreen = InputBox("Go to: " & vbCr & vbCr & "1. Foreclosure Screen" & vbCr & "2. Quality Control Queue" & vbCr & vbCr & "enter 1 or 2")
+
+Dim vFile As Long
+
+vFile = Forms![qcscreenqc1fdl]!filenum
+'DoCmd.Close acForm, "QCScreenQC1FDL"
+Call CloseFormsQC
+
+If VScreen = 1 Then
+If LockFile(vFile) Then DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & vFile
+Else
+DoCmd.OpenForm "QUality ControlFDL"
+End If
+End Function
+Public Function CloseQC2ScreenVA()
+Dim VScreen
+VScreen = InputBox("Go to: " & vbCr & vbCr & "1. Foreclosure Screen" & vbCr & "2. Quality Control Queue" & vbCr & vbCr & "enter 1 or 2")
+
+Dim vFile As Long
+If CurrentProject.AllForms("assignmentformVA").IsLoaded Then vFile = Forms![assignmentformVA]!SubFileNum
+If CurrentProject.AllForms("qcscreenqc2dc").IsLoaded Then vFile = Forms![QCScreenQC2DC]!SubFileNum
+
+'DoCmd.Close acForm, "assignmentformva"
+Call CloseFormsQC
+
+If VScreen = 1 Then
+If LockFile(vFile) Then DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & vFile
+Else
+DoCmd.OpenForm "QUality Control"
+End If
+End Function
+
+Public Function CloseQC2ScreenMD()
+Dim VScreen
+VScreen = InputBox("Go to: " & vbCr & vbCr & "1. Foreclosure Screen" & vbCr & "2. Quality Control Queue" & vbCr & vbCr & "enter 1 or 2")
+
+Dim vFile As Long
+
+vFile = Forms![QCScreenQC2MD]!filenum
+'DoCmd.Close acForm, "QCscreenqc2MD"
+Call CloseFormsQC
+
+If VScreen = 1 Then
+If LockFile(vFile) Then DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & vFile
+Else
+DoCmd.OpenForm "QUality Controlqc3"
+
+End If
+End Function
+Public Function CloseQC2Screen()
+Dim VScreen
+VScreen = InputBox("Go to: " & vbCr & vbCr & "1. Foreclosure Screen" & vbCr & "2. Quality Control Queue" & vbCr & vbCr & "enter 1 or 2")
+
+Dim vFile As Long
+
+vFile = Forms![qcscreenqc2]!filenum
+'DoCmd.Close acForm, "QCscreenqc2"
+Call CloseFormsQC
+If VScreen = 1 Then
+If LockFile(vFile) Then DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & vFile
+Else
+DoCmd.OpenForm "QUality Control"
+End If
+
+
+End Function
+
+Public Function QCScreens()
+Dim vFile As Long
+
+Dim VSel2
+
+Call CloseFormsQC
+
+VSelState = InputBox("1. Md" & vbCr & "2. DC" & vbCr & "3. VA" & vbCr & "enter 1, 2 or 3")
+
+If VSelState = 1 Then
+VSel2 = InputBox("1. QC1" & vbCr & "2. QC2" & vbCr & "3. QC3" & vbCr & vbCr & "enter 1 or 2")
+
+If VSel2 = 1 Then
+DoCmd.OpenForm "Quality ControlFDL"
+
+ElseIf VSel2 = 2 Then
+VSel2 = InputBox("1. BWW Sent" & vbCr & "2. Client Sent" & vbCr & vbCr & "enter 1 or 2")
+If VSel2 = 1 Then
+DoCmd.OpenForm "Quality ControlNOI-BWW"
+Else
+DoCmd.OpenForm "Quality ControlNOI"
+End If
+
+Else
+DoCmd.OpenForm "Quality Controlqc3"
+End If
+
+ElseIf VSelState = 2 Then
+VSelQue = InputBox("1. QC1" & vbCr & "2. QC2" & vbCr & "3.  QC3" & vbCr & "enter 1, 2 or 3")
+If VSelQue = 1 Then
+DoCmd.OpenForm "Quality ControlFDL"
+ElseIf VSelQue = 2 Then
+DoCmd.OpenForm "QC2DCQueue"
+ElseIf VSelQue = 3 Then
+DoCmd.OpenForm "qc3dcqueue"
+End If
+
+ElseIf VSelState = 3 Then
+VSelQue = InputBox("1. QC1" & vbCr & "2. QC2" & vbCr & vbCr & "enter 1 or 2")
+If VSelQue = 1 Then
+DoCmd.OpenForm "Quality ControlFDL"
+Else
+DoCmd.OpenForm "Quality Control"
+End If
+
+End If
+
+
+End Function
+
+Public Function CloseQC2ScreenDC()
+Dim VScreen
+VScreen = InputBox("Go to: " & vbCr & vbCr & "1. Foreclosure Screen" & vbCr & "2. Quality Control Queue" & vbCr & vbCr & "enter 1 or 2")
+
+Dim vFile As Long
+If CurrentProject.AllForms("assignmentformVA").IsLoaded Then vFile = Forms![assignmentformVA]!SubFileNum
+If CurrentProject.AllForms("qcscreenqc2dc").IsLoaded Then vFile = Forms![QCScreenQC2DC]!SubFileNum
+
+'DoCmd.Close acForm, "assignmentformva"
+Call CloseFormsQC
+
+If VScreen = 1 Then
+If LockFile(vFile) Then DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & vFile
+Else
+DoCmd.OpenForm "QC2DCQueue"
+End If
+End Function
+
+Public Function GoToDCQC2()
+Dim vFileNo As Long
+
+vFileNo = Forms![QC2DCQueue]![BGW]
+VState = Forms![QC2DCQueue]![State]
+
+
+DocName = "QCScreenQC2DC"
+linkcriteria = "[SubFileNum] = " & vFileNo
+
+DoCmd.Close acForm, "QC2DCQueue"
+
+
+If LockFile(vFileNo) Then DoCmd.OpenForm DocName, , , linkcriteria
+End Function

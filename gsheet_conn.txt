@@ -1,0 +1,25 @@
+Public Function gsheet_conn()
+
+Dim gsheet_key as string
+gsheet_key = "1SnUDozZyx4lRQRjd87T77Cu5R0kuv86GL8Dli-shnfQ"
+   With ActiveSheet.QueryTables.Add(Connection:= _
+        "TEXT;https://docs.google.com/spreadsheet/ccc?key=" & gsheet_key & "&usp=sharing&output=csv" _
+        , Destination:=Range("$A$1"))
+        .Name = _
+        "gsheet_import"
+        .FieldNames = True
+        .PreserveFormatting = True
+        .RefreshStyle = xlOverwriteCells
+        .SaveData = True
+        .AdjustColumnWidth = True
+        .RefreshPeriod = 0
+        .TextFilePlatform = 437
+        .TextFileStartRow = 1
+        .TextFileParseType = xlDelimited
+        .TextFileTextQualifier = xlTextQualifierDoubleQuote
+        .TextFileCommaDelimiter = True
+        .TextFileColumnDataTypes = Array(1, 1, 1, 1, 1, 1, 1, 1, 1)
+        .TextFileTrailingMinusNumbers = True
+        .Refresh BackgroundQuery:=False
+    End With
+End Function

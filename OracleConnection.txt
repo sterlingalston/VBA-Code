@@ -1,0 +1,28 @@
+Function OracleConnect() As Boolean
+
+    Dim ws As Workspace
+    Dim db As Database
+    Dim LConnect As String
+
+    On Error GoTo Err_Execute
+
+    'Use {Microsoft ODBC for Oracle} ODBC connection
+    LConnect = "ODBC;DSN=BIDB;UID=;PWD=;SERVER=BI"
+
+    'Point to the current workspace
+    Set ws = DBEngine.Workspaces(0)
+
+    'Connect to Oracle
+    Set db = ws.OpenDatabase("", False, True, LConnect)
+
+    db.Close
+
+    OracleConnect = True
+
+    Exit Function
+
+Err_Execute:
+    MsgBox "Connecting to Oracle failed."
+    OracleConnect = False
+
+End Function

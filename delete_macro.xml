@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-16" standalone="no"?>
+<DataMacros
+    xmlns="http://schemas.microsoft.com/office/accessservices/2009/11/application">
+    <DataMacro Event="AfterDelete">
+        <Statements>
+            <Comment>ID</Comment>
+            <ConditionalBlock>
+                <If>
+                    <Condition>Updated("ID")</Condition>
+                    <Statements>
+                        <CreateRecord>
+                            <Data Alias="tblAudit">
+                                <Reference>tblAudit</Reference>
+                            </Data>
+                            <Statements>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.TableName</Argument>
+                                    <Argument Name="Value">"SLA_BSAC_Mod"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.Action</Argument>
+                                    <Argument Name="Value">"DELETE"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.ChangeDate</Argument>
+                                    <Argument Name="Value">Now()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.UserName</Argument>
+                                    <Argument Name="Value">getUserName()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.FieldName</Argument>
+                                    <Argument Name="Value">"ID"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.OldValue</Argument>
+                                    <Argument Name="Value">Nz([Old].[ID],"")</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.PKeyID</Argument>
+                                    <Argument Name="Value">[Old].[ID]</Argument>
+                                </Action>
+                            </Statements>
+                        </CreateRecord>
+                    </Statements>
+                </If>
+            </ConditionalBlock>
+            <Comment>Lease ID</Comment>
+            <ConditionalBlock>
+                <If>
+                    <Condition>Updated("[SLA_BSAC_Mod].[Lease ID]")</Condition>
+                    <Statements>
+                        <CreateRecord>
+                            <Data Alias="tblAudit">
+                                <Reference>tblAudit</Reference>
+                            </Data>
+                            <Statements>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.TableName</Argument>
+                                    <Argument Name="Value">"SLA_BSAC_Mod"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.Action</Argument>
+                                    <Argument Name="Value">"DELETE"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.ChangeDate</Argument>
+                                    <Argument Name="Value">Now()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.UserName</Argument>
+                                    <Argument Name="Value">getUserName()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.FieldName</Argument>
+                                    <Argument Name="Value">"Lease ID"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.OldValue</Argument>
+                                    <Argument Name="Value">Nz([Old].[Lease ID],"")</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.PKeyID</Argument>
+                                    <Argument Name="Value">[Old].[ID]</Argument>
+                                </Action>
+                            </Statements>
+                        </CreateRecord>
+                    </Statements>
+                </If>
+            </ConditionalBlock>
+            <Comment>Lease Number</Comment>
+            <ConditionalBlock>
+                <If>
+                    <Condition>Updated("[SLA_BSAC_Mod].[Lease Number]")</Condition>
+                    <Statements>
+                        <CreateRecord>
+                            <Data Alias="tblAudit">
+                                <Reference>tblAudit</Reference>
+                            </Data>
+                            <Statements>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.TableName</Argument>
+                                    <Argument Name="Value">"SLA_BSAC_Mod"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.Action</Argument>
+                                    <Argument Name="Value">"DELETE"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.ChangeDate</Argument>
+                                    <Argument Name="Value">Now()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.UserName</Argument>
+                                    <Argument Name="Value">getUserName()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.FieldName</Argument>
+                                    <Argument Name="Value">"Lease Number"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.OldValue</Argument>
+                                    <Argument Name="Value">Nz([Old].[Lease Number],"")</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.PKeyID</Argument>
+                                    <Argument Name="Value">[Old].[ID]</Argument>
+                                </Action>
+                            </Statements>
+                        </CreateRecord>
+                    </Statements>
+                </If>
+            </ConditionalBlock>
+            <Comment>Comments</Comment>
+            <ConditionalBlock>
+                <If>
+                    <Condition>Updated("[SLA_BSAC_Mod].[Comments]")</Condition>
+                    <Statements>
+                        <CreateRecord>
+                            <Data Alias="tblAudit">
+                                <Reference>tblAudit</Reference>
+                            </Data>
+                            <Statements>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.TableName</Argument>
+                                    <Argument Name="Value">"SLA_BSAC_Mod"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.Action</Argument>
+                                    <Argument Name="Value">"DELETE"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.ChangeDate</Argument>
+                                    <Argument Name="Value">Now()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.UserName</Argument>
+                                    <Argument Name="Value">getUserName()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.FieldName</Argument>
+                                    <Argument Name="Value">"Comments"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.OldValue</Argument>
+                                    <Argument Name="Value">Nz([Old].[Comments],"")</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.PKeyID</Argument>
+                                    <Argument Name="Value">[Old].[ID]</Argument>
+                                </Action>
+                            </Statements>
+                        </CreateRecord>
+                    </Statements>
+                </If>
+            </ConditionalBlock>
+            <Comment>SLA_BSAC_Mod</Comment>
+            <ConditionalBlock>
+                <If>
+                    <Condition>Updated("[SLA_BSAC_Mod].[SLA_BSAC_Mod]")</Condition>
+                    <Statements>
+                        <CreateRecord>
+                            <Data Alias="tblAudit">
+                                <Reference>tblAudit</Reference>
+                            </Data>
+                            <Statements>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.UserName</Argument>
+                                    <Argument Name="Value">getUserName()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.Action</Argument>
+                                    <Argument Name="Value">"DELETE"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.ChangeDate</Argument>
+                                    <Argument Name="Value">Now()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.TableName</Argument>
+                                    <Argument Name="Value">"SLA_BSAC_Mod"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.FieldName</Argument>
+                                    <Argument Name="Value">"SLA_BSAC_Mod"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.OldValue</Argument>
+                                    <Argument Name="Value">Nz([Old].[SLA_BSAC_Mod],"")</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.PKeyID</Argument>
+                                    <Argument Name="Value">[Old].[ID]</Argument>
+                                </Action>
+                            </Statements>
+                        </CreateRecord>
+                    </Statements>
+                </If>
+            </ConditionalBlock>
+            <Comment>SLA</Comment>
+            <ConditionalBlock>
+                <If>
+                    <Condition>Updated("[SLA_BSAC_Mod].[SLA_BSAC_Mod]")</Condition>
+                    <Statements>
+                        <CreateRecord>
+                            <Data Alias="tblAudit">
+                                <Reference>tblAudit</Reference>
+                            </Data>
+                            <Statements>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.UserName</Argument>
+                                    <Argument Name="Value">getUserName()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.Action</Argument>
+                                    <Argument Name="Value">"DELETE"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.ChangeDate</Argument>
+                                    <Argument Name="Value">Now()</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.TableName</Argument>
+                                    <Argument Name="Value">"SLA_BSAC_Mod"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.FieldName</Argument>
+                                    <Argument Name="Value">"SLA"</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.OldValue</Argument>
+                                    <Argument Name="Value">Nz([Old].[SLA],"")</Argument>
+                                </Action>
+                                <Action Name="SetField">
+                                    <Argument Name="Field">tblAudit.PKeyID</Argument>
+                                    <Argument Name="Value">[Old].[ID]</Argument>
+                                </Action>
+                            </Statements>
+                        </CreateRecord>
+                    </Statements>
+                </If>
+            </ConditionalBlock>
+        </Statements>
+    </DataMacro>
+</DataMacros>

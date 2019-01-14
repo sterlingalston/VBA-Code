@@ -1,0 +1,3386 @@
+Attribute VB_Name = "EvictionModule"
+Option Compare Database
+Public Function UDSummons()
+Dim VOccupied
+
+If [Forms]![foreclosure database screen]![abbrsec] = "" Then
+MsgBox ("Must fill in abbreviated Secured Party!")
+Exit Function
+End If
+
+Dim VVar
+
+VVar = Forms![foreclosure database screen]!ForeclosureSubForm.Form!OccupiedVA
+
+
+If VVar = 3 Or _
+VVar = 2 Or _
+VVar = 5 Or _
+VVar = 0 Or _
+IsNull(VVar) Then
+VOccupied = 1
+Else
+VOccupied = 0
+End If
+
+
+If VOccupied = 0 Then
+
+DoCmd.OpenReport "EvictionVAUnlawfulDetainer", acViewPreview
+DoCmd.OpenReport "EvictionVAUnlawfulDetainPage1", acViewPreview
+DoCmd.OpenReport "EvictionVAUnlawfulDetainPage2", acViewPreview
+
+ElseIf VOccupied = 1 Then
+
+If Date < (VVar2 + 90) Then
+
+Dim VPsswd
+VPsswd = InputBox("The 90 Day NTV period has not yet expired on this loan and the party occupying the property may be entitled to protection under the PTFA. If you believe this message is in error, contact your supervisor or an attorney for assistance or enter password for override.", "90 Day NTV Check")
+If VPsswd = "ev1ction" Then
+DoCmd.OpenReport "EvictionVAUnlawfulDetainer", acViewPreview
+DoCmd.OpenReport "EvictionVAUnlawfulDetainPage1", acViewPreview
+DoCmd.OpenReport "EvictionVAUnlawfulDetainPage2", acViewPreview
+Else
+MsgBox ("UD Summons will not print out")
+Exit Function
+End If
+
+Else
+DoCmd.OpenReport "EvictionVAUnlawfulDetainer", acViewPreview
+DoCmd.OpenReport "EvictionVAUnlawfulDetainPage1", acViewPreview
+DoCmd.OpenReport "EvictionVAUnlawfulDetainPage2", acViewPreview
+End If
+
+
+End If
+
+
+
+End Function
+Public Function AttorneyEVICBar() As String
+
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+VselAtt = ""
+
+'Eviction Code
+Dim strsqlE, VVar
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!attorney_signs
+Else
+VVar = Null
+End If
+rsE.Close
+'End Eviction Code
+
+
+If IsNull(VVar) Then
+Vattorney = MsgBox("Please return to Eviction screen and select which Attorney signs the Evictions documents", vbOKOnly)
+att.Close
+Exit Function
+Else
+Vattorney = VVar
+End If
+
+If Vattorney Like "Rach*" Then
+AttorneyEVICBar = att![Attorney5_Bar#]
+ElseIf Vattorney Like "Jay*" Then
+AttorneyEVICBar = att![Attorney12_Bar#]
+ElseIf Vattorney Like "Jak*" Then
+AttorneyEVICBar = att![Attorney2_Bar#]
+ElseIf Vattorney Like "Carri*" Then
+AttorneyEVICBar = att![Attorney7_Bar#]
+End If
+
+att.Close
+
+
+End Function
+
+
+Public Function AttorneyEVICNTQVa() As String
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim VMname As String
+
+'Eviction Code
+Dim strsqlE, VVar
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!attorney_signs
+Else
+VVar = Null
+End If
+rsE.Close
+'End Eviction Code
+
+strsql = "Select * from employees where EmployeeID = " & """" & VVar & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+VselAtt = ""
+
+If rs.EOF Then
+VselAtt = MsgBox("Please return to Eviction screen and select who signs the Notice to Quit", vbOKOnly)
+rs.Close
+Exit Function
+Else
+If Not IsNull(rs!MiddleName) Then
+VMname = rs!MiddleName
+Else
+VMname = ""
+End If
+
+If VMname = "" Then
+AttorneyEVICNTQVa = rs!FirstName & " " & rs!LastName
+Else
+AttorneyEVICNTQVa = rs!FirstName & " " & VMname & " " & rs!LastName
+End If
+End If
+
+rs.Close
+End Function
+Public Function AttorneyevicMAVa()
+Dim rs As RecordSet
+Dim strsql As String
+Dim VMname As String
+
+'Eviction Code
+Dim strsqlE, VVar
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!signs_ma
+Else
+VVar = Null
+End If
+rsE.Close
+'End Eviction Code
+
+strsql = "Select * from employees where EmployeeID = " & """" & VVar & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+VselAtt = ""
+
+If rs.EOF Then
+VselAtt = MsgBox("Please return to Eviction screen and select who signs the Military Affidavit", vbOKOnly)
+rs.Close
+Exit Function
+Else
+If Not IsNull(rs!MiddleName) Then
+VMname = rs!MiddleName
+Else
+VMname = ""
+End If
+If VMname = "" Then
+AttorneyevicMAVa = rs!FirstName & " " & rs!LastName
+Else
+AttorneyevicMAVa = rs!FirstName & " " & VMname & " " & rs!LastName
+End If
+End If
+
+rs.Close
+End Function
+Public Function AttorneyEvicWrit()
+Dim rs As RecordSet
+Dim strsql As String
+Dim VMname As String
+
+'Eviction Code
+Dim strsqlE, VVar
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!signs_writ
+Else
+VVar = Null
+End If
+rsE.Close
+'End Eviction Code
+
+strsql = "Select * from employees where EmployeeID = " & """" & VVar & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+VselAtt = ""
+
+If rs.EOF Then
+VselAtt = MsgBox("Please return to Eviction screen and select who signs the Writ", vbOKOnly)
+rs.Close
+Exit Function
+Else
+If Not IsNull(rs!MiddleName) Then
+VMname = rs!MiddleName
+Else
+VMname = ""
+End If
+If VMname = "" Then
+AttorneyEvicWrit = rs!FirstName & " " & rs!LastName & ", " & rs![VSB#]
+Else
+AttorneyEvicWrit = rs!FirstName & " " & VMname & " " & rs!LastName & ", " & rs![VSB#]
+End If
+End If
+
+rs.Close
+End Function
+Public Function attorneyEvic2() As String
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+VselAtt = ""
+
+'Eviction Code
+Dim strsqlE, VVar
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!attorney_Signs2
+Else
+VVar = Null
+End If
+rsE.Close
+'End Eviction Code
+
+If IsNull(VVar) Then
+attorneyEvic2 = ""
+Else
+attorneyEvic2 = VVar
+End If
+
+att.Close
+End Function
+Public Function AttorneyEVIC() As String
+
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+VselAtt = ""
+
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!attorney_signs
+'VVar2 = rsE!DateNoticeToQuitSent_VA
+Else
+VVar = Null
+'VVar2 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+If IsNull(VVar) Then
+VselAtt = MsgBox("Please return to Eviction screen and select which Attorney signs the Evictions documents", vbOKOnly)
+att.Close
+Exit Function
+Else
+AttorneyEVIC = VVar
+End If
+
+att.Close
+End Function
+Public Function NotaryEvicState()
+
+VNotaryEv = InputBox("Where is the document being signed?" & vbCr & vbCr & "1. Rockville" & vbCr & "2. Arlington" & vbCr & "3. Richmond" & vbCr & "4. Other")
+If VNotaryEv = 1 Then
+NotaryEvicState = "Maryland"
+ElseIf VNotaryEv = 2 Or VNotaryEv = 3 Then
+NotaryEvicState = "Virginia"
+ElseIf VNotaryEv = 4 Then
+NotaryEvicState = "______________"
+End If
+
+End Function
+Public Function NotaryEvicCounty()
+
+VNotaryEv2 = InputBox("Where is the document being signed?" & vbCr & vbCr & "1. Rockville" & vbCr & "2. Arlington" & vbCr & "3. Richmond" & vbCr & "4. Other")
+If VNotaryEv = 1 Then
+NotaryEvicCounty = "Montgomery"
+ElseIf VNotaryEv2 = 2 Then
+NotaryEvicCounty = "Arlington"
+ElseIf VNotaryEv2 = 3 Then
+NotaryEvicCounty = "Henrico"
+ElseIf VNotaryEv2 = 4 Then
+NotaryEvicCounty = "______________"
+End If
+
+
+End Function
+Public Function RunEvicReqAdm()
+Call EvicMerge
+
+Dim oDoc As Word.document
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\Eviction\EvicReqAdm.doc", "Word.Document")
+oDoc.Application.Visible = True
+oDoc.MailMerge.OpenDataSource _
+name:=pathuser() & "\EvicMerge.txt"
+oDoc.MailMerge.Execute
+oDoc.Close
+End Function
+
+Public Function RunEvicBOP()
+Call EvicMerge
+
+Dim oDoc As Word.document
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\Eviction\EvicBOPTemplate.doc", "Word.Document")
+oDoc.Application.Visible = True
+oDoc.MailMerge.OpenDataSource _
+name:=pathuser() & "\EvicMerge.txt"
+oDoc.MailMerge.Execute
+oDoc.Close
+End Function
+Public Function RunEvicMilAffReq()
+Call EvicMerge
+
+Dim oDoc As Word.document
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\Eviction\MilAffReq.doc", "Word.Document")
+oDoc.Application.Visible = True
+oDoc.MailMerge.OpenDataSource _
+name:=pathuser() & "\EvicMerge.txt"
+oDoc.MailMerge.Execute
+oDoc.Close
+End Function
+Public Function RunEvicPCltr()
+Call EvicMerge
+
+Dim oDoc As Word.document
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\Eviction\EvicPCLtr.doc", "Word.Document")
+oDoc.Application.Visible = True
+oDoc.MailMerge.OpenDataSource _
+name:=pathuser() & "\EvicMerge.txt"
+oDoc.MailMerge.Execute
+oDoc.Close
+End Function
+Public Function RunEvicMSJ()
+Call EvicMerge
+
+Dim oDoc As Word.document
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\Eviction\EvicMSJ.doc", "Word.Document")
+oDoc.Application.Visible = True
+oDoc.MailMerge.OpenDataSource _
+name:=pathuser() & "\EvicMerge.txt"
+oDoc.MailMerge.Execute
+oDoc.Close
+End Function
+Public Function EvicChk()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+Exit Function
+End If
+End If
+
+End Function
+Public Function EvicMdChk()
+Dim VEvic As String
+
+If IsNull(Forms![foreclosure database screen]![PostsaleSubForm].Form![RatDateMD]) Then
+VEvic = MsgBox("Sale Has NOT RATIFIED, Documents Menu will not open.", vbOKOnly)
+End If
+
+End Function
+Public Function file()
+file = Forms![foreclosure database screen]!filenum
+
+End Function
+Public Function EvicVA1stHearing()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("evicva1sthearing")
+If Not rs.EOF Then
+EvicVA1stHearing = Format(rs!Hearing_Date, "mm/dd/yy") & " @ " & Format(rs!hearing_time, "hh:mm am/pm")
+End If
+
+End Function
+Public Function EvicVATRIALHearing()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("evicvaTRIALhearing")
+If Not rs.EOF Then
+EvicVATRIALHearing = Format(rs!Hearing_Date, "mm/dd/yy") & " @ " & Format(rs!hearing_time, "hh:mm am/pm")
+End If
+
+End Function
+Public Function EvicVA1stHearingText()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("evicva1sthearing")
+If Not rs.EOF Then
+EvicVA1stHearingText = Format(rs!Hearing_Date, "mmmm dd, yyyy") & " @ " & Format(rs!hearing_time, "hh:mm:ss am/pm")
+End If
+
+End Function
+Public Function AffOccEvic()
+DoCmd.OpenReport "Affidavit Eviction Occupancy", acViewPreview
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\AffidavitEvictionPage2and3.PDF")
+
+End Function
+Public Function EvicDeadlines()
+CurrentDb.Execute "Delete * from EvictionDeadlines;", dbFailOnError
+
+Dim rs As RecordSet
+Dim rsDL As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("EvictionDeadlines", dbOpenDynaset, dbSeeChanges)
+
+Dim VTasks
+VTasks = InputBox("1. All Tasks" & vbCr & "2. Current Tasks" & vbCr & "3. Overdue Tasks" & vbCr & "enter 1, 2 or 3")
+
+If VTasks = 1 Then
+DoCmd.OpenQuery ("EvictionDeadlineEvicAcc")
+DoCmd.OpenQuery ("EvictionDeadlineNTQSent")
+DoCmd.OpenQuery ("EvictionDeadlineClientUpdated")
+DoCmd.OpenQuery ("EvictionDeadlineSummons")
+DoCmd.OpenQuery ("EvictionDeadlineAttPacket")
+DoCmd.OpenQuery ("EvictionDeadlineBOP")
+
+ElseIf VTasks = 2 Then
+DoCmd.OpenQuery ("EvictionDeadlineEvicAcc")
+DoCmd.OpenQuery ("EvictionDeadlineNTQSent")
+DoCmd.OpenQuery ("EvictionDeadlineClientUpdated")
+DoCmd.OpenQuery ("EvictionDeadlineSummons")
+DoCmd.OpenQuery ("EvictionDeadlineAttPacket")
+DoCmd.OpenQuery ("EvictionDeadlineBOP")
+
+ElseIf VTasks = 3 Then
+
+Else
+MsgBox ("Must Enter 1, 2 or 3")
+End If
+
+
+End Function
+Public Function totalevicfees()
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "select * from evictionextrafees where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!Fee > 0 Then
+totalevicfees = rs!Fee + totalevicfees
+End If
+
+rs.MoveNext
+Loop
+End If
+
+
+End Function
+Public Function SecuredEvic()
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+
+If Not IsNull(rsE!Abbr_Purchaser) Then
+VVar = rsE!Abbr_Purchaser
+Else
+VVar = Null
+End If
+
+Else
+VVar = Null
+
+End If
+rsE.Close
+'End Eviction Code
+
+If Not IsNull(VVar) Then
+SecuredEvic = Var
+
+ElseIf Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!Buyer) Then
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!Buyer = "REO" Then
+SecuredEvic = Forms![foreclosure database screen]![longsecured]
+Else
+SecuredEvic = Forms![foreclosure database screen]!PostsaleSubForm.Form!Buyer
+End If
+
+End If
+
+End Function
+
+Public Function ClientEvicFees()
+
+strsql = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+ClientEvicFees = rs!Litigation_Fee
+
+rs.Close
+
+End Function
+Public Function emailReqOccstat()
+Dim VEvic As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim emailsubject, emailbody As String
+Dim rs As RecordSet
+Dim strsql, VTo As String
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!Broker_Email
+VVar2 = rsE!ReturnDate_VA
+VVar3 = rsE!hearing_time
+VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+If VVar <> "" Then
+VEvic = MsgBox("Send Email Request for Occupancy Status.  Proceed?", vbYesNo)
+
+If VEvic = vbYes Then
+VTo = VVar
+
+emailbody = "Dear Broker/Agent:" & vbCr & vbCr & "This firm has been retained to conduct a post-foreclosure eviction on the above-referenced property. Our records indicate that you have also been assigned to this property by our mutual client. We look forward to working with you on this matter." & _
+vbCr & vbCr & "Prior to filing the eviction action, we require your assistance." & _
+vbCr & vbCr & "New Maryland laws require a foreclosure sale purchaser to make a reasonable inquiry to determine who is occupying the property prior to asking the court for possession. Before this eviction can proceed, you must fill out one of the attached affidavits and promptly return it to this office.  You must mail or hand-deliver a completed affidavit with your original ink signature. Copies and faxes will not be sufficient, as this document will ultimately be filed with the court. " & _
+vbCr & vbCr & "Prior to filling out this affidavit, you must make an investigation to determine who are the current adult occupants of the property.  Which affidavit is used will depend on who the occupants are. If, after a thorough investigation, you determine..." & _
+vbCr & vbCr & "   That the property is occupied only by the former mortgagors, then please fill out and return the attached affidavit titled Mortgagor Occupied." & _
+vbCr & vbCr & "   That the property is occupied by any tenants/non-mortgagor occupants, then please fill out and return the attached affidavit named Tenant Occupied." & _
+vbCr & vbCr & "   That you cannot determine who the present occupants are, then please fill out and return the attached affidavit named Occupant Unknown." & _
+vbCr & vbCr & "Detailed instructions are included on each affidavit. Please review them. " & _
+vbCr & vbCr & "Please note that if we do not receive a signed, original affidavit within seven (7) business days from the date we sent this email, it may become necessary to advise our mutual client of the reason for the delay.  " & _
+vbCr & vbCr & "Should you have any questions or concerns, please contact Claudia Menjivar at 240-482-0704 or evictions@bww-law.com. " & _
+vbCr & vbCr & "Thank you for your prompt assistance," & _
+vbCr & vbCr & "Evictions Department" & _
+vbCr & "BWW Law Group, LLC." & _
+vbCr & "Evictions@bww-law.com"
+
+Set MyOutlook = New Outlook.Application
+
+emailsubject = "Request for Occupancy Status: " & PROP()
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Attachments.ADD "\\rvdv-fs01\DataTransfer\Attachments\VACANTAff.PDF"
+MyMail.Attachments.ADD "\\rvdv-fs01\DataTransfer\Attachments\OccupantUnknownAFF.PDF"
+MyMail.Attachments.ADD "\\rvdv-fs01\DataTransfer\Attachments\MortgagorOccupiedAFF.PDF"
+MyMail.Attachments.ADD "\\rvdv-fs01\DataTransfer\Attachments\OccupiedbyNon-MortAFF.PDF"
+
+MyMail.Subject = emailsubject
+MyMail.body = emailbody
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+MsgBox ("Property Visitation Declaration will Preview to be attached")
+Call PVD
+
+Dim rstjournal As RecordSet
+Dim Vname
+Vname = ""
+Do While Vname = ""
+Vname = Environ("username")
+Loop
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!EntryBy = Environ("username")
+
+!EntryDate = Now()
+!Entry = Vname & " Sent Request for Occupancy Status Email to: " & VTo
+.Update
+End With
+
+
+Else
+MsgBox ("No Broker Email Address input")
+
+End If
+Else
+
+Set MyOutlook = New Outlook.Application
+
+
+
+emailsubject = "Confimatory Letter, please see below"
+emailbody = SecuredParty() & " v. " & debtorsFORE() & vbCr & PROP() & vbCr & VVar2 & " @ " & Format(VVar3, "h:nn am/pm") & vbCr & County() & vbCr & vbCr
+
+DoCmd.OutputTo acOutputReport, "EvictionVACoCounselConfirmLtr", acFormatSNP, pathuser() & "\ConfirmLtr.snp"
+
+strsql = "select co_counsel_email from evictioncocounsel where co_counsel = " & """" & VVar4 & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+If rs!Co_Counsel_email = "" Then
+VTo = ""
+Else
+VTo = rs!Co_Counsel_email
+End If
+
+Else
+MsgBox ("No Co Counsel selected on the Eviction Screen")
+VTo = ""
+End If
+
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Attachments.ADD pathuser() & "\ConfirmLtr.snp"
+MyMail.Subject = emailsubject
+MyMail.body = emailbody
+
+MyMail.Display
+
+
+Set MyMail = Nothing
+
+Set MyOutlook = Nothing
+
+End If
+
+End Function
+
+Public Function EvicEmailPkg()
+Dim VSend
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim emailsubject, emailbody As String
+
+VSend = MsgBox("Send Package via Email?", vbYesNo)
+If VSend = vbYes Then
+VConvRpt = "EvicChronologyMD"
+Call ConvertPDFALL
+
+Set MyOutlook = New Outlook.Application
+emailsubject = "Chronology: Notice to Quit: Motion Possession"
+emailbody = "BWW#: " & Forms![foreclosure database screen]!filenum
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+
+sourcefile = BrowseFLDREvicNTQ()
+destinationfile = pathuser() & "\NTQ.pdf"
+If sourcefile <> "" Then
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+MyMail.Attachments.ADD pathuser() & "\NTQ.pdf"
+End If
+
+sourcefile = BrowseFLDREvicMotPoss()
+destinationfile = pathuser() & "\MotionPoss.pdf"
+If sourcefile <> "" Then
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+MyMail.Attachments.ADD pathuser() & "\MotionPoss.pdf"
+End If
+
+
+MyMail.Attachments.ADD pathuser() & "\evicchronologyMD.pdf"
+
+
+MyMail.To = ""
+MyMail.Subject = emailsubject
+MyMail.body = emailbody + SigEmail()
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+End If
+
+
+
+End Function
+Public Function PrintPTFA()
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\EvictionMDAttachment.pdf")
+
+End Function
+Public Function RunNTQMd()
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!NTV_Walz
+VVar2 = rsE!DateNoticeToQuitSent_VA
+VVar3 = rsE!eviction_company_name
+VVar4 = rsE!clientUpdatesVIA
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+
+If Not IsNull(VVar) Or _
+Not IsNull(VVar2) Then
+MsgBox ("Will not send to Walz.  Either NTV Mailed or NTV to Walz is filled.")
+'Exit Function
+
+ElseIf IsNull(Forms![foreclosure database screen]!longsecured) And IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!Buyer) Then
+MsgBox ("There is no data in either the Secured Party field or the Purchaser field.  NTQ/NTV will not generate until this is complete.")
+Exit Function
+
+ElseIf (Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate < #5/20/2009# And _
+Forms![foreclosure database screen]!Propertycounty <> "Baltimore City") Then
+MsgBox ("Will not send to Walz.  Sale Date is previous to May 20, 2009 and the file is not a Baltimore City File.")
+Exit Function
+End If
+
+If Forms![foreclosure database screen]!EvictionSubFormMD.Form![eviction_company_name] = "Jackson and Associates" Then
+DoCmd.OpenReport "Notice to Quit-MD-JA", acViewPreview
+ElseIf Forms![foreclosure database screen]!Client Like "Wells*" Then
+DoCmd.OpenReport "Notice to Vacate-MD-WELLS", acViewPreview
+Else
+DoCmd.OpenReport "Notice to Quit-MD", acViewPreview
+End If
+
+If Forms![foreclosure database screen]!EvictionSubFormMD.Form![eviction_company_name] = "Fannie Mae" Then
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\EvictionMDAttachment.pdf")
+End If
+
+If Forms![foreclosure database screen]!Client Like "OneWes*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\OWBSCRANotice.pdf")
+End If
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\WellsSCRANotice.pdf")
+End If
+
+'If Forms![foreclosure database screen]!Client Like "Bank of Amer*" Or VVar3 Like "Bank of Am*" Or _
+VVar4 Like "Equato*" Then
+
+'If VVar3 Like "Bank of Am*" Or _
+
+'If VVar4 Like "Equato*" Then
+
+'If VVar3 Like "Bank of Am*" Then
+'DoCmd.OpenReport ("evictionscraletter-boa"), acViewPreview
+'Else
+'DoCmd.OpenReport ("evictionscraletter"), acViewPreview
+'End If
+
+
+Call AddtoJournalManual
+
+
+If (IsNull(VVar) And _
+IsNull(VVar2)) And _
+((Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate > #5/19/2009#) Or _
+(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate < #5/20/2009# And _
+Forms![foreclosure database screen]!Propertycounty = "Baltimore City")) Then
+
+VSel = InputBox("Send Notice to Walz?")
+If VSel = "YES" Then
+Call NTQMd
+Call AddtoJournal
+MsgBox ("Sent to Walz")
+End If
+
+Else
+
+If Not IsNull(VVar) Or _
+Not IsNull(VVar2) Then
+MsgBox ("Will not send to Walz.  Either NTV Mailed or NTV to Walz is filled.")
+
+ElseIf (Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate < #5/20/2009# And _
+Forms![foreclosure database screen]!Propertycounty <> "Baltimore City") Then
+MsgBox ("Will not send to Walz.  Sale Date is previous to May 20, 2009 and the file is not a Baltimore City File.")
+End If
+
+If Forms![foreclosure database screen]!EvictionSubFormMD.Form![eviction_company_name] = "Fannie Mae" Then
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\EvictionMDAttachment.pdf")
+End If
+
+
+If Forms![foreclosure database screen]!Client Like "OneWes*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\OWBSCRANotice.pdf")
+End If
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\WellsSCRANotice.pdf")
+End If
+
+End If
+
+If Forms![foreclosure database screen]!EvictionSubFormMD.Form![eviction_company_name] = "Jackson and Associates" Then
+DoCmd.OpenReport "Notice to Quit-MD-JA", acViewPreview
+ElseIf Forms![foreclosure database screen]!Client Like "Wells*" Then
+DoCmd.OpenReport "Notice to Vacate-MD-WELLS", acViewPreview
+Else
+DoCmd.OpenReport "Notice to Quit-MD", acViewPreview
+End If
+
+If Forms![foreclosure database screen]!Client Like "OneWes*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\OWBSCRANotice.pdf")
+End If
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\WellsSCRANotice.pdf")
+End If
+
+'If Forms![foreclosure database screen]!Client Like "Bank of Amer*" Or VVar3 Like "Bank of Am*" Or _
+VVar4 Like "Equato*" Then
+
+'If VVar4 Like "Equato*" Then
+'DoCmd.OpenReport ("evictionscraletter"), acViewPreview
+'End If
+
+
+If Forms![foreclosure database screen]!EvictionSubFormMD.Form![eviction_company_name] = "Fannie Mae" Then
+Else
+
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\EvictionMDAttachment.pdf")
+End If
+
+End Function
+
+Public Function AddtoJournalManual()
+Dim rs As RecordSet, rstjournal As RecordSet
+Dim Vname
+Vname = ""
+Do While Vname = ""
+Vname = Environ("username")
+
+Loop
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!EntryBy = Environ("username")
+
+!EntryDate = Now()
+!Entry = Vname & " Sent Notice to Vacate Letters Manually (Wells/FHA File)"
+.Update
+End With
+End Function
+
+Public Function AddtoJournal()
+Dim rs As RecordSet, rstjournal As RecordSet
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!EntryBy = Environ("username")
+!EntryDate = Now()
+!Entry = Vname & " Sent Notice to Vacate Letters VIA Walz"
+.Update
+.Close
+End With
+
+End Function
+Public Function RunNTQVa()
+
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If Not rsE.EOF Then
+VVar = rsE!SCRA_Sent
+VVar2 = rsE!DateNoticeToQuitSent_VA
+VVar3 = rsE!eviction_company_name
+VVar4 = rsE!clientUpdatesVIA
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+End If
+rsE.Close
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" And (IsNull(VVar) Or _
+Date < VVar + 10) Then
+MsgBox ("On Bank of America files, you must send the BOA SCRA notice at least 10 days before you sent the Notice to Quit or Notice to Vacate. Based on the database, it does not appear that the SCRA Notice has been sent yet, or that 10 days has elapsed since the SCRA Notice was sent. Please send the SCRA notice first, and confirm the date it was sent in eviction screen. NTQ/NTV will not generate until this is complete.")
+Exit Function
+
+ElseIf IsNull(Forms![foreclosure database screen]!longsecured) And IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!Buyer) Then
+MsgBox ("There is no data in either the Secured Party field or the Purchaser field.  NTQ/NTV will not generate until this is complete.")
+Exit Function
+
+
+
+Else
+
+VSel = InputBox("Send Notice to Walz?")
+If VSel = "YES" Then
+Call NTQVa
+Call AddtoJournal
+Call NTQLettersVa
+Else
+Call NTQLettersVa
+End If
+
+End If
+
+'Call NTQLettersVa
+
+'End If
+
+End Function
+Public Function EvicMDMini()
+
+VSel = InputBox("Choose Format: " & vbCr & "1. Excel" & vbCr & "2. Report")
+If VSel = 1 Then
+Dim VSel2
+VSel2 = InputBox("1. Billed and Closed" & vbCr & "2. Not Billed or Closed")
+If VSel2 = 1 Then
+DoCmd.OpenQuery "Evicmdall", acViewPreview
+Else
+DoCmd.OpenQuery "EvicMD", acViewPreview
+End If
+
+Else
+DoCmd.OpenReport "EvicMDMini", acViewPreview
+
+End If
+
+
+
+End Function
+Public Function MilitaryNO()
+Dim MilUNK
+
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!Mil1
+VVar2 = rsE!mil2
+VVar3 = rsE!mil3
+VVar4 = rsE!mil4
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+End If
+rsE.Close
+
+
+If firstdebtor() <> "" And Forms![foreclosure database screen]!Ssno_1 <> "" Then
+MilitaryNO = firstdebtor() & ", "
+Else
+MilUNK = 1
+End If
+
+If secondDebtor() <> "" And Forms![foreclosure database screen]!Ssno_2 <> "" Then
+MilitaryNO = MilitaryNO + secondDebtor() & ", "
+Else
+MilUNK = 1
+End If
+
+If thirddebtor() <> "" And Forms![foreclosure database screen]!Ssno_3 <> "" Then
+MilitaryNO = MilitaryNO + thirddebtor() & ", "
+Else
+MilUNK = 1
+End If
+
+If fourthdebtor() <> "" And Forms![foreclosure database screen]!Ssno_4 <> "" Then
+MilitaryNO = MilitaryNO + fourthdebtor() & ", "
+Else
+MilUNK = 1
+End If
+
+If fifthdebtor() <> "" And Forms![foreclosure database screen]!ssno_5 <> "" Then
+MilitaryNO = MilitaryNO + fifthdebtor() & ", "
+Else
+MilUNK = 1
+End If
+
+If Occupant1() <> "" And _
+VVar = 1 Or VVar = -1 Then
+MilitaryNO = MilitaryNO + Occupant1() & ", "
+Else
+MilUNK = 1
+End If
+
+If Occupant2() <> "" And _
+VVar2 = 1 Or VVar2 = -1 Then
+MilitaryNO = MilitaryNO + Occupant2() & ", "
+Else
+MilUNK = 1
+End If
+
+If Occupant3() <> "" And _
+VVar3 = 1 Or VVar3 = -1 Then
+MilitaryNO = MilitaryNO + Occupant3() & ", "
+Else
+MilUNK = 1
+End If
+
+If Occupant4() <> "" And _
+VVar3 = 1 Or VVar4 = -1 Then
+MilitaryNO = MilitaryNO + Occupant4() & ", "
+Else
+MilUNK = 1
+End If
+
+End Function
+Public Function EvicCountDebtors()
+Dim VCount, Vcounty2, vdebtors As Integer
+vdebtors = 0
+
+If (IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Or Forms![foreclosure database screen]![Mailing AddressB] = "") And _
+(IsNull(Forms![foreclosure database screen]![Mailing Address]) Or Forms![foreclosure database screen]![Mailing Address] = "") Then
+VCount = 1
+ElseIf Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) And _
+Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+VCount = 3
+Else
+VCount = 2
+End If
+
+
+If Forms![foreclosure database screen]!LastNameDebtor1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor3 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor4 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo1 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo2 <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Occupant1() <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+If Occupant3() <> "" Then
+vdebtors = vdebtors + 1
+End If
+If Occupant2() <> "" Then
+vdebtors = vdebtors + 1
+End If
+If Occupant4() <> "" Then
+vdebtors = vdebtors + 1
+End If
+
+EvicCountDebtors = vdebtors + 1
+
+
+End Function
+Public Function EvicVACivilForm()
+
+Dim rsnotice As RecordSet
+Dim Vcnt
+
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+Set rsnotice = CurrentDb.OpenRecordset("Notices", dbOpenDynaset, dbSeeChanges)
+
+If Forms![foreclosure database screen]!LastNameDebtor2 <> "" Or _
+Not IsNull(Forms![foreclosure database screen]!LastNameDebtor2) Then
+
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = "3"
+.Update
+End With
+
+Vcnt = 3
+Else
+Vcnt = 2
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor3 <> "" Or _
+Not IsNull(Forms![foreclosure database screen]!LastNameDebtor3) Then
+With rsnotice
+.AddNew
+!NoticeTo = thirddebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Vcnt + 1
+.Update
+End With
+Vcnt = Vcnt + 1
+Else
+Vcnt = Vcnt
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor4 <> "" Or _
+Not IsNull(Forms![foreclosure database screen]!lastnamedebtor4) Then
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Vcnt + 1
+.Update
+End With
+Vcnt = Vcnt + 1
+Else
+Vcnt = Vcnt
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor5 <> "" Or _
+Not IsNull(Forms![foreclosure database screen]!lastnamedebtor5) Then
+With rsnotice
+.AddNew
+!NoticeTo = fifthdebtor()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Vcnt + 1
+.Update
+End With
+Vcnt = Vcnt + 1
+Else
+Vcnt = Vcnt
+End If
+
+If Occupant1() <> "" Then
+With rsnotice
+.AddNew
+!NoticeTo = Occupant1()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Vcnt + 1
+.Update
+End With
+Vcnt = Vcnt + 1
+Else
+Vcnt = Vcnt
+End If
+
+If Occupant2() <> "" Then
+With rsnotice
+.AddNew
+!NoticeTo = Occupant1()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Vcnt + 1
+.Update
+End With
+Vcnt = Vcnt + 1
+Else
+Vcnt = Vcnt
+End If
+If Occupant3() <> "" Then
+With rsnotice
+.AddNew
+!NoticeTo = Occupant1()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Vcnt + 1
+.Update
+End With
+Vcnt = Vcnt + 1
+Else
+Vcnt = Vcnt
+End If
+If Occupant4() <> "" Then
+With rsnotice
+.AddNew
+!NoticeTo = Occupant1()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = Vcnt + 1
+.Update
+End With
+Vcnt = Vcnt + 1
+Else
+Vcnt = Vcnt
+End If
+
+
+End Function
+Public Function Occupant1()
+
+'Eviction Code
+Dim VVar, VVar2, VVar3, VVar4, VPutOut, VVara, VVar2a, VVar3a, VVar4a, VVarb, VVar2b, VVar3b, VVar4b
+Dim strsqlE
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & GblFilenum & ";"
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If Not rsE.EOF Then
+VVar = rsE!Occ_Last1
+VVar2 = rsE!Occ_Last2
+VVar3 = rsE!Occ_Last3
+VVar4 = rsE!Occ_Last4
+VVara = rsE!Occ_First1
+VVar2a = rsE!Occ_First2
+VVar3a = rsE!Occ_First3
+VVar4a = rsE!Occ_First4
+VVarb = rsE!Occ_Middle1
+VVar2b = rsE!Occ_Middle2
+VVar3b = rsE!Occ_Middle3
+VVar4b = rsE!Occ_Middle4
+VPutOut = VPutOut
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+VVara = Null
+VVar2a = Null
+VVar3a = Null
+VVar4a = Null
+VVarb = Null
+VVar2b = Null
+VVar3b = Null
+VVar4b = Null
+VPutOut = Null
+
+End If
+rsE.Close
+'End Eviction Code
+
+If VVar <> "" Or _
+Not IsNull(VVar) Then
+If VVarb <> "" Then
+Occupant1 = VVara & " " & VVarb & " " & VVar
+Else
+Occupant1 = VVara & " " & VVar
+End If
+End If
+
+End Function
+Public Function OccupantEv1()
+
+'Eviction Code
+Dim VVar, VVar2, VVar3, VVar4, VPutOut, VVara, VVar2a, VVar3a, VVar4a, VVarb, VVar2b, VVar3b, VVar4b
+Dim strsqlE
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & GblFilenum & ";"
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If Not rsE.EOF Then
+VVar = rsE!Occ_Last1
+VVar2 = rsE!Occ_Last2
+VVar3 = rsE!Occ_Last3
+VVar4 = rsE!Occ_Last4
+VVara = rsE!Occ_First1
+VVar2a = rsE!Occ_First2
+VVar3a = rsE!Occ_First3
+VVar4a = rsE!Occ_First4
+VVarb = rsE!Occ_Middle1
+VVar2b = rsE!Occ_Middle2
+VVar3b = rsE!Occ_Middle3
+VVar4b = rsE!Occ_Middle4
+VPutOut = VPutOut
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+VVara = Null
+VVar2a = Null
+VVar3a = Null
+VVar4a = Null
+VVarb = Null
+VVar2b = Null
+VVar3b = Null
+VVar4b = Null
+VPutOut = Null
+
+End If
+rsE.Close
+'End Eviction Code
+
+If VVar <> "" Or _
+Not IsNull(VVar) Then
+If VVarb <> "" Then
+OccupantEv1 = VVar & ", " & VVara & " " & VVarb
+Else
+OccupantEv1 = VVar & ", " & VVara
+End If
+End If
+End Function
+Public Function OccupantEv2()
+
+'Eviction Code
+Dim VVar, VVar2, VVar3, VVar4, VPutOut, VVara, VVar2a, VVar3a, VVar4a, VVarb, VVar2b, VVar3b, VVar4b
+Dim strsqlE
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & GblFilenum & ";"
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If Not rsE.EOF Then
+VVar = rsE!Occ_Last1
+VVar2 = rsE!Occ_Last2
+VVar3 = rsE!Occ_Last3
+VVar4 = rsE!Occ_Last4
+VVara = rsE!Occ_First1
+VVar2a = rsE!Occ_First2
+VVar3a = rsE!Occ_First3
+VVar4a = rsE!Occ_First4
+VVarb = rsE!Occ_Middle1
+VVar2b = rsE!Occ_Middle2
+VVar3b = rsE!Occ_Middle3
+VVar4b = rsE!Occ_Middle4
+VPutOut = VPutOut
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+VVara = Null
+VVar2a = Null
+VVar3a = Null
+VVar4a = Null
+VVarb = Null
+VVar2b = Null
+VVar3b = Null
+VVar4b = Null
+VPutOut = Null
+
+End If
+rsE.Close
+'End Eviction Code
+If VVar2 <> "" Or _
+Not IsNull(VVar2) Then
+If VVar2b <> "" Then
+OccupantEv2 = VVar2 & ", " & VVar2a & " " & VVar2b
+Else
+OccupantEv2 = VVar2 & ", " & VVar2a
+End If
+End If
+End Function
+Public Function OccupantEv3()
+
+'Eviction Code
+Dim VVar, VVar2, VVar3, VVar4, VPutOut, VVara, VVar2a, VVar3a, VVar4a, VVarb, VVar2b, VVar3b, VVar4b
+Dim strsqlE
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & GblFilenum & ";"
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If Not rsE.EOF Then
+VVar = rsE!Occ_Last1
+VVar2 = rsE!Occ_Last2
+VVar3 = rsE!Occ_Last3
+VVar4 = rsE!Occ_Last4
+VVara = rsE!Occ_First1
+VVar2a = rsE!Occ_First2
+VVar3a = rsE!Occ_First3
+VVar4a = rsE!Occ_First4
+VVarb = rsE!Occ_Middle1
+VVar2b = rsE!Occ_Middle2
+VVar3b = rsE!Occ_Middle3
+VVar4b = rsE!Occ_Middle4
+VPutOut = VPutOut
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+VVara = Null
+VVar2a = Null
+VVar3a = Null
+VVar4a = Null
+VVarb = Null
+VVar2b = Null
+VVar3b = Null
+VVar4b = Null
+VPutOut = Null
+
+End If
+rsE.Close
+'End Eviction Code
+If VVar3 <> "" Or _
+Not IsNull(VVar3) Then
+If VVar3b <> "" Then
+OccupantEv3 = VVar3 & ", " & VVar3a & " " & VVar3b
+Else
+OccupantEv3 = VVar3 & ", " & VVar3a
+End If
+End If
+End Function
+Public Function OccupantEv4()
+
+'Eviction Code
+Dim VVar, VVar2, VVar3, VVar4, VPutOut, VVara, VVar2a, VVar3a, VVar4a, VVarb, VVar2b, VVar3b, VVar4b
+Dim strsqlE
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & GblFilenum & ";"
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If Not rsE.EOF Then
+VVar = rsE!Occ_Last1
+VVar2 = rsE!Occ_Last2
+VVar3 = rsE!Occ_Last3
+VVar4 = rsE!Occ_Last4
+VVara = rsE!Occ_First1
+VVar2a = rsE!Occ_First2
+VVar3a = rsE!Occ_First3
+VVar4a = rsE!Occ_First4
+VVarb = rsE!Occ_Middle1
+VVar2b = rsE!Occ_Middle2
+VVar3b = rsE!Occ_Middle3
+VVar4b = rsE!Occ_Middle4
+VPutOut = VPutOut
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+VVara = Null
+VVar2a = Null
+VVar3a = Null
+VVar4a = Null
+VVarb = Null
+VVar2b = Null
+VVar3b = Null
+VVar4b = Null
+VPutOut = Null
+
+End If
+rsE.Close
+'End Eviction Code
+If VVar4 <> "" Or _
+Not IsNull(VVar4) Then
+If VVar4a <> "" Then
+OccupantEv4 = VVar4 & ", " & VVar4b & " " & VVar4a
+Else
+OccupantEv4 = VVar4 & ", " & VVar4a
+End If
+End If
+End Function
+Public Function Occupant2()
+
+'Eviction Code
+Dim VVar, VVar2, VVar3, VVar4, VPutOut, VVara, VVar2a, VVar3a, VVar4a, VVarb, VVar2b, VVar3b, VVar4b
+Dim strsqlE
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & GblFilenum & ";"
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If Not rsE.EOF Then
+VVar = rsE!Occ_Last1
+VVar2 = rsE!Occ_Last2
+VVar3 = rsE!Occ_Last3
+VVar4 = rsE!Occ_Last4
+VVara = rsE!Occ_First1
+VVar2a = rsE!Occ_First2
+VVar3a = rsE!Occ_First3
+VVar4a = rsE!Occ_First4
+VVarb = rsE!Occ_Middle1
+VVar2b = rsE!Occ_Middle2
+VVar3b = rsE!Occ_Middle3
+VVar4b = rsE!Occ_Middle4
+VPutOut = VPutOut
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+VVara = Null
+VVar2a = Null
+VVar3a = Null
+VVar4a = Null
+VVarb = Null
+VVar2b = Null
+VVar3b = Null
+VVar4b = Null
+VPutOut = Null
+
+End If
+rsE.Close
+'End Eviction Code
+If VVar2 <> "" Or _
+Not IsNull(VVar2) Then
+If VVar2b <> "" Then
+Occupant2 = VVar2a & " " & VVar2b & " " & VVar2
+Else
+Occupant2 = VVar2a & " " & VVar2
+End If
+End If
+
+End Function
+Public Function Occupant3()
+
+'Eviction Code
+Dim VVar, VVar2, VVar3, VVar4, VPutOut, VVara, VVar2a, VVar3a, VVar4a, VVarb, VVar2b, VVar3b, VVar4b
+Dim strsqlE
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & GblFilenum & ";"
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If Not rsE.EOF Then
+VVar = rsE!Occ_Last1
+VVar2 = rsE!Occ_Last2
+VVar3 = rsE!Occ_Last3
+VVar4 = rsE!Occ_Last4
+VVara = rsE!Occ_First1
+VVar2a = rsE!Occ_First2
+VVar3a = rsE!Occ_First3
+VVar4a = rsE!Occ_First4
+VVarb = rsE!Occ_Middle1
+VVar2b = rsE!Occ_Middle2
+VVar3b = rsE!Occ_Middle3
+VVar4b = rsE!Occ_Middle4
+VPutOut = VPutOut
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+VVara = Null
+VVar2a = Null
+VVar3a = Null
+VVar4a = Null
+VVarb = Null
+VVar2b = Null
+VVar3b = Null
+VVar4b = Null
+VPutOut = Null
+
+End If
+rsE.Close
+'End Eviction Code
+If VVar3 <> "" Or _
+Not IsNull(VVar3) Then
+If VVar3b <> "" Then
+Occupant3 = VVar3a & " " & VVar3b & " " & VVar3
+Else
+Occupant3 = VVar3a & " " & VVar3
+End If
+End If
+
+End Function
+Public Function Occupant4()
+
+'Eviction Code
+Dim VVar, VVar2, VVar3, VVar4, VPutOut, VVara, VVar2a, VVar3a, VVar4a, VVarb, VVar2b, VVar3b, VVar4b
+Dim strsqlE
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & GblFilenum & ";"
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If Not rsE.EOF Then
+VVar = rsE!Occ_Last1
+VVar2 = rsE!Occ_Last2
+VVar3 = rsE!Occ_Last3
+VVar4 = rsE!Occ_Last4
+VVara = rsE!Occ_First1
+VVar2a = rsE!Occ_First2
+VVar3a = rsE!Occ_First3
+VVar4a = rsE!Occ_First4
+VVarb = rsE!Occ_Middle1
+VVar2b = rsE!Occ_Middle2
+VVar3b = rsE!Occ_Middle3
+VVar4b = rsE!Occ_Middle4
+VPutOut = VPutOut
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+VVara = Null
+VVar2a = Null
+VVar3a = Null
+VVar4a = Null
+VVarb = Null
+VVar2b = Null
+VVar3b = Null
+VVar4b = Null
+VPutOut = Null
+
+End If
+rsE.Close
+'End Eviction Code
+If VVar4 <> "" Or _
+Not IsNull(VVar4) Then
+If VVar4a <> "" Then
+Occupant4 = VVar4a & " " & VVar4b & " " & VVar4
+Else
+Occupant4 = VVar4a & " " & VVar4
+End If
+End If
+
+End Function
+Public Function OccupantsVA()
+
+'Eviction Code
+Dim VVar, VVar2, VVar3, VVar4, VPutOut, VVara, VVar2a, VVar3a, VVar4a, VVarb, VVar2b, VVar3b, VVar4b
+Dim strsqlE
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & GblFilenum & ";"
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+
+If Not rsE.EOF Then
+VVar = rsE!Occ_Last1
+VVar2 = rsE!Occ_Last2
+VVar3 = rsE!Occ_Last3
+VVar4 = rsE!Occ_Last4
+VVara = rsE!Occ_First1
+VVar2a = rsE!Occ_First2
+VVar3a = rsE!Occ_First3
+VVar4a = rsE!Occ_First4
+VVarb = rsE!Occ_Middle1
+VVar2b = rsE!Occ_Middle2
+VVar3b = rsE!Occ_Middle3
+VVar4b = rsE!Occ_Middle4
+VPutOut = VPutOut
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+VVara = Null
+VVar2a = Null
+VVar3a = Null
+VVar4a = Null
+VVarb = Null
+VVar2b = Null
+VVar3b = Null
+VVar4b = Null
+VPutOut = Null
+
+End If
+rsE.Close
+'End Eviction Code
+If VVar <> "" Or _
+Not IsNull(VVar) Then
+If VVarb <> "" Then
+OccupantsVA = VVara & " " & VVarb & " " & VVar
+Else
+OccupantsVA = VVara & " " & VVar
+End If
+End If
+
+If VVar2 <> "" Or _
+Not IsNull(VVar2) Then
+If VVar3 <> "" Or _
+Not IsNull(VVar3) Then
+If VVar2b <> "" Then
+OccupantsVA = OccupantsVA & ", " & VVar2a & " " & VVar2b & " " & VVar2
+Else
+OccupantsVA = OccupantsVA & ", " & VVar2a & " " & VVar2
+End If
+Else
+If VVar2b <> "" Then
+OccupantsVA = OccupantsVA & " and " & VVar2a & " " & VVar2b & " " & VVar2
+Else
+OccupantsVA = OccupantsVA & " and " & VVar2a & " " & VVar2
+End If
+End If
+End If
+
+If VVar3 <> "" Or _
+Not IsNull(VVar3) Then
+If VVar4 <> "" Or _
+Not IsNull(VVar4) Then
+If VVar3b <> "" Then
+OccupantsVA = OccupantsVA & ", " & VVar3a & " " & VVar3b & " " & VVar3
+Else
+OccupantsVA = OccupantsVA & ", " & VVar3a & " " & VVar3
+End If
+Else
+If VVar3b <> "" Then
+OccupantsVA = OccupantsVA & " and " & VVar3a & " " & VVar3b & " " & VVar3
+Else
+OccupantsVA = OccupantsVA & " and " & VVar3a & " " & VVar3
+End If
+End If
+End If
+
+If VVar4 <> "" Or _
+Not IsNull(VVar4) Then
+If VVar4a <> "" Then
+OccupantsVA = OccupantsVA & " and " & VVar4a & " " & VVar4a & " " & VVar4
+Else
+OccupantsVA = OccupantsVA & " and " & VVar4a & " " & VVar4
+End If
+End If
+
+End Function
+Public Function AltTrustee()
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!alt_st
+VVar2 = rsE!alt_name1
+VVar3 = rsE!alt_name2
+VVar4 = rsE!alt_name3
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+
+End If
+rsE.Close
+'End Eviction Code
+
+If VVar = -1 Or _
+VVar Then
+AltTrustee = VVar2
+
+If Not IsNull(VVar3) Then
+If Not IsNull(VVar4) Then
+AltTrustee = AltTrustee & ", " & VVar3
+Else
+AltTrustee = AltTrustee & " and " & VVar3
+End If
+End If
+
+If Not IsNull(VVar4) Then
+AltTrustee = AltTrustee & " and " & VVar4
+End If
+End If
+
+End Function
+Public Function EvictionReportVA()
+ 
+
+CurrentDb.Execute "Delete * from evictionreport;", dbFailOnError
+
+VSel = InputBox("Eviction Report Query Selection" & vbCr & vbCr & "1. Client Name" & vbCr & "2. Eviction Company Name" & vbCr & vbCr & "input 1 or 2")
+If VSel = 2 Then
+VEvOrd = 2
+DoCmd.OpenQuery ("Eviction Query VA-Company")
+Else
+DoCmd.OpenQuery ("Eviction Query VA")
+VEvOrd = 1
+End If
+
+DoCmd.OpenQuery ("Eviction Query VAPS")
+DoCmd.OpenReport "eviction va", acViewPreview
+
+'Docmd SetWarnings True
+
+End Function
+
+Public Function EvicStage()
+
+If Forms![foreclosure database screen]!Screen_Change = "Eviction" Then
+Dim strsqlE, VVar, VVar2, VVar3, VVar4
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If rsE.EOF Then
+rsE.Close
+
+Exit Function
+
+Else
+
+
+
+
+'End Eviction Code
+If (IsNull(rsE!evic_billed) Or rsE![evic_billed] = 0) Then
+
+'CLOSE/BILL lock out complete field ("I" above) is not null, or if nonsuit filed is not null and eviction billed is null
+If (Not IsNull(rsE!lock_out_complete) Or _
+Not IsNull(rsE!dc_last_payment)) And _
+(rsE![evic_billed] = 0 Or _
+IsNull(rsE![evic_billed])) Then
+EvicStage = "CLOSE/BILL"
+'ON HOLD On Hold date is filled in and eviction billed is null
+ElseIf (Not IsNull(rsE!on_hold) And _
+IsNull(rsE!on_hold)) And _
+(rsE![evic_billed] = 0 Or _
+IsNull(rsE![evic_billed])) Then
+EvicStage = "ON HOLD"
+'UPCOMING LOCKOUT lock-out date is not null and today's date is before lock out date
+ElseIf Date < rsE!PutOutDate And _
+Not IsNull(rsE!PutOutDate) Then
+EvicStage = "UPCOMING LOCKOUT"
+'OBTAIN LOCKOUT writ filed is not null and lock out date is null
+ElseIf Not IsNull(rsE!writ_mailed) And _
+IsNull(rsE!PutOutDate) Then
+EvicStage = "OBTAIN LOCKOUT"
+'FILE WRIT Date jmt granted is not null, and writ mailed is null (ALLISON: SHOULD THIS BE WRIT MAILED IS NULL OR WRIT FILED IS NULL?)
+ElseIf IsNull(rsE!writ_mailed) And _
+Not IsNull(rsE!jmt_granted) Then
+EvicStage = "FILE WRIT"
+'UPCOMING CONTESTED HEARING "continued hearing is not null and date jmt granted is null
+ElseIf Not IsNull(rsE!dc_continued_hearing) And _
+IsNull(rsE!jmt_granted) Then
+EvicStage = "UPCOMING CONTESTED HRG"
+'UPCOMING INITIAL HEARING hearing date (not "continued hearing date") is not null, and date jmt granted is null
+ElseIf Not IsNull(rsE!ReturnDate_VA) And _
+IsNull(rsE!jmt_granted) Then
+EvicStage = "UPCOMING INTIAL HRG"
+'SEND ATTY PACKET date unlawful detainer filed is not null, but atty packet sent is null
+ElseIf IsNull(rsE!attorney_packet_sent) And _
+Not IsNull(rsE!DateUnlawfulDetainerFiled_VA) Then
+EvicStage = "SEND ATTY PACKET"
+'FILE UD date notice to quit sent is not null, and date unlawful detainer filed is null
+ElseIf Not IsNull(rsE!DateNoticeToQuitSent_VA) And _
+IsNull(rsE!DateUnlawfulDetainerFiled_VA) Then
+EvicStage = "FILE UD"
+'SEND NTQ date eviction requested is not null, and date notice to quit sent is null, and eviction only is null
+ElseIf (rsE![eviction_ONLY] = 0 Or _
+IsNull(rsE![eviction_ONLY])) And _
+Not IsNull(rsE!DateMotionForPossessionRequested) And _
+IsNull(rsE!DateNoticeToQuitSent_VA) Then
+EvicStage = "SEND NTQ"
+'NEED FC DOCS eviction only button is pressed, eviction requested is not null,NTQ Sent is null
+ElseIf (rsE![eviction_ONLY] = 1 Or _
+rsE![eviction_ONLY] = -1) And _
+Not IsNull(rsE!DateMotionForPossessionRequested) And _
+IsNull(rsE!DateNoticeToQuitSent_VA) Then
+EvicStage = "NEED FC DOCS"
+
+Else
+'OTHER this would be for any case which does not fall within one of the above categories
+EvicStage = "OTHER"
+End If
+
+End If
+End If
+
+
+
+rsE.Close
+End If
+
+'MsgBox (EvicStage)
+
+End Function
+
+Public Function deadlinerpt()
+'DoCmd.OpenQuery ("DeadlineMkTbl")
+'DoCmd.OpenQuery ("Deadlineappendtbl")
+DoCmd.OpenReport "Litigation Deadline Rpt", acViewPreview
+
+End Function
+Public Function CODScreen()
+Dim strsql, strsqla
+Dim rs, rsA As RecordSet
+
+strsql = "select * from EvictionsDC_COD where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+rs.Close
+Set rs = CurrentDb.OpenRecordset("EvictionsDC_COD", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+End If
+
+DoCmd.OpenForm ("Eviction Consent Order Declarations Screen")
+
+End Function
+
+Public Function EvicHrs()
+EvicHrs = 0
+
+Dim strsql As String
+Dim rs As RecordSet
+strsql = "select * from evictionextrafees where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+If rs.EOF Then
+EvicHrs = 0
+Else
+Do While Not rs.EOF
+EvicHrs = EvicHrs + rs!hours
+rs.MoveNext
+Loop
+End If
+
+End Function
+Public Function EvicRefresh()
+DoCmd.Close acForm, "evictionextrafees"
+DoCmd.OpenForm ("evictionextrafees")
+
+End Function
+Public Function EvicExtraScreen()
+
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from evictionextrafees where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("EvictionExtraFees", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+!counter_id = GetAutoNumber("NextAudNum")
+.Update
+.Close
+End With
+End If
+
+End Function
+Public Function AffidavitService()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+DoCmd.OpenReport ("Affidavitservice"), acViewPreview
+Else
+Exit Function
+End If
+Else
+DoCmd.OpenReport ("Affidavitservice"), acViewPreview
+
+End If
+End Function
+Public Function MotionPoss6()
+Dim VEvic
+
+VEvic = InputBox("Paragraph 6 Selection" & vbCr & vbCr & "1. No Bona Fide Tenants" & vbCr & "2. Bona Fide Tenants" & vbCr & "3. FC Sale Date Predates Act of 2009" & vbCr & vbCr & "input 1, 2 or 3")
+
+Dim VNum
+
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form![RatDateMD]) Or _
+Forms![foreclosure database screen]!PostsaleSubForm.Form![RatDateMD] = "" Then
+VNum = "           5."
+Else
+VNum = "           6."
+End If
+
+
+If VEvic = 1 Then
+MotionPoss6 = VNum & "     That to the best of Movant’s knowledge, information and belief, there are no known bona fide tenants in possession having rights under the Federal Protecting Tenants at Foreclosure Act of 2009 and/or Maryland Code, Real Property Article §7-105.6."
+ElseIf VEvic = 2 Then
+
+Dim VDate
+VDate = InputBox("A Notice to Vacate was given under the Federal Protecting Tenants at Foreclosure Act of 2009 on (enter date):")
+
+MotionPoss6 = VNum & "     That to the best of Movant’s knowledge, information and belief, the person in possession is/are bona fide tenant(s).  See Notice to Vacate was given under the Federal Protecting Tenants at Foreclosure Act of 2009 on " & Format(VDate, "mmmm dd, yyyy") & " and the tenant/s have no further right to possession.  See Notice to Vacate, Exhibit 1."
+ElseIf VEvic = 3 Then
+MotionPoss6 = VNum & "     That the foreclosure sale in this matter predates the enactment of the Federal Protecting Tenants at Foreclosure Act of 2009 (" & """" & "Act" & """" & "), signed into law on May 20, 2009, and thus new Maryland Rule 14-102's possession averments pursuant to the Act are inapplicable herein."
+Else
+MotionPoss6 = ""
+End If
+
+End Function
+Public Function EvicCashPkg()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+'DoCmd.OpenReport ("Affidavitservice"), acViewPreview
+DoCmd.RunMacro ("eviccashpkg")
+Else
+Exit Function
+End If
+Else
+DoCmd.RunMacro ("eviccashpkg")
+
+End If
+End Function
+Public Function EvictionCashforKeysLtr()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+DoCmd.OpenReport ("Eviction-CashforKeysLTr"), acViewPreview
+'DoCmd.RunMacro ("eviccashpkg")
+Else
+Exit Function
+End If
+Else
+DoCmd.OpenReport ("Eviction-CashforKeysLTr"), acViewPreview
+
+End If
+End Function
+Public Function EvicCashforkeysAgreement()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+DoCmd.OpenReport ("Evic-CashforkeysAgreement"), acViewPreview
+'DoCmd.RunMacro ("eviccashpkg")
+Else
+Exit Function
+End If
+Else
+DoCmd.OpenReport ("Evic-CashforkeysAgreement"), acViewPreview
+
+End If
+End Function
+Public Function EvictionVAUDCCoverLtr()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+DoCmd.OpenReport ("EvictionVAUDCCoverLtr"), acViewPreview
+'DoCmd.RunMacro ("eviccashpkg")
+Else
+Exit Function
+End If
+Else
+DoCmd.OpenReport ("EvictionVAUDCCoverLtr"), acViewPreview
+
+End If
+End Function
+Public Function EvictionVAUnlawfulDetainer()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+'DoCmd.OpenReport ("Affidavitservice"), acViewPreview
+DoCmd.RunMacro ("EvictionVAUnlawfulDetainer")
+Else
+Exit Function
+End If
+Else
+DoCmd.RunMacro ("EvictionVAUnlawfulDetainer")
+End If
+End Function
+Public Function writva()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+'DoCmd.OpenReport ("Affidavitservice"), acViewPreview
+DoCmd.RunMacro ("writva")
+Else
+Exit Function
+End If
+Else
+DoCmd.RunMacro ("writva")
+
+End If
+End Function
+Public Function EvictionLtr()
+Dim VEvic As String
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+DoCmd.OpenReport ("EvictionLtr"), acViewPreview
+'DoCmd.RunMacro ("eviccashpkg")
+Else
+Exit Function
+End If
+Else
+DoCmd.OpenReport ("EvictionLtr"), acViewPreview
+
+End If
+End Function
+Public Function motionposs()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+'DoCmd.OpenReport ("EvictionLtr"), acViewPreview
+DoCmd.RunMacro ("motionposs")
+Else
+Exit Function
+End If
+Else
+DoCmd.RunMacro ("motionposs")
+
+End If
+End Function
+Public Function writ()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+'DoCmd.OpenReport ("EvictionLtr"), acViewPreview
+DoCmd.RunMacro ("writ")
+Else
+Exit Function
+End If
+Else
+DoCmd.RunMacro ("writ")
+
+End If
+End Function
+Public Function EvictionVACoCounselConfirmLtr()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+DoCmd.OpenReport ("EvictionVACoCounselCOnfirmLtr"), acViewPreview
+'DoCmd.RunMacro ("writ")
+Else
+Exit Function
+End If
+Else
+DoCmd.OpenReport ("EvictionVACoCounselCOnfirmLtr"), acViewPreview
+
+End If
+End Function
+Public Function MilitaryAffEvicVA()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+DoCmd.OpenReport ("MilitaryAffEvicVA"), acViewPreview
+'DoCmd.RunMacro ("writ")
+Else
+Exit Function
+End If
+Else
+DoCmd.OpenReport ("MilitaryAffEvicVA"), acViewPreview
+
+End If
+End Function
+Public Function NTQ()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+'DoCmd.OpenReport ("EvictionLtr"), acViewPreview
+DoCmd.RunMacro ("NTQ")
+Else
+Exit Function
+End If
+Else
+DoCmd.RunMacro ("NTQ")
+
+End If
+End Function
+Public Function NTQLettersVa()
+Dim VEvic As String
+Call ExportNTQVa
+Call ExportOccupants
+
+VEvic = InputBox("1. Preview " & vbCr & "2. Print")
+
+If VEvic = 1 Then
+MsgBox ("Please make sure you print the notice to Occupants/Tenants TWO (2) TIMES one to send Regular Mail and the other CERTIFIED")
+
+
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar2 = rsE!DateNoticeToQuitSent_VA
+VVar3 = rsE!eviction_company_name
+VVar4 = rsE!clientUpdatesVIA
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+
+'If VVar4 Like "Equato*" Then
+
+'DoCmd.OpenReport ("evictionscraletter"), acViewPreview
+
+
+'End If
+
+If Forms![foreclosure database screen]!EvictionSubFormMD.Form![eviction_company_name] = "Jackson and Associates" Then
+DoCmd.OpenReport "Notice to Quit-VA-JA-FO, acViewPreview"
+DoCmd.OpenReport "Notice to Quit-VA-JA-tnt, acViewPreview"
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\EvictionMDAttachment.pdf")
+Else
+DoCmd.OpenReport ("Notice to Quit-Occupant"), acViewPreview
+DoCmd.OpenReport ("Notice to Quit"), acViewPreview
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate < #1/1/2015# Then
+If Forms![foreclosure database screen]!Client Like "Bank of Americ*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\OccupantInformationFormBANA.pdf")
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\OccupantInformationForm.pdf")
+End If
+End If
+End If
+
+
+If Forms![foreclosure database screen]!Client Like "Homeward*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\HomewardAttachment.pdf")
+End If
+
+If Forms![foreclosure database screen]!Client Like "OneWes*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\OWBSCRANotice.pdf")
+End If
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\WellsSCRANotice.pdf")
+End If
+
+Else
+
+If Forms![foreclosure database screen]!EvictionSubFormMD.Form![eviction_company_name] = "Jackson and Associates" Then
+DoCmd.OpenReport "Notice to Quit-VA-JA-FO", acViewNormal
+DoCmd.OpenReport "Notice to Quit-VA-JA-tnt", acViewNormal
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\EvictionMDAttachment.pdf")
+Else
+DoCmd.OpenReport ("Notice to Quit-Occupant"), acNormal
+DoCmd.OpenReport ("Notice to Quit"), acViewNormal
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate < #1/1/2015# Then
+
+If Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\OccupantInformationFormBANA.pdf")
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\OccupantInformationForm.pdf")
+End If
+End If
+
+End If
+
+
+If Forms![foreclosure database screen]!Client Like "Homeward*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\HomewardAttachment.pdf")
+End If
+
+If Forms![foreclosure database screen]!Client Like "OneWes*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\OWBSCRANotice.pdf")
+End If
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\attachments\WellsSCRANotice.pdf")
+End If
+
+
+
+End If
+End Function
+Public Function EvictionVAOrderNonSuit()
+Dim VEvic As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+DoCmd.OpenReport ("EvictionVAOrderNonSuit"), acViewPreview
+'DoCmd.RunMacro ("writ")
+Else
+Exit Function
+End If
+Else
+DoCmd.OpenReport ("EvictionVAOrderNonSuit"), acViewPreview
+
+End If
+End Function
+
+Public Function NoDebtors()
+If Forms![foreclosure database screen]!LastNameDebtor1 <> "" Or _
+Not IsNull(Forms![foreclosure database screen]!LastNameDebtor1) Then
+NoDebtors = NoDebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor2 <> "" Or _
+Not IsNull(Forms![foreclosure database screen]!LastNameDebtor2) Then
+NoDebtors = NoDebtors + 1
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor3 <> "" Or _
+Not IsNull(Forms![foreclosure database screen]!LastNameDebtor3) Then
+NoDebtors = NoDebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor4 <> "" Or _
+Not IsNull(Forms![foreclosure database screen]!lastnamedebtor4) Then
+NoDebtors = NoDebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor5 <> "" Or _
+Not IsNull(Forms![foreclosure database screen]!lastnamedebtor5) Then
+NoDebtors = NoDebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo1 <> "" Or _
+Not IsNull(Forms![foreclosure database screen]!lastnameo1) Then
+NoDebtors = NoDebtors + 1
+End If
+
+If Forms![foreclosure database screen]!lastnameo2 <> "" Or _
+Not IsNull(Forms![foreclosure database screen]!lastnameo2) Then
+NoDebtors = NoDebtors + 1
+End If
+
+'MsgBox (NoDebtors)
+
+End Function
+Public Function evicdcSPS()
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!HearingDate_PGHARFORD
+'VVar2 = rsE!ReturnDate_VA
+'VVar3 = rsE!hearing_time
+'VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+'VVar2 = Null
+'VVar3 = Null
+'VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+If IsNull(VVar) Then
+evicdcSPS = 0#
+Else
+Dim vdebtors As Integer
+vdebtors = 0
+vdebtors = NoDebtors()
+evicdcSPS = (vdebtors + 1) * 35
+End If
+'MsgBox (evicdcSPS)
+End Function
+Public Function evicvaWrit()
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!WritToSheriffSent_VA
+'VVar2 = rsE!ReturnDate_VA
+'VVar3 = rsE!hearing_time
+'VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+'VVar2 = Null
+'VVar3 = Null
+'VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+If IsNull(VVar) Then
+evicvaWrit = 0#
+Else
+Dim vdebtors, VAddDebtors As Integer
+vdebtors = 0
+VAddDebtors = 0
+vdebtors = NoDebtors()
+VAddDebtors = vdebtors - 1
+If vdebtors > 1 Then
+evicvaWrit = 25 + (VAddDebtors * 12)
+Else
+evicvaWrit = 25#
+End If
+
+End If
+'MsgBox (evicvaWrit)
+End Function
+Public Function evicvaUD()
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!DateUnlawfulDetainerFiled_VA
+'VVar2 = rsE!ReturnDate_VA
+'VVar3 = rsE!hearing_time
+'VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+'VVar2 = Null
+'VVar3 = Null
+'VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+If IsNull(VVar) Then
+evicvaUD = 0#
+Else
+Dim vdebtors, VAddDebtors As Integer
+vdebtors = 0
+VAddDebtors = 0
+vdebtors = NoDebtors()
+evicvaUD = 36 + (vdebtors * 12)
+End If
+'MsgBox (evicvaWrit)
+End Function
+Public Function evicdcUSMF()
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!dc_writ_requested
+'VVar2 = rsE!ReturnDate_VA
+'VVar3 = rsE!hearing_time
+'VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+'VVar2 = Null
+'VVar3 = Null
+'VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+If IsNull(VVar) Then
+evicdcUSMF = 0#
+Else
+evicdcUSMF = 111#
+End If
+'MsgBox (evicdcusmf)
+End Function
+Public Function evicdcSPNQ()
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE![Date NTQ served]
+'VVar2 = rsE!ReturnDate_VA
+'VVar3 = rsE!hearing_time
+'VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+'VVar2 = Null
+'VVar3 = Null
+'VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+If IsNull(VVar) Then
+evicdcSPNQ = 0#
+Else
+evicdcSPNQ = 15#
+End If
+'MsgBox (evicdcSPNQ)
+End Function
+Public Function evicmdSHERIFF()
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!DateWritSent_RESTOFMD
+VVar2 = rsE!WritToSheriffSent_VA
+'VVar3 = rsE!hearing_time
+'VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+VVar2 = Null
+'VVar3 = Null
+'VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+If IsNull(VVar) Or _
+IsNull(VVar2) Then
+evicmdSHERIFF = 0#
+Else
+evicmdSHERIFF = 35#
+End If
+'MsgBox (evicmdSHERIFF)
+End Function
+Public Function evicmdPSHCO()
+If Forms![foreclosure database screen]!Propertycounty = "Baltimore City" Then
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE![Date Show Cause Order Served]
+'VVar2 = rsE!WritToSheriffSent_VA
+'VVar3 = rsE!hearing_time
+'VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+'VVar2 = Null
+'VVar3 = Null
+'VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+
+If IsNull(VVar) Then
+evicmdPSHCO = 0#
+Else
+Dim vdebtors As Integer
+vdebtors = 1
+vdebtors = NoDebtors()
+evicmdPSHCO = vdebtors * 50
+
+End If
+Else
+evicmdPSHCO = 0#
+End If
+'MsgBox (NoDebtors() & evicmdPSHCO)
+
+End Function
+Public Function evicmdMJAP()
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!DateMotionForPossessionSentOrFiled
+'VVar2 = rsE!WritToSheriffSent_VA
+'VVar3 = rsE!hearing_time
+'VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+'VVar2 = Null
+'VVar3 = Null
+'VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+If IsNull(VVar) Then
+evicmdMJAP = 0#
+Else
+evicmdMJAP = 25#
+End If
+'msgBox (evicmdMJAP)
+End Function
+Public Function evicdcComp()
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE![Date Complaint Filed]
+'VVar2 = rsE!WritToSheriffSent_VA
+'VVar3 = rsE!hearing_time
+'VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+'VVar2 = Null
+'VVar3 = Null
+'VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+If IsNull(VVar) Then
+evicdcComp = 0#
+Else
+Dim vdebtors As Integer
+vdebtors = NoDebtors()
+
+evicdcComp = (vdebtors + 1) * 30
+End If
+'MsgBox (evicdcComp)
+
+End Function
+Public Function emailconfirmltr()
+Dim VEvic As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim emailsubject, emailbody As String
+Dim rs As RecordSet
+Dim strsql, VTo As String
+
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+
+
+Set MyOutlook = New Outlook.Application
+
+emailsubject = "Confimatory Letter, please see below"
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!ReturnDate_VA
+VVar2 = rsE!hearing_time
+'VVar3 = rsE!hearing_time
+VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+VVar2 = Null
+'VVar3 = Null
+VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+emailbody = SecuredParty() & " v. " & debtorsFORE() & vbCr & PROP() & vbCr & VVar & " @ " & Format(VVar2, "h:nn am/pm") & vbCr & County() & vbCr & vbCr
+
+DoCmd.OutputTo acOutputReport, "EvictionVACoCounselConfirmLtr", acFormatSNP, pathuser() & "\ConfirmLtr.snp"
+
+strsql = "select co_counsel_email from evictioncocounsel where co_counsel = " & """" & VVar4 & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs!Co_Counsel_email = "" Then
+VTo = ""
+Else
+VTo = rs!Co_Counsel_email
+End If
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Attachments.ADD pathuser() & "\ConfirmLtr.snp"
+MyMail.Subject = emailsubject
+MyMail.body = emailbody
+
+MyMail.Display
+
+
+Set MyMail = Nothing
+
+Set MyOutlook = Nothing
+
+Else
+Exit Function
+End If
+Else
+
+Set MyOutlook = New Outlook.Application
+
+
+
+emailsubject = "Confimatory Letter, please see below"
+emailbody = SecuredParty() & " v. " & debtorsFORE() & vbCr & PROP() & vbCr & VVar & " @ " & Format(VVar2, "h:nn am/pm") & vbCr & County() & vbCr & vbCr
+
+DoCmd.OutputTo acOutputReport, "EvictionVACoCounselConfirmLtr", acFormatSNP, pathuser() & "\ConfirmLtr.snp"
+
+strsql = "select co_counsel_email from evictioncocounsel where co_counsel = " & """" & VVar4 & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+If rs!Co_Counsel_email = "" Then
+VTo = ""
+Else
+VTo = rs!Co_Counsel_email
+End If
+
+Else
+MsgBox ("No Co Counsel selected on the Eviction Screen")
+VTo = ""
+End If
+
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+
+MyMail.Attachments.ADD pathuser() & "\ConfirmLtr.snp"
+MyMail.Subject = emailsubject
+MyMail.body = emailbody
+
+MyMail.Display
+
+
+Set MyMail = Nothing
+
+Set MyOutlook = Nothing
+
+End If
+
+End Function
+Public Function emailordernonsuit()
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim emailsubject, emailbody As String
+
+Dim rs As RecordSet
+Dim strsql, VTo As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+If VEvic = "evictionok" Then
+
+Set MyOutlook = New Outlook.Application
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!ReturnDate_VA
+VVar2 = rsE!hearing_time
+'VVar3 = rsE!hearing_time
+VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+VVar2 = Null
+'VVar3 = Null
+VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+emailsubject = "Cancellation of UD hearing, please see below"
+emailbody = "Please be advised that we have been notified by our client to non-suit " _
+& "the following matter: " & vbCr & debtorsFORE() & " v. " & SecuredParty() & vbCr & PROP() & vbCr & VVar & " @ " & Format(VVar2, "h:nn am/pm") & vbCr & County() & vbCr & vbCr & "We have attached for your records a copy of the Order which our office will file.  " & vbCr & vbCr & "Thank you for your time and cooperation in this matter."
+DoCmd.OutputTo acOutputReport, "EvictionVAOrderNonSuit", acFormatRTF, pathuser() & "\OrderNonSuit.rtf"
+
+strsql = "select co_counsel_email from evictioncocounsel where co_counsel = " & """" & VVar4 & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs!Co_Counsel_email = "" Then
+VTo = ""
+Else
+VTo = rs!Co_Counsel_email
+End If
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+
+MyMail.Attachments.ADD pathuser() & "\OrderNonSuit.rtf"
+MyMail.Subject = emailsubject
+MyMail.body = emailbody
+
+MyMail.Display
+
+
+Set MyMail = Nothing
+
+Set MyOutlook = Nothing
+
+Else
+Exit Function
+End If
+Else
+
+Set MyOutlook = New Outlook.Application
+
+
+
+emailsubject = "Cancellation of UD hearing, please see below"
+emailbody = "Please be advised that we have been notified by our client to non-suit " _
+& "the following matter: " & vbCr & debtorsFORE() & " v. " & SecuredParty() & vbCr & PROP() & vbCr & VVar & " @ " & Format(VVar2, "h:nn am/pm") & vbCr & County() & vbCr & vbCr & "We have attached for your records a copy of the Order which our office will file.  " & vbCr & vbCr & "Thank you for your time and cooperation in this matter."
+DoCmd.OutputTo acOutputReport, "EvictionVAOrderNonSuit", acFormatRTF, pathuser() & "\OrderNonSuit.rtf"
+
+strsql = "select co_counsel_email from evictioncocounsel where co_counsel = " & """" & VVar4 & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs!Co_Counsel_email = "" Then
+VTo = ""
+Else
+VTo = rs!Co_Counsel_email
+End If
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+
+MyMail.Attachments.ADD pathuser() & "\OrderNonSuit.rtf"
+MyMail.Subject = emailsubject
+MyMail.body = emailbody
+
+MyMail.Display
+
+
+Set MyMail = Nothing
+End If
+
+End Function
+
+
+Public Function CounselDefault()
+
+Dim rs, rsCty As RecordSet
+Dim strsql, strsqlCty As String
+strsqlCty = "select co_counsel from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & ";"
+Set rsCty = CurrentDb.OpenRecordset(strsqlCty)
+
+If Not rsCty.EOF Then
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!Co_Counsel
+Else
+VVar = Null
+rsE.Close
+End If
+
+
+If rsCty!Co_Counsel <> "" And _
+(VVar = "" Or _
+IsNull(VVar)) Then
+
+strsql = "select * from evictioncocounsel where co_counsel = " & """" & rsCty!Co_Counsel & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenDynaset, dbSeeChanges)
+
+With rsE
+.Edit
+rsE!Co_Counsel = rs!Co_Counsel
+rsE!Co_Counsel_Address1 = rs!Co_Counsel_Address1
+rsE!Co_Counsel_Address2 = rs!Co_Counsel_Address2
+rsE!Co_Counsel_CSZ = rs!Co_Counsel_CSZ
+rsE!Co_Counsel_phone = rs!Co_Counsel_phone
+rsE!Co_Counsel_fax = rs!Co_Counsel_fax
+rsE!Co_Counsel_email = rs!Co_Counsel_email
+rsE!Co_Counsel_Contact = rs!Co_Counsel_Contact
+rsE!co_counsel_cell = rs!co_counsel_cell
+rs.Close
+rsE.Close
+End With
+
+End If
+End If
+
+End If
+
+rsCty.Close
+
+'rsE.Close
+
+
+End Function
+
+Public Function GenDistCourt()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from jurisdiction where county = " & """" & _
+Forms![foreclosure database screen]!Propertycounty & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs!District_Court = "" Then
+MsgBox ("No General District Court input for : " & rs!County)
+GenDistCourt = ""
+Else
+GenDistCourt = rs!District_Court
+End If
+
+End Function
+
+Public Function GenDistCourtAdd1()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+If rs!District_Court = "" Then
+GenDistCourtAdd1 = ""
+Else
+GenDistCourtAdd1 = rs!District_Court_Address1
+End If
+
+End Function
+Public Function GenDistCourtAdd2()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs!District_Court = "" Then
+GenDistCourtAdd2 = ""
+Else
+GenDistCourtAdd2 = rs!District_Court_Address2
+End If
+End Function
+Public Function GenDistCourtCSZ()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs!District_Court = "" Then
+GenDistCourtCSZ = ""
+Else
+GenDistCourtCSZ = rs!District_Court_CSZ
+End If
+End Function
+Public Function EMailLockOut()
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim emailsubject, emailbody As String
+Dim rs As RecordSet
+Dim strsql, VTo As String
+Dim LCOnly
+LCOnly = InputBox("Is this a: " & vbCr & "1. Lock Change Only" & vbCr & "2. Full eviction requiring a move out crew")
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!Broker_Email
+VVar2 = rsE!PutOutDate
+VVar3 = rsE!putouttime
+VVar4 = rsE!Co_Counsel
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+VVar4 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+
+Set MyOutlook = New Outlook.Application
+
+strsql = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+emailsubject = "RE: Borrower: " & Forms![foreclosure database screen]!LastNameDebtor1 & "/Property: " & PROP()
+
+If IsNull(VVar) Then
+VTo = ""
+Else
+VTo = VVar
+End If
+
+If Not IsNull(rs!Email) And VTo = "" Then
+VTo = rs!Email
+End If
+If Not IsNull(rs!Email) And VTo <> "" Then
+VTo = rs!Email & ";" & VTo
+End If
+
+Dim VLODate, VLOTime
+If IsNull(VVar2) Then
+VLODate = "__________"
+Else
+VLODate = VVar2
+End If
+If IsNull(VVar3) Then
+VLOTime = "_______"
+Else
+VLOTime = VVar3
+End If
+
+If LCOnly = 1 Then
+Dim VLc
+VLc = vbCr & vbCr & "The Lock out is set for: " & VLODate & " at " & VLOTime & _
+vbCr & vbCr & "This is a lock change only (24-hour move out with no movers), please adhere to the following guidelines:" _
+& vbCr & "1.  There must be a locksmith present." _
+& vbCr & "2.  There must be a representative of the mortgage company present." _
+& vbCr & "3.  If rain or snow, the Deputy has the right to reschedule."
+Else
+VLc = vbCr & vbCr & "The Move out is set for: " & VLODate & " at " & VLOTime _
+& vbCr & vbCr & "Full eviction requiring a move out crew" _
+& vbCr & vbCr & "Please adhere to the following guidelines:" _
+& vbCr & "1.  There must be a crew available for the moveout." _
+& vbCr & "2.  The moveout crew must bring boxes, bags and a truck." _
+& vbCr & "3.  There must be a locksmith present." _
+& vbCr & "4.  There must be a representative of the mortgage company present." _
+& vbCr & "5.  If rain or snow, the Deputy has the right to reschedule."
+End If
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+
+MyMail.Subject = emailsubject
+MyMail.body = "Address: " & PROP() & vbCr & vbCr & "VIA EMAIL ONLY" _
+& vbCr & vbCr & "Re: " & debtorsFORE() _
+& vbCr & vbCr & "Loan No.: " & Forms![foreclosure database screen]!ClientRefNumber _
+& vbCr & vbCr + "Dear " & Forms![foreclosure database screen]!Client & ":" _
+& vbCr & vbCr & "The Deputy Sheriff from the " & County() & " Sheriff's office has scheduled a moveout/eviction on the above property." _
+& vbCr & vbCr & "Phone:" & vbCr & "Deputy:" _
+& VLc _
+& vbCr & vbCr & "Please confirm receipt of this email." _
+& vbCr & vbCr & "IMPORTANT: PLEASE BE ADVISED THAT THE MORTGAGE REPRESENTATIVE/BROKER IS NOT AUTHORIZED TO CANCEL A LOCKOUT OR ADVISE THE SHERIFF THAT POSSESSION HAS BEEN TAKEN UNLESS THE LENDER AUTHORIZES IT.  IF ANY ISSUES ARISE DURING THE LOCKOUT REGARDING POSSESSION, PLEASE DO NOT HESITATE TO CONTACT ME." _
+& vbCr & vbCr & SigEmail()
+
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+End Function
+Public Function evicbroker()
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+If Not IsNull(rsE![Broker Name]) Then
+VVar = rsE![Broker Name]
+Else
+VVar = Null
+End If
+
+Else
+VVar = Null
+End If
+rsE.Close
+'End Eviction Code
+
+
+evicbroker = VVar
+End Function
+Public Function evicbrokerAdd()
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!broker_add
+VVar2 = rsE!broker_csz
+
+
+Else
+VVar = Null
+VVar2 = Null
+
+End If
+rsE.Close
+'End Eviction Code
+If IsNull(VVar) Then
+evicbrokerAdd = ""
+Else
+evicbrokerAdd = VVar & ", " & VVar2
+End If
+End Function
+Public Function evicbrokerphone()
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!Broker_Phone
+Else
+VVar = Null
+End If
+rsE.Close
+'End Eviction Code
+evicbrokerphone = "Phone: " & VVar
+End Function
+Public Function evicbrokeremail()
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!Broker_Email
+Else
+VVar = Null
+End If
+rsE.Close
+'End Eviction Code
+evicbrokeremail = "Email: " & VVar
+End Function
+Public Function EMailcocounsel()
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim emailsubject, emailbody As String
+Dim rs As RecordSet
+Dim strsql, VTo As String
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Then
+VEvic = InputBox("A 3rd Party has bought this property.  Do not proceed with Eviction unless verified")
+
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+VVar = rsE!Co_Counsel
+VVar2 = rsE!ReturnDate_VA
+Else
+VVar = Null
+VVar2 = Null
+End If
+rsE.Close
+'End Eviction Code
+
+If VEvic = "evictionok" Then
+
+Set MyOutlook = New Outlook.Application
+
+
+emailsubject = "Hearing Letter, RE: Property: " & PROP() & ", Client: " & Forms![foreclosure database screen]![Client] & ", Borrower(s): " & debtorsFORE()
+
+DoCmd.OutputTo acOutputReport, "EvictionVACoCounselLtr", acFormatSNP, pathuser() & "\HearingLtr.snp"
+
+strsql = "select co_counsel_email from evictioncocounsel where co_counsel = " & """" & VVar & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs!Co_Counsel_email = "" Then
+VTo = ""
+Else
+VTo = rs!Co_Counsel_email
+End If
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+
+MyMail.Attachments.ADD pathuser() & "\HearingLtr.snp"
+MyMail.Subject = "Property: " & PROP() & ", Hearing Date for: " & EvicVA1stHearing()
+
+MyMail.body = "See attached letter" + SigEmail()
+
+
+MyMail.Display
+
+
+Set MyMail = Nothing
+
+Set MyOutlook = Nothing
+
+Else
+Exit Function
+End If
+Else
+
+
+Set MyOutlook = New Outlook.Application
+
+
+emailsubject = "Hearing Letter, RE: Property: " & PROP() & ", Client: " & Forms![foreclosure database screen]![Client] & ", Borrower(s): " & debtorsFORE()
+
+DoCmd.OutputTo acOutputReport, "EvictionVACoCounselLtr", acFormatSNP, pathuser() & "\HearingLtr.snp"
+
+strsql = "select co_counsel_email from evictioncocounsel where co_counsel = " & """" & VVar & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs!Co_Counsel_email = "" Then
+VTo = ""
+Else
+VTo = rs!Co_Counsel_email
+End If
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+
+MyMail.Attachments.ADD pathuser() & "\HearingLtr.snp"
+MyMail.Subject = "Property: " & PROP() & ", Hearing Date for: " & VVar2
+
+MyMail.body = "See attached letter" + SigEmail()
+
+
+MyMail.Display
+
+
+Set MyMail = Nothing
+
+Set MyOutlook = Nothing
+
+End If
+
+End Function
+Public Function firstdebtorEVIC() As String
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor1]) Then
+firstdebtorEVIC = Trim(Forms![foreclosure database screen]![LastNameDebtor1] & ", " & Forms![foreclosure database screen]![FirstNameDebtor1])
+Else
+firstdebtorEVIC = Trim(Forms![foreclosure database screen]![LastNameDebtor1] & ", " & Forms![foreclosure database screen]![FirstNameDebtor1] & ", " & Forms![foreclosure database screen]![MiddleNameDebtor1])
+End If
+
+
+End Function
+Public Function owner1EVIC() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo1]) Then
+owner1EVIC = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo1]) Then
+owner1EVIC = Trim(Forms![foreclosure database screen]![lastnameo1] & ", " & Forms![foreclosure database screen]![firstnameo1])
+Else
+owner1EVIC = Trim(Forms![foreclosure database screen]![lastnameo1] & ", " & Forms![foreclosure database screen]![firstnameo1] & ", " & Forms![foreclosure database screen]![mnameo1])
+End If
+End If
+
+
+End Function
+Public Function owner2EVIC() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo2]) Then
+owner2EVIC = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo2]) Then
+owner2EVIC = Trim(Forms![foreclosure database screen]![lastnameo2] & ", " & Forms![foreclosure database screen]![firstnameo2])
+Else
+owner2EVIC = Trim(Forms![foreclosure database screen]![lastnameo2] & ", " & Forms![foreclosure database screen]![firstnameo2] & ", " & Forms![foreclosure database screen]![mnameo2])
+End If
+End If
+
+
+End Function
+Public Function seconddebtorEVIC() As String
+
+If IsNull(Forms![foreclosure database screen]![LastNameDebtor2]) Then
+seconddebtorEVIC = ""
+Else
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor2]) Then
+seconddebtorEVIC = Trim(Forms![foreclosure database screen]![LastNameDebtor2] & ", " & Forms![foreclosure database screen]![FirstNameDebtor2])
+Else
+seconddebtorEVIC = Trim(Forms![foreclosure database screen]![LastNameDebtor2] & ", " & Forms![foreclosure database screen]![FirstNameDebtor2] & ", " & Forms![foreclosure database screen]![MiddleNameDebtor2])
+End If
+End If
+
+End Function
+Public Function thirddebtorEVIC() As String
+
+If IsNull(Forms![foreclosure database screen]![LastNameDebtor3]) Then
+thirddebtorEVIC = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![MiddleNameDebtor3]) Then
+thirddebtorEVIC = Trim(Forms![foreclosure database screen]![LastNameDebtor3] & ", " & Forms![foreclosure database screen]![FirstNameDebtor3])
+Else
+thirddebtorEVIC = Trim(Forms![foreclosure database screen]![LastNameDebtor3] & ", " & Forms![foreclosure database screen]![FirstNameDebtor3] & ", " & Forms![foreclosure database screen]![MiddleNameDebtor3])
+End If
+
+End If
+
+End Function
+Public Function fifthdebtorEVIC() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnamedebtor5]) Then
+fifthdebtorEVIC = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor5]) Then
+fifthdebtorEVIC = Trim(Forms![foreclosure database screen]![lastnamedebtor5] & ", " & Forms![foreclosure database screen]![firstnamedebtor5])
+Else
+fifthdebtorEVIC = Trim(Forms![foreclosure database screen]![lastnamedebtor5] & ", " & Forms![foreclosure database screen]![firstnamedebtor5] & ", " & Forms![foreclosure database screen]![middlenamedebtor5])
+End If
+End If
+
+End Function
+Public Function fourthdebtorEVIC() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnamedebtor4]) Then
+fourthdebtorEVIC = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![middlenamedebtor4]) Then
+fourthdebtorEVIC = Trim(Forms![foreclosure database screen]![lastnamedebtor4] & ", " & Forms![foreclosure database screen]![firstnamedebtor4])
+Else
+fourthdebtorEVIC = Trim(Forms![foreclosure database screen]![lastnamedebtor4] & ", " & Forms![foreclosure database screen]![firstnamedebtor4] & ", " & Forms![foreclosure database screen]![middlenamedebtor4])
+End If
+End If
+
+End Function
+Public Function firstownerEVIC() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo1]) Then
+firstownerEVIC = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo1]) Then
+firstownerEVIC = Trim(Forms![foreclosure database screen]![lastnameo1] & ", " & Forms![foreclosure database screen]![firstnameo1])
+Else
+firstownerEVIC = Trim(Forms![foreclosure database screen]![lastnameo1] & ", " & Forms![foreclosure database screen]![firstnameo1] & ", " & Forms![foreclosure database screen]![mnameo1])
+End If
+End If
+End Function
+Public Function secondownerEVIC() As String
+
+If IsNull(Forms![foreclosure database screen]![lastnameo2]) Then
+secondownerEVIC = ""
+Else
+If IsNull(Forms![foreclosure database screen]![mnameo2]) Then
+secondownerEVIC = Trim(Forms![foreclosure database screen]![lastnameo2] & ", " & Forms![foreclosure database screen]![firstnameo2])
+Else
+secondownerEVIC = Trim(Forms![foreclosure database screen]![lastnameo2] & ", " & Forms![foreclosure database screen]![firstnameo2] & ", " & Forms![foreclosure database screen]![mnameo2])
+End If
+End If
+End Function
+

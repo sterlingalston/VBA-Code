@@ -1,0 +1,3524 @@
+Attribute VB_Name = "FDLQModule"
+Option Compare Database
+
+
+
+Public Function ExportHUDOccq()
+
+Dim strsqlCounty As String
+Dim rs, rspropertycounty As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("Walzxml", dbOpenDynaset, dbSeeChanges)
+
+Dim rsWalz As RecordSet
+Set rsWalz = CurrentDb.OpenRecordset("walzinfo", dbOpenDynaset, dbSeeChanges)
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+!ri = VLtr
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = "Occupant(s)/Tenant(s)/Owner(s)"
+!Name2 = ""
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or _
+Forms![fairdebtqueue]![unit_no] = "" Then
+!Address1 = Forms![fairdebtqueue]![PropAddress]
+Else
+!Address1 = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!Address2 = Forms![fairdebtqueue]!propaddress2
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![PropertyCity] & ", " & Forms![fairdebtqueue]!PropertyState & "  " & Forms![fairdebtqueue]!propzip
+!reference = Forms![fairdebtqueue]!filenum & "HUD"
+.Update
+End With
+
+
+With rs
+.AddNew
+!ri = VLtr
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeTo = "Occupant(s)/Tenant(s)/Owner(s)"
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or _
+Forms![fairdebtqueue]![unit_no] = "" Then
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress]
+Else
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!NoticeAdd2 = Forms![fairdebtqueue]!propaddress2
+!NoticeCITY = Forms![fairdebtqueue]!PropertyCity
+!NoticeSTATE = Forms![fairdebtqueue]!PropertyState
+!NoticeZIP = Forms![fairdebtqueue]!propzip
+
+!reference = VIDNo
+!pdffile = VPDF
+!StartPage = 1
+!PageCount = "-1"
+.Update
+End With
+
+
+End Function
+
+Public Function HudOccq()
+'HUD Occupancy Letter-----------------------------------------
+CurrentDb.Execute "DELETE * FROM walzxml;", dbFailOnError
+
+dumpname = Format(Forms![fairdebtqueue]!filenum, "000000") & Format$(Now(), "yyyymmddhhnnss")
+
+If Forms![fairdebtqueue]!TypeOfLoan = "FHA/REV" Then
+
+Else
+If Forms![fairdebtqueue]!TypeOfLoan Like "FHA*" Or Forms![fairdebtqueue]!fha = -1 Or Forms![fairdebtqueue]!fha = 1 And _
+Forms![fairdebtqueue]!Client <> "Financial Freedom Acquisition, LLC" Or _
+(Forms![fairdebtqueue]!Client <> "OneWest Bank, FSB" And _
+(Forms![fairdebtqueue]!FF = -1 Or Forms![fairdebtqueue]!FF = 1)) Then
+
+VConvRpt = "Fairdebt-HUD-FDL-Queue"
+Call ImageHud
+Call ConvertPDF
+VPDF = dumpname & "_" & VConvRpt & ".pdf" & ";" & vHUD1
+VLtr = "HUD"
+
+Call ExportHUDOccq
+
+Call CreateWalzXML
+Call CreateCompleteFile
+
+End If
+End If
+
+End Function
+
+Public Function hudoccltrsq()
+
+If (Forms![fairdebtqueue]!TypeOfLoan Like "FHA*" Or (Forms![fairdebtqueue]!fha = -1 Or Forms![fairdebtqueue]!fha = 1)) Then
+
+    Dim VSend
+    VSend = InputBox("Send Hud Occupancy Letters to Walz? type YES to send")
+    
+    If VSend = "yes" Then
+    
+    VConvRpt = "Fairdebt-HUD-FDL-Queue"
+    Call ConvertPDFALL
+   
+    sourcefile = pathuser() & "\Fairdebt-HUD-FDL-Queue.pdf"
+    destinationfile = AutoIndexPath & "HudOccLtr\" & Forms![fairdebtqueue]!filenum & "_HudOcc.PDF"
+    FileCopy sourcefile, destinationfile    ' Copy source to target.
+    
+
+strsql = "select * from foreclosure where subfilenum = " & Forms![fairdebtqueue]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+    With rs
+    .Edit
+    !Hoc_Sent = Date
+   .Update
+   .Close
+   End With
+End If
+      
+    Call HudOccq
+        
+    Else
+    
+        DoCmd.OpenReport "Fairdebt-HUD-FDL-QUEUE", acViewPreview
+        Dim VPrtDocs
+    VPrtDocs = MsgBox("Hud Occupancy Attachments will print out, continue", vbYesNo)
+    If VPrtDocs = vbYes Then
+    'PrintDoc ("\\rvdv-fs01\datatransfer\attachments\HUDAttachment1.doc")
+    PrtPDF ("\\rvdv-fs01\datatransfer\attachments\HUDAttachment.pdf")
+    End If
+
+    End If
+   
+    
+Else
+    MsgBox ("Not an FHA loan")
+End If
+End Function
+
+Public Function FDLDocsq()
+
+Vyes3 = MsgBox("Send Letters to BWW Docs", vbYesNo)
+
+If Vyes3 = vbYes Then
+Call ExportFDLLettersQ
+
+
+CopyDocToBGWWDocs "Fairdebt Letterq", "FairDebLtr", "_FDL.PDF"
+
+
+If (([Forms]![fairdebtqueue]![TypeOfLoan] = "FHLMC" Or _
+([Forms]![fairdebtqueue]![TypeOfLoan] = "FNMA" And IsNull(Forms![fairdebtqueue]!resume_recd))) And _
+Forms![fairdebtqueue]!PropertyState = "VA") Or _
+(Forms![fairdebtqueue]!PropertyState = "VA" And Forms![fairdebtqueue]!Client Like "Coloni*") Then
+
+CopyDocToBGWWDocs "FDLAttachmentFNMAFHLMCq", "FairDebLtr", "_FDLFNMAFHLMC.PDF"
+End If
+
+
+If [Forms]![fairdebtqueue]![TypeOfLoan] Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 And Forms![fairdebtqueue]!PropertyState <> "MD" Then
+CopyDocToBGWWDocs "Fairdebt-HUD-FDL-QUEUE", "FairDebLtr", "_FDLHud.PDF"
+End If
+
+End If
+
+End Function
+
+
+Public Function FDLCheckQ()
+
+Dim VNoDNS
+Dim checkDebtorsDNS
+
+VNoDNS = 1
+If Forms![fairdebtqueue]!LastNameDebtor2 <> "" And Not IsNull(Forms![fairdebtqueue]!LastNameDebtor2) Then
+VNoDNS = 2
+End If
+If Forms![fairdebtqueue]!LastNameDebtor3 <> "" And Not IsNull(Forms![fairdebtqueue]!LastNameDebtor3) Then
+VNoDNS = 3
+End If
+If Forms![fairdebtqueue]!lastnamedebtor4 <> "" And Not IsNull(Forms![fairdebtqueue]!lastnamedebtor4) Then
+VNoDNS = 4
+End If
+
+If VNoDNS = 1 And (Forms![fairdebtqueue]!DNS1 = -1 Or Forms![fairdebtqueue]!DNS1 = 1) Then
+VMsg = ("Debtors has the do not sign buttons checked, LETTERS WILL NOT PRINT")
+checkDebtorsDNS = "YES"
+End If
+If VNoDNS = 2 And (Forms![fairdebtqueue]!DNS1 = -1 Or Forms![fairdebtqueue]!DNS1 = 1) And _
+(Forms![fairdebtqueue]!DNS2 = -1 Or (Forms![fairdebtqueue]!DNS2 = 1)) Then
+VMsg = ("Both Debtors have the do not sign buttons checked, LETTERS WILL NOT PRINT")
+checkDebtorsDNS = "YES"
+End If
+If VNoDNS = 3 And (Forms![fairdebtqueue]!DNS1 = -1 Or Forms![fairdebtqueue]!DNS1 = 1) And _
+(Forms![fairdebtqueue]!DNS2 = -1 Or Forms![fairdebtqueue]!DNS2 = 1) And _
+(Forms![fairdebtqueue]!DNS3 = -1 Or Forms![fairdebtqueue]!DNS3 = 1) Then
+VMsg = ("All 3 Debtors have the do not sign buttons checked, LETTERS WILL NOT PRINT")
+checkDebtorsDNS = "YES"
+End If
+If VNoDNS = 4 And (Forms![fairdebtqueue]!DNS1 = -1 Or Forms![fairdebtqueue]!DNS1 = 1) And _
+(Forms![fairdebtqueue]!DNS2 = -1 Or Forms![fairdebtqueue]!DNS2 = 1) And _
+(Forms![fairdebtqueue]!DNS4 = -1 Or Forms![fairdebtqueue]!DNS4 = 1) And _
+(Forms![fairdebtqueue]!DNS3 = -1 Or Forms![fairdebtqueue]!DNS3 = 1) Then
+VMsg = ("All 4 Debtors have the do not sign buttons checked, LETTERS WILL NOT PRINT")
+checkDebtorsDNS = "YES"
+End If
+
+If checkDebtorsDNS = "YES" Then
+MsgBox (VMsg)
+VCancelDump = 1
+Exit Function
+
+End If
+
+
+If Forms![fairdebtqueue]![Mailing Address] = "" Then
+Forms![fairdebtqueue]![Mailing Address] = Null
+End If
+
+If Not IsNull(Forms![fairdebtqueue]![Mailing Address]) Or _
+Forms![fairdebtqueue]![Mailing Address] <> "" Then
+If (IsNull(Forms![fairdebtqueue]![Mailing City]) Or _
+Forms![fairdebtqueue]![Mailing City] = "") Or _
+(IsNull(Forms![fairdebtqueue]![Mailing State]) Or _
+Forms![fairdebtqueue]![Mailing State] = "") Or _
+(IsNull(Forms![fairdebtqueue]![Mailing Zip]) Or _
+Forms![fairdebtqueue]![Mailing Zip] = "") Then
+VMsg = "There is missing Mailing Address information ,City State or Zip, input in the Screen, no letter will print"
+
+MsgBox (VMsg)
+VCancelDump = 1
+Exit Function
+
+End If
+End If
+
+If IsNull(Forms![fairdebtqueue]!PropAddress) Or _
+IsNull(Forms![fairdebtqueue]!PropertyCity) Or _
+IsNull(Forms![fairdebtqueue]!propzip) Then
+
+If IsNull(Forms![fairdebtqueue]!PropAddress) Then
+VMsg = "There is no Property Address input in the Screen, no letter will dump"
+End If
+
+
+If IsNull(Forms![fairdebtqueue]!PropertyCity) Or _
+IsNull(Forms![fairdebtqueue]!PropertyState) Or _
+IsNull(Forms![fairdebtqueue]!propzip) Then
+VMsg = "There is missing property information ,City State or Zip, input in the Screen, no letter will print"
+End If
+
+
+MsgBox (VMsg)
+VCancelDump = 1
+
+Exit Function
+
+Else
+
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+'-The Beginning of the Dump
+'Check Data and create VLtr for FDL------------------
+
+'Create Name of all Files to Dump--------------------
+'Dim VFDLDate
+''FDLDate = forms![fairdebtqueue]!POGoodThru
+
+'Dumpname = "D" & format$(FDLDATE,"yyyymmdd") & "_" & Format(Forms![fairdebtqueue]!FileNum, "000000") & Format$(Now(), "yyyymmddhhnnss")
+
+
+dumpname = Format(Forms![fairdebtqueue]!filenum, "000000") & Format$(Now(), "yyyymmddhhnnss")
+
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+VLtr = "FDLVA"
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+VLtr = "FDLDC"
+Else
+VLtr = "FDLMD"
+End If
+
+
+Call FDLPDFq
+
+End If
+
+End Function
+
+
+Public Function ChasePRSLq()
+
+If Forms![fairdebtqueue]!Client Like "Homew*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\HomewardPRSL.PDF")
+
+ElseIf Forms![fairdebtqueue]!Client Like "Bank of A*" And Forms![fairdebtqueue]!TypeOfLoan = "FHLMC" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\BOAPRSL.PDF")
+
+
+ElseIf Forms![fairdebtqueue]!Client Like "Suntrust*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\SuntrustPRSL.PDF")
+
+
+ElseIf Forms![fairdebtqueue]!Client Like "JPM*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\ChasePRSL.PDF")
+
+
+
+End If
+
+
+End Function
+
+Public Function FDLPDFq()
+
+Call ExportFDLLettersQ
+
+
+If VCancelDump = 1 Then
+MsgBox ("Will not create Letters for WALZ!  Need to click on link (\\rvdv-fs01\netlogon\copydll.bat) to copy .dll files")
+Exit Function
+End If
+
+'Fairdebt Letter---------------------------------
+VConvRpt = "Fairdebt Letterq"
+Call ConvertPDF
+VPDF = dumpname & "_" & VConvRpt & ".pdf"
+
+'FNMA/FHLMC Attachment Letter-----------------------------------------
+If (([Forms]![fairdebtqueue]![TypeOfLoan] = "FHLMC" Or _
+([Forms]![fairdebtqueue]![TypeOfLoan] = "FNMA" And IsNull(Forms![fairdebtqueue]!resume_recd))) And _
+Forms![fairdebtqueue]!PropertyState = "VA") Or _
+(Forms![fairdebtqueue]!PropertyState = "VA" And Forms![fairdebtqueue]!Client Like "Coloni*") Then
+
+
+VConvRpt = "FDLAttachmentFNMAFHLMCq"
+Call ConvertPDF
+VPDF = VPDF & ";" & dumpname & "_" & VConvRpt & ".pdf"
+End If
+
+Dim txtname As String
+
+
+'PRSL Letter for all other client....
+
+If ([Forms]![fairdebtqueue]![TypeOfLoan] = "FHLMC" Or _
+[Forms]![fairdebtqueue]![TypeOfLoan] = "FNMA") And _
+Forms![fairdebtqueue]!PropertyState <> "MD" Then
+
+If ([Forms]![fairdebtqueue]![Client] Like "Suntrus*" Or _
+[Forms]![fairdebtqueue]![Client] Like "Homew*" Or _
+[Forms]![fairdebtqueue]![Client] Like "JPMorgan*" Or _
+Forms![fairdebtqueue]!Client Like "Nations*") Then
+
+Else
+
+VConvRpt = "AttachmentPRSLq"
+Call ConvertPDF
+VPDF = VPDF & ";" & dumpname & "_" & VConvRpt & ".pdf"
+End If
+
+End If
+
+
+'Suntrust Attachment (PRSL)--------------------------------------------------
+If [Forms]![fairdebtqueue]![Client] Like "Suntrus*" And _
+Forms![fairdebtqueue]!PropertyState <> "MD" Then
+txtname = dumpname & "_AttachmentPRSL.pdf"
+sourcefile = "\\rvdv-fs01\datatransfer\attachments\SuntrustPRSL.PDF"
+destinationfile = DTLocation & "\WALZ\ToWalz\" & txtname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+VPDF = VPDF & ";" & txtname
+Call ChasePRSLq
+
+
+'Homeward Attachment (PRSL)--------------------------------------------------
+ElseIf [Forms]![fairdebtqueue]![Client] Like "Homew*" And _
+Forms![fairdebtqueue]!PropertyState <> "MD" Then
+txtname = dumpname & "_AttachmentPRSL.pdf"
+sourcefile = "\\rvdv-fs01\datatransfer\attachments\HomewardPRSL.PDF"
+destinationfile = DTLocation & "\WALZ\ToWalz\" & txtname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+VPDF = VPDF & ";" & txtname
+Call ChasePRSLq
+
+
+'EMC JPMorgan Chase PRSL Attachment Letter-----------------------------------------
+ElseIf [Forms]![fairdebtqueue]![Client] Like "JPMorgan*" And _
+Forms![fairdebtqueue]!PropertyState <> "MD" Then
+txtname = dumpname & "_AttachmentPRSL.pdf"
+sourcefile = "\\rvdv-fs01\datatransfer\attachments\chaseprslq.PDF"
+destinationfile = DTLocation & "\WALZ\ToWalz\" & txtname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+VPDF = VPDF & ";" & txtname
+Call ChasePRSLq
+
+'PRSL Nationstar Attachment Letter-----------------------------------------
+
+ElseIf Forms![fairdebtqueue]!Client Like "Nations*" And _
+Forms![fairdebtqueue]!PropertyState <> "MD" Then
+
+VConvRpt = "AttachmentPRSLq"
+Call ConvertPDF
+VPDF = VPDF & ";" & dumpname & "_" & VConvRpt & ".pdf"
+
+
+
+End If
+
+
+If [Forms]![fairdebtqueue]![Client] Like "JPMorgan*" And _
+Forms![fairdebtqueue]!PropertyState <> "VA" And _
+IsNull(Forms![fairdebtqueue]!Transferred) And _
+(Forms![fairdebtqueue]![Date Recieved] > #9/24/2012# Or _
+Forms![fairdebtqueue]![resume_recd] > #9/24/2012#) Then
+
+txtname = dumpname & "_Attachment.pdf"
+sourcefile = "\\rvdv-fs01\datatransfer\attachments\ChaseFDLAttachment.pdf"
+destinationfile = DTLocation & "\WALZ\ToWalz\" & txtname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+VPDF = VPDF & ";" & txtname
+End If
+
+
+
+'Dump Borrowers---------------------------------------
+
+CurrentDb.Execute "DELETE * FROM walzxml;", dbFailOnError
+If VFdlLnl = 0 Or VFdlLnl = 1 Then
+Call exportXMLBorrowersFDLQ
+Else
+Call ExportWalzXMLq
+End If
+
+If VFdlLnl = 1 Or VFdlLnl = 0 Then
+'Other FDL Letters-----------------------------------------
+'Other AMCHOT Letter-----------------------------------------
+If [Forms]![fairdebtqueue]![Client] Like "Citi Res*" Then
+VConvRpt = "Fairdebt LetterAMC"
+Call ConvertPDF
+VPDF = dumpname & "_" & VConvRpt & ".pdf"
+VLtr = "AMCHOT"
+Call exportXMLBorrowersFDLQ
+End If
+
+'Other OOMC Letter-----------------------------------------
+If [Forms]![fairdebtqueue]![Client] Like "Homeward*" Then
+VConvRpt = "Fairdebt LetterOOMC"
+Call ConvertPDF
+VPDF = dumpname & "_" & VConvRpt & ".pdf"
+VLtr = "OOMC"
+Call exportXMLBorrowersFDLQ
+End If
+
+
+Call CreateWalzXML
+Call CreateCompleteFile
+
+''HUD Occupancy Letter-----------------------------------------
+If Forms![fairdebtqueue]!PropertyState <> "MD" And Forms![fairdebtqueue]!Client <> "Champion Mortgage Company" And _
+(Forms![fairdebtqueue]!TypeOfLoan Like "FHA*" Or (Forms![fairdebtqueue]!fha = -1 Or Forms![fairdebtqueue]!fha = 1)) Then
+
+If (Forms![fairdebtqueue]!Client = "Financial Freedom Acquisition, LLC" Or _
+(Forms![fairdebtqueue]!Client = "OneWest Bank, FSB" And _
+(Forms![fairdebtqueue]!FF = -1 Or Forms![fairdebtqueue]!FF = 1))) Then
+Else
+Call hudoccltrsq
+End If
+End If
+
+End If
+
+
+
+
+
+
+'Lienholder Letters------------------
+
+
+End Function
+
+Public Function WalzLienPDFq()
+
+Dim VCred
+Dim strsql As String
+Dim rscred As RecordSet
+
+If VLtr = "lnva" Or VLtr Like "FDL*" Or VLtr = "HUD" Or VLtr = "OOMC" Or VLtr = "AMCHOT" Or VLtr = "VASB" Or VLtr Like "ACL*" Then
+
+If VFdlLnl = 2 Then
+
+strsql = "select * from creditors where (MD_Letter = " & -1 & " or MD_Letter = " & 1 & ") and filenum = " & Forms![fairdebtqueue]!filenum
+Set rscred = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+Else
+strsql = "select * from creditors where (fdl = " & -1 & " or fdl = " & 1 & ") and filenum = " & Forms![fairdebtqueue]!filenum
+Set rscred = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+End If
+
+If Not rscred.EOF Then
+VCred = "YES"
+Else
+VCred = "NO"
+End If
+
+
+Else
+
+VCred = InputBox("RUN Lienholder Letters? Type YES")
+
+CurrentDb.Execute "DELETE * FROM walzxml;", dbFailOnError
+dumpname = Format(Forms![fairdebtqueue]!filenum, "000000") & Format$(Now(), "yyyymmddhhnnss")
+
+strsql = "select * from creditors where filenum = " & Forms![fairdebtqueue]!filenum & " order by organizationname;"
+Set rscred = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+End If
+
+If VCred = "YES" Then
+
+If VLtr = "lnva" Or VLtr Like "FDL*" Or VLtr = "HUD" Or VLtr = "OOMC" Or VLtr = "AMCHOT" Or VLtr = "VASB" Or VLtr Like "ACL*" Then
+Else
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+Call ImageVAI
+End If
+End If
+
+If rscred.EOF Then
+
+
+Else
+
+If VLtr = "lnva" Or VLtr Like "FDL*" Or VLtr = "HUD" Or VLtr = "OOMC" Or VLtr = "AMCHOT" Or VLtr = "VASB" Or VLtr Like "ACL*" Then
+Else
+
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+'If vimageXML = "Yes" Then
+VLtr = "NOSCredVAI"
+'Else
+'VLtr = "NOSCredVA"
+'End If
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+VLtr = "NOSCredDC"
+Else
+VLtr = "NOSCredMD"
+End If
+End If
+
+If VLtr = "lnva" Or VLtr Like "FDL*" Or VLtr = "HUD" Or VLtr = "OOMC" Or VLtr = "AMCHOT" Or VLtr = "VASB" Or VLtr Like "ACL*" Then
+Else
+
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+VConvRpt = "CreditorsVA"
+Else
+VConvRpt = "CreditorsWalz"
+End If
+
+
+
+Call ConvertPDF
+If VCancelDump = 1 Then
+MsgBox ("Will not create Letters for WALZ!  Need to click on link (\\rvdv-fs01\netlogon\copydll.bat) to copy .dll files")
+Exit Function
+End If
+
+
+
+Vyes3 = MsgBox("Send Lienholder(s)Notice of Sale Letter(s) to BWW Docs", vbYesNo)
+
+
+'Imaged Docs Start
+If Vyes3 = vbYes Then
+vfilenum = Forms![fairdebtqueue]!filenum
+CopyDocToBGWWDocs VConvRpt, "NtcOfSale", "_NtcofSaleLien.PDF"
+End If
+'Imaged Docs end
+
+
+If Forms![fairdebtqueue]!PropertyState = "VA" And vimageXML = "yes" Then
+VPDF = dumpname & "_" & VConvRpt & ".pdf" & ";" & VPDFxml
+Else
+VPDF = dumpname & "_" & VConvRpt & ".pdf"
+End If
+
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+VConvRpt = "Adv-VA"
+ElseIf Forms![fairdebtqueue]!PropertyState = "MD" Then
+VConvRpt = "Ad"
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+VConvRpt = "addc"
+End If
+
+Call ConvertPDF
+
+VPDF = VPDF & ";" & dumpname & "_" & VConvRpt & ".pdf"
+
+'====================
+
+Dim VNo As Integer
+VNo = 0
+End If
+
+Set rs = CurrentDb.OpenRecordset("Walzxml", dbOpenDynaset, dbSeeChanges)
+
+Dim rsWalz As RecordSet
+Set rsWalz = CurrentDb.OpenRecordset("walzinfo", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rscred.EOF
+'Set rsLienholders = CurrentDb.OpenRecordset(strsqlLien, dbopensnapshot)
+
+VNo = VNo + 1
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "fdl*" Or VLtr = "lnva" Or VLtr Like "OOM*" Then
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Or _
+Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!ForeclosureSubForm.Form!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!ForeclosureSubForm.Form!SaleDate
+End If
+!ri = VLtr
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = rscred!OrganizationName
+If rscred!Address Like "Attn*" Or _
+rscred!Address Like "For*" Or _
+rscred!Address Like "c/o*" Or _
+rscred!Address Like "Atten*" Then
+!Name2 = rscred!Address
+If rscred!Address2 = "" Then
+!Address1 = ""
+Else
+!Address1 = rscred!Address2
+End If
+!address3 = ""
+Else
+!Name2 = ""
+!Address1 = rscred!Address
+If rscred!Address2 = "" Then
+!Address2 = ""
+Else
+!Address2 = rscred!Address2
+End If
+!address3 = ""
+End If
+!citystatezip = rscred!City & ", " & rscred!State & "  " & rscred!PostalCode
+!reference = Forms![fairdebtqueue]!filenum & "lh" & VNo
+.Update
+End With
+
+With rs
+.AddNew
+!ri = VLtr
+!filenum = Forms![fairdebtqueue]!filenum
+
+!NoticeTo = rscred!OrganizationName
+If rscred!Address Like "Attn*" Or _
+rscred!Address Like "For*" Or _
+rscred!Address Like "c/o*" Or _
+rscred!Address Like "Atten*" Then
+!Name2 = rscred!Address
+
+If rscred!Address2 = "" Then
+!NoticeAdd = ""
+Else
+!NoticeAdd = rscred!Address2
+End If
+!NoticeAdd2 = ""
+Else
+!Name2 = ""
+!NoticeAdd = rscred!Address
+If rscred!Address2 = "" Then
+!NoticeAdd2 = ""
+Else
+!NoticeAdd2 = rscred!Address2
+End If
+End If
+!NoticeCITY = rscred!City
+!NoticeSTATE = rscred!State
+!NoticeZIP = rscred!PostalCode
+!reference = VIDNo
+!pdffile = VPDF
+If VLtr = "ACLVA" Then
+!StartPage = VCntStart + 3
+!PageCount = 3
+ElseIf VLtr Like "FDL*" Or VLtr = "HUD" Or VLtr = "OOMC" Or VLtr = "AMCHOT" Or VLtr = "NTQVa" Or _
+VLtr = "VASB" Or VLtr = "ACLMD" Or VLtr = "ACLDC" Or (VLtr Like "NOTHUD*" And Forms![fairdebtqueue]!TypeOfLoan = "VA") Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VNo
+!PageCount = "1"
+End If
+
+.Update
+End With
+
+
+With rscred
+.Edit
+!Walz_Ref = VIDNo
+.Update
+End With
+'====================
+rscred.MoveNext
+Loop
+
+rscred.Close
+rs.Close
+
+Call CreateWalzXMLLIEN
+Call CreateCompleteFile
+
+If VLtr = "lnva" Or VLtr Like "FDL*" Or VLtr = "HUD" Or VLtr = "OOMC" Or VLtr = "AMCHOT" Or VLtr = "VASB" Or VLtr Like "ACL*" Then
+Else
+Forms![fairdebtqueue]!Walz_Mailed_NOS = Date
+End If
+
+
+End If
+
+End If
+End Function
+
+Public Function exportXMLBorrowersFDLQ()
+Dim VcountLtr As Integer
+VCntStart = 1
+VcountLtr = 0
+
+Set rsWalz = CurrentDb.OpenRecordset("walzinfo", dbOpenDynaset, dbSeeChanges)
+
+Dim rsnotice As RecordSet
+
+vfilenum = Forms![fairdebtqueue]![filenum]
+Set rsnotice = CurrentDb.OpenRecordset("WalzXML", dbOpenDynaset, dbSeeChanges)
+
+If (Forms![fairdebtqueue]!DNS1 = 0 Or IsNull(Forms![fairdebtqueue]!DNS1)) Then
+With rsnotice
+VIDNo = GetAutoNumber("NextWalz")
+.AddNew
+!NoticeTo = firstdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or _
+Forms![fairdebtqueue]![unit_no] = "" Then
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress]
+Else
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!NoticeAdd2 = Forms![fairdebtqueue]!propaddress2
+!NoticeCITY = Forms![fairdebtqueue]!PropertyCity
+!NoticeSTATE = Forms![fairdebtqueue]!PropertyState
+!NoticeZIP = Forms![fairdebtqueue]!propzip
+!extra = Forms![fairdebtqueue]![PropAddress]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart
+!PageCount = 2
+Else
+!StartPage = VCntStart
+!PageCount = 1
+End If
+
+
+.Update
+End With
+
+'Walz Monies---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+
+!ri = VLtr
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = firstdebtorq()
+!Name2 = ""
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or _
+Forms![fairdebtqueue]![unit_no] = "" Then
+!Address1 = Forms![fairdebtqueue]![PropAddress]
+Else
+!Address1 = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!Address2 = Forms![fairdebtqueue]!propaddress2
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![PropertyCity] & ", " & Forms![fairdebtqueue]!PropertyState & "  " & Forms![fairdebtqueue]!propzip
+
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+
+If MailSDatQ = "Grantor1" Or MailSDatQ = "All Grantors" Or MailSDatQ = "All" Then
+With rsnotice
+VIDNo = GetAutoNumber("NextWalz")
+.AddNew
+!NoticeTo = firstdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![SDatAddress]
+!NoticeAdd2 = Forms![fairdebtqueue]!SDatAddress2
+!NoticeCITY = Forms![fairdebtqueue]!SDatCity
+!NoticeSTATE = Forms![fairdebtqueue]!SDatState
+!NoticeZIP = Forms![fairdebtqueue]!SDatZip
+!extra = Forms![fairdebtqueue]![PropAddress]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = firstdebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![SDatAddress]
+!Address2 = Forms![fairdebtqueue]!SDatAddress2
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![SDatCity] & ", " & Forms![fairdebtqueue]!SDatState & "  " & Forms![fairdebtqueue]!SDatZip
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+VcountLtr = VcountLtr + 1
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+.Update
+End With
+End If
+
+If MailAQ = "Grantor1" Or MailAQ = "All Grantors" Or MailAQ = "All" Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = firstdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing Address]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2]
+!NoticeCITY = Forms![fairdebtqueue]![Mailing City]
+!NoticeSTATE = Forms![fairdebtqueue]![Mailing State]
+!NoticeZIP = Forms![fairdebtqueue]![Mailing Zip]
+!extra = Forms![fairdebtqueue]![Mailing Address]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies Mailing---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = firstdebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![Mailing Address]
+!Address2 = Forms![fairdebtqueue]![Mailing Address2]
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![Mailing City] & ", " & Forms![fairdebtqueue]![Mailing State] & "  " & Forms![fairdebtqueue]![Mailing Zip]
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+End If
+
+
+If MailbQ = "Grantor1" Or MailbQ = "All Grantors" Or MailbQ = "All" Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = firstdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing AddressB]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2B]
+!NoticeCITY = Forms![fairdebtqueue]![Mailing CityB]
+!NoticeSTATE = Forms![fairdebtqueue]![Mailing StateB]
+!NoticeZIP = Forms![fairdebtqueue]![Mailing ZipB]
+!extra = Forms![fairdebtqueue]![Mailing AddressB]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+'Walz Monies 3rd Mailing---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = firstdebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![Mailing AddressB]
+!Address2 = Forms![fairdebtqueue]![Mailing Address2B]
+!citystatezip = Forms![fairdebtqueue]![Mailing CityB] & ", " & Forms![fairdebtqueue]![Mailing StateB] & "  " & Forms![fairdebtqueue]![Mailing ZipB]
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+.Update
+End With
+End If
+End If
+
+If (Forms![fairdebtqueue]!DNS2 = 0 Or IsNull(Forms![fairdebtqueue]!DNS2)) Then
+
+If (Not IsNull(Forms![fairdebtqueue]!LastNameDebtor2) Or Forms![fairdebtqueue]!LastNameDebtor2 <> "") Then
+
+'(IsNull(Forms![fairdebtqueue]![mailaq_to]) Or _
+'Forms![fairdebtqueue]![mailaq_to] = "Grantor2" Or _
+'Forms![fairdebtqueue]![mailaq_to] = "All Grantors") Then
+
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or Forms![fairdebtqueue]![unit_no] = "" Then
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress]
+Else
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!NoticeAdd2 = Forms![fairdebtqueue]!propaddress2
+!NoticeCITY = Forms![fairdebtqueue]!PropertyCity
+!NoticeSTATE = Forms![fairdebtqueue]!PropertyState
+!NoticeZIP = Forms![fairdebtqueue]!propzip
+!extra = Forms![fairdebtqueue]![PropAddress]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+
+If (Forms![fairdebtqueue]!DNS1 = 0 Or IsNull(Forms![fairdebtqueue]!DNS1)) Then
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+Else
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart
+!PageCount = 2
+Else
+!StartPage = VCntStart
+!PageCount = 1
+End If
+End If
+
+.Update
+End With
+
+'Walz Monies Property---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = secondDebtorq()
+!Name2 = ""
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or _
+Forms![fairdebtqueue]![unit_no] = "" Then
+!Address1 = Forms![fairdebtqueue]![PropAddress]
+Else
+!Address1 = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!Address2 = Forms![fairdebtqueue]!propaddress2
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![PropertyCity] & ", " & Forms![fairdebtqueue]!PropertyState & "  " & Forms![fairdebtqueue]!propzip
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+
+If MailSDatQ = "Grantor2" Or MailSDatQ = "All Grantors" Or MailSDatQ = "All" Then
+With rsnotice
+VIDNo = GetAutoNumber("NextWalz")
+.AddNew
+!NoticeTo = secondDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![SDatAddress]
+!NoticeAdd2 = Forms![fairdebtqueue]!SDatAddress2
+!NoticeCITY = Forms![fairdebtqueue]!SDatCity
+!NoticeSTATE = Forms![fairdebtqueue]!SDatState
+!NoticeZIP = Forms![fairdebtqueue]!SDatZip
+!extra = Forms![fairdebtqueue]![PropAddress]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = secondDebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![SDatAddress]
+!Address2 = Forms![fairdebtqueue]!SDatAddress2
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![SDatCity] & ", " & Forms![fairdebtqueue]!SDatState & "  " & Forms![fairdebtqueue]!SDatZip
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+VcountLtr = VcountLtr + 1
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+.Update
+End With
+End If
+
+If MailAQ = "Grantor2" Or MailAQ = "All Grantors" Or MailAQ = "All" Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing Address]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2]
+!NoticeCITY = Forms![fairdebtqueue]![Mailing City]
+!NoticeSTATE = Forms![fairdebtqueue]![Mailing State]
+!NoticeZIP = Forms![fairdebtqueue]![Mailing Zip]
+!extra = Forms![fairdebtqueue]![Mailing Address]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+'Walz Monies 2nd Mailing---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = secondDebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![Mailing Address]
+!Address2 = Forms![fairdebtqueue]![Mailing Address2]
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![Mailing City] & ", " & Forms![fairdebtqueue]![Mailing State] & "  " & Forms![fairdebtqueue]![Mailing Zip]
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+End If
+
+
+If MailbQ = "Grantor2" Or MailbQ = "All Grantors" Or MailbQ = "All" Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing AddressB]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2B]
+!NoticeCITY = Forms![fairdebtqueue]![Mailing CityB]
+!NoticeSTATE = Forms![fairdebtqueue]![Mailing StateB]
+!NoticeZIP = Forms![fairdebtqueue]![Mailing ZipB]
+!extra = Forms![fairdebtqueue]![Mailing AddressB]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies 3rd Mailing---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = secondDebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![Mailing AddressB]
+!Address2 = Forms![fairdebtqueue]![Mailing Address2B]
+!citystatezip = Forms![fairdebtqueue]![Mailing CityB] & ", " & Forms![fairdebtqueue]![Mailing StateB] & "  " & Forms![fairdebtqueue]![Mailing ZipB]
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+End If
+End If
+End If
+
+If (Forms![fairdebtqueue]!DNS3 = 0 Or IsNull(Forms![fairdebtqueue]!DNS3)) Then
+
+
+If (Not IsNull(Forms![fairdebtqueue]!LastNameDebtor3) Or Forms![fairdebtqueue]!LastNameDebtor3 <> "") Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = thirdDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or Forms![fairdebtqueue]![unit_no] = "" Then
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress]
+Else
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!NoticeAdd2 = Forms![fairdebtqueue]!propaddress2
+!NoticeCITY = Forms![fairdebtqueue]!PropertyCity
+!NoticeSTATE = Forms![fairdebtqueue]!PropertyState
+!NoticeZIP = Forms![fairdebtqueue]!propzip
+!extra = Forms![fairdebtqueue]![PropAddress]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If (Forms![fairdebtqueue]!DNS1 = 0 Or IsNull(Forms![fairdebtqueue]!DNS1)) Or _
+(Forms![fairdebtqueue]!DNS2 = 0 Or IsNull(Forms![fairdebtqueue]!DNS2)) Then
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+Else
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart
+!PageCount = 2
+Else
+!StartPage = VCntStart
+!PageCount = 1
+End If
+End If
+.Update
+End With
+
+'Walz Monies Property---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = thirdDebtorq()
+!Name2 = ""
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or _
+Forms![fairdebtqueue]![unit_no] = "" Then
+!Address1 = Forms![fairdebtqueue]![PropAddress]
+Else
+!Address1 = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!Address2 = Forms![fairdebtqueue]!propaddress2
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![PropertyCity] & ", " & Forms![fairdebtqueue]!PropertyState & "  " & Forms![fairdebtqueue]!propzip
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+
+If MailSDatQ = "Grantor3" Or MailSDatQ = "All Grantors" Or MailSDatQ = "All" Then
+With rsnotice
+VIDNo = GetAutoNumber("NextWalz")
+.AddNew
+!NoticeTo = thirdDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![SDatAddress]
+!NoticeAdd2 = Forms![fairdebtqueue]!SDatAddress2
+!NoticeCITY = Forms![fairdebtqueue]!SDatCity
+!NoticeSTATE = Forms![fairdebtqueue]!SDatState
+!NoticeZIP = Forms![fairdebtqueue]!SDatZip
+!extra = Forms![fairdebtqueue]![PropAddress]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = thirdDebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![SDatAddress]
+!Address2 = Forms![fairdebtqueue]!SDatAddress2
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![SDatCity] & ", " & Forms![fairdebtqueue]!SDatState & "  " & Forms![fairdebtqueue]!SDatZip
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+VcountLtr = VcountLtr + 1
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+.Update
+End With
+End If
+
+If MailAQ = "Grantor3" Or MailAQ = "All Grantors" Or MailAQ = "All" Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = thirdDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing Address]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2]
+!NoticeCITY = Forms![fairdebtqueue]![Mailing City]
+!NoticeSTATE = Forms![fairdebtqueue]![Mailing State]
+!NoticeZIP = Forms![fairdebtqueue]![Mailing Zip]
+!extra = Forms![fairdebtqueue]![Mailing Address]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies 2nd Mailing---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = thirdDebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![Mailing Address]
+!Address2 = Forms![fairdebtqueue]![Mailing Address2]
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![Mailing City] & ", " & Forms![fairdebtqueue]![Mailing State] & "  " & Forms![fairdebtqueue]![Mailing Zip]
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+.Update
+End With
+End If
+
+
+If MailbQ = "Grantor3" Or MailbQ = "All Grantors" Or MailbQ = "All" Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = thirdDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing AddressB]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2B]
+!NoticeCITY = Forms![fairdebtqueue]![Mailing CityB]
+!NoticeSTATE = Forms![fairdebtqueue]![Mailing StateB]
+!NoticeZIP = Forms![fairdebtqueue]![Mailing ZipB]
+!extra = Forms![fairdebtqueue]![Mailing AddressB]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies 2nd Mailing---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = thirdDebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![Mailing AddressB]
+!Address2 = Forms![fairdebtqueue]![Mailing Address2B]
+!citystatezip = Forms![fairdebtqueue]![Mailing CityB] & ", " & Forms![fairdebtqueue]![Mailing StateB] & "  " & Forms![fairdebtqueue]![Mailing ZipB]
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+.Update
+End With
+End If
+End If
+End If
+
+If (Forms![fairdebtqueue]!DNS4 = 0 Or IsNull(Forms![fairdebtqueue]!DNS4)) Then
+
+If (Not IsNull(Forms![fairdebtqueue]!lastnamedebtor4) Or Forms![fairdebtqueue]!lastnamedebtor4 <> "") Then
+
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or Forms![fairdebtqueue]![unit_no] = "" Then
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress]
+Else
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!NoticeAdd2 = Forms![fairdebtqueue]!propaddress2
+!NoticeCITY = Forms![fairdebtqueue]!PropertyCity
+!NoticeSTATE = Forms![fairdebtqueue]!PropertyState
+!NoticeZIP = Forms![fairdebtqueue]!propzip
+!extra = Forms![fairdebtqueue]![PropAddress]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies Property---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = fourthdebtorq()
+!Name2 = ""
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or _
+Forms![fairdebtqueue]![unit_no] = "" Then
+!Address1 = Forms![fairdebtqueue]![PropAddress]
+Else
+!Address1 = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!Address2 = Forms![fairdebtqueue]!propaddress2
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![PropertyCity] & ", " & Forms![fairdebtqueue]!PropertyState & "  " & Forms![fairdebtqueue]!propzip
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+
+If MailSDatQ = "Grantor4" Or MailSDatQ = "All Grantors" Or MailSDatQ = "All" Then
+With rsnotice
+VIDNo = GetAutoNumber("NextWalz")
+.AddNew
+!NoticeTo = fourthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![SDatAddress]
+!NoticeAdd2 = Forms![fairdebtqueue]!SDatAddress2
+!NoticeCITY = Forms![fairdebtqueue]!SDatCity
+!NoticeSTATE = Forms![fairdebtqueue]!SDatState
+!NoticeZIP = Forms![fairdebtqueue]!SDatZip
+!extra = Forms![fairdebtqueue]![PropAddress]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = fourthdebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![SDatAddress]
+!Address2 = Forms![fairdebtqueue]!SDatAddress2
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![SDatCity] & ", " & Forms![fairdebtqueue]!SDatState & "  " & Forms![fairdebtqueue]!SDatZip
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+VcountLtr = VcountLtr + 1
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+.Update
+End With
+End If
+
+If MailAQ = "Grantor4" Or MailAQ = "All Grantors" Or MailAQ = "All" Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing Address]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2]
+!NoticeCITY = Forms![fairdebtqueue]![Mailing City]
+!NoticeSTATE = Forms![fairdebtqueue]![Mailing State]
+!NoticeZIP = Forms![fairdebtqueue]![Mailing Zip]
+!extra = Forms![fairdebtqueue]![Mailing Address]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies Mailing---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = fourthdebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![Mailing Address]
+!Address2 = Forms![fairdebtqueue]![Mailing Address2]
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![Mailing City] & ", " & Forms![fairdebtqueue]![Mailing State] & "  " & Forms![fairdebtqueue]![Mailing Zip]
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+End If
+
+If MailbQ = "Grantor4" Or MailbQ = "All Grantors" Or MailbQ = "All" Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing AddressB]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2B]
+!NoticeCITY = Forms![fairdebtqueue]![Mailing CityB]
+!NoticeSTATE = Forms![fairdebtqueue]![Mailing StateB]
+!NoticeZIP = Forms![fairdebtqueue]![Mailing ZipB]
+!extra = Forms![fairdebtqueue]![Mailing AddressB]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies 2nd Mailing---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = fourthdebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![Mailing AddressB]
+!Address2 = Forms![fairdebtqueue]![Mailing Address2B]
+!citystatezip = Forms![fairdebtqueue]![Mailing CityB] & ", " & Forms![fairdebtqueue]![Mailing StateB] & "  " & Forms![fairdebtqueue]![Mailing ZipB]
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+End If
+End If
+End If
+
+
+If (Forms![fairdebtqueue]!dns5 = 0 Or IsNull(Forms![fairdebtqueue]!dns5)) Then
+
+If (Not IsNull(Forms![fairdebtqueue]!lastnamedebtor5) Or Forms![fairdebtqueue]!lastnamedebtor5 <> "") Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = fifthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or Forms![fairdebtqueue]![unit_no] = "" Then
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress]
+Else
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!NoticeAdd2 = Forms![fairdebtqueue]!propaddress2
+!NoticeCITY = Forms![fairdebtqueue]!PropertyCity
+!NoticeSTATE = Forms![fairdebtqueue]!PropertyState
+!NoticeZIP = Forms![fairdebtqueue]!propzip
+!extra = Forms![fairdebtqueue]![PropAddress]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies Property---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = fifthdebtorq()
+!Name2 = ""
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or _
+Forms![fairdebtqueue]![unit_no] = "" Then
+!Address1 = Forms![fairdebtqueue]![PropAddress]
+Else
+!Address1 = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!Address2 = Forms![fairdebtqueue]!propaddress2
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![PropertyCity] & ", " & Forms![fairdebtqueue]!PropertyState & "  " & Forms![fairdebtqueue]!propzip
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+
+If MailSDatQ = "Grantor5" Or MailSDatQ = "All Grantors" Or MailSDatQ = "All" Then
+With rsnotice
+VIDNo = GetAutoNumber("NextWalz")
+.AddNew
+!NoticeTo = fifthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![SDatAddress]
+!NoticeAdd2 = Forms![fairdebtqueue]!SDatAddress2
+!NoticeCITY = Forms![fairdebtqueue]!SDatCity
+!NoticeSTATE = Forms![fairdebtqueue]!SDatState
+!NoticeZIP = Forms![fairdebtqueue]!SDatZip
+!extra = Forms![fairdebtqueue]![PropAddress]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = fifthdebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![SDatAddress]
+!Address2 = Forms![fairdebtqueue]!SDatAddress2
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![SDatCity] & ", " & Forms![fairdebtqueue]!SDatState & "  " & Forms![fairdebtqueue]!SDatZip
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+VcountLtr = VcountLtr + 1
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+.Update
+End With
+End If
+
+If MailAQ = "Grantor5" Or MailAQ = "All Grantors" Or MailAQ = "All" Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = fifthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing Address]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2]
+!NoticeCITY = Forms![fairdebtqueue]![Mailing City]
+!NoticeSTATE = Forms![fairdebtqueue]![Mailing State]
+!NoticeZIP = Forms![fairdebtqueue]![Mailing Zip]
+!extra = Forms![fairdebtqueue]![Mailing Address]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies Mailing---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = fifthdebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![Mailing Address]
+!Address2 = Forms![fairdebtqueue]![Mailing Address2]
+!address3 = ""
+!citystatezip = Forms![fairdebtqueue]![Mailing City] & ", " & Forms![fairdebtqueue]![Mailing State] & "  " & Forms![fairdebtqueue]![Mailing Zip]
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+End If
+
+If MailbQ = "Grantor5" Or MailbQ = "All Grantors" Or MailbQ = "All" Then
+VIDNo = GetAutoNumber("NextWalz")
+
+With rsnotice
+.AddNew
+!NoticeTo = fifthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing AddressB]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2B]
+!NoticeCITY = Forms![fairdebtqueue]![Mailing CityB]
+!NoticeSTATE = Forms![fairdebtqueue]![Mailing StateB]
+!NoticeZIP = Forms![fairdebtqueue]![Mailing ZipB]
+!extra = Forms![fairdebtqueue]![Mailing AddressB]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+ElseIf VLtr = "ACLVA" Then
+!StartPage = VCntStart + 2
+VCntStart = VCntStart + 2
+!PageCount = 2
+Else
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+End If
+.Update
+End With
+
+'Walz Monies 2nd Mailing---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If Not IsNull(Forms![fairdebtqueue]!SaleDate) Then
+!bill_saledate = Forms![fairdebtqueue]!SaleDate
+End If
+!ri = VLtr
+
+!filenum = Forms![fairdebtqueue]!filenum
+!Name1 = fifthdebtorq()
+!Name2 = ""
+!Address1 = Forms![fairdebtqueue]![Mailing AddressB]
+!Address2 = Forms![fairdebtqueue]![Mailing Address2B]
+!citystatezip = Forms![fairdebtqueue]![Mailing CityB] & ", " & Forms![fairdebtqueue]![Mailing StateB] & "  " & Forms![fairdebtqueue]![Mailing ZipB]
+VcountLtr = VcountLtr + 1
+!reference = Forms![fairdebtqueue]!filenum & VLtr & VcountLtr
+If VLtr Like "FDL*" Or VLtr = "oomc" Or VLtr = "amchot" Or VLtr Like "ACL*" Or VLtr = "HUD" Then
+If Forms![fairdebtqueue]!PropertyState = "VA" Then
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+ElseIf Forms![fairdebtqueue]!PropertyState = "DC" Then
+!PostageFeesReg = 0
+Else
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+End If
+End If
+
+.Update
+End With
+End If
+End If
+End If
+
+
+
+If VLtr <> "VASB" And VLtr <> "lnva" Then
+Call WalzLienPDFq
+End If
+
+
+'Call NOIOwners
+
+rsnotice.Close
+
+End Function
+
+Public Function LoanMask4q()
+Dim VLen
+
+LoanMask4q = Right(Forms![fairdebtqueue]!ClientRefNumber, 4)
+
+
+
+End Function
+Public Function ClientLMQ()
+Dim strsqlClient As String
+Dim rsClient As RecordSet
+Dim PExt
+Dim NOIPhone
+
+strsqlClient = "select * from clients where organizationname = " & """" & Forms![fairdebtqueue]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+
+If Forms![fairdebtqueue]!Client Like "Suntrust*" And _
+Forms![fairdebtqueue]!ClientRefNumber Like "068*" Then
+ClientLMQ = "(877) 657-8433"
+ElseIf Forms![fairdebtqueue]!Client Like "Citi*" Then
+ClientLMQ = "(866) 272-4749"
+ElseIf Forms![fairdebtqueue]!Client Like "Penny*" Then
+ClientLMQ = "(866) 945-9070"
+ElseIf Forms![fairdebtqueue]!Client Like "Auro*" Then
+ClientLMQ = "(866) 519-9242"
+ElseIf Forms![fairdebtqueue]!Client Like "Ocwen*" Then
+ClientLMQ = "(877) 596-8580"
+ElseIf Forms![fairdebtqueue]!Client Like "Acq*" Then
+ClientLMQ = "(469) 941-5319"
+
+
+Else
+ClientLMQ = rsClient!loss_mit_no
+If IsNull(rsClient!Loss_mit_no_ext) Then
+Else
+ClientLMQ = LMN & ", " & rsClient!Loss_mit_no_ext
+End If
+End If
+
+End Function
+
+Public Function MailAQ()
+
+If Not IsNull(Forms![fairdebtqueue]![Mailing Address]) And _
+Forms![fairdebtqueue]![Mailing Address] <> "" Then
+
+If Forms![fairdebtqueue]![MailA_To] = "Grantor1" Then
+MailAQ = "Grantor1"
+ElseIf Forms![fairdebtqueue]![MailA_To] = "Grantor2" Then
+MailAQ = "Grantor2"
+ElseIf Forms![fairdebtqueue]![MailA_To] = "Grantor3" Then
+MailAQ = "Grantor3"
+ElseIf Forms![fairdebtqueue]![MailA_To] = "Grantor4" Then
+MailAQ = "Grantor4"
+ElseIf Forms![fairdebtqueue]![MailA_To] = "Owner1" Then
+MailAQ = "Owner1"
+ElseIf Forms![fairdebtqueue]![MailA_To] = "Owner2" Then
+MailAQ = "Owner2"
+ElseIf Forms![fairdebtqueue]![MailA_To] = "Owner3" Then
+MailAQ = "Owner3"
+ElseIf Forms![fairdebtqueue]![MailA_To] = "All Owners" Then
+MailAQ = "ALL Owners"
+ElseIf Forms![fairdebtqueue]![MailA_To] = "grantors/owners" Or _
+IsNull(Forms![fairdebtqueue]!MailA_To) Then
+MailAQ = "ALL"
+ElseIf Forms![fairdebtqueue]![MailA_To] = "All Grantors" Then
+MailAQ = "ALL Grantors"
+End If
+
+Else
+MailAQ = "NA"
+End If
+
+'MsgBox (MailA)
+
+End Function
+Public Function MailSDatQ()
+
+If Not IsNull(Forms![fairdebtqueue]![SDatAddress]) And _
+Forms![fairdebtqueue]![SDatAddress] <> "" Then
+
+If Forms![fairdebtqueue]![Mail_sdat] Like "Grantor1*" Then
+MailSDatQ = "Grantor1"
+ElseIf Forms![fairdebtqueue]![Mail_sdat] Like "Grantor2*" Then
+MailSDatQ = "Grantor2"
+ElseIf Forms![fairdebtqueue]![Mail_sdat] Like "Grantor3*" Then
+MailSDatQ = "Grantor3"
+ElseIf Forms![fairdebtqueue]![Mail_sdat] Like "Grantor4*" Then
+MailSDatQ = "Grantor4"
+ElseIf Forms![fairdebtqueue]![Mail_sdat] Like "Owner1*" Then
+MailSDatQ = "Owner1"
+ElseIf Forms![fairdebtqueue]![Mail_sdat] Like "Owner2*" Then
+MailSDatQ = "Owner2"
+ElseIf Forms![fairdebtqueue]![Mail_sdat] Like "Owner3*" Then
+MailSDatQ = "Owner3"
+ElseIf Forms![fairdebtqueue]![Mail_sdat] Like "All Owners*" Then
+MailSDatQ = "ALL Owners"
+ElseIf Forms![fairdebtqueue]![Mail_sdat] Like "grantors/owners*" Or _
+IsNull(Forms![fairdebtqueue]!Mail_sdat) Or Forms![fairdebtqueue]![Mail_sdat] = "" Then
+MailSDatQ = "All"
+ElseIf Forms![fairdebtqueue]![Mail_sdat] Like "All Grantors*" Then
+MailSDatQ = "ALL Grantors"
+End If
+
+Else
+MailSDatQ = "NA"
+End If
+
+'MsgBox (Forms![foreclosure database screen]![Mail_Sdat] & " " & MailSDat)
+
+End Function
+
+Public Function MailbQ()
+
+If Not IsNull(Forms![fairdebtqueue]![Mailing AddressB]) And Forms![fairdebtqueue]![Mailing AddressB] <> "" Then
+
+If Forms![fairdebtqueue]![MailB_To] = "Grantor1" Then
+MailbQ = "Grantor1"
+ElseIf Forms![fairdebtqueue]![MailB_To] = "Grantor2" Then
+MailbQ = "Grantor2"
+ElseIf Forms![fairdebtqueue]![MailB_To] = "Grantor3" Then
+MailbQ = "Grantor3"
+ElseIf Forms![fairdebtqueue]![MailB_To] = "Grantor4" Then
+MailbQ = "Grantor4"
+ElseIf Forms![fairdebtqueue]![MailB_To] = "Owner1" Then
+MailbQ = "Owner1"
+ElseIf Forms![fairdebtqueue]![MailB_To] = "Owner2" Then
+MailbQ = "Owner2"
+ElseIf Forms![fairdebtqueue]![MailB_To] = "Owner3" Then
+MailbQ = "Owner3"
+ElseIf Forms![fairdebtqueue]![MailB_To] = "All Owners" Then
+MailbQ = "ALL Owners"
+ElseIf Forms![fairdebtqueue]![MailB_To] = "grantors/owners" Or _
+IsNull(Forms![fairdebtqueue]!MailB_To) Then
+MailbQ = "All"
+ElseIf Forms![fairdebtqueue]![MailB_To] = "All Grantors" Then
+MailbQ = "ALL Grantors"
+End If
+
+Else
+MailbQ = "NA"
+End If
+
+End Function
+Public Function InvestorIsCreditorQ()
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "Select * from qc where inviscred = " & -1 & " or inviscred = " & 1 & " and filenum = " & Forms![fairdebtqueue]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+Dim rsqc As RecordSet
+
+If Not rs.EOF Then
+
+InvestorIsCreditorQ = rs!investor
+Else
+InvestorIsCreditorQ = Forms!fairdebtqueue!SecuredParty
+
+
+End If
+
+
+End Function
+
+Public Function debtorsOPENDNSQ() As String
+
+
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim fifthdebtor As String
+Dim FF As String
+
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+firstdebtor = ""
+secondDebtor = ""
+thirddebtor = ""
+fourthdebtor = ""
+fifthdebtor = ""
+
+
+If Forms![fairdebtqueue]!DNS1 = 0 Or IsNull(Forms![fairdebtqueue]!DNS1) Then
+If IsNull(Forms![fairdebtqueue]![MiddleNameDebtor1]) Then
+firstdebtor = Trim(Forms![fairdebtqueue]![FirstNameDebtor1] & " " & Forms![fairdebtqueue]![LastNameDebtor1])
+Else
+firstdebtor = Trim(Forms![fairdebtqueue]![FirstNameDebtor1] & " " & Forms![fairdebtqueue]![MiddleNameDebtor1] & " " & Forms![fairdebtqueue]![LastNameDebtor1])
+End If
+End If
+
+If Forms![fairdebtqueue]!DNS2 = 0 Or IsNull(Forms![fairdebtqueue]!DNS2) Then
+If IsNull(Forms![fairdebtqueue]![MiddleNameDebtor2]) Then
+secondDebtor = Trim(Forms![fairdebtqueue]![FirstNameDebtor2] & " " & Forms![fairdebtqueue]![LastNameDebtor2])
+Else
+secondDebtor = Trim(Forms![fairdebtqueue]![FirstNameDebtor2] & " " & Forms![fairdebtqueue]![MiddleNameDebtor2] & " " & Forms![fairdebtqueue]![LastNameDebtor2])
+End If
+End If
+
+If Forms![fairdebtqueue]!DNS3 = 0 Or IsNull(Forms![fairdebtqueue]!DNS3) Then
+If IsNull(Forms![fairdebtqueue]![MiddleNameDebtor3]) Then
+thirddebtor = Trim(Forms![fairdebtqueue]![FirstNameDebtor3] & " " & Forms![fairdebtqueue]![LastNameDebtor3])
+Else
+thirddebtor = Trim(Forms![fairdebtqueue]![FirstNameDebtor3] & " " & Forms![fairdebtqueue]![MiddleNameDebtor3] & " " & Forms![fairdebtqueue]![LastNameDebtor3])
+End If
+End If
+
+If Forms![fairdebtqueue]!DNS4 = 0 Or IsNull(Forms![fairdebtqueue]!DNS4) Then
+If IsNull(Forms![fairdebtqueue]![middlenamedebtor4]) Then
+fourthdebtor = Trim(Forms![fairdebtqueue]![firstnamedebtor4] & " " & Forms![fairdebtqueue]![lastnamedebtor4])
+Else
+fourthdebtor = Trim(Forms![fairdebtqueue]![firstnamedebtor4] & " " & Forms![fairdebtqueue]![middlenamedebtor4] & " " & Forms![fairdebtqueue]![lastnamedebtor4])
+End If
+End If
+
+If Forms![fairdebtqueue]!dns5 = 0 Or IsNull(Forms![fairdebtqueue]!dns5) Then
+If IsNull(Forms![fairdebtqueue]![middlenamedebtor5]) Then
+fifthdebtor = Trim(Forms![fairdebtqueue]![firstnamedebtor5] & " " & Forms![fairdebtqueue]![lastnamedebtor5])
+Else
+fifthdebtor = Trim(Forms![fairdebtqueue]![firstnamedebtor5] & " " & Forms![fairdebtqueue]![middlenamedebtor5] & " " & Forms![fairdebtqueue]![lastnamedebtor5])
+End If
+End If
+
+If firstdebtor <> "" And secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor <> "" And fourthdebtor = "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor = "" And fourthdebtor <> "" And fifthdebtor = "" Then
+fs = " and "
+ElseIf firstdebtor <> "" And secondDebtor = "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor <> "" Then
+fs = " and "
+ElseIf firstdebtor = "" Then
+fs = ""
+End If
+
+If firstdebtor <> "" And secondDebtor <> "" And (thirddebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And thirddebtor <> "" And (secondDebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And fourthdebtor <> "" And (thirddebtor <> "" Or secondDebtor <> "" Or fifthdebtor <> "") Then
+fs = ", "
+ElseIf firstdebtor <> "" And fifthdebtor <> "" And (secondDebtor <> "" Or thirddebtor <> "" Or fourthdebtor <> "") Then
+fs = ","
+End If
+
+If secondDebtor <> "" And thirddebtor <> "" And fourthdebtor = "" And fifthdebtor = "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor <> "" And fifthdebtor = "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor <> "" Then
+st = " and "
+ElseIf secondDebtor <> "" And thirddebtor = "" And fourthdebtor = "" And fifthdebtor = "" Then
+st = ""
+ElseIf secondDebtor = "" Then
+st = ""
+End If
+
+If secondDebtor <> "" And (thirddebtor <> "" Or fourthdebtor <> "" Or fifthdebtor <> "") Then
+st = ", "
+End If
+
+If thirddebtor <> "" And fourthdebtor <> "" And fifthdebtor <> "" Then
+tf = ", "
+ElseIf thirddebtor <> "" And fourthdebtor = "" And fifthdebtor <> "" Then
+tf = " and "
+ElseIf thirddebtor <> "" And fourthdebtor <> "" And fifthdebtor = "" Then
+tf = " and "
+ElseIf thirddebtor = "" Then
+tf = ""
+End If
+
+If fourthdebtor <> "" And fifthdebtor <> "" Then
+FF = " and "
+Else
+FF = ""
+End If
+
+
+debtorsOPENDNSQ = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+
+'MsgBox ("fs: " & fs & " st: " & st & " tf: " & tf & " ff: " & ff & debtorsOPENDNS)
+
+End Function
+
+Public Function PROPQ() As String
+
+If IsNull(Forms![fairdebtqueue]![propaddress2]) Then
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or Forms![fairdebtqueue]![unit_no] = "" Then
+PROPQ = Forms![fairdebtqueue]![PropAddress] & ", " & Forms![fairdebtqueue]![PropertyCity] & ", " & Forms![fairdebtqueue]![PropertyState] & " " & Forms![fairdebtqueue]![propzip]
+Else
+PROPQ = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no] & ", " & Forms![fairdebtqueue]![PropertyCity] & ", " & Forms![fairdebtqueue]![PropertyState] & " " & Forms![fairdebtqueue]![propzip]
+End If
+
+Else
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or Forms![fairdebtqueue]![unit_no] = "" Then
+PROPQ = Forms![fairdebtqueue]![PropAddress] & ", " & Forms![fairdebtqueue]![propaddress2] & ", " & Forms![fairdebtqueue]![PropertyCity] & ", " & Forms![fairdebtqueue]![PropertyState] & " " & Forms![fairdebtqueue]![propzip]
+Else
+PROPQ = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no] & ", " & Forms![fairdebtqueue]![propaddress2] & ", " & Forms![fairdebtqueue]![PropertyCity] & ", " & Forms![fairdebtqueue]![PropertyState] & " " & Forms![fairdebtqueue]![propzip]
+End If
+End If
+
+End Function
+
+Public Function ExportWalzXMLq()
+Dim VcountLtr As Integer
+VCntStart = 1
+VcountLtr = 0
+Dim rsnotices As RecordSet
+Dim VProp
+Set rsWalz = CurrentDb.OpenRecordset("walzinfo", dbOpenDynaset, dbSeeChanges)
+Set rsnotices = CurrentDb.OpenRecordset("NoticesWalz", dbOpenSnapshot)
+
+Dim rsnotice As RecordSet
+
+Set rsnotice = CurrentDb.OpenRecordset("WalzXML", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rsnotices.EOF
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or _
+Forms![fairdebtqueue]![unit_no] = "" Then
+VProp = Forms![fairdebtqueue]![PropAddress]
+Else
+VProp = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+
+With rsnotice
+VIDNo = GetAutoNumber("NextWalz")
+.AddNew
+!NoticeTo = rsnotices!NoticeTo
+!filenum = rsnotices!filenum
+!NoticeAdd = rsnotices!NoticeAdd
+!NoticeAdd2 = rsnotices!NoticeAdd2
+'-----------------------------
+Dim tempCtySt As Variant
+Dim C, d
+Dim v1, v2, V3, V4, V5
+
+d = Split(rsnotices!NoticeCSZ, ",")
+
+v1 = StrConv(d(0), vbProperCase)
+v2 = StrConv(d(1), vbProperCase)
+tempCtySt = Split(v2, " ")
+C = Split(v2, " ")
+!NoticeCITY = v1
+
+If UBound(tempCtySt) = 3 Then
+!NoticeSTATE = StrConv(C(1), vbProperCase)
+!NoticeZIP = StrConv(C(3), vbProperCase)
+ElseIf UBound(tempCtySt) = 2 Then
+!NoticeSTATE = StrConv(C(1), vbProperCase)
+!NoticeZIP = StrConv(C(2), vbProperCase)
+End If
+'===============================
+!extra = rsnotices![PropAddress]
+!ri = VLtr
+!pdffile = VPDF
+!reference = VIDNo
+If VLtr Like "ACLVA" Or VLtr Like "FDL*" Or VLtr Like "NOI*" Or VLtr = "AMCHOT" Or VLtr = "OOMC" Or VLtr = "ACLMD" Or VLtr = "VASB" Or VLtr = "ACLDC" Then
+!StartPage = VCntStart
+!PageCount = 2
+VCntStart = VCntStart + 2
+Else
+!StartPage = VCntStart
+!PageCount = 1
+VCntStart = VCntStart + 1
+End If
+.Update
+End With
+
+
+'Walz Monies---------------------------
+With rsWalz
+.AddNew
+!ID_No = VIDNo
+!WalzDateUploaded = Date
+If VLtr = "fdlva" And VFdlLnl = 2 Then
+!ri = "LNL"
+Else
+!ri = VLtr
+End If
+!filenum = rsnotices!filenum
+!Name1 = rsnotices!NoticeTo
+!Name2 = ""
+!Address1 = rsnotices!NoticeAdd
+!Address2 = rsnotices!NoticeAdd2
+!address3 = ""
+!citystatezip = rsnotices!NoticeCSZ
+!reference = rsnotices!filenum & VLtr & VcountLtr
+!PostageFees = 0
+!ServiceFees = 0
+!PostageFeesReg = 0
+
+.Update
+End With
+
+
+rsnotices.MoveNext
+Loop
+
+
+
+
+
+
+rsnotice.Close
+
+End Function
+
+Public Function ExportFDLLettersQ()
+Dim VSaleHeld, VNewspaper, VNew1, VNew2 As String
+
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+Dim rs, rsnotice, rspropertycounty, rsClient, rsletter As RecordSet
+Dim strsql, sqlpropertycounty, sqlclient, sqlLetter As String
+
+Dim VDate
+
+VDate = InputBox("Enter Date for Letter if NOT today")
+If Not IsNull(VDate) Or VDate <> "" Then
+VNoticeDate = VDate
+Else
+VNoticeDate = Date
+End If
+
+
+vfilenum = Forms![fairdebtqueue]![filenum]
+strsql = "Select * from jurisdiction where county = " & """" & Forms![fairdebtqueue]!Propertycounty & """" & " and state = " & """" & Forms![fairdebtqueue]!PropertyState & """" & ";"
+Set rspropertycounty = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsnotice = CurrentDb.OpenRecordset("Notices", dbOpenDynaset, dbSeeChanges)
+If rspropertycounty.EOF Then
+MsgBox ("County input incorrectly?  Will exit")
+rspropertycounty.Close
+rsnotice.Close
+Exit Function
+End If
+
+If IsNull(rspropertycounty!SaleHeld) Or rspropertycounty!SaleHeld = "" Then
+VSaleHeld = ""
+MsgBox ("No Sale Held information for " & rspropertycounty!County & " on Jurisdiction Screen, letters will not dumps")
+Exit Function
+Else
+VSaleHeld = rspropertycounty!SaleHeld
+End If
+
+If Forms![fairdebtqueue]!DNS1 = 0 Or IsNull(Forms![fairdebtqueue]!DNS1) Then
+
+With rsnotice
+.AddNew
+!NoticeTo = firstdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or _
+Forms![fairdebtqueue]![unit_no] = "" Then
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress]
+Else
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!NoticeAdd2 = Forms![fairdebtqueue]!propaddress2
+!NoticeCSZ = Forms![fairdebtqueue]!PropertyCity & ", " & Forms![fairdebtqueue]!PropertyState & "  " & Forms![fairdebtqueue]!propzip
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor1] & " " & Forms![fairdebtqueue]!LastNameDebtor1
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+
+!Client = Forms![fairdebtqueue]!Client
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+
+.Update
+End With
+'End If
+
+If MailSDatQ = "Grantor1" Or MailSDatQ = "All Grantors" Or MailSDatQ = "All" Then
+With rsnotice
+.AddNew
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeTo = firstdebtorq()
+!NoticeAdd = Forms![fairdebtqueue]![SDatAddress]
+!NoticeAdd2 = Forms![fairdebtqueue]![SDatAddress2]
+!NoticeCSZ = Forms![fairdebtqueue]![SDatCity] & ", " & Forms![fairdebtqueue]![SDatState] & "  " & Forms![fairdebtqueue]![SDatZip]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor1] & " " & Forms![fairdebtqueue]!LastNameDebtor1
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+End If
+
+If (MailAQ = "Grantor1" Or MailAQ = "All Grantors" Or MailAQ = "All") Then
+With rsnotice
+.AddNew
+!NoticeTo = firstdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing Address]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2]
+!NoticeCSZ = Forms![fairdebtqueue]![Mailing City] & ", " & Forms![fairdebtqueue]![Mailing State] & "  " & Forms![fairdebtqueue]![Mailing Zip]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor1] & " " & Forms![fairdebtqueue]!LastNameDebtor1
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+
+.Update
+End With
+End If
+
+
+If (MailbQ = "Grantor1" Or MailbQ = "All Grantors" Or MailbQ = "All") Then
+With rsnotice
+.AddNew
+!NoticeTo = firstdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing AddressB]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2B]
+!NoticeCSZ = Forms![fairdebtqueue]![Mailing CityB] & ", " & Forms![fairdebtqueue]![Mailing StateB] & "  " & Forms![fairdebtqueue]![Mailing ZipB]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor1] & " " & Forms![fairdebtqueue]!LastNameDebtor1
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+End If
+
+End If
+
+If (Not IsNull(Forms![fairdebtqueue]!LastNameDebtor2) Or Forms![fairdebtqueue]!LastNameDebtor2 <> "") And _
+(Forms![fairdebtqueue]!DNS2 = 0 Or IsNull(Forms![fairdebtqueue]!DNS2)) Then
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+'MsgBox (Forms![fairdebtqueue]!LastNameDebtor2)
+
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or Forms![fairdebtqueue]![unit_no] = "" Then
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress]
+Else
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!NoticeAdd2 = Forms![fairdebtqueue]!propaddress2
+!NoticeCSZ = Forms![fairdebtqueue]!PropertyCity & ", " & Forms![fairdebtqueue]!PropertyState & "  " & Forms![fairdebtqueue]!propzip
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor2] & " " & Forms![fairdebtqueue]!LastNameDebtor2
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+
+If MailSDatQ = "Grantor2" Or MailSDatQ = "All Grantors" Or MailSDatQ = "All" Then
+With rsnotice
+.AddNew
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeTo = secondDebtorq()
+!NoticeAdd = Forms![fairdebtqueue]![SDatAddress]
+!NoticeAdd2 = Forms![fairdebtqueue]![SDatAddress2]
+!NoticeCSZ = Forms![fairdebtqueue]![SDatCity] & ", " & Forms![fairdebtqueue]![SDatState] & "  " & Forms![fairdebtqueue]![SDatZip]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor2] & " " & Forms![fairdebtqueue]!LastNameDebtor2
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+End If
+
+If (MailAQ = "Grantor2" Or MailAQ = "All Grantors" Or MailAQ = "All") Then
+
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing Address]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2]
+!NoticeCSZ = Forms![fairdebtqueue]![Mailing City] & ", " & Forms![fairdebtqueue]![Mailing State] & "  " & Forms![fairdebtqueue]![Mailing Zip]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor2] & " " & Forms![fairdebtqueue]!LastNameDebtor2
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+
+.Update
+End With
+End If
+
+If (MailbQ = "Grantor2" Or MailbQ = "All Grantors" Or MailbQ = "All") Then
+With rsnotice
+.AddNew
+!NoticeTo = secondDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing AddressB]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2B]
+!NoticeCSZ = Forms![fairdebtqueue]![Mailing CityB] & ", " & Forms![fairdebtqueue]![Mailing StateB] & "  " & Forms![fairdebtqueue]![Mailing ZipB]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor2] & " " & Forms![fairdebtqueue]!LastNameDebtor2
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+End If
+End If
+
+If (Not IsNull(Forms![fairdebtqueue]!LastNameDebtor3) Or Forms![fairdebtqueue]!LastNameDebtor3 <> "") And _
+(Forms![fairdebtqueue]!DNS3 = 0 Or IsNull(Forms![fairdebtqueue]!DNS3)) Then
+With rsnotice
+.AddNew
+!NoticeTo = thirdDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or Forms![fairdebtqueue]![unit_no] = "" Then
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress]
+Else
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!NoticeAdd2 = Forms![fairdebtqueue]!propaddress2
+!NoticeCSZ = Forms![fairdebtqueue]!PropertyCity & ", " & Forms![fairdebtqueue]!PropertyState & "  " & Forms![fairdebtqueue]!propzip
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor3] & " " & Forms![fairdebtqueue]!LastNameDebtor3
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+
+If MailSDatQ = "Grantor3" Or MailSDatQ = "All Grantors" Or MailSDatQ = "All" Then
+With rsnotice
+.AddNew
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeTo = thirdDebtorq()
+!NoticeAdd = Forms![fairdebtqueue]![SDatAddress]
+!NoticeAdd2 = Forms![fairdebtqueue]![SDatAddress2]
+!NoticeCSZ = Forms![fairdebtqueue]![SDatCity] & ", " & Forms![fairdebtqueue]![SDatState] & "  " & Forms![fairdebtqueue]![SDatZip]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor3] & " " & Forms![fairdebtqueue]!LastNameDebtor3
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+End If
+
+If (MailAQ = "Grantor3" Or MailAQ = "All Grantors" Or MailAQ = "All") Then
+With rsnotice
+.AddNew
+!NoticeTo = thirdDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing Address]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2]
+!NoticeCSZ = Forms![fairdebtqueue]![Mailing City] & ", " & Forms![fairdebtqueue]![Mailing State] & "  " & Forms![fairdebtqueue]![Mailing Zip]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor3] & " " & Forms![fairdebtqueue]!LastNameDebtor3
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+End If
+
+If (MailbQ = "Grantor3" Or MailbQ = "All Grantors" Or MailbQ = "All") Then
+With rsnotice
+.AddNew
+!NoticeTo = thirdDebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing AddressB]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2B]
+!NoticeCSZ = Forms![fairdebtqueue]![Mailing CityB] & ", " & Forms![fairdebtqueue]![Mailing StateB] & "  " & Forms![fairdebtqueue]![Mailing ZipB]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![FirstNameDebtor3] & " " & Forms![fairdebtqueue]!LastNameDebtor3
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+End If
+End If
+
+If (Not IsNull(Forms![fairdebtqueue]!lastnamedebtor4) Or Forms![fairdebtqueue]!lastnamedebtor4 <> "") And _
+(Forms![fairdebtqueue]!DNS4 = 0 Or IsNull(Forms![fairdebtqueue]!DNS4)) Then
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or Forms![fairdebtqueue]![unit_no] = "" Then
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress]
+Else
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!NoticeAdd2 = Forms![fairdebtqueue]!propaddress2
+!NoticeCSZ = Forms![fairdebtqueue]!PropertyCity & ", " & Forms![fairdebtqueue]!PropertyState & "  " & Forms![fairdebtqueue]!propzip
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![firstnamedebtor4] & " " & Forms![fairdebtqueue]!lastnamedebtor4
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+
+.Update
+End With
+
+If MailSDatQ = "Grantor4" Or MailSDatQ = "All Grantors" Or MailSDatQ = "All" Then
+With rsnotice
+.AddNew
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeTo = fourthdebtorq()
+!NoticeAdd = Forms![fairdebtqueue]![SDatAddress]
+!NoticeAdd2 = Forms![fairdebtqueue]![SDatAddress2]
+!NoticeCSZ = Forms![fairdebtqueue]![SDatCity] & ", " & Forms![fairdebtqueue]![SDatState] & "  " & Forms![fairdebtqueue]![SDatZip]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![firstnamedebtor4] & " " & Forms![fairdebtqueue]!lastnamedebtor4
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+End If
+
+If (MailAQ = "Grantor4" Or MailAQ = "All Grantors" Or MailAQ = "All") Then
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing Address]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2]
+!NoticeCSZ = Forms![fairdebtqueue]![Mailing City] & ", " & Forms![fairdebtqueue]![Mailing State] & "  " & Forms![fairdebtqueue]![Mailing Zip]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![firstnamedebtor4] & " " & Forms![fairdebtqueue]!lastnamedebtor4
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+
+.Update
+End With
+End If
+
+If (MailbQ = "Grantor4" Or MailbQ = "All Grantors" Or MailbQ = "All") Then
+With rsnotice
+.AddNew
+!NoticeTo = fourthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing AddressB]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2B]
+!NoticeCSZ = Forms![fairdebtqueue]![Mailing CityB] & ", " & Forms![fairdebtqueue]![Mailing StateB] & "  " & Forms![fairdebtqueue]![Mailing ZipB]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![firstnamedebtor4] & " " & Forms![fairdebtqueue]!lastnamedebtor4
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+End If
+End If
+
+If (Not IsNull(Forms![fairdebtqueue]!lastnamedebtor5) Or Forms![fairdebtqueue]!lastnamedebtor5 <> "") And _
+(Forms![fairdebtqueue]!dns5 = 0 Or IsNull(Forms![fairdebtqueue]!dns5)) Then
+With rsnotice
+.AddNew
+!NoticeTo = fifthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+If IsNull(Forms![fairdebtqueue]![unit_no]) Or Forms![fairdebtqueue]![unit_no] = "" Then
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress]
+Else
+!NoticeAdd = Forms![fairdebtqueue]![PropAddress] & ", Unit # " & Forms![fairdebtqueue]![unit_no]
+End If
+!NoticeAdd2 = Forms![fairdebtqueue]!propaddress2
+!NoticeCSZ = Forms![fairdebtqueue]!PropertyCity & ", " & Forms![fairdebtqueue]!PropertyState & "  " & Forms![fairdebtqueue]!propzip
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![firstnamedebtor5] & " " & Forms![fairdebtqueue]!lastnamedebtor5
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+
+.Update
+End With
+
+If MailSDatQ = "Grantor5" Or MailSDatQ = "All Grantors" Or MailSDatQ = "All" Then
+With rsnotice
+.AddNew
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeTo = fifthdebtorq()
+!NoticeAdd = Forms![fairdebtqueue]![SDatAddress]
+!NoticeAdd2 = Forms![fairdebtqueue]![SDatAddress2]
+!NoticeCSZ = Forms![fairdebtqueue]![SDatCity] & ", " & Forms![fairdebtqueue]![SDatState] & "  " & Forms![fairdebtqueue]![SDatZip]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![firstnamedebtor5] & " " & Forms![fairdebtqueue]!lastnamedebtor5
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+End If
+
+If (MailAQ = "grantor5" Or MailAQ = "All Grantors" Or MailAQ = "All") Then
+With rsnotice
+.AddNew
+!NoticeTo = fifthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing Address]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2]
+!NoticeCSZ = Forms![fairdebtqueue]![Mailing City] & ", " & Forms![fairdebtqueue]![Mailing State] & "  " & Forms![fairdebtqueue]![Mailing Zip]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![firstnamedebtor5] & " " & Forms![fairdebtqueue]!lastnamedebtor5
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+
+.Update
+End With
+End If
+
+If (MailbQ = "Grantor5" Or MailbQ = "All Grantors" Or MailbQ = "All") Then
+With rsnotice
+.AddNew
+!NoticeTo = fifthdebtorq()
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = Forms![fairdebtqueue]![Mailing AddressB]
+!NoticeAdd2 = Forms![fairdebtqueue]![Mailing Address2B]
+!NoticeCSZ = Forms![fairdebtqueue]![Mailing CityB] & ", " & Forms![fairdebtqueue]![Mailing StateB] & "  " & Forms![fairdebtqueue]![Mailing ZipB]
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+!Salutation = Forms![fairdebtqueue]![firstnamedebtor5] & " " & Forms![fairdebtqueue]!lastnamedebtor5
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+End If
+End If
+
+
+'LIENHOLDERS---------------------------------------
+Dim rsLienHolders As RecordSet
+Dim strsqlLIEN As String
+
+strsqlLIEN = "SELECT * FROM creditors WHERE (Creditors.fdl = -1 or creditors.fdl = 1) And creditors.FIleNum = " & [Forms]![fairdebtqueue]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenDynaset, dbSeeChanges)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![fairdebtqueue]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+!PropertyState = Forms![fairdebtqueue]!PropertyState
+!SaleHeld = rspropertycounty!SaleHeld
+If IsNull(rsLienHolders!dear) Then
+!Salutation = rsLienHolders!OrganizationName
+Else
+!Salutation = rsLienHolders!dear
+End If
+
+!SaleTime = Forms![fairdebtqueue]!SaleTime
+!SaleDate = Forms![fairdebtqueue]!SaleDate
+If IsNull(VNoticeDate) Or VNoticeDate = "" Then
+!noticesent = Date
+Else
+!noticesent = VNoticeDate
+End If
+!Client = Forms![fairdebtqueue]!Client
+!DOTDate = Forms![fairdebtqueue]!DOTDate
+!SecuredParty = Forms![fairdebtqueue]!SecuredParty
+!Propertycounty = Forms![fairdebtqueue]!Propertycounty
+!OrgAmount = Forms![fairdebtqueue]!OrgAmount
+If IsNull(Forms![fairdebtqueue]!PutOutDate) Then
+Else
+!PutOutDate = Forms![fairdebtqueue]!PutOutDate
+End If
+If Forms![fairdebtqueue]!Client Like "Citi Res*" Then
+!extra = "CALL CITI RESIDENTIAL LENDING HOME RETENTION HOTLINE #1/800-430-5262"
+End If
+.Update
+End With
+rsLienHolders.MoveNext
+Loop
+
+End If
+
+rspropertycounty.Close
+rsnotice.Close
+
+End Function
+
+Public Function firstdebtorq() As String
+
+If IsNull(Forms![fairdebtqueue]![MiddleNameDebtor1]) Then
+firstdebtorq = Trim(Forms![fairdebtqueue]![FirstNameDebtor1] & " " & Forms![fairdebtqueue]![LastNameDebtor1])
+Else
+firstdebtorq = Trim(Forms![fairdebtqueue]![FirstNameDebtor1] & " " & Forms![fairdebtqueue]![MiddleNameDebtor1] & " " & Forms![fairdebtqueue]![LastNameDebtor1])
+End If
+
+End Function
+
+Public Function fifthdebtorq() As String
+
+If IsNull(Forms![fairdebtqueue]![middlenamedebtor5]) And Forms![fairdebtqueue]![middlenamedebtor5] = "" Then
+fifthdebtorq = Trim(Forms![fairdebtqueue]![firstnamedebtor5] & " " & Forms![fairdebtqueue]![lastnamedebtor5])
+Else
+fifthdebtorq = Trim(Forms![fairdebtqueue]![firstnamedebtor5] & " " & Forms![fairdebtqueue]![middlenamedebtor5] & " " & Forms![fairdebtqueue]![lastnamedebtor5])
+End If
+
+End Function
+Public Function owner1q() As String
+
+If IsNull(Forms![fairdebtqueue]![lastnameo1]) Then
+owner1q = ""
+Else
+If IsNull(Forms![fairdebtqueue]![mnameo1]) Then
+owner1q = Trim(Forms![fairdebtqueue]![firstnameo1] & " " & Forms![fairdebtqueue]![lastnameo1])
+Else
+owner1q = Trim(Forms![fairdebtqueue]![firstnameo1] & " " & Forms![fairdebtqueue]![mnameo1] & " " & Forms![fairdebtqueue]![lastnameo1])
+End If
+End If
+
+
+End Function
+Public Function owner3q() As String
+If IsNull(Forms![fairdebtqueue]![lastnameo3]) Then
+owner3q = ""
+Else
+If IsNull(Forms![fairdebtqueue]![mnameo3]) Then
+owner3q = Trim(Forms![fairdebtqueue]![firstnameo3] & " " & Forms![fairdebtqueue]![lastnameo3])
+Else
+owner3q = Trim(Forms![fairdebtqueue]![firstnameo3] & " " & Forms![fairdebtqueue]![mnameo3] & " " & Forms![fairdebtqueue]![lastnameo3])
+End If
+End If
+
+End Function
+Public Function owner2q() As String
+
+If IsNull(Forms![fairdebtqueue]![lastnameo2]) Then
+owner2q = ""
+Else
+If IsNull(Forms![fairdebtqueue]![mnameo2]) Then
+owner2q = Trim(Forms![fairdebtqueue]![firstnameo2] & " " & Forms![fairdebtqueue]![lastnameo2])
+Else
+owner2q = Trim(Forms![fairdebtqueue]![firstnameo2] & " " & Forms![fairdebtqueue]![mnameo2] & " " & Forms![fairdebtqueue]![lastnameo2])
+End If
+End If
+
+
+End Function
+
+
+Public Function secondDebtorq() As String
+
+If IsNull(Forms![fairdebtqueue]![LastNameDebtor2]) Then
+secondDebtorq = ""
+Else
+If IsNull(Forms![fairdebtqueue]![MiddleNameDebtor2]) Then
+secondDebtorq = Trim(Forms![fairdebtqueue]![FirstNameDebtor2] & " " & Forms![fairdebtqueue]![LastNameDebtor2])
+Else
+secondDebtorq = Trim(Forms![fairdebtqueue]![FirstNameDebtor2] & " " & Forms![fairdebtqueue]![MiddleNameDebtor2] & " " & Forms![fairdebtqueue]![LastNameDebtor2])
+End If
+End If
+'MsgBox (seconddebtor)
+
+End Function
+
+Public Function thirdDebtorq() As String
+
+If IsNull(Forms![fairdebtqueue]![LastNameDebtor3]) Then
+thirdDebtorq = ""
+Else
+
+If IsNull(Forms![fairdebtqueue]![MiddleNameDebtor3]) Then
+thirdDebtorq = Trim(Forms![fairdebtqueue]![FirstNameDebtor3] & " " & Forms![fairdebtqueue]![LastNameDebtor3])
+Else
+thirdDebtorq = Trim(Forms![fairdebtqueue]![FirstNameDebtor3] & " " & Forms![fairdebtqueue]![MiddleNameDebtor3] & " " & Forms![fairdebtqueue]![LastNameDebtor3])
+End If
+
+End If
+
+End Function
+Public Function fourthdebtorq() As String
+
+If IsNull(Forms![fairdebtqueue]![lastnamedebtor4]) Then
+fourthdebtorq = ""
+Else
+
+If IsNull(Forms![fairdebtqueue]![middlenamedebtor4]) Then
+fourthdebtorq = Trim(Forms![fairdebtqueue]![firstnamedebtor4] & " " & Forms![fairdebtqueue]![lastnamedebtor4])
+Else
+fourthdebtorq = Trim(Forms![fairdebtqueue]![firstnamedebtor4] & " " & Forms![fairdebtqueue]![middlenamedebtor4] & " " & Forms![fairdebtqueue]![lastnamedebtor4])
+End If
+End If
+
+End Function
+
+

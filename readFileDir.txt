@@ -1,0 +1,14 @@
+Sub readFileDir()
+
+Dim fobj As Object: Set fobj = CreateObject("Scripting.FileSystemObject")
+Dim foldobj As Object: Set foldobj = fobj.getfolder("C:\Users\matthewsalston\Documents\Trainings\")
+Dim f As Object
+
+
+For Each f In foldobj.Files
+    Debug.Print f.Name
+Next f
+
+
+
+End Sub

@@ -1,0 +1,24 @@
+    With ActiveSheet.ListObjects.Add(SourceType:=0, Source:=Array(Array( _
+        "ODBC;DBQ=C:\USERS\MATTHEWSALSTON\DOCUMENTS\DOUG PROJ;DefaultDir=C:\USERS\MATTHEWSALSTON\DOCUMENTS\DOUG PROJ;Driver={Microsoft Access" _
+        ), Array( _
+        " Text Driver (*.txt, *.csv)};DriverId=27;Extensions=txt,csv,tab,asc;FIL=text;MaxBufferSize=2048;MaxScanRows=25;PageTimeout=5;Sa" _
+        ), Array("feTransactions=0;Threads=3;UserCommitSync=Yes;")), Destination:= _
+        Range("$A$1")).QueryTable
+        .CommandText = Array( _
+        "SELECT DISTINCT tblVFDData.`REQUIREMENT - ID`, tblVFDData.`ACTION - ID`" & Chr(13) & "" & Chr(10) & "FROM tblVFDData.csv tblVFDData" _
+        )
+        .RowNumbers = False
+        .FillAdjacentFormulas = False
+        .PreserveFormatting = True
+        .RefreshOnFileOpen = False
+        .BackgroundQuery = True
+        .RefreshStyle = xlInsertDeleteCells
+        .SavePassword = False
+        .SaveData = True
+        .AdjustColumnWidth = True
+        .RefreshPeriod = 0
+        .PreserveColumnInfo = True
+        .ListObject.DisplayName = "Table_Query_from_MS_Query___Text"
+        .Refresh BackgroundQuery:=False
+    End With
+    

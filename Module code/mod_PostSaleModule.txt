@@ -1,0 +1,1192 @@
+Attribute VB_Name = "PostSaleModule"
+Option Compare Database
+Public Function OpenSubPurchaser()
+'Loan = VA
+If Forms![foreclosure database screen]!PropertyState = "MD" And [Forms]![foreclosure database screen]![TypeOfLoan] Like "VA*" And IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form![motion subpurchaser]) Then
+MsgBox ("This Deed can NOT be generated. It is a VA loan and the Date SubPurchaser Order Signed field is not filled in.")
+Exit Function
+End If
+
+
+DoCmd.OpenForm ("subpurchaser")
+End Function
+
+Public Function JurisDeedAssigned()
+Dim rs As RecordSet
+Dim strsqlCounty As String
+
+'Set rs = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlCounty = ("Select * from Jurisdiction where County = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & _
+" and State = " & """" & Forms![foreclosure database screen]!PropertyState & """")
+Set rsCounty = CurrentDb.OpenRecordset(strsqlCounty, dbOpenSnapshot)
+
+
+If Not rsCounty.EOF Then
+
+If Not IsNull(rsCounty!assigned_deed_ini) Then
+JurisDeedAssigned = rsCounty!assigned_deed_ini
+End If
+
+rsCounty.Close
+
+
+Forms![foreclosure database screen].Refresh
+End If
+
+
+
+
+
+End Function
+
+Public Function PostsalePurchaserAddROS()
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form![Buyer] = "REO" Then
+
+PostsalePurchaserAddROS = Trim(UCase(LSecured())) & " c/o " & Trim(Client()) & " ," & ClientAdd()
+
+Else
+'MsgBox (purchaseradd())
+
+If purchaseradd() = "" Or IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+p2 = " c/o " & Trim(Client()) & " ," & ClientAdd()
+Else
+p2 = purchaseradd()
+End If
+
+PostsalePurchaserAddROS = Trim(Purchaser()) & ", " & p2
+
+End If
+
+
+
+End Function
+
+
+
+Public Function purchaseraddNov2014()
+Dim VarAdd As String
+
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last Like "*REO*" Then
+Exit Function
+Else
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!printclientadd = 0 Or _
+IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!printclientadd) Then
+
+
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal Home*" Then
+purchaseradd = "5000 Plano Parkway, Carrollton, Texas 75010"
+ElseIf [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal National*" Then
+purchaseradd = "14221 Dallas Parkway, Suite 1000, Dallas, Texas  75254"
+ElseIf [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Secretary*" Then
+purchaseradd = "210 Franklin Rd., SW, Roanoke, VA  24011"
+ElseIf IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+Dim VarPurchaser As String
+VarAdd = InputBox("Purchaser is NOT REO and No Address is Input, Please type in Address and make sure to add into Screen")
+purchaseradd = VarPurchaser
+Else
+purchaseradd = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1] & ", " & [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_csz]
+End If
+
+Else
+
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal Home*" Then
+'purchaseradd = "8200 Jones Branch Drive, McLean, VA 22102-3110"
+purchaseradd = "5000 Plano Parkway, Carrollton, Texas 75010"
+ElseIf [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal National*" Then
+purchaseradd = "14221 Dallas Parkway, Suite 1000, Dallas, Texas  75254"
+
+Else
+
+Dim sqlclient, VAdd, Vadd2
+Dim rsClient As RecordSet
+sqlclient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+
+Set rsClient = CurrentDb.OpenRecordset(sqlclient, dbOpenSnapshot)
+If IsNull(rsClient!claddress2) Then
+Vadd2 = ""
+Else
+Vadd2 = ", " & rsClient![claddress2]
+End If
+
+If Forms![foreclosure database screen]![A2] = -1 Then
+purchaseradd = rsClient![Address2] & " , " & rsClient![City2] & ", " & rsClient![State2] & " " & rsClient![Zip2]
+Else
+purchaseradd = rsClient![Address] & Vadd2 & " , " & rsClient![City] & ", " & rsClient![cl_state] & " " & rsClient![PostalCode]
+End If
+rsClient.Close
+
+End If
+
+
+End If
+
+
+End If
+
+End Function
+
+Public Function purchaseradd()
+Dim VarAdd As String
+
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal Home*" Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal National*" Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Secretary*" Then
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal Home*" Then
+purchaseradd = "5000 Plano Parkway, Carrollton, Texas 75010"
+ElseIf [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal National*" Then
+purchaseradd = "14221 Dallas Parkway, Suite 1000, Dallas, Texas  75254"
+ElseIf [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Secretary*" Then
+purchaseradd = "210 Franklin Rd., SW, Roanoke, VA  24011"
+End If
+ 
+Exit Function
+
+End If
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last Like "*REO*" Or _
+IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+
+Dim sqlclient, VAdd, Vadd2
+Dim rsClient As RecordSet
+sqlclient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+
+Set rsClient = CurrentDb.OpenRecordset(sqlclient, dbOpenSnapshot)
+
+If IsNull(rsClient!claddress2) Then
+Vadd2 = ""
+Else
+Vadd2 = ", " & rsClient![claddress2]
+End If
+
+If Forms![foreclosure database screen]![A2] = -1 Then
+purchaseradd = rsClient![Address2] & " , " & rsClient![City2] & ", " & rsClient![State2] & " " & rsClient![Zip2]
+Else
+purchaseradd = rsClient![Address] & Vadd2 & " , " & rsClient![City] & ", " & rsClient![cl_state] & " " & rsClient![PostalCode]
+End If
+
+rsClient.Close
+
+Else
+
+purchaseradd = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1] & ", " & [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_csz]
+
+End If
+
+
+Else
+
+purchaseradd = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1] & ", " & [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_csz]
+
+
+End If
+
+End Function
+
+Public Function Postsalepurchaseradddeed()
+
+If Forms![foreclosure database screen]![TypeOfLoan] = "VA" And _
+(Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party] = 0 _
+Or IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party])) Then
+Dim VSel
+VSel = InputBox("Enter Grantee Information or return for Veterans Administration name and address to populate")
+
+If VSel = "" Then
+Postsalepurchaseradddeed = "SECRETARY OF VETERANS AFFAIRS, located at the Department of Veteran's Affairs Regional Office, Loan Guarantee Program, Federal Building, 31 Hopkins Plaza, Baltimore, MD  21201, party of the second part:"
+Else
+Postsalepurchaseradddeed = VSel & ", party of the second part:"
+End If
+
+ppadd1 = ""
+Exit Function
+End If
+
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form![Buyer] = "REO" Or _
+(Forms![foreclosure database screen]!SPsameasCl = 0 Or IsNull(Forms![foreclosure database screen]!SPsameasCl)) And IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form![buyer_add]) Then
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal Home*" Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal National*" Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Secretary*" Then
+ppadd1 = Trim(Purchaser()) & ", " & purchaseradd()
+
+Else
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form![Buyer] = "REO" Then
+ppadd1 = Trim(UCase(LSecured())) & " c/o " & Trim(Client()) & " ," & ClientAdd()
+Else
+ppadd1 = Trim(Purchaser()) & " c/o " & Trim(Client()) & " ," & ClientAdd()
+End If
+
+End If
+
+Else
+ppadd1 = Trim(Purchaser()) & ", " & purchaseradd()
+
+End If
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form![Buyer] Like "Federal Home*" Then
+ppadd2 = " (" & """" & "Freddie Mac" & """" & ")"
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form![Buyer] Like "Federal National*" Then
+ppadd2 = " (" & """" & "FNMA" & """" & ") "
+End If
+
+If Forms![foreclosure database screen]![TypeOfLoan] = "VA" And _
+(Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party] = 0 Or IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party])) Then
+ppadd3 = ""
+Else
+ppadd3 = ", hereinafter referred to as " & """" & "Grantee" & """" & ";"
+End If
+
+Postsalepurchaseradddeed = ppadd1 + ppadd2 + ppadd3
+
+'MsgBox (Postsalepurchaseradddeed)
+
+
+End Function
+Public Function SaleHeldPS()
+
+If Forms![foreclosure database screen]!Propertycounty = "Baltimore" And _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate < #11/6/2014# Then
+SaleHeldPS = "at the Baltimore County Court House located at 401 Bosley Ave. (Bosley Ave. Entrance), Towson, MD 21204"
+End If
+
+
+End Function
+
+Public Function DeedAssDeedForm()
+
+If Forms!DeedForm!TypeOfLoan = "FNMA" Then
+DeedAssDeedForm = "mb"
+
+Else
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "select * from jurisdiction where county = " & """" & Forms!DeedForm!Propertycounty & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not rs.EOF Then
+
+DeedAssDeedForm = rs!assigned_deed_ini
+rs.Close
+
+End If
+
+If IsNull(Forms!DeedForm!dprepared_by) Then
+Forms!DeedForm!dprepared_by = DeedAssDeedForm
+End If
+
+
+End If
+End Function
+
+
+Public Function Wscript()
+
+Set objDialog = CreateObject("UserAccounts.CommonDialog")
+
+objDialog.Filter = "XLS Files|*.xls"
+objDialog.initialDir = "C:\"
+intresult = objDialog.ShowOpen
+If intresult = 0 Then
+Wscript.Quit
+Else
+Wscript.Echo
+objDialog.FileName
+End If
+
+
+End Function
+
+                                          
+Public Function CPExcelGenerate()
+Dim vFile As String
+ 
+
+If IsTable("CurrentStatusPostsale") Then
+DoCmd.DeleteObject acTable, "CurrentStatusPostsale"
+End If
+
+MsgBox ("You HAVE to have the spreadsheet copied into your \\rvdv-fs01\shared\currentstatusPS directory.  Column Header: LoanNumber")
+
+vFile = InputBox("Enter Spreadsheet File Name (do NOT type in the .xls portion of the file name)")
+DoCmd.TransferSpreadsheet acImport, , "currentstatusPostsale", "\\rvdv-fs01\shared\currentstatusPS\" & vFile, 1
+Call CPPart2Current
+
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "CurrentStatusPostsale.xls"
+dumpname2 = Format$(Now(), "yyyymmddhhnnss") & "BWWDidNotHandle.xls"
+
+ExcelSaveAsQRY ("CPStatusExcel")
+ExcelSaveAsQRY ("currentstatusPostsale Without Matching Cases")
+
+End Function
+Public Function CPPart2Current()
+DoCmd.OpenQuery ("CSQueuePart2UpdDEL")
+DoCmd.OpenQuery ("CSQueuePart2Upd")
+DoCmd.OpenQuery ("CSQueuePart2Upd1")
+DoCmd.OpenQuery ("CSQueuePart2Upd2")
+DoCmd.OpenQuery ("CSQueuePart2Upd3")
+DoCmd.OpenQuery ("CSQueuePart2Upd4")
+DoCmd.OpenQuery ("CSQueuePart2Upd5")
+DoCmd.OpenQuery ("CSQueuePart2Upd6")
+DoCmd.OpenQuery ("CSQueuePart2UpdAdv")
+
+End Function
+Public Function DeedPart2Current()
+DoCmd.OpenQuery ("DeedQueuePart2UpdDEL")
+DoCmd.OpenQuery ("DeedQueuePart2Upd")
+DoCmd.OpenQuery ("DeedQueuePart2Upd1")
+DoCmd.OpenQuery ("DeedQueuePart2Upd2")
+DoCmd.OpenQuery ("DeedQueuePart2Upd3")
+DoCmd.OpenQuery ("DeedQueuePart2Upd4")
+DoCmd.OpenQuery ("DeedQueuePart2Upd5")
+DoCmd.OpenQuery ("DeedQueuePart2Upd6")
+DoCmd.OpenQuery ("DeedQueuePart2Adv")
+
+End Function
+Public Function SubTrusteeDropDown()
+ 
+Forms![foreclosure database screen].Refresh
+
+CurrentDb.Execute "DELETE * FROM SubTrusteeDropDown;", dbFailOnError
+
+If Forms![foreclosure database screen]!AttorneyCAPFIELD = "12 trustees" Then
+DoCmd.OpenQuery ("SubTrusteeQry12")
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "10 trustees" Then
+DoCmd.OpenQuery ("SubTrusteeQry10")
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "9 trustees" Then
+DoCmd.OpenQuery ("SubTrusteeQry9")
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "6 trustees" Then
+DoCmd.OpenQuery ("SubTrusteeQry6")
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD Like "*Ward" Then
+DoCmd.OpenQuery ("SubTrusteeQryCMW")
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD Like "*Geesing*" Then
+DoCmd.OpenQuery ("SubTrusteeQryjg")
+End If
+
+
+End Function
+Public Function SuntrustFHAEmail()
+'MsgBox (Forms![foreclosure database screen]!POSTSALEVASUBFORM.Form!Buyer)
+'MsgBox (Forms![foreclosure database screen]!POSTSALEVASUBFORM.Form!SalePrice)
+
+
+If (Forms![foreclosure database screen]!Client Like "Bank of Amer*" Or _
+Forms![foreclosure database screen]!Client Like "JPM*" Or _
+(Forms![foreclosure database screen]!Client Like "Suntrus*") And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+Forms![foreclosure database screen]!fha = -1 Or _
+Forms![foreclosure database screen]!fha = 1)) And _
+Forms![foreclosure database screen]!PropertyState = "VA" And _
+(Not IsNull(Forms![foreclosure database screen]!POSTSALEVASUBFORM.Form!Buyer) Or _
+Forms![foreclosure database screen]!POSTSALEVASUBFORM.Form!Buyer <> "") And _
+(IsNull(Forms![foreclosure database screen]!POSTSALEVASUBFORM.Form![3rd_party]) Or _
+Forms![foreclosure database screen]!POSTSALEVASUBFORM.Form![3rd_party] = 0) And _
+Forms![foreclosure database screen]!POSTSALEVASUBFORM.Form!SalePrice > 0 And _
+IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!sale_cancelled) Then
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+
+MyMail.To = "Abegail.Saliente@bww-law.com; Monica.Lee@bww-law.com; Sean.Nelson@bww-law.com"
+
+MyMail.Subject = Client() & " SALE HELD ON " & UCase(Forms![foreclosure database screen]!TypeOfLoan) & " LOAN, PLEASE EXECUTE DEED FOR BWW#: " & Forms![foreclosure database screen]!filenum
+
+MyMail.body = "BWW#: " & Forms![foreclosure database screen]!filenum & vbCr & _
+"Property: " & PROP() & vbCr & _
+"Loan#" & Forms![foreclosure database screen]!ClientRefNumber
+
+MyMail.Display
+
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+End Function
+Public Function OpenEastonAff()
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\eastonaffidavit.PDF")
+
+End Function
+Public Function OpenEastonOrd()
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\eastonordinance.PDF")
+
+End Function
+Public Function taxidExemption()
+
+If Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+taxidExemption = "12 U.S.C. § 1452(e)"
+ElseIf Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+taxidExemption = "12 U.S.C. § 1723a(c)(2)"
+ElseIf Forms![foreclosure database screen]!TypeOfLoan = "VA" Or Forms![foreclosure database screen]!TypeOfLoan Like "Fha*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Then
+taxidExemption = "Va. Code  § 58.1-811(A)(3)"
+Else
+taxidExemption = ""
+End If
+
+
+
+End Function
+Public Function DeedMdMort()
+
+If Forms![foreclosure database screen]!PropertyState = "VA" And Forms![foreclosure database screen]!PostsaleSubForm.Form!subpurchaser <> "" Then
+MsgBox ("Bid has been assigned.  Deed will not generate")
+Exit Function
+Else
+DoCmd.OpenReport "Deed-MdMortgage", acViewPreview
+End If
+
+End Function
+Public Function DeedVACert()
+'If Forms![foreclosure database screen]!PropertyState = "VA" And Forms![foreclosure database screen]!PostsaleSubForm.Form!subpurchaser <> "" Then
+'MsgBox ("Bid has been assigned.  Deed will not generate")
+'Exit Function
+'Else
+DoCmd.OpenReport "Deed-VA-Trustees Cert", acViewPreview
+'End If
+End Function
+Public Function DeedConfirm()
+If Forms![foreclosure database screen]!PropertyState = "VA" And Forms![foreclosure database screen]!PostsaleSubForm.Form!subpurchaser <> "" Then
+MsgBox ("Bid has been assigned.  Deed will not generate")
+Exit Function
+Else
+DoCmd.OpenReport "Deed-Confirm", acViewPreview
+End If
+End Function
+Public Function DeedCorrected()
+If Forms![foreclosure database screen]!PropertyState = "VA" And Forms![foreclosure database screen]!PostsaleSubForm.Form!subpurchaser <> "" Then
+MsgBox ("Bid has been assigned.  Deed will not generate")
+Exit Function
+Else
+DoCmd.OpenReport "Deed-MDCorrected", acViewPreview
+End If
+End Function
+
+Public Function DeedHudMD()
+If Forms![foreclosure database screen]!PropertyState = "VA" And Forms![foreclosure database screen]!PostsaleSubForm.Form!subpurchaser <> "" Then
+MsgBox ("Bid has been assigned.  Deed will not generate")
+Exit Function
+Else
+DoCmd.OpenReport "Deed-HUDMDSP", acViewPreview
+End If
+End Function
+
+Public Function DeedApproval()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "Select * from employees where EmployeeID = " & """" & Forms![foreclosure database screen]!PostsaleSubForm.Form![deed_approval] & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+ 
+If Not rs.EOF Then
+If Not IsNull(rs!MiddleName) Then
+DeedApproval = rs!FirstName & " " & rs!MiddleName & " " & rs!LastName & ", " & rs![VSB#]
+Else
+DeedApproval = rs!FirstName & " " & rs!LastName & ", " & rs![VSB#]
+End If
+Else
+DeedApproval = ""
+End If
+
+
+End Function
+
+Public Function DeedCode()
+Dim VDeedSel
+
+If IsNull(Forms![foreclosure database screen]!TypeOfLoan) Then
+MsgBox ("Type of Loan Must be filled in.  Deed will not generate")
+Exit Function
+End If
+
+If Forms![foreclosure database screen]!PropertyState = "VA" And Forms![foreclosure database screen]!PostsaleSubForm.Form!subpurchaser <> "" Then
+MsgBox ("Bid has been assigned.  Deed will not generate")
+Exit Function
+End If
+
+If ([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![holddeed] = -1 _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![holddeed] = 1) Then
+MsgBox ("This Deed can NOT be sent to record without authorization.")
+Exit Function
+End If
+
+
+Dim VFHA
+If [Forms]![foreclosure database screen]![TypeOfLoan] Like "FHA*" Or _
+Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Then
+VFHA = 1
+Else
+VFHA = 0
+End If
+
+'Loan = VA
+If [Forms]![foreclosure database screen]![TypeOfLoan] Like "VA*" And Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form![motion subpurchaser]) Then
+MsgBox ("This Deed can NOT be generated. It is a VA loan and the Date SubPurchaser Order Signed field is not filled in.")
+Exit Function
+Else
+MsgBox ("This Deed can NOT be generated. It is a VA loan and the Deed Substitute Purchaser must be generated.")
+Exit Function
+End If
+
+End If
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+If (Not IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![subpurchaser]) Or _
+Not IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![motionsub_prep]) Or _
+Not IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![motion_subpurchaser_court])) And _
+IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![motion subpurchaser]) Then
+MsgBox ("THERE HAS BEEN A Substitute Purchaser ON THIS FILE and Order has not been signed.  PLEASE PRINT OUT THE SUBSTITUTE PURCHASERS DEED!  Deed will not generate")
+Exit Function
+End If
+
+'If (IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![signed_deed]) Or _
+'[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![signed_deed] = "") Then
+'MsgBox ("MUST Select Who is Signing Deed in drop down box on Postsale Screen!  Deed will not generate.")
+'Exit Function
+'End If
+
+If [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![feesimp] = No And _
+(IsNull([Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![GrRent]) Or _
+[Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![GrRent] = 0) Then
+MsgBox ("Fee Simple or Ground Rent Field to be filled in! Deed will not generate")
+Exit Function
+End If
+
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!RatDateMD) Then 'Or _
+'(Forms![foreclosure database screen]!PostsaleSubForm.Form!RatDateMD + 30) > Date) Then
+
+'If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!RatDateMD) Then
+MsgBox ("Sale has not ratified.  Will not generate Deed")
+'Exit Function
+
+'Else
+'
+'VSel = InputBox("Ratification Date is within 30 days.  Enter password to generate.")
+'If VSel <> "howie" Then
+'Exit Function
+'End If
+
+'End If
+
+
+End If
+
+
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" Then
+If ([Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![feesimp] = 0 Or _
+IsNull([Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![feesimp])) _
+And ([Forms]![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 0 Or _
+IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].Form![3rd_party])) Then
+DoCmd.OpenReport "Deed-MDgr", acViewPreview
+Else
+DoCmd.OpenReport "Deed-mD", acViewPreview
+
+End If
+
+'Attachments for Md Deed
+If ([Forms]![foreclosure database screen]![Propertycounty] Like "Baltimore*" _
+Or [Forms]![foreclosure database screen]![Propertycounty] Like "Montgom*") Then
+DoCmd.OpenReport "deed-attach", acViewPreview
+End If
+
+'If [Forms]![foreclosure database screen]![PropertyCounty] Like "Montgom*" And Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" Then
+'If (Forms![foreclosure database screen]!Client Like "OneW*" And _
+(Forms![foreclosure database screen]!FF = 1 Or Forms![foreclosure database screen]!FF = -1)) Or _
+Forms![foreclosure database screen]!Client Like "Champi*" Or _
+([Forms]![foreclosure database screen]!fha = 1 Or [Forms]![foreclosure database screen]![fha] = -1 Or _
+[Forms]![foreclosure database screen]![TypeOfLoan] Like "FHA*" Or [Forms]![foreclosure database screen]![TypeOfLoan] = "FHA/REV") Then
+'Else
+'DoCmd.OpenReport "deed-attachmc", acViewPreview
+'End If
+'End If
+
+If [Forms]![foreclosure database screen]![Propertycounty] = "Baltimore City" Then
+DoCmd.OpenReport "deed-attachBCity", acViewPreview
+End If
+If [Forms]![foreclosure database screen]![Propertycounty] = "Howard" Then
+MsgBox ("This is a Howard County file: you must date and notarize this deed on or before " & [Forms]![foreclosure database screen]![PostsaleSubForm].Form!RatDateMD + 44 & ".")
+End If
+If ([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![3rd_party] = -1 Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![3rd_party] = 1) Then
+DoCmd.OpenReport "3rd Party Cover Letter", acViewPreview
+End If
+'hb1373_ini
+If Not IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![hb1373_ini]) Then
+DoCmd.OpenReport "HB1373DeedCover", acViewPreview
+End If
+End If
+
+End If
+
+'DC Deeds.....
+
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+Call TrusteesDeedDC
+
+
+'Attachment for DC Deeds
+If ([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![3rd_party] = -1 Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![3rd_party] = 1) Then
+DoCmd.OpenReport "3rd Party Cover Letter", acViewPreview
+End If
+
+End If
+
+
+'VA Deed........
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+If (IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![signed_deed]) Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![signed_deed] = "") Then
+MsgBox ("MUST Select Who is Signing Deed!  Deed will not generate.")
+Exit Function
+End If
+
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "Select * from employees where EmployeeID = " & """" & Forms![foreclosure database screen]!PostsaleSubForm.Form![signed_deed] & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+ 
+If Not rs.EOF Then
+If IsNull(rs![VSB#]) And IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!deed_approval) Then
+MsgBox ("Need attorney certification approval drop down box filled in. Deed will not generate.")
+Exit Function
+End If
+End If
+
+
+DoCmd.OpenReport "Deed-VA", acViewPreview
+
+'Attachments for VA Deeds
+
+DoCmd.OpenReport "Deed-VA-Trustees Cert", acViewPreview
+'DoCmd.OpenReport "Virginia Attachment-SubTr", acViewPreview
+Call TrusteesDeedCover
+
+If ([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![3rd_party] = -1 _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![3rd_party] = 1) Then
+DoCmd.OpenReport "3rd Party Purchaser Deed Package Letter", acViewPreview
+End If
+
+End If
+
+
+
+End Function
+
+Public Function Grantee1()
+
+'If Forms![foreclosure database screen]![TypeOfLoan] like "FHA*" Then
+'Grantee1 = "Secretary of Housing and Urban Development"
+If Forms![foreclosure database screen]![TypeOfLoan] = "VA" Then
+
+If (Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party] = -1 Or _
+Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party] = 1) Then
+Grantee1 = Purchaser()
+Else
+Grantee1 = "Secretary of Veterans Affairs, Department of Veteran's Affairs Regional Office"
+End If
+
+Else
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form![Buyer] = "REO" Or _
+Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party] = 0 Or _
+IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party]) Then
+Grantee1 = LSecured()
+Else
+Grantee = Purchaser()
+End If
+
+End If
+
+End Function
+Public Function Grantee2()
+
+
+'If Forms![foreclosure database screen]![TypeOfLoan] like "FHA*" Then
+'Grantee2 = "820 First Street, NE, Washington, DC 20002"
+
+If Forms![foreclosure database screen]![TypeOfLoan] = "VA" Then
+
+If (Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party] = -1 Or _
+Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party] = 1) Then
+Grantee2 = purchaseradd()
+
+Else
+
+Grantee2 = "Loan Guarantee Program, 210 Franklin Road, SW, Roanoke, VA 24011"
+End If
+
+Else
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form![Buyer] = "REO" Or _
+Forms![foreclosure database screen]!PostsaleSubForm.Form![printclientadd] = 1 Or _
+Forms![foreclosure database screen]!PostsaleSubForm.Form![printclientadd] = -1 Or _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!Buyer Like "Federal Home*" Or _
+Forms![foreclosure database screen]!PostsaleSubForm.Form!Buyer Like "Federal National*" Then
+Grantee2 = "c/o " & Client() & ClientAdd()
+Else
+Grantee2 = purchaseradd()
+End If
+
+End If
+
+
+End Function
+Public Function Purchaser() As String
+
+Dim VarPurchaser As String
+
+
+If ([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] = "REO" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last = "REO") Then
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "REO PROP*" Then
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer]) And _
+IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Purchaser_Last]) Then
+VarPurchaser = InputBox("No Purchaser Input, Please type in Purchaser and make sure to add into Screen")
+Purchaser = VarPurchaser
+Else
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Purchaser_Last]) Then
+Purchaser = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer]
+Else
+Purchaser = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] & " " & [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Purchaser_Last]
+End If
+End If
+Else
+
+
+Purchaser = LSecured()
+End If
+
+Else
+
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer]) And _
+IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Purchaser_Last]) Then
+VarPurchaser = InputBox("No Purchaser Input, Please type in Purchaser and make sure to add into Screen")
+Purchaser = VarPurchaser
+Else
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Purchaser_Last]) Then
+Purchaser = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer]
+Else
+Purchaser = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] & " " & [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Purchaser_Last]
+End If
+End If
+
+End If
+
+'MsgBox (purchaser)
+
+End Function
+Public Function PurchaserBid() As String
+Dim VarPurchaser As String
+
+If IsNull([Forms]![bidmainedit]!Vesting) Then
+VarPurchaserbid = InputBox("No Vesting Info Input, Please type in Vesting Info")
+Exit Function
+End If
+If [Forms]![bidmainedit]![Vesting] = "REO" Then
+PurchaserBid = [Forms]![bidmainedit]!Vesting
+Else
+PurchaserBid = LSecured()
+End If
+
+End Function
+
+Public Function purchaseraddQueue()
+Dim VarAdd As String
+'14221 Dallas Parkway, Dallas Texas 75254
+'Dim VREO
+'VREO = InputBox("Is this an REO file? (type in Yes to proceed as such)")
+'If VREO = "yes" Then
+'forms![Pud Queue]!printclientadd = -1
+'
+
+If Forms![pud queue]![Buyer] Like "*REO*" _
+Or Forms![pud queue]!Purchaser_Last Like "*REO*" Then
+Exit Function
+Else
+
+If Forms![pud queue]!printclientadd = 0 Or _
+IsNull(Forms![pud queue]!printclientadd) Then
+
+
+
+If Forms![pud queue]![Buyer] Like "Federal Home*" Then
+'purchaseraddqueue = "8200 Jones Branch Drive, McLean, VA 22102-3110"
+purchaseraddQueue = "5000 Plano Parkway, Carrollton, Texas 75010"
+ElseIf Forms![pud queue]![Buyer] Like "Federal National*" Then
+purchaseraddQueue = "14221 Dallas Parkway, Suite 1000, Dallas, Texas  75254"
+ElseIf Forms![pud queue]![Buyer] Like "Secretary*" Then
+purchaseraddQueue = "210 Franklin Rd., SW, Roanoke, VA  24011"
+ElseIf IsNull(Forms![pud queue]![buyer_add1]) Then
+Dim VarPurchaser As String
+VarAdd = InputBox("Purchaser is NOT REO and No Address is Input, Please type in Address and make sure to add into Screen")
+purchaseraddQueue = VarPurchaser
+Else
+purchaseraddQueue = Forms![pud queue]![buyer_add1] & ", " & Forms![pud queue]![buyer_csz]
+End If
+
+Else
+
+
+If Forms![pud queue]![Buyer] Like "Federal Home*" Then
+'purchaseraddqueue = "8200 Jones Branch Drive, McLean, VA 22102-3110"
+purchaseraddQueue = "5000 Plano Parkway, Carrollton, Texas 75010"
+ElseIf Forms![pud queue]![Buyer] Like "Federal National*" Then
+purchaseraddQueue = "14221 Dallas Parkway, Suite 1000, Dallas, Texas  75254"
+
+Else
+
+Dim sqlclient, VAdd, Vadd2
+Dim rsClient As RecordSet
+sqlclient = "select * from clients where organizationname = " & """" & Forms![pud queue]!Client & """" & ";"
+
+Set rsClient = CurrentDb.OpenRecordset(sqlclient, dbOpenSnapshot)
+If IsNull(rsClient!claddress2) Then
+Vadd2 = ""
+Else
+Vadd2 = ", " & rsClient![claddress2]
+End If
+
+If Forms![pud queue]![A2] = -1 Then
+purchaseraddqueueQueue = rsClient![Address2] & " , " & rsClient![City2] & ", " & rsClient![State2] & " " & rsClient![Zip2]
+Else
+purchaseraddqueueQueue = rsClient![Address] & Vadd2 & " , " & rsClient![City] & ", " & rsClient![cl_state] & " " & rsClient![PostalCode]
+End If
+rsClient.Close
+
+End If
+
+
+End If
+
+
+End If
+
+End Function
+
+
+Public Function purchaseradd3rd()
+Dim VarAdd As String
+
+
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal Home*" Then
+purchaseradd3rd = "5000 Plano Parkway"
+ElseIf [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal National*" Then
+purchaseradd3rd = "14221 Dallas Parkway, Suite 1000"
+ElseIf [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Secretary*" Then
+purchaseradd3rd = "210 Franklin Rd."
+Else
+
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+Dim sqlclient, VAdd, Vadd2
+Dim rsClient As RecordSet
+sqlclient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(sqlclient, dbOpenSnapshot)
+
+If IsNull(rsClient!claddress2) Then
+Vadd2 = ""
+Else
+Vadd2 = ", " & rsClient![claddress2]
+End If
+
+'purchaseradd3rd = rsClient![cl_address] & Vadd2
+
+rsClient.Close
+Set rsClient = Nothing
+
+Else
+
+purchaseradd3rd = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]
+End If
+
+
+End If
+
+
+
+
+End Function
+
+
+
+Public Function purchasercsz3rd()
+Dim VarAdd As String
+
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal Home*" Then
+purchasercsz3rd = "Carrollton, Texas 75010"
+ElseIf [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal National*" Then
+purchasercsz3rd = "Dallas, Texas  75254"
+ElseIf [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Secretary*" Then
+purchasercsz3rd = "Roanoke, VA  24011"
+
+Else
+
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+Dim sqlclient, VAdd, Vadd2
+Dim rsClient As RecordSet
+sqlclient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(sqlclient, dbOpenSnapshot)
+
+purchasercsz3rd = rsClient![City2] & ", " & rsClient![State2] & " " & rsClient![Zip2]
+rsClient.Close
+Set rsClient = Nothing
+
+Else
+
+purchasercsz3rd = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_csz]
+End If
+
+End If
+
+
+
+End Function
+
+Public Function purcchaseraddDeedDeed()
+Dim VarAdd As String
+
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal Home*" Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal National*" Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Secretary*" Then
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal Home*" Then
+purcchaseraddDeed = "5000 Plano Parkway, Carrollton, Texas 75010"
+ElseIf [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Federal National*" Then
+purcchaseraddDeed = "14221 Dallas Parkway, Suite 1000, Dallas, Texas  75254"
+ElseIf [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "Secretary*" Then
+purcchaseraddDeed = "210 Franklin Rd., SW, Roanoke, VA  24011"
+End If
+ 
+Exit Function
+
+End If
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last Like "*REO*" Or _
+IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+
+Dim sqlclient, VAdd, Vadd2
+Dim rsClient As RecordSet
+sqlclient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+
+Set rsClient = CurrentDb.OpenRecordset(sqlclient, dbOpenSnapshot)
+
+If IsNull(rsClient!claddress2) Then
+Vadd2 = ""
+Else
+Vadd2 = ", " & rsClient![claddress2]
+End If
+
+If Forms![foreclosure database screen]![A2] = -1 Then
+purcchaseraddDeed = rsClient![Address2] & " , " & rsClient![City2] & ", " & rsClient![State2] & " " & rsClient![Zip2]
+Else
+purcchaseraddDeed = rsClient![Address] & Vadd2 & " , " & rsClient![City] & ", " & rsClient![cl_state] & " " & rsClient![PostalCode]
+End If
+
+rsClient.Close
+
+Else
+
+purcchaseraddDeed = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1] & ", " & [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_csz]
+
+End If
+
+
+Else
+
+purcchaseraddDeed = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1] & ", " & [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_csz]
+
+
+End If
+
+End Function
+
+Public Function purchaseradd1()
+Dim VarAdd As String
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last Like "*REO*" Then
+Exit Function
+Else
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!printclientadd = 0 Or _
+IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!printclientadd) Then
+
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+Dim VarPurchaser As String
+VarAdd = InputBox("Purchaser is NOT REO and No Address is Input, Please type in Address and make sure to add into Screen")
+purchaseradd1 = VarPurchaser
+Else
+purchaseradd1 = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]
+End If
+
+End If
+
+End If
+End Function
+Public Function purchaserreo()
+Dim VarAdd As String
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last Like "*REO*" Then
+Dim sqlclient, VAdd, Vadd2
+Dim rsClient As RecordSet
+sqlclient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(sqlclient, dbOpenSnapshot)
+If IsNull(rsClient!claddress2) Then
+Vadd2 = ""
+Else
+Vadd2 = ", " & rsClient![claddress2]
+End If
+
+If Forms![foreclosure database screen]![A2] = -1 Then
+purchaserreo = rsClient![Address2] & " , " & rsClient![City2] & ", " & rsClient![State2] & " " & rsClient![Zip2]
+Else
+purchaserreo = rsClient![Address] & Vadd2 & " , " & rsClient![City] & ", " & rsClient![cl_state] & " " & rsClient![PostalCode]
+End If
+rsClient.Close
+
+Else
+
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+Dim VarPurchaser As String
+VarAdd = InputBox("Purchaser is NOT REO and No Address is Input, Please type in Address and make sure to add into Screen")
+purchaserreo = VarPurchaser
+Else
+purchaserreo = purchaseradd()
+End If
+
+
+End If
+End Function
+Public Function purchasercsz()
+Dim VarAdd As String
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last Like "*REO*" Then
+Exit Function
+Else
+
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+Dim VarPurchaser As String
+VarAdd = InputBox("Purchaser is NOT REO and No City/State/Zip is Input, Please type in City/State/Zip and make sure to add into Screen")
+purchasercsz = VarAdd
+Else
+purchasercsz = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_csz]
+End If
+End If
+End Function
+Public Function purchaserCITY()
+Dim VarAdd As String
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!printclientadd = 1 Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!printclientadd = -1 Then
+
+Call ClientCity
+
+Else
+
+VCity = purchasercsz()
+
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+Dim VarPurchaser As String
+VarAdd = InputBox("Purchaser is NOT REO and No Address is Input, Please type in City")
+purchaserCITY = VarAdd
+
+Else
+
+
+tempfields = Split(purchasercsz, ",")
+Dim A
+A = Split(purchasercsz, " ")
+purchaserCITY = StrConv(A(0), vbProperCase)
+End If
+
+End If
+
+
+End Function
+Public Function purchaserState()
+Dim VarAdd As String
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!printclientadd = 1 Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!printclientadd = -1 Then
+Call ClientState
+Else
+VCity = purchasercsz()
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+Dim VarPurchaser As String
+VarAdd = InputBox("Purchaser is NOT REO and No Address is Input, Please type in State")
+purchaserState = VarAdd
+Else
+
+tempfields = Split(purchasercsz, ",")
+Dim A
+A = Split(purchasercsz, " ")
+purchaserState = StrConv(A(1), vbProperCase)
+End If
+End If
+'MsgBox (purchasercsz & ": state" & purchaserState)
+
+
+End Function
+Public Function PurchaserZip()
+Dim VarAdd As String
+
+If [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last Like "*REO*" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!printclientadd = 1 Or _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!printclientadd = -1 Then
+Call Clientzip
+Else
+VCity = purchasercsz()
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![buyer_add1]) Then
+Dim VarPurchaser As String
+VarAdd = InputBox("Purchaser is NOT REO and No Address is Input, Please type in ZipCode")
+PurchaserZip = VarAdd
+Else
+
+tempfields = Split(purchasercsz, " ")
+Dim A
+A = Split(purchasercsz, " ")
+PurchaserZip = StrConv(A(2), vbProperCase)
+End If
+End If
+
+
+End Function
+
+Public Function NoWaiverofDef()
+    DoCmd.OpenReport "deed-attachmc", acViewPreview
+End Function
+

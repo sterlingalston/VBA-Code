@@ -1,0 +1,82 @@
+Attribute VB_Name = "Timelines"
+Option Compare Database
+Function Work_Days(BegDate As Variant, EndDate As Variant) As Long
+
+  Dim WholeWeeks As Variant
+  Dim DateCnt As Variant
+  Dim EndDays As Integer
+      
+  On Error GoTo Err_Work_Days
+
+  BegDate = DateValue(BegDate)
+  EndDate = DateValue(EndDate)
+  WholeWeeks = DateDiff("w", BegDate, EndDate)
+  DateCnt = DateAdd("ww", WholeWeeks, BegDate)
+  EndDays = 0
+
+  Do While DateCnt <= EndDate
+     If Format(DateCnt, "ddd") <> "Sun" And _
+       Format(DateCnt, "ddd") <> "Sat" Then
+        EndDays = EndDays + 1
+     End If
+           DateCnt = DateAdd("d", 1, DateCnt)
+  Loop
+
+  Work_Days = WholeWeeks * 5 + EndDays
+
+Exit Function
+
+Err_Work_Days:
+
+  If Err.Number = 94 Then
+     Work_Days = 0
+        Exit Function
+  Else
+     MsgBox "Error " & Err.Number & ": " & Err.description
+  End If
+
+End Function
+Public Function GoToRecord(VPkey)
+
+'MsgBox (VPkey)
+
+Forms![foreclosure screen]!VPkey = VPkey
+GblFilenum = Forms![foreclosure screen]!filenum
+DoCmd.Close acForm, "Foreclosure Screen"
+
+linkcriteria = "[filenum]=" & GblFilenum
+'linkcriteria = "gblfilenum = Forms![Foreclosure Database Screen]![FileNum]"
+DoCmd.OpenForm "Foreclosure Screen", , , linkcriteria
+   
+End Function
+Public Function AddResume()
+Dim VNSD As Date
+Dim rs As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("Timelines", dbOpenDynaset, dbSeeChanges)
+
+
+VNSD = InputBox("Enter Resume Date:")
+Forms![foreclosure screen]!resume_recd = VNSD
+
+With rs
+rs.MoveLast
+.AddNew
+!SubFileNum = Forms![foreclosure screen]!filenum
+!resume_recd = VNSD
+!PKey = rs!PKey + 1
+End With
+
+rs.Close
+GblFilenum = Forms![foreclosure screen]!filenum
+ 
+DocName = "Foreclosure Screen"
+
+linkcriteria = "[filenum]=" & GblFilenum
+'linkcriteria = "gblfilenum = Forms![Foreclosure Database Screen]![FileNum]"
+DoCmd.OpenForm DocName, , , linkcriteria
+    
+    
+
+
+End Function

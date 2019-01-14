@@ -1,0 +1,95 @@
+Attribute VB_Name = "InterimBilling"
+Option Compare Database
+Public Function InterimBillCreation()
+
+'Makes Table (Status = FC/Title/Estate : State = MD : Prompt for Client : Title Report Ordered and Title Report Rec'd Dates are not Null
+'Resume Recd is Null : Type of Loan <> "FNMA" : Sale Cancelled is Null : Sale Date is blank
+Dim vClient
+Dim VType
+Dim VRestart
+
+MsgBox ("Creates Table: Status = Foreclosure | State = INPUT | " & vbCr & "Title ordered and rec'd dates are filled in | Resume date blank | FNMA OR NOT FNMA selection | " & vbCr & "Sale and Sale cancelled dates are Blank | NO bill created for file at all" & vbCr & "Spreadsheet will be in C:\4closure directory")
+
+vClient = MsgBox("Chase Files?", vbYesNo)
+VType = MsgBox("FNMA?", vbYesNo)
+'VRestart = MsgBox("Referral Date (click yes for query by referral only, click No if you want restart info only)", vbYesNo)
+
+
+If vClient = vbYes Then
+
+If VType = vbYes Then
+DoCmd.OpenQuery ("InterimBillQueryCHASEFNMA")
+Else
+DoCmd.OpenQuery ("InterimBillQueryCHASE")
+End If
+
+Else
+If VType = vbYes Then
+DoCmd.OpenQuery ("InterimBillQueryFNMA")
+Else
+DoCmd.OpenQuery ("InterimBillQuery")
+End If
+
+End If
+
+'Updates Temp Table with Billing Information
+DoCmd.OpenQuery ("InterimBillingQuery2")
+
+'Updates Temp Table with FC Tracking Information
+DoCmd.OpenQuery ("InterimFCTrackQuery2")
+
+'Creates query where there is not Inv# for file at all
+'DoCmd.OpenReport "InterimBillsToPay", acViewPreview
+
+DoCmd.OutputTo acOutputReport, "InterimBillsToPay", acFormatXLS, pathuser() & "\InterimBillsToPay.xls"
+
+End Function
+
+
+Public Function InterimBillCreationRESTART()
+
+'Makes Table (Status = FC/Title/Estate : State = MD : Prompt for Client : Title Report Ordered and Title Report Rec'd Dates are not Null
+'Resume Recd is NOT blank : Type of Loan <> "FNMA" : Sale Cancelled is Null : Sale Date is blank
+Dim vClient
+Dim VType
+Dim VRestart
+
+MsgBox ("Creates Table: Status = Foreclosure | State = INPUT | " & vbCr & "Update ordered and rec'd dates are filled in | Resume date NOT blank | FNMA OR NOT FNMA selection | " & vbCr & "Sale and Sale cancelled dates are Blank | NO bill created for file at all" & vbCr & "Spreadsheet will be in C:\4closure directory")
+
+vClient = MsgBox("Chase Files?", vbYesNo)
+VType = MsgBox("FNMA?", vbYesNo)
+'VRestart = MsgBox("Referral Date (click yes for query by referral only, click No if you want restart info only)", vbYesNo)
+
+
+If vClient = vbYes Then
+
+If VType = vbYes Then
+DoCmd.OpenQuery ("InterimBillQueryCHASEFNMARESTART")
+Else
+DoCmd.OpenQuery ("InterimBillQueryCHASERESTART")
+End If
+
+Else
+If VType = vbYes Then
+DoCmd.OpenQuery ("InterimBillQueryFNMARestart")
+Else
+DoCmd.OpenQuery ("InterimBillQueryRestart")
+End If
+
+End If
+
+'Updates Temp Table with Billing Information
+DoCmd.OpenQuery ("InterimBillingQuery2")
+
+'Updates Temp Table with FC Tracking Information
+DoCmd.OpenQuery ("InterimFCTrackQuery2")
+
+'Creates query where there is not Inv# for file at all
+'DoCmd.OpenReport "InterimBillsToPay", acViewPreview
+
+DoCmd.OutputTo acOutputReport, "InterimBillsToPayRestart", acFormatXLS, pathuser() & "\InterimBillsToPayRESTART.xls"
+
+End Function
+
+
+

@@ -1,0 +1,163 @@
+Attribute VB_Name = "SharedCalendar"
+Option Explicit
+
+Public Sub AddCalendarEvent()
+
+ 
+
+Dim Folder As Outlook.MAPIFolder
+
+Dim Appointment As Outlook.AppointmentItem
+
+ 
+
+Set Folder = GetMAPIFolder("Public Folders/All Public Folders/Test Calendar")
+
+If Not Folder Is Nothing Then
+
+    Set Appointment = Folder.Items.ADD
+
+    If Not Appointment Is Nothing Then
+
+        With Appointment
+
+            .Subject = "Test Appointment"
+
+            .Start = #10/8/2009 4:00:00 PM#
+
+            .End = #10/8/2009 5:00:00 PM#
+
+            .Location = "[Location]"
+
+            .BusyStatus = 1
+
+            .body = "[Body]"
+
+            .AllDayEvent = False
+
+            .Save
+
+        End With
+
+    End If
+
+Else
+
+    MsgBox "Cannot find folder"
+
+End If
+
+Set Appointment = Nothing
+
+Set Folder = Nothing
+
+ 
+
+End Sub
+
+ 
+
+Private Function GetMAPIFolder(FolderName As String) As MAPIFolder
+
+Dim objOutlook As Outlook.Application
+
+Dim objNS  As Outlook.NameSpace
+
+Dim objFolder As Outlook.MAPIFolder
+
+Dim objFolders As Outlook.Folders
+
+Dim arrName() As String
+
+Dim i As Integer
+
+Dim blnFound As Boolean
+
+ 
+
+blnFound = False  'not required
+
+ 
+
+On Error Resume Next
+
+Set objOutlook = GetObject(, "Outlook.Application")
+
+If objOutlook Is Nothing Then
+
+    Set objOutlook = New Outlook.Application
+
+    If objOutlook Is Nothing Then
+
+        MsgBox "Outlook is not on this computer"
+
+        GoTo ExitHere
+
+    End If
+
+End If
+
+ 
+
+Set objNS = objOutlook.GetNamespace("MAPI")
+
+ 
+
+arrName = Split(FolderName, "/")
+
+ 
+
+Set objFolders = objNS.Folders
+
+ 
+
+For i = 0 To UBound(arrName)
+
+    For Each objFolder In objFolders
+
+        If objFolder.name = arrName(i) Then
+
+            Set objFolders = objFolder.Folders
+
+            blnFound = True
+
+            Exit For
+
+        Else
+
+            blnFound = False
+
+        End If
+
+    Next
+
+    If blnFound = False Then
+
+        Exit For
+
+    End If
+
+Next
+
+ 
+
+If blnFound = True Then Set GetMAPIFolder = objFolder
+
+ 
+
+ExitHere:
+
+   Set objOutlook = Nothing
+
+   Set objNS = Nothing
+
+   Set objFolder = Nothing
+
+   Set objFolders = Nothing
+
+End Function
+
+ 
+
+ 
+

@@ -1,0 +1,757 @@
+Attribute VB_Name = "Monies"
+Option Compare Database
+Public Function BillAgedRec()
+
+DoCmd.OpenQuery "BillsDueClient"
+DoCmd.SetWarnings False
+CurrentDb.Execute ("alter table tblmonies alter column [fba] date")
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("TblMonies", dbOpenSnapshot)
+If Not rs.EOF Then
+rs.MoveFirst
+vARDate = Format(rs!FBA, "mm/dd/yyyy")
+rs.Close
+End If
+
+Set rs = Nothing
+DoCmd.OpenReport "Billing-Aged Receivables Client Report1", acViewPreview
+
+End Function
+Public Function totaldebt3rd()
+Dim rs As RecordSet
+Dim strsql As String
+
+
+strsql = "select * from bidtable where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+If rs.EOF Then
+totaldebt3rd = 0
+
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.Form!Total_Debt <> 0 Then
+totaldebt3rd = Forms![foreclosure database screen]!PostsaleSubForm.Form!Total_Debt
+Else
+totaldebt3rd = rs![cert_cpy_dot] + rs![prep_lna] + rs![prepmotion_lna] + rs![motion_accept] + rs![Attorney Fee] + rs![lender_bid] + rs![Titlesearch] + rs![prepabstract] + rs![filing] + rs![recording] + rs![auctfee] + rs![adv] + rs![advnisi] + rs![audfee] + rs![re_recording] + rs![servbymail] + rs![otherm1] + rs![otherm2] + rs![bondprem] + rs![realestatetaxes] + rs![VA_Grantors] + rs![trustees_fee]
+
+End If
+rs.Close
+Set rs = Nothing
+
+'MsgBox (totaldebt3rd)
+
+End Function
+Public Function totaldebt()
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from bidtable where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+'total_debt: rs![cert_cpy_dot]+rs![prep_lna]+rs![prepmotion_lna]+rs![motion_accept]+rs![Attorney Fee]+rs![lender_bid]+rs![titlesearch]+rs![prepabstract]+rs![filing]+rs![recording]+rs![auctfee]+rs![adv]+rs![advnisi]+rs![audfee]+rs![re_recording]+rs![servbymail]+rs![otherm1]+rs![otherm2]+rs![bondprem]+rs![realestatetaxes]+rs![va_grantors]+rs![trustees_fee]
+
+If rs.EOF Then
+totaldebt = 0
+Else
+If rs!Override <> 0 Then
+totaldebt = Format(rs![Override], "$###,##0.00")
+Else
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!Total_Debt <> 0 Then
+totaldebt = Format(Forms![foreclosure database screen]!PostsaleSubForm.Form!Total_Debt, "$###,##0.00")
+Else
+totaldebt = 0
+End If
+
+
+End If
+
+End If
+
+rs.Close
+Set rs = Nothing
+
+
+End Function
+Public Function bidprice()
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "select * from bidtable where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+bidprice = 0
+Else
+bidprice = Format(rs![cert_cpy_dot] + rs![prep_lna] + rs![prepmotion_lna] + rs![motion_accept] + rs![Attorney Fee] + rs![lender_bid] + rs![Titlesearch] + rs![prepabstract] + rs![filing] + rs![recording] + rs![auctfee] + rs![adv] + rs![advnisi] + rs![audfee] + rs![re_recording] + rs![servbymail] + rs![otherm1] + rs![otherm2] + rs![bondprem] + rs![realestatetaxes] + rs![VA_Grantors] + rs![trustees_fee], "$###,##0.00")
+End If
+
+rs.Close
+Set rs = Nothing
+
+
+
+End Function
+Public Function UpdateDataW()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("WalzEmpty", dbOpenDynaset, dbSeeChanges)
+rs.MoveFirst
+
+Do While Not rs.EOF
+With rs
+.Edit
+![Empty Files] = Right(rs![Empty Files], 5)
+.Update
+End With
+rs.MoveNext
+Loop
+
+End Function
+Public Function RoundUP(RoundMe As Double)
+
+Dim RoundAnswer As Double
+
+RoundAnswer = Round(RoundMe, 0)
+
+If RoundAnswer < RoundMe Then
+RoundAnswer = RoundAnswer + 1
+End If
+
+RoundUP = RoundAnswer
+
+End Function
+Public Function RoundUP500(RoundMe As Double)
+
+Dim RoundAnswer As Double
+
+RoundAnswer = Round(RoundMe, 0)
+
+If RoundAnswer < RoundMe Then
+RoundAnswer = RoundAnswer + 500
+End If
+
+RoundUP500 = RoundAnswer
+
+End Function
+Public Function PastDue30() As Double
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Double
+
+Dim VQryDate As Date
+VQryDate = vARDate
+
+VDate1 = VQryDate
+VDate2 = VQryDate - 30
+
+Vtotal = 0
+
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+'msgbox (">=: " & VDate2 & " <: " & VDate1)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!Totalbk = 0 Or IsNull(rs!Totalbk) Then
+
+If rs!TOTAL = 0 Then
+Vtotal = Vtotal
+Else
+Vtotal = rs!TOTAL + Vtotal
+End If
+
+Else
+Vtotal = rs!Totalbk + Vtotal
+End If
+rs.MoveNext
+Loop
+PastDue30 = Format(Vtotal, "$###,##0.00")
+Else
+PastDue30 = 0
+End If
+
+
+End Function
+Public Function PastDue60() As Double
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Double
+
+Dim VQryDate As Date
+VQryDate = vARDate
+
+VDate1 = VQryDate - 30
+VDate2 = VQryDate - 60
+
+
+Vtotal = 0
+
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+'msgbox (">=: " & VDate2 & " <: " & VDate1)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!Totalbk = 0 Or IsNull(rs!Totalbk) Then
+If rs!TOTAL = 0 Then
+Vtotal = Vtotal
+Else
+Vtotal = rs!TOTAL + Vtotal
+End If
+Else
+Vtotal = rs!Totalbk + Vtotal
+End If
+rs.MoveNext
+Loop
+PastDue60 = Format(Vtotal, "$###,##0.00")
+Else
+PastDue60 = 0
+End If
+End Function
+Public Function PastDue90() As Double
+
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Double
+
+Dim VQryDate As Date
+VQryDate = vARDate
+
+VDate1 = VQryDate - 60
+VDate2 = VQryDate - 90
+
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+'msgbox (">=: " & VDate2 & " <: " & VDate1)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!Totalbk = 0 Or IsNull(rs!Totalbk) Then
+If rs!TOTAL = 0 Then
+Vtotal = Vtotal
+Else
+Vtotal = rs!TOTAL + Vtotal
+End If
+Else
+Vtotal = rs!Totalbk + Vtotal
+End If
+rs.MoveNext
+Loop
+PastDue90 = Format(Vtotal, "$###,##0.00")
+Else
+PastDue90 = 0
+End If
+End Function
+Public Function PastDue180() As Double
+
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Double
+
+Dim VQryDate As Date
+VQryDate = vARDate
+
+VDate1 = VQryDate - 90
+
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE billingdate < #" & VDate1 & "# ;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+'msgbox ("<: " & VDate1)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!Totalbk = 0 Or IsNull(rs!Totalbk) Then
+If rs!TOTAL = 0 Then
+Vtotal = Vtotal
+Else
+Vtotal = rs!TOTAL + Vtotal
+End If
+Else
+Vtotal = rs!Totalbk + Vtotal
+End If
+rs.MoveNext
+Loop
+PastDue180 = Format(Vtotal, "$###,##0.00")
+Else
+PastDue180 = 0
+End If
+End Function
+
+Public Function PastDue180Ad()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Long
+
+Dim VQryDate As Date
+VQryDate = Date
+
+VDate1 = VQryDate - 90
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate < #" & VDate1 & "# ;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+Vtotal = rs!d_adv + Vtotal
+rs.MoveNext
+Loop
+PastDue180Ad = Vtotal
+
+End If
+
+
+End Function
+
+Public Function Units180Ad()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Long
+
+Dim VQryDate As Date
+VQryDate = Date
+
+VDate1 = VQryDate - 90
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate < #" & VDate1 & "# ;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+Vtotal = Vtotal + 1
+rs.MoveNext
+Loop
+Units180Ad = Vtotal
+
+End If
+
+
+End Function
+
+Public Function PastDue30Ad()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Long
+
+Dim VQryDate As Date
+VQryDate = Date
+
+VDate1 = VQryDate
+VDate2 = VQryDate - 30
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+Vtotal = rs!d_adv + Vtotal
+rs.MoveNext
+Loop
+PastDue30Ad = Vtotal
+
+End If
+
+
+End Function
+
+Public Function Units30Ad()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Long
+
+Dim VQryDate As Date
+VQryDate = Date
+
+VDate1 = VQryDate
+VDate2 = VQryDate - 30
+'VStatic = #4/1/2005#
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+Vtotal = Vtotal + 1
+rs.MoveNext
+Loop
+Units30Ad = Vtotal
+
+End If
+
+
+End Function
+
+
+Public Function PastDue60Ad()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Long
+
+Dim VQryDate As Date
+VQryDate = Date
+
+VDate1 = VQryDate - 30
+VDate2 = VQryDate - 60
+'VStatic = #4/1/2005#
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+Vtotal = rs!d_adv + Vtotal
+rs.MoveNext
+Loop
+PastDue60Ad = Vtotal
+
+End If
+
+
+End Function
+
+
+Public Function Units60Ad()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Long
+
+Dim VQryDate As Date
+VQryDate = Date
+
+VDate1 = VQryDate - 30
+VDate2 = VQryDate - 60
+'VStatic = #4/1/2005#
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+Vtotal = Vtotal + 1
+rs.MoveNext
+Loop
+Units60Ad = Vtotal
+
+End If
+
+
+End Function
+Public Function Units90Ad()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Long
+
+Dim VQryDate As Date
+VQryDate = Date
+
+VDate1 = VQryDate - 60
+VDate2 = VQryDate - 90
+'VStatic = #4/1/2005#
+
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+Vtotal = Vtotal + 1
+rs.MoveNext
+Loop
+Units90Ad = Vtotal
+
+End If
+
+
+End Function
+Public Function PastDue90Ad()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Long
+
+Dim VQryDate As Date
+VQryDate = Date
+
+VDate1 = VQryDate - 60
+VDate2 = VQryDate - 90
+'VStatic = #4/1/2005#
+
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+Vtotal = rs!d_adv + Vtotal
+rs.MoveNext
+Loop
+PastDue90Ad = Vtotal
+
+End If
+
+
+End Function
+
+Public Function Units30()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Long
+
+Dim VQryDate As Date
+VQryDate = vARDate
+
+VDate1 = VQryDate
+VDate2 = VQryDate - 30
+'VStatic = #4/1/2005#
+
+'If AppType = "Billing-Aged Receivables Citifinancial Report" Then
+'VClient = "Citifinancial Mortgage Company, Inc."
+'Else
+'VClient = Reports![Billing-Aged Receivables Client Report]![client_name]
+'End If
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!Totalbk = 0 Or IsNull(rs!Totalbk) Then
+If rs!TOTAL = 0 Then
+Vtotal = Vtotal
+Else
+Vtotal = Vtotal + 1
+End If
+Else
+Vtotal = Vtotal + 1
+End If
+rs.MoveNext
+Loop
+Units30 = Vtotal
+
+Else
+Units30 = 0
+End If
+
+
+End Function
+
+Public Function Units60()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Long
+
+
+Dim VQryDate As Date
+VQryDate = vARDate
+
+VDate1 = VQryDate - 30
+VDate2 = VQryDate - 60
+
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!Totalbk = 0 Or IsNull(rs!Totalbk) Then
+If rs!TOTAL = 0 Then
+Vtotal = Vtotal
+Else
+Vtotal = Vtotal + 1
+End If
+Else
+Vtotal = Vtotal + 1
+End If
+rs.MoveNext
+Loop
+Units60 = Vtotal
+
+Else
+Units60 = 0
+End If
+
+
+End Function
+
+Public Function Units90()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Integer
+
+Dim VQryDate As Date
+VQryDate = vARDate
+
+
+VDate1 = VQryDate - 60
+VDate2 = VQryDate - 90
+
+Vtotal = 0
+
+
+strsql = "Select * from TblMonies WHERE BillingDate >= #" & VDate2 & "# " _
+& " and billingdate < #" & VDate1 & "# ;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!Totalbk = 0 Or IsNull(rs!Totalbk) Then
+If rs!TOTAL = 0 Then
+Vtotal = Vtotal
+Else
+Vtotal = Vtotal + 1
+End If
+Else
+Vtotal = Vtotal + 1
+End If
+rs.MoveNext
+Loop
+Units90 = Vtotal
+
+Else
+Units90 = 0
+End If
+
+
+End Function
+
+Public Function Units180()
+Dim strsql, vClient As String
+Dim rs As RecordSet
+Dim VDate1, VDate2, VStatic As Date
+Dim Vtotal As Integer
+
+Dim VQryDate As Date
+
+VQryDate = vARDate
+
+VDate1 = VQryDate - 90
+
+
+Vtotal = 0
+
+strsql = "Select * from TblMonies WHERE BillingDate < #" & VDate1 & "# ;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+''msgbox ("Date1: " & VDate1 & " Date2: " & VDate2)
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+If rs!Totalbk = 0 Or IsNull(rs!Totalbk) Then
+If rs!TOTAL = 0 Then
+Vtotal = Vtotal
+Else
+Vtotal = Vtotal + 1
+End If
+Else
+Vtotal = Vtotal + 1
+End If
+rs.MoveNext
+Loop
+Units180 = Vtotal
+
+Else
+Units180 = 0
+End If
+
+
+
+End Function
+Public Function totalduead()
+totalduead = PastDue30Ad() + PastDue60Ad() + PastDue90Ad() + PastDue180Ad()
+
+End Function
+Public Function totaldue()
+
+totaldue = PastDue30() + PastDue60() + PastDue90() + PastDue180()
+
+End Function
+

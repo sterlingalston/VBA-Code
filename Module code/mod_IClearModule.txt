@@ -1,0 +1,5247 @@
+Attribute VB_Name = "IClearModule"
+Option Compare Database
+Public Function IClearNOI()
+
+
+   Dim VUpdate, vClient, vIClear, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VTypeLoan, VChk, DocName, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsIClear, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+ 
+
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+If Not IsNull(Forms![foreclosure database screen]!resume_recd) Or Forms![foreclosure database screen]!resume_recd <> "" Then
+vlegal = Forms![foreclosure database screen]!resume_recd
+Else
+vlegal = Forms![foreclosure database screen]![Date Recieved]
+End If
+
+Dim rsNOI As RecordSet
+Dim strsqlNOI As String
+strsqlNOI = "select * from NOI where subFileNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsNOI = CurrentDb.OpenRecordset(strsqlNOI, dbOpenSnapshot)
+Dim VBal
+VBal = rsNOI![balance due]
+rsNOI.Close
+
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+VNI = rsClient![newinvoice billing]
+
+If Forms![foreclosure database screen]!Client Like "Citi*" _
+And [Forms]![foreclosure database screen]![ClientRefNumber] Like "20-*" Then
+vIClear = "C9013"
+Else
+vIClear = rsClient!Iclear_Code
+End If
+rsClient.Close
+
+
+
+strSQLCNI = "select * from [IClear Header Information] where VendorInvoiceNumber = " & VINv & ";"
+
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI)
+
+If rsChkNI.RecordCount >= 1 Then
+
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to Overwrite?", vbYesNo)
+
+Dim VB As String
+
+If VChk = vbYes Then
+VB = "YES"
+Else
+VB = "NO"
+End If
+
+Else
+VB = "NO"
+End If
+
+If VB = "YES" Then
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [IClear Header Information] where vendorinvoicenumber = " & VINv & ";")
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [IClear Detail Information] where vendorinvoicenumber = " & VINv & ";")
+End If
+
+If VB = "YES" Or rsChkNI.RecordCount = 0 Then
+
+VUpdate = MsgBox("Input Bill Into IClear Batch File?", vbYesNo)
+rsChkNI.Close
+
+If VUpdate = vbYes Then
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenDynaset, dbSeeChanges)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenDynaset, dbSeeChanges)
+
+'[Forms]![billingmainedit]![Sent] = Date
+Set rsIClear = CurrentDb.OpenRecordset("IClear Header Information", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("IClear Detail Information", dbOpenDynaset, dbSeeChanges)
+
+'Servicer ID Identification and Dept
+
+VInvID = 14
+strSQLInv = "Select * from [IClear Invoice Type] where [control id] = " & VInvID & ";"
+
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv)
+
+vbkchap = ""
+vbkcase = ""
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = ""
+vb362filed = ""
+
+Dim VTransactions As Integer
+VTransactions = 2
+
+If rsCases!TypeOfLoan Like "FHA*" Then
+VTypeLoan = "1"
+ElseIf rsCases!TypeOfLoan Like "V*" Then
+VTypeLoan = "2"
+ElseIf rsCases!TypeOfLoan Like "CON*" Then
+VTypeLoan = "3"
+End If
+
+With rsIClear
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+!loantype = VTypeLoan
+!VendorFileNumber = Forms![foreclosure database screen]!filenum
+![VendorInvoiceNumber] = VINv
+![InvoiceDate] = Date
+![InvoiceType] = 14
+![TotalAmount] = VBal
+![LoanNumber] = rsCases![ClientRefNumber]
+![PropertyState] = rsCases![PropertyState]
+![BorrowerFirstName] = rsCases![FirstNameDebtor1]
+![BorrowerLastName] = rsCases![LastNameDebtor1]
+![PropertyAddress] = rsCases![PropAddress]
+![PropertyCity] = rsCases!PropertyCity
+If Len(rsCases!propzip) > 10 Then
+MsgBox ("Zipcode is too long please update and dump again")
+Exit Function
+Else
+![PropertyZipCode] = rsCases!propzip
+End If
+
+!InvestorID = ""
+!CaseNo = ""
+!InvoiceComments = ""
+!TotalTransactions = VTransactions
+.Update
+End With
+
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = VINv
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "12252"
+![Quantity] = 1
+!Rate = CountNoticeTable()
+!Reimbursable = "Y"
+!CompleteDate = Date
+.Update
+End With
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = VINv
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!LineItemCode = "11229"
+Else
+![LineItemCode] = "11121"
+End If
+'!LineItemCode = "11121"
+!comments = "New MD Legislation Requirement. Preparation of MD NOI"
+![Quantity] = 1
+!Rate = 150#
+!Reimbursable = "Y"
+!CompleteDate = Date
+.Update
+End With
+
+'END OF MODULE
+MsgBox (rsCases!ClientRefNumber & " has been added into the Batch File for IClear")
+
+Else
+Exit Function
+End If
+End If
+
+rsFC.Close
+rsCases.Close
+rsLI.Close
+rsIClear.Close
+rsinv.Close
+End Function
+Public Function IClearVerification()
+Dim VFolder, f, fs, fldr, f1, fc, vFile
+Dim VFileTimeDownload, vfiletime As Date
+Dim vtime As String
+Dim VFiles, VFilesNew As Integer
+
+VFiles = 0
+VFilesNew = 0
+
+CurrentDb.Execute "DELETE * FROM tempiclearstatus;", dbFailOnError
+
+VFolder = "\\rvdv-fs01\DataTransfer\IClearExcel"
+
+f = FreeFile(1)
+Open "\\rvdv-fs01\DataTransfer\IClearExcelTime.txt" For Input As #f
+Input #f, vtime
+Close #f
+
+vfiletime = vtime
+Set fs = CreateObject("Scripting.filesystemobject")
+Set fldr = fs.GetFolder(VFolder)
+
+ 
+For Each f1 In fldr.Files
+
+    If f1.DateLastModified > vfiletime Then
+    vFile = f1.name
+    VFileTimeDownload = f1.DateLastModified
+    MsgBox ("Importing File Name: " & vFile & " from the IclearExcel Directory " & vbCr & "File was uploaded: " & VFileTimeDownload)
+    Open "\\rvdv-fs01\DataTransfer\IclearExcelTime.txt" For Output As #1
+    Print #1, VFileTimeDownload
+    Close #1
+    
+    DoCmd.DeleteObject acTable, "IclearExcel"
+
+    DoCmd.TransferSpreadsheet acImport, , "IclearExcel", "\\rvdv-fs01\datatransfer\IClearExcel\" & vFile
+    vFile = f1.name
+    'Exit Function
+  
+   
+
+If vFile = "" Or IsNull(vFile) Then
+Else
+Dim rs, rsbilling As RecordSet
+Dim strsql As String
+strsql = "select * from iclearexcel where f1 like " & """" & "Bierman, Gees" & "*""" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+Set rsbilling = CurrentDb.OpenRecordset("TempIclearstatus")
+Dim VCid As Long
+
+If Not rs.EOF Then
+rs.MoveFirst
+Else
+
+End If
+
+Do While Not rs.EOF
+
+
+With rsbilling
+'MsgBox (rs!f5 & " Status: " & rs!f7)
+If IsNumeric(rs!f5) Then
+VCid = CLng(rs!f5)
+Else
+VCid = 0
+End If
+If VCid <> 0 Then
+.AddNew
+!CustomerID = VCid
+!Iclearstatus = rs!f7
+.Update
+End If
+End With
+rs.MoveNext
+Loop
+End If
+
+
+DoCmd.OpenQuery ("IclearUpdateStatus")
+MsgBox ("Billing Files Updated")
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+DoCmd.OpenQuery ("IclearVerifyUpdate")
+
+DoCmd.OutputTo acOutputReport, "Iclear Verification", acFormatSNP, pathuser() & "\IClearVerify.snp"
+Set MyOutlook = New Outlook.Application
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "Lucinda.Shepard@bww-law.com"
+MyMail.Attachments.ADD pathuser() & "\IclearVerify.snp"
+MyMail.Subject = "IClear Verification:"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+DoCmd.OpenQuery ("IclearVerifyUpdate")
+VFilesNew = VFilesNew + 1
+MsgBox (VFilesNew & ": VFiles: " & VFiles)
+
+Exit Function
+
+ Else
+    vFile = ""
+    VFiles = VFiles + 1
+    End If
+Next
+
+If VFilesNew = 0 And VFiles > 0 Then
+
+MsgBox ("No New Files from IClear for Verification")
+End If
+
+rs.Close
+rsbilling.Close
+
+End Function
+Public Function XMLExportIClear()
+Dim VSeq
+Dim EmailSentFrom, enterdate As String
+Dim TransCount As Integer
+Dim vARDate As Date
+Dim rs, rsHeader, rsDetail, rsSummary As RecordSet
+Dim strsql, vfiletime, Vxml As String
+
+TransCount = 0
+
+vARDate = Date - 1
+
+vfiletime = "\\rvdv-fs01\DataTransfer\IClear\TimeTransaction.txt"
+'VFileTime = "c:\TimeTransaction.txt"
+Open vfiletime For Output As #1
+Print #1, (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+Close #1
+
+Vxml = "\\rvdv-fs01\DataTransfer\IClear\A1291" & Format$(Date, "mmddyy") & ".xml"
+Open Vxml For Output As #2
+
+Set rsHeader = CurrentDb.OpenRecordset("IClear Header Information")
+Set rsDetail = CurrentDb.OpenRecordset("IClear Detail Information")
+
+strsql = "SELECT DISTINCTROW [IClear Header Information].ClientCode, " _
+& " Count([IClear Header Information].VendorInvoiceNumber) AS " _
+& " CountOfVendorInvoiceNumber, Sum([IClear Header Information].TotalAmount) " _
+& " AS [Sum Of TotalAmount] from [IClear Header Information] " _
+& " GROUP BY [IClear Header Information].ClientCode;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+Dim rsbill As RecordSet
+Dim strsqlBill As String
+
+'MsgBox ("Vendor: " & rs!clientcode & " Number of Invoices: " & rs!countofvendorinvoicenumber & " Total Billed: " & rs![sum of totalamount])
+If rsHeader.EOF Then
+MsgBox ("NO FILES TO UPLOAD")
+Exit Function
+Else
+
+rsHeader.MoveFirst
+
+'MsgBox (TransCount)
+Print #2, "<?xml version=" & """" & "1.0" & """" & " standalone = " & """" & "yes" & """" & "?>"
+Print #2, "<invoices>"
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+
+Print #2, "   <invoice_summary>"
+Print #2, "     <vendor_code>A1291</vendor_code>"
+Print #2, "     <servicer_code>" & rs!ClientCode & "</servicer_code>"
+Print #2, "     <total_invoice_count>" & rs!countofvendorinvoicenumber & "</total_invoice_count>"
+Print #2, "     <total_amount>" & rs![sum of totalamount] & "</total_amount>"
+Print #2, "   </invoice_summary>"
+rs.MoveNext
+Loop
+
+Do While Not rsHeader.EOF
+Print #2, "   <invoice_header>"
+Print #2, "     <vendor_code>" & rsHeader!VendorCode & "</vendor_code>"
+Print #2, "     <vendor_invoice_number>" & rsHeader!VendorInvoiceNumber & "</vendor_invoice_number>"
+Print #2, "     <servicer_code>" & rsHeader!ClientCode & "</servicer_code>"
+Print #2, "     <loan_number>" & rsHeader!LoanNumber & "</loan_number>"
+Print #2, "     <investor>" & rsHeader!InvestorID & "</investor>"
+Print #2, "     <loan_type>" & rsHeader!loantype & "</loan_type>"
+Print #2, "     <vendor_file_number>" & rsHeader!VendorFileNumber & "</vendor_file_number>"
+Print #2, "     <invoice_date>" & rsHeader!InvoiceDate & "</invoice_date>"
+Print #2, "     <invoice_type>" & rsHeader!InvoiceType & "</invoice_type>"
+Print #2, "     <bankruptcy_case_number>" & rsHeader!CaseNo & "</bankruptcy_case_number>"
+Print #2, "     <invoice_comments>" & rsHeader!InvoiceComments & "</invoice_comments>"
+Print #2, "     <property_state>" & rsHeader!PropertyState & "</property_state>"
+Print #2, "     <total_detail_records>" & rsHeader!TotalTransactions & "</total_detail_records>"
+Print #2, "     <total_invoice_amount>" & rsHeader!TotalAmount & "</total_invoice_amount>"
+Print #2, "     <order_number>" & rsHeader!VendorInvoiceNumber & "</order_number>"
+Print #2, "     <is_final_invoice>" & rsHeader!PropertyZipCode & "</is_final_invoice>"
+Print #2, "   </invoice_header>"
+rsHeader.MoveNext
+Loop
+
+rsDetail.MoveFirst
+
+Do While Not rsDetail.EOF
+Print #2, "   <Invoice_Detail>"
+Print #2, "     <vendor_code>" & rsDetail!VendorCode & "</vendor_code>"
+Print #2, "     <vendor_invoice_number>" & rsDetail!VendorInvoiceNumber & "</vendor_invoice_number>"
+Print #2, "     <servicer_code>" & rsDetail!ClientCode & "</servicer_code>"
+
+
+Print #2, "     <sequence_number>" & rsDetail!SequenceNumber & "</sequence_number>"
+
+Print #2, "     <line_item_code>" & rsDetail!LineItemCode & "</line_item_code>"
+Print #2, "     <quantity>" & rsDetail!Quantity & "</quantity>"
+Print #2, "     <rate>" & rsDetail!Rate & "</rate>"
+Print #2, "     <date_ordered>" & "" & "</date_ordered>"
+Print #2, "     <date_completed>" & rsDetail!CompleteDate & "</date_completed>"
+Print #2, "     <date_cancelled>" & "" & "</date_cancelled>"
+Print #2, "     <service_begin_date>" & "" & "</service_begin_date>"
+Print #2, "     <service_end_date>" & "" & "</service_end_date>"
+Print #2, "     <notes>" & rsDetail!comments & "</notes>"
+Print #2, "     <over_allowable_flag>" & "" & "</over_allowable_flag>"
+Print #2, "     <over_allowable_amount>" & "" & "</over_allowable_amount>"
+If rsDetail!Reimbursable = "Y" Then
+Print #2, "     <reimbursable>" & "Y" & "</reimbursable>"
+Else
+Print #2, "     <reimbursable>" & "N" & "</reimbursable>"
+
+End If
+
+Print #2, "   </Invoice_Detail>"
+rsDetail.MoveNext
+
+Loop
+
+Print #2, "</invoices>"
+
+Close #2
+
+MsgBox ("Please delete data AFTER you check your IClear upload.  In the Import/Export Menu is a Delete IClear Data Selection.")
+DoCmd.OpenQuery ("QRYUpdateBill_Uploaded")
+
+
+End If
+
+End Function
+Public Function IClearBillUploaded()
+Dim strsql As String
+Dim rs As RecordSet
+
+
+End Function
+
+Public Function IclearDelete()
+Dim VDelIClear As String
+'DoCmd.OutputTo acOutputReport, "Iclear Rpt", acFormatSNP, "\\rvdv-fs01\DataTransfer\Iclear\BackUps\" & Format$(Now(), "mmddyyyyhhnnss") & ".snp"
+
+VDelIClear = MsgBox("Delete IClear Tables?", vbYesNo)
+If VDelIClear = vbYes Then
+'datatransfer2 offline, so using datatransfer again  -- Matt A.
+DoCmd.OutputTo acOutputReport, "Iclear Rpt", acFormatSNP, "\\rvdv-fs01\DataTransfer\Iclear\BackUps\" & Format$(Now(), "mmddyyyyhhnnss") & ".snp"
+'DoCmd.OutputTo acOutputReport, "Iclear Rpt", acFormatSNP, "\\rvdv-fs01\DataTransfer2\Iclear\BackUps\" & Format$(Now(), "mmddyyyyhhnnss") & ".snp"
+Dim vtime As String
+Dim Vtime2 As Date
+Dim strsql, strsqlDetail As String
+Dim rs, rsDetail As RecordSet
+
+f = FreeFile(1)
+Open "\\rvdv-fs01\DataTransfer\Iclear\timetransaction.txt" For Input As #f
+Input #f, vtime
+Close #f
+
+Vtime2 = vtime
+DoCmd.SetWarnings False
+CurrentDb.Execute (" delete * from [Iclear Header Information] where timetransaction < #" & Vtime2 & "#;")
+DoCmd.SetWarnings False
+
+CurrentDb.Execute ("delete * from [Iclear Detail Information] where timetransaction < #" & Vtime2 & "#;")
+
+MsgBox ("All files not already uploaded to IClear have been deleted from IClear Tables")
+Else
+MsgBox ("The files are all still in the IClear Tables")
+End If
+End Function
+Public Function ExportIClear()
+Dim VSeq
+Dim DRC
+Dim VFinal
+
+If (Forms!BillingMainEdit!Final = -1 Or Forms!BillingMainEdit!Final = 1) Or _
+((IsNull(Forms!BillingMainEdit!Interim) Or _
+Forms!BillingMainEdit!Interim = 0) And (Forms!BillingMainEdit!Final = 0 Or IsNull(Forms!BillingMainEdit!Final))) Then
+VFinal = "Y"
+Else
+VFinal = "N"
+End If
+
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_rec_charge) Then
+DRC = 55
+Else
+DRC = Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_rec_charge
+End If
+    
+If IsNull(Forms!BillingMainEdit!Category) Then
+Dim VCat As String
+VCat = InputBox("There is no category selected.  Please select number coinciding with correct category." & vbCr & "1. Foreclosure" & vbCr & "2. Bankruptcy" & vbCr & "3. Eviction" & vbCr & "4. Deed in Lieu")
+If VCat = "1" Then
+Forms!BillingMainEdit!Category = "Foreclosure"
+ElseIf VCat = "2" Then
+Forms!BillingMainEdit!Category = "Bankruptcy"
+ElseIf VCat = "3" Then
+Forms!BillingMainEdit!Category = "Eviction"
+ElseIf VCat = "4" Then
+Forms!BillingMainEdit!Category = "Deed in Lieu"
+End If
+End If
+
+
+   Dim VUpdate, vClient, vIClear, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VTypeLoan, VChk, DocName, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsIClear, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+ 
+
+
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+VNI = rsClient![newinvoice billing]
+
+If Forms![foreclosure database screen]!Client Like "Citi*" _
+And [Forms]![foreclosure database screen]![ClientRefNumber] Like "20-*" Then
+vIClear = "C9013"
+ElseIf Forms![foreclosure database screen]!lb = 2 Then
+vIClear = "C9005"
+Else
+vIClear = rsClient!Iclear_Code
+End If
+rsClient.Close
+
+
+VINv = Forms![BillingMainEdit]![CustomerID]
+strSQLCNI = "select * from [IClear Header Information] where VendorInvoiceNumber = " & VINv & ";"
+
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI)
+
+If rsChkNI.RecordCount >= 1 Then
+
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to Overwrite?", vbYesNo)
+
+Dim VB As String
+
+If VChk = vbYes Then
+VB = "YES"
+Else
+VB = "NO"
+End If
+
+Else
+VB = "NO"
+End If
+
+If VB = "YES" Then
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [IClear Header Information] where vendorinvoicenumber = " & VINv & ";")
+DoCmd.SetWarnings False
+
+CurrentDb.Execute ("delete * from [IClear Detail Information] where vendorinvoicenumber = " & VINv & ";")
+End If
+
+If VB = "YES" Or rsChkNI.RecordCount = 0 Then
+
+VUpdate = MsgBox("Input Bill Into IClear Batch File?", vbYesNo)
+rsChkNI.Close
+
+If VUpdate = vbYes Then
+
+
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenDynaset, dbSeeChanges)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenDynaset, dbSeeChanges)
+
+[Forms]![BillingMainEdit]![Sent] = Date
+Set rsIClear = CurrentDb.OpenRecordset("IClear Header Information", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("IClear Detail Information", dbOpenDynaset, dbSeeChanges)
+
+'Servicer ID Identification and Dept
+
+VInvID = [Forms]![BillingMainEdit]![invoiceIClear]
+strSQLInv = "Select * from [IClear Invoice Type] where [control id] = " & VInvID & ";"
+
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv)
+
+'Set up Foreclosure, Cases, Postsale and Bankruptcy databases
+If Forms![BillingMainEdit]!Category = "Bankruptcy" Then
+vbkchap = BKChapter()
+vbkcase = Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = Forms![foreclosure database screen]!BankruptcySubForm.Form![Date Filed]
+If IsNull(Forms![foreclosure database screen]!BankruptcySubForm.Form![362MotionFiled]) Then
+vb362filed = ""
+Else
+vb362filed = Forms![foreclosure database screen]!BankruptcySubForm.Form![362MotionFiled]
+End If
+
+Else
+vbkchap = ""
+vbkcase = ""
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = ""
+vb362filed = ""
+End If
+
+If IsNull(rsFC!SaleDate) Then
+Vsale = ""
+Else
+Vsale = rsFC!SaleDate
+End If
+
+If rsCases!TypeOfLoan Like "FHA*" Then
+VTypeLoan = "1"
+ElseIf rsCases!TypeOfLoan Like "VA*" Then
+VTypeLoan = "2"
+ElseIf rsCases!TypeOfLoan Like "CON*" Then
+VTypeLoan = "3"
+Else
+VTypeLoan = "13"
+End If
+
+
+Dim VTransactions As Integer
+VTransactions = 0
+'post_mail_lma
+If Forms!BillingMainEdit![Attorney Fee] > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit![post_mail_lma] > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!l_preppoc > 0 Then
+VTransactions = VTransactions + 1
+End If
+'fee_RecAssignment
+If Forms!BillingMainEdit!fee_recassignment > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!fee_dismcase > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!l_att341 > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!l_dil > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!l_initial > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_reqjud > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!l_prepabstract > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!forbearance > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!l_appearance > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!l_preptitle > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_titlesearch > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_filing > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_process > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!process_service > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_recording > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_bondprem > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_auctfee > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_audfee > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_realestatetaxes > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!water > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!lien_citation_violation > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_transfee > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_titleins > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_adv > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_advnisi > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!d_liencert > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!BillingMainEdit!ps_liencert > 0 Then
+VTransactions = VTransactions + 1
+End If
+ransactions = VTransactions + 1
+
+VTransactions = 2
+
+If Forms!BillingMainEdit!otherm1 > 0 And IsNull(Forms!BillingMainEdit!IClear_Misc3) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+If Forms!BillingMainEdit!otherm2 > 0 And IsNull(Forms!BillingMainEdit!IClear_misc4) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+If Forms!BillingMainEdit!otherm10 > 0 And IsNull(Forms!BillingMainEdit!IClear_Misc2) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+If Forms!BillingMainEdit!feeothermoney > 0 And IsNull(Forms!BillingMainEdit!IClear_Misc1) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+With rsIClear
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+!loantype = VTypeLoan
+!VendorFileNumber = Forms![foreclosure database screen]!filenum
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![InvoiceDate] = [Forms]![BillingMainEdit]![billingdate]
+![InvoiceType] = [Forms]![BillingMainEdit]!invoiceIClear
+![TotalAmount] = [Forms]![BillingMainEdit]![balance due]
+![LoanNumber] = rsCases![ClientRefNumber]
+![PropertyState] = rsCases![PropertyState]
+![BorrowerFirstName] = rsCases![FirstNameDebtor1]
+![BorrowerLastName] = rsCases![LastNameDebtor1]
+![PropertyAddress] = rsCases![PropAddress]
+![PropertyCity] = rsCases!PropertyCity
+'Using for Final Bill Coding
+![PropertyZipCode] = VFinal
+'.......
+If rsCases!TypeOfLoan = "FNMA" Or rsCases!TypeOfLoan = "FHLMC" Then
+!InvestorID = rsCases!TypeOfLoan
+Else
+!InvestorID = "Other"
+End If
+If IsNull(Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]) Then
+!CaseNo = ""
+Else
+!CaseNo = Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]
+End If
+!InvoiceComments = ""
+!TotalTransactions = VTransactions
+.Update
+End With
+
+VSeq = 1
+
+If [Forms]![BillingMainEdit]![Attorney Fee] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "19333"
+Else
+![LineItemCode] = "11111"
+End If
+
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]![Attorney Fee]
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!Reimbursable = "Y"
+Else
+!Reimbursable = "N"
+End If
+
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![feeothermoney] > 0 Then
+If Forms!BillingMainEdit!feeothertext Like "VA SB797*" Then
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber] '
+'If Forms![foreclosure database screen]!Client Like "Wells*" Then
+'!LineItemCode = "11229"
+'Else
+![LineItemCode] = "11113"
+'End If
+
+![Quantity] = 1
+!comments = "Attorneys Fee for Preparation of VA SB797 Notices"
+!Rate = [Forms]![BillingMainEdit]![feeothermoney]
+!Reimbursable = "N"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+.Update
+End With
+
+Else
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!LineItemCode = [Forms]![BillingMainEdit]!IClear_Misc1
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!feeothermoney
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+
+End If
+End If
+
+If [Forms]![BillingMainEdit]![prop_reg] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+![LineItemCode] = "12231"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]![prop_reg]
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format([Forms]![BillingMainEdit]![billingdate], "mm/dd/yy")
+Else
+!CompleteDate = Format([Forms]![BillingMainEdit]!billingdate, "mm/dd/yy")
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![post_mail_lma] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!LineItemCode = "12252"
+Else
+![LineItemCode] = "12231"
+End If
+
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]![post_mail_lma]
+!Reimbursable = "N"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![fee_recassignment] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+![LineItemCode] = "12247"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]![fee_recassignment]
+!Reimbursable = "N"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![process_service] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!comments = "Affiliated Vendor"
+![LineItemCode] = "12231"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]![process_service]
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!Reimbursable = "Y"
+Else
+!Reimbursable = "N"
+End If
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![water] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![foreclosure database screen]!Client Like "Wells F*" Then
+!LineItemCode = "19334"
+Else
+![LineItemCode] = "12393"
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]![water]
+!Reimbursable = "N"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![lien_citation_violation] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "12384"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]![lien_citation_violation]
+!Reimbursable = "N"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![skip_trace] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!comments = "Affiliated Vendor"
+![LineItemCode] = "12238"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]![skip_trace]
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!Reimbursable = "Y"
+Else
+!Reimbursable = "N"
+End If
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![fee_dismcase] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "12273"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]![fee_dismcase]
+!Reimbursable = "N"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+!comments = "Filing Fee for Dismissal of Foreclosure Case."
+
+.Update
+End With
+End If
+
+
+
+If [Forms]![BillingMainEdit]![fee_prepassignment] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "19147"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]![fee_prepassignment]
+!Reimbursable = "N"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+!comments = ""
+.Update
+End With
+End If
+
+
+If [Forms]![BillingMainEdit]!l_preppoc > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "21112"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!l_preppoc
+!Reimbursable = "N"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!l_att341 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "11113"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!l_att341
+!Reimbursable = "N"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!l_dil > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "41111"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!l_dil
+!Reimbursable = "N"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!l_initial > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![BillingMainEdit]!Category = "Bankruptcy" Then
+!LineItemCode = "21116"
+ElseIf Forms![BillingMainEdit]!Category <> "Bankruptcy" Then
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "12340"
+Else
+![LineItemCode] = "11113"
+End If
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!l_initial
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!Reimbursable = "Y"
+Else
+!Reimbursable = "N"
+End If
+
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_reqjud > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "31111"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_reqjud
+!Reimbursable = "N"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!l_prepabstract > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!LineItemCode = "11229"
+Else
+![LineItemCode] = "11113"
+End If
+
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!l_prepabstract
+!Reimbursable = "N"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!forbearance > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "11113"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!forbearance
+!Reimbursable = "N"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!l_appearance > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "12218"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!l_appearance
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!l_preptitle > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "19121"
+Else
+![LineItemCode] = "12326"
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!l_preptitle
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleClaimSent) Then
+!CompleteDate = Forms!BillingMainEdit!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleClaimSent
+End If
+.Update
+End With
+End If
+
+'Title Search SPLIT
+
+If [Forms]![BillingMainEdit]!d_titlesearch > 0 Then
+Dim VSplit
+VSplit = 0
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Or Forms![foreclosure database screen]!Client Like "CitiMo*" Then
+Dim VFull As Currency
+Dim VUpD As Currency
+If Forms![foreclosure database screen]!PropertyState = "MD" And Forms![BillingMainEdit]!d_titlesearch > 225 Then
+VSplit = 1
+VFull = 225
+ElseIf Forms![foreclosure database screen]!PropertyState <> "MD" And Forms![BillingMainEdit]!d_titlesearch > 225 Then
+VSplit = 1
+VFull = 225
+End If
+VUpD = Forms![BillingMainEdit]!d_titlesearch - VFull
+End If
+
+If VSplit = 0 Then
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+If Forms![BillingMainEdit]!Category = "Bankruptcy" Then
+!LineItemCode = "22213"
+ElseIf Forms![BillingMainEdit]!Category <> "Bankruptcy" _
+And Forms![BillingMainEdit]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12321"
+ElseIf Forms![BillingMainEdit]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42321"
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_titlesearch
+!comments = "Affiliated Vendor"
+!Reimbursable = "Y"
+If Not IsNull([Forms]![BillingMainEdit]!bill_title) Then
+!CompleteDate = [Forms]![BillingMainEdit]!bill_title
+Else
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_ord = "" Or IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_ord) Then
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved] = "" Or IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved]) Then
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportOrdered]
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved], "mm/dd/yy")
+End If
+Else
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_recd]) Then
+!CompleteDate = Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_ord], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_recd], "mm/dd/yy")
+End If
+End If
+End If
+.Update
+End With
+
+Else
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+![LineItemCode] = "12321"
+![Quantity] = 1
+!Rate = VFull
+!Reimbursable = "Y"
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved] = "" Or IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved]) Then
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportOrdered]
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved], "mm/dd/yy")
+End If
+.Update
+End With
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+![LineItemCode] = "12323"
+![Quantity] = 1
+!Rate = VUpD
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_recd]) Then
+!CompleteDate = Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_ord], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_recd], "mm/dd/yy")
+End If
+.Update
+End With
+
+
+End If
+End If
+
+If [Forms]![BillingMainEdit]!d_filing > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![BillingMainEdit]!Category = "Bankruptcy" Then
+!LineItemCode = "22211"
+ElseIf Forms![BillingMainEdit]!Category <> "Bankruptcy" _
+And Forms![BillingMainEdit]!Category <> "Eviction" Then
+![LineItemCode] = "12211"
+If Forms![foreclosure database screen]!Propertycounty = "Baltimore City" _
+Or Forms![foreclosure database screen]!Propertycounty = "Harford" _
+Or Forms![foreclosure database screen]!Propertycounty = "Baltimore" Then
+!comments = "Filing Fee = MD, Baltimore City Charges $125.00 to Docket Suit"
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Montgomery" Then
+!comments = "Filing Fee = MD, Baltimore City Charges $105.00 to Docket Suit"
+Else
+!comments = "Filing Fee = MD, Baltimore City Charges $115.00 to Docket Suit"
+End If
+ElseIf Forms![BillingMainEdit]!Category = "Eviction" Then
+![LineItemCode] = "32211"
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_filing
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]) Then
+!CompleteDate = Forms!BillingMainEdit!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_process > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![BillingMainEdit]!Category = "Bankruptcy" Then
+!LineItemCode = "22212"
+ElseIf Forms![BillingMainEdit]!Category <> "Bankruptcy" _
+And Forms![BillingMainEdit]!Category <> "Eviction" Then
+![LineItemCode] = "12231"
+ElseIf Forms![BillingMainEdit]!Category = "Eviction" Then
+![LineItemCode] = "32231"
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_process
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_recording > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![BillingMainEdit]!Category = "Bankruptcy" Then
+!LineItemCode = "22241"
+ElseIf Forms![BillingMainEdit]!Category <> "Bankruptcy" _
+And Forms![BillingMainEdit]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12246"
+ElseIf Forms![BillingMainEdit]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42241"
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_recording
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]) Then
+!CompleteDate = Forms!BillingMainEdit!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]
+Dim VDeedType As String
+VDeedType = "0"
+Do While VDeedType <> "1" And VDeedType <> "2"
+VDeedType = InputBox("1.  DOA" & vbCr & "2. Trustees Deed" & vbCr & vbCr & "Please select either 1 or 2 for Comments to IClear")
+If VDeedType <> "1" And VDeedType <> "2" Then
+MsgBox ("Please enter either a 1 or 2!")
+End If
+
+Loop
+
+
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_bondprem > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+!LineItemCode = "12276"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_bondprem
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!comments = "MD Law Requires that a Bond is Ordered prior to Foreclosure Sale in the Amount of the Statement of Debt in Purchase Price, whichever is higher."
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_auctfee > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "12270"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_auctfee
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![fc_cooper]) Then
+!CompleteDate = Forms!BillingMainEdit!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![fc_cooper]
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_audfee > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "12271"
+ElseIf Forms![foreclosure database screen]!Client Like "CitiMo*" Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!LineItemCode = "12242"
+Else
+!LineItemCode = "12271"
+End If
+
+Else
+![LineItemCode] = "12267"
+End If
+
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_audfee
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!BillingMainEdit!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!re_recording > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!comments = "60 Charge for Court Costs and " & DRC & " for Deed Recording Costs"
+![LineItemCode] = "12241"
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+!comments = "40 Charge for Court Costs and 30 for Deed Recording Costs"
+![LineItemCode] = "12242"
+Else
+![LineItemCode] = "12242"
+End If
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!re_recording
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_realestatetaxes > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![BillingMainEdit]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12330"
+ElseIf Forms![BillingMainEdit]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42325"
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_realestatetaxes
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!BillingMainEdit!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+If IsNull(Forms!BillingMainEdit!ret_notes) Then
+!comments = ""
+Else
+!comments = Forms!BillingMainEdit!ret_notes
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_transfee > 0 Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+If Forms![foreclosure database screen]!Client Like "Citimort*" _
+And Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+!comments = "**please adjust off the line item 12321 for title charge, this is a backup for the line item 12381/12382/12383 since it gets auto deducted"
+![LineItemCode] = "12321"
+![Quantity] = 1
+!Rate = 1#
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+!comments = "Recordation Tax"
+If Forms![BillingMainEdit]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12381"
+ElseIf Forms![BillingMainEdit]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42381"
+End If
+![Quantity] = 1
+'!rate = [Forms]![billingmainedit]!d_transfee
+!Rate = Forms![foreclosure database screen]![PostsaleSubForm].Form!staterecordationtax
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "12383"
+![Quantity] = 1
+'!rate = [Forms]![billingmainedit]!d_transfee
+!comments = "State Transfer Tax"
+!Rate = Forms![foreclosure database screen]![PostsaleSubForm].Form!statetransfertax
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+![LineItemCode] = "12383"
+![Quantity] = 1
+!comments = "County Transfer Tax"
+'!Price = [Forms]![billingmainedit]![d_transfee]
+!Rate = Forms![foreclosure database screen]![PostsaleSubForm].Form!countytransfertax
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+
+Else
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![BillingMainEdit]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12381"
+ElseIf Forms![BillingMainEdit]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42381"
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_transfee
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+End If
+
+
+If [Forms]![BillingMainEdit]!d_titleins > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![BillingMainEdit]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12324"
+ElseIf Forms![BillingMainEdit]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42324"
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_titleins
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_adv > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+!LineItemCode = "12274"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_adv
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad]) Then
+!CompleteDate = Forms!BillingMainEdit!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] - 3
+End If
+If IsNull(Forms!BillingMainEdit!adv_notes) Then
+!comments = ""
+Else
+!comments = Forms!BillingMainEdit!adv_notes
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_advnisi > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+!LineItemCode = "12234"
+![Quantity] = 1
+If Forms![foreclosure database screen]!Client Like "Citi*" Or Forms![foreclosure database screen]!Client Like "Mortgage Lender*" Then
+!comments = "MD Law required that a Notice of Sale be Published for 3 successive weeks after the sale.  The purpose is to put interested parties on notice that the sale occurred, and the amount that the property sold for, and to provide them an opportunity to file Exceptions/Objections to the sale/ratification."
+End If
+!Rate = [Forms]![BillingMainEdit]!d_advnisi
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!BillingMainEdit!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_liencert > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![foreclosure database screen]!PropertyState = "DC" And _
+(Forms![foreclosure database screen]!Client Like "Citi*" Or Forms![foreclosure database screen]!Client Like "Wells*") Then
+!LineItemCode = "12245"
+ElseIf Forms![BillingMainEdit]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12331"
+If IsNull(Forms!BillingMainEdit!lien_notes) Then
+!comments = "Ordered Lien Certificate"
+Else
+!comments = Forms!BillingMainEdit!lien_notes
+End If
+ElseIf Forms![BillingMainEdit]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42331"
+If IsNull(Forms!BillingMainEdit!lien_notes) Then
+!comments = "Ordered Lien Certificate"
+Else
+!comments = Forms!BillingMainEdit!lien_notes
+End If
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_liencert
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+
+
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!motion_accept > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+'If Forms![foreclosure database screen]!PropertyState = "DC" And _
+'(Forms![foreclosure database screen]!Client Like "Citi*" Or Forms![foreclosure database screen]!Client Like "Wells*") Then
+!LineItemCode = "12211"
+'ElseIf Forms![billingmainedit]!category <> "Deed in Lieu" Then
+'![LineItemCode] = "12331"
+'ElseIf Forms![billingmainedit]!category = "Deed in Lieu" Then
+'![LineItemCode] = "42331"
+'End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!motion_accept
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+'If IsNull(Forms!billingmainedit!lien_notes) Then
+'!Comments = "Ordered Lien Certificate"
+'Else
+'!Comments = Forms!billingmainedit!lien_notes
+'End If
+
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!ps_liencert > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![BillingMainEdit]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12331"
+ElseIf Forms![BillingMainEdit]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42331"
+End If
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!ps_liencert
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!d_servbymail > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!LineItemCode = "12252"
+ElseIf Forms![BillingMainEdit]!Category = "Bankruptcy" Then
+!LineItemCode = "22212"
+ElseIf Forms![BillingMainEdit]!Category <> "Bankruptcy" _
+And Forms![BillingMainEdit]!Category <> "Eviction" Then
+![LineItemCode] = "12252"
+If Forms![foreclosure database screen]!Client Like "Citi*" Then
+!comments = "Pursuant to state law, proper notice of sale is required to be served upon borrower, owner, and all other interested persons.  This is necessary to complete a proper sale."
+Else
+!comments = "Please be advised that " & LetterCount() & " were needed so that we could convey clear and marketable title after foreclosure sale"
+End If
+ElseIf Forms![BillingMainEdit]!Category = "Eviction" Then
+![LineItemCode] = "32231"
+End If
+
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!d_servbymail
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]) Then
+!CompleteDate = Forms!BillingMainEdit!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]
+End If
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!add_court_costs > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+!LineItemCode = "12273"
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!add_court_costs
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!BillingMainEdit!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+If Forms![foreclosure database screen]!Client Like "Citi*" Or Forms![foreclosure database screen]!Client Like "Mortgage Lender*" Then
+!comments = "Additional Court Costs is an Administrative cost charge by the Clerk of the Court and is mandatory charge that must be paid."
+ElseIf IsNull(Forms!BillingMainEdit!cc_notes) Then
+!comments = ""
+Else
+!comments = Forms!BillingMainEdit!cc_notes
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!otherm1 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+!LineItemCode = [Forms]![BillingMainEdit]!IClear_Misc3
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!otherm1
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!otherm2 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+!LineItemCode = [Forms]![BillingMainEdit]!IClear_misc4
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!otherm2
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]!otherm10 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+!SequenceNumber = VSeq
+VSeq = VSeq + 1
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![BillingMainEdit]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+
+!LineItemCode = [Forms]![BillingMainEdit]!IClear_Misc2
+![Quantity] = 1
+!Rate = [Forms]![BillingMainEdit]!otherm10
+!Reimbursable = "Y"
+!CompleteDate = Forms!BillingMainEdit!billingdate
+.Update
+End With
+End If
+
+
+
+
+'END OF MODULE
+
+Else
+'rsFC.Close
+'rsCases.Close
+'rsLI.Close
+'rsIClear.Close
+'rsinv.Close
+Exit Function
+End If
+rsFC.Close
+rsCases.Close
+rsLI.Close
+rsIClear.Close
+rsinv.Close
+End If
+
+
+
+
+End Function
+
+Public Function ExportIClearSLM()
+Dim DRC
+
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_rec_charge) Then
+    DRC = 55
+    Else
+    DRC = Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_rec_charge
+    End If
+    
+If IsNull(Forms!billingmaineditslm!Category) Then
+Dim VCat As String
+VCat = InputBox("There is no category selected.  Please select number coinciding with correct category." & vbCr & "1. Foreclosure" & vbCr & "2. Bankruptcy" & vbCr & "3. Eviction" & vbCr & "4. Deed in Lieu")
+If VCat = "1" Then
+Forms!billingmaineditslm!Category = "Foreclosure"
+ElseIf VCat = "2" Then
+Forms!billingmaineditslm!Category = "Bankruptcy"
+ElseIf VCat = "3" Then
+Forms!billingmaineditslm!Category = "Eviction"
+ElseIf VCat = "4" Then
+Forms!billingmaineditslm!Category = "Deed in Lieu"
+End If
+End If
+
+
+   Dim VUpdate, vClient, vIClear, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VTypeLoan, VChk, DocName, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsIClear, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+ 
+
+
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+VNI = rsClient![newinvoice billing]
+
+If Forms![foreclosure database screen]!Client Like "Citi*" _
+And [Forms]![foreclosure database screen]![ClientRefNumber] Like "20-*" Then
+vIClear = "C9013"
+Else
+vIClear = rsClient!Iclear_Code
+End If
+rsClient.Close
+
+
+VINv = Forms![billingmaineditslm]![CustomerID]
+strSQLCNI = "select * from [IClear Header Information] where VendorInvoiceNumber = " & VINv & ";"
+
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI)
+
+If rsChkNI.RecordCount >= 1 Then
+
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to Overwrite?", vbYesNo)
+
+Dim VB As String
+
+If VChk = vbYes Then
+VB = "YES"
+Else
+VB = "NO"
+End If
+
+Else
+VB = "NO"
+End If
+
+If VB = "YES" Then
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [IClear Header Information] where vendorinvoicenumber = " & VINv & ";")
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [IClear Detail Information] where vendorinvoicenumber = " & VINv & ";")
+End If
+
+If VB = "YES" Or rsChkNI.RecordCount = 0 Then
+
+VUpdate = MsgBox("Input Bill Into IClear Batch File?", vbYesNo)
+rsChkNI.Close
+
+If VUpdate = vbYes Then
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenDynaset, dbSeeChanges)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenDynaset, dbSeeChanges)
+
+[Forms]![billingmaineditslm]![Sent] = Date
+Set rsIClear = CurrentDb.OpenRecordset("IClear Header Information", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("IClear Detail Information", dbOpenDynaset, dbSeeChanges)
+
+'Servicer ID Identification and Dept
+
+VInvID = [Forms]![billingmaineditslm]![invoiceIClear]
+strSQLInv = "Select * from [IClear Invoice Type] where [control id] = " & VInvID & ";"
+
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv)
+
+'Set up Foreclosure, Cases, Postsale and Bankruptcy databases
+If Forms![billingmaineditslm]!Category = "Bankruptcy" Then
+vbkchap = BKChapter()
+vbkcase = Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = Forms![foreclosure database screen]!BankruptcySubForm.Form![Date Filed]
+If IsNull(Forms![foreclosure database screen]!BankruptcySubForm.Form![362MotionFiled]) Then
+vb362filed = ""
+Else
+vb362filed = Forms![foreclosure database screen]!BankruptcySubForm.Form![362MotionFiled]
+End If
+
+Else
+vbkchap = ""
+vbkcase = ""
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = ""
+vb362filed = ""
+End If
+
+If IsNull(rsFC!SaleDate) Then
+Vsale = ""
+Else
+Vsale = rsFC!SaleDate
+End If
+
+If rsCases!TypeOfLoan Like "FHA*" Then
+VTypeLoan = "1"
+ElseIf rsCases!TypeOfLoan Like "V*" Then
+VTypeLoan = "2"
+ElseIf rsCases!TypeOfLoan Like "CON*" Then
+VTypeLoan = "3"
+End If
+
+Dim VTransactions As Integer
+VTransactions = 0
+
+If Forms!billingmaineditslm![Attorney Fee] > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!l_preppoc > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!fee_dismcase > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!l_att341 > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!l_dil > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!l_initial > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_reqjud > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!l_prepabstract > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!forbearance > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!l_appearance > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!l_preptitle > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_titlesearch > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_filing > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_process > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_recording > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_bondprem > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_auctfee > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_audfee > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_realestatetaxes > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_transfee > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_titleins > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_adv > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_advnisi > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!d_liencert > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmaineditslm!ps_liencert > 0 Then
+VTransactions = VTransactions + 1
+End If
+ransactions = VTransactions + 1
+
+VTransactions = 2
+
+If Forms!billingmaineditslm!otherm1 > 0 And IsNull(Forms!billingmaineditslm!IClear_Misc3) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+If Forms!billingmaineditslm!otherm2 > 0 And IsNull(Forms!billingmaineditslm!IClear_misc4) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+If Forms!billingmaineditslm!otherm10 > 0 And IsNull(Forms!billingmaineditslm!IClear_Misc2) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+If Forms!billingmaineditslm!feeothermoney > 0 And IsNull(Forms!billingmaineditslm!IClear_Misc1) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+With rsIClear
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+!loantype = VTypeLoan
+!VendorFileNumber = Forms![foreclosure database screen]!filenum
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![InvoiceDate] = [Forms]![billingmaineditslm]![billingdate]
+![InvoiceType] = [Forms]![billingmaineditslm]!invoiceIClear
+![TotalAmount] = [Forms]![billingmaineditslm]![balance due]
+![LoanNumber] = rsCases![ClientRefNumber]
+![PropertyState] = rsCases![PropertyState]
+![BorrowerFirstName] = rsCases![FirstNameDebtor1]
+![BorrowerLastName] = rsCases![LastNameDebtor1]
+![PropertyAddress] = rsCases![PropAddress]
+![PropertyCity] = rsCases!PropertyCity
+If Len(rsCases!propzip) > 10 Then
+MsgBox ("Zipcode is too long please update and dump again")
+Exit Function
+Else
+![PropertyZipCode] = rsCases!propzip
+End If
+
+!InvestorID = ""
+If IsNull(Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]) Then
+!CaseNo = ""
+Else
+!CaseNo = Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]
+End If
+!InvoiceComments = ""
+!TotalTransactions = VTransactions
+.Update
+End With
+
+If [Forms]![billingmaineditslm]![Attorney Fee] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "19333"
+Else
+![LineItemCode] = "11111"
+End If
+
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]![Attorney Fee]
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!Reimbursable = "Y"
+Else
+!Reimbursable = "N"
+End If
+
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![fee_dismcase] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "12273"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]![fee_dismcase]
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+!comments = "Filing Fee for Dismissal of Foreclosure Case."
+
+.Update
+End With
+End If
+
+
+
+If [Forms]![billingmaineditslm]![fee_prepassignment] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "19147"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]![fee_prepassignment]
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+!comments = ""
+.Update
+End With
+End If
+
+
+If [Forms]![billingmaineditslm]!l_preppoc > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "21112"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!l_preppoc
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!l_att341 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "12271"
+Else
+![LineItemCode] = "11113"
+End If
+
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!l_att341
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!l_dil > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "41111"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!l_dil
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!l_initial > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmaineditslm]!Category = "Bankruptcy" Then
+!LineItemCode = "21116"
+ElseIf Forms![billingmaineditslm]!Category <> "Bankruptcy" Then
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "12340"
+Else
+![LineItemCode] = "11113"
+End If
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!l_initial
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_reqjud > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "31111"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_reqjud
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!l_prepabstract > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "11113"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!l_prepabstract
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!forbearance > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "11113"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!forbearance
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!l_appearance > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "12218"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!l_appearance
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!l_preptitle > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "19121"
+Else
+![LineItemCode] = "12326"
+End If
+
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!l_preptitle
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleClaimSent) Then
+!CompleteDate = Forms!billingmaineditslm!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleClaimSent
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_titlesearch > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+
+If Forms![billingmaineditslm]!Category = "Bankruptcy" Then
+!LineItemCode = "22213"
+ElseIf Forms![billingmaineditslm]!Category <> "Bankruptcy" _
+And Forms![billingmaineditslm]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12321"
+ElseIf Forms![billingmaineditslm]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42321"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_titlesearch
+!Reimbursable = "Y"
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_ord = "" Or IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_ord) Then
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved] = "" Or IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved]) Then
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportOrdered]
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved]
+End If
+
+Else
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_recd]) Then
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_ord]
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_recd]
+End If
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_filing > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmaineditslm]!Category = "Bankruptcy" Then
+!LineItemCode = "22211"
+ElseIf Forms![billingmaineditslm]!Category <> "Bankruptcy" _
+And Forms![billingmaineditslm]!Category <> "Eviction" Then
+![LineItemCode] = "12211"
+If Forms![foreclosure database screen]!Propertycounty = "Baltimore City" _
+Or Forms![foreclosure database screen]!Propertycounty = "Harford" _
+Or Forms![foreclosure database screen]!Propertycounty = "Baltimore" Then
+!comments = "Filing Fee = MD, Baltimore City Charges $125.00 to Docket Suit"
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Montgomery" Then
+!comments = "Filing Fee = MD, Baltimore City Charges $105.00 to Docket Suit"
+Else
+!comments = "Filing Fee = MD, Baltimore City Charges $115.00 to Docket Suit"
+End If
+ElseIf Forms![billingmaineditslm]!Category = "Eviction" Then
+![LineItemCode] = "32211"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_filing
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]) Then
+!CompleteDate = Forms!billingmaineditslm!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_process > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmaineditslm]!Category = "Bankruptcy" Then
+!LineItemCode = "22212"
+ElseIf Forms![billingmaineditslm]!Category <> "Bankruptcy" _
+And Forms![billingmaineditslm]!Category <> "Eviction" Then
+![LineItemCode] = "12231"
+ElseIf Forms![billingmaineditslm]!Category = "Eviction" Then
+![LineItemCode] = "32231"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_process
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_recording > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmaineditslm]!Category = "Bankruptcy" Then
+!LineItemCode = "22241"
+ElseIf Forms![billingmaineditslm]!Category <> "Bankruptcy" _
+And Forms![billingmaineditslm]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12246"
+ElseIf Forms![billingmaineditslm]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42241"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_recording
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]) Then
+!CompleteDate = Forms!billingmaineditslm!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]
+Dim VDeedType As String
+VDeedType = "0"
+Do While VDeedType <> "1" And VDeedType <> "2"
+VDeedType = InputBox("1.  DOA" & vbCr & "2. Trustees Deed" & vbCr & vbCr & "Please select either 1 or 2 for Comments to IClear")
+If VDeedType <> "1" And VDeedType <> "2" Then
+MsgBox ("Please enter either a 1 or 2!")
+End If
+
+Loop
+
+
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_bondprem > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = "12276"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_bondprem
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!comments = "MD Law Requires that a Bond is Ordered prior to Foreclosure Sale in the Amount of the Statement of Debt in Purchase Price, whichever is higher."
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_auctfee > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "12270"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_auctfee
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![fc_cooper]) Then
+!CompleteDate = Forms!billingmaineditslm!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![fc_cooper]
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_audfee > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "12271"
+Else
+![LineItemCode] = "12267"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_audfee
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!billingmaineditslm!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!re_recording > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!comments = "60 Charge for Court Costs and " & DRC & " for Deed Recording Costs"
+![LineItemCode] = "12241"
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+!comments = "40 Charge for Court Costs and 30 for Deed Recording Costs"
+![LineItemCode] = "12242"
+Else
+![LineItemCode] = "12242"
+End If
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!re_recording
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_realestatetaxes > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmaineditslm]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12330"
+ElseIf Forms![billingmaineditslm]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42325"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_realestatetaxes
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!billingmaineditslm!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+If IsNull(Forms!billingmaineditslm!ret_notes) Then
+!comments = ""
+Else
+!comments = Forms!billingmaineditslm!ret_notes
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_transfee > 0 Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!comments = "Recordation Tax"
+If Forms![billingmaineditslm]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12381"
+ElseIf Forms![billingmaineditslm]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42381"
+End If
+![Quantity] = 1
+'!rate = [Forms]![billingmaineditslm]!d_transfee
+!Rate = Forms![foreclosure database screen]![PostsaleSubForm].Form!staterecordationtax
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "12383"
+![Quantity] = 1
+'!rate = [Forms]![billingmaineditslm]!d_transfee
+!comments = "State Transfer Tax"
+!Rate = Forms![foreclosure database screen]![PostsaleSubForm].Form!statetransfertax
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "12383"
+![Quantity] = 1
+!comments = "County Transfer Tax"
+'!Price = [Forms]![billingmaineditslm]![d_transfee]
+!Rate = Forms![foreclosure database screen]![PostsaleSubForm].Form!countytransfertax
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+
+Else
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmaineditslm]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12381"
+ElseIf Forms![billingmaineditslm]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42381"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_transfee
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+End If
+
+
+If [Forms]![billingmaineditslm]!d_titleins > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmaineditslm]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12324"
+ElseIf Forms![billingmaineditslm]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42324"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_titleins
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_adv > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = "12274"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_adv
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad]) Then
+!CompleteDate = Forms!billingmaineditslm!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] - 3
+End If
+If IsNull(Forms!billingmaineditslm!adv_notes) Then
+!comments = ""
+Else
+!comments = Forms!billingmaineditslm!adv_notes
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_advnisi > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = "12234"
+![Quantity] = 1
+If Forms![foreclosure database screen]!Client Like "Citi*" Or Forms![foreclosure database screen]!Client Like "Mortgage Lender*" Then
+!comments = "MD Law required that a Notice of Sale be Published for 3 successive weeks after the sale.  The purpose is to put interested parties on notice that the sale occurred, and the amount that the property sold for, and to provide them an opportunity to file Exceptions/Objections to the sale/ratification."
+End If
+!Rate = [Forms]![billingmaineditslm]!d_advnisi
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!billingmaineditslm!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_liencert > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![foreclosure database screen]!PropertyState = "DC" And _
+(Forms![foreclosure database screen]!Client Like "Citi*" Or Forms![foreclosure database screen]!Client Like "Wells*") Then
+!LineItemCode = "12245"
+ElseIf Forms![billingmaineditslm]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12331"
+ElseIf Forms![billingmaineditslm]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42331"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_liencert
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+If IsNull(Forms!billingmaineditslm!lien_notes) Then
+!comments = "Ordered Lien Certificate"
+Else
+!comments = Forms!billingmaineditslm!lien_notes
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!ps_liencert > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmaineditslm]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12331"
+ElseIf Forms![billingmaineditslm]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42331"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!ps_liencert
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!d_servbymail > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmaineditslm]!Category = "Bankruptcy" Then
+!LineItemCode = "22212"
+ElseIf Forms![billingmaineditslm]!Category <> "Bankruptcy" _
+And Forms![billingmaineditslm]!Category <> "Eviction" Then
+![LineItemCode] = "12252"
+If Forms![foreclosure database screen]!Client Like "Citi*" Then
+!comments = "Pursuant to state law, proper notice of sale is required to be served upon borrower, owner, and all other interested persons.  This is necessary to complete a proper sale."
+Else
+!comments = "Please be advised that " & LetterCount() & " were needed so that we could convey clear and marketable title after foreclosure sale"
+End If
+
+ElseIf Forms![billingmaineditslm]!Category = "Eviction" Then
+![LineItemCode] = "32231"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!d_servbymail
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]) Then
+!CompleteDate = Forms!billingmaineditslm!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!add_court_costs > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = "12273"
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!add_court_costs
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!billingmaineditslm!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+If Forms![foreclosure database screen]!Client Like "Citi*" Or Forms![foreclosure database screen]!Client Like "Mortgage Lender*" Then
+!comments = "Additional Court Costs is an Administrative cost charge by the Clerk of the Court and is mandatory charge that must be paid."
+ElseIf IsNull(Forms!billingmaineditslm!cc_notes) Then
+!comments = ""
+Else
+!comments = Forms!billingmaineditslm!cc_notes
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!otherm1 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = [Forms]![billingmaineditslm]!IClear_Misc3
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!otherm1
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!otherm2 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = [Forms]![billingmaineditslm]!IClear_misc4
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!otherm2
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!otherm10 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = [Forms]![billingmaineditslm]!IClear_Misc2
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!otherm10
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]!feeothermoney > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmaineditslm]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = [Forms]![billingmaineditslm]!IClear_Misc1
+![Quantity] = 1
+!Rate = [Forms]![billingmaineditslm]!feeothermoney
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmaineditslm!billingdate
+.Update
+End With
+End If
+
+'END OF MODULE
+
+Else
+rsFC.Close
+rsCases.Close
+rsLI.Close
+rsIClear.Close
+rsinv.Close
+Exit Function
+End If
+rsFC.Close
+rsCases.Close
+rsLI.Close
+rsIClear.Close
+rsinv.Close
+End If
+
+
+
+
+End Function
+Public Function ExportIClearEVIC()
+
+If IsNull(Forms!billingmainediteviction!Category) Then
+Dim VCat As String
+VCat = InputBox("There is no category selected.  Please select number coinciding with correct category." & vbCr & "1. Foreclosure" & vbCr & "2. Bankruptcy" & vbCr & "3. Eviction" & vbCr & "4. Deed in Lieu")
+If VCat = "1" Then
+Forms!billingmainediteviction!Category = "Foreclosure"
+ElseIf VCat = "2" Then
+Forms!billingmainediteviction!Category = "Bankruptcy"
+ElseIf VCat = "3" Then
+Forms!billingmainediteviction!Category = "Eviction"
+ElseIf VCat = "4" Then
+Forms!billingmainediteviction!Category = "Deed in Lieu"
+End If
+End If
+
+
+   Dim VUpdate, vClient, vIClear, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VTypeLoan, VChk, DocName, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsIClear, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+ 
+
+
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+VNI = rsClient![newinvoice billing]
+
+If Forms![foreclosure database screen]!Client Like "Citi*" _
+And [Forms]![foreclosure database screen]![ClientRefNumber] Like "20-*" Then
+vIClear = "C9013"
+Else
+vIClear = rsClient!Iclear_Code
+End If
+
+VINv = Forms![billingmainediteviction]![CustomerID]
+strSQLCNI = "select * from [IClear Header Information] where VendorInvoiceNumber = " & VINv & ";"
+
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI, dbOpenDynaset, dbSeeChanges)
+
+If rsChkNI.RecordCount >= 1 Then
+
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to Overwrite?", vbYesNo)
+
+Dim VB As String
+
+If VChk = vbYes Then
+VB = "YES"
+Else
+VB = "NO"
+End If
+
+Else
+VB = "NO"
+End If
+
+If VB = "YES" Then
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [IClear Header Information] where vendorinvoicenumber = " & VINv & ";")
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [IClear Detail Information] where vendorinvoicenumber = " & VINv & ";")
+End If
+
+If VB = "YES" Or rsChkNI.RecordCount = 0 Then
+
+
+VUpdate = MsgBox("Input Bill Into IClear Batch File?", vbYesNo)
+
+If VUpdate = vbYes Then
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenDynaset, dbSeeChanges)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenDynaset, dbSeeChanges)
+
+[Forms]![billingmainediteviction]![Sent] = Date
+Set rsIClear = CurrentDb.OpenRecordset("IClear Header Information", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("IClear Detail Information", dbOpenDynaset, dbSeeChanges)
+
+'Servicer ID Identification and Dept
+
+VInvID = [Forms]![billingmainediteviction]![invoiceIClear]
+strSQLInv = "Select * from [IClear Invoice Type] where [control id] = " & VInvID & ";"
+
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv, dbOpenDynaset, dbSeeChanges)
+
+'Set up Foreclosure, Cases, Postsale and Bankruptcy databases
+If Forms![billingmainediteviction]!Category = "Bankruptcy" Then
+vbkchap = BKChapter()
+vbkcase = Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = Forms![foreclosure database screen]!BankruptcySubForm.Form![Date Filed]
+If IsNull(Forms![foreclosure database screen]!BankruptcySubForm.Form![362MotionFiled]) Then
+vb362filed = ""
+Else
+vb362filed = Forms![foreclosure database screen]!BankruptcySubForm.Form![362MotionFiled]
+End If
+
+Else
+vbkchap = ""
+vbkcase = ""
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = ""
+vb362filed = ""
+End If
+
+If IsNull(rsFC!SaleDate) Then
+Vsale = ""
+Else
+Vsale = rsFC!SaleDate
+End If
+
+If rsCases!TypeOfLoan Like "FHA*" Then
+VTypeLoan = "1"
+ElseIf rsCases!TypeOfLoan Like "V*" Then
+VTypeLoan = "2"
+ElseIf rsCases!TypeOfLoan Like "CON*" Then
+VTypeLoan = "3"
+End If
+
+Dim VTransactions As Integer
+VTransactions = 0
+
+If Forms!billingmainediteviction![Attorney Fee] > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!process_service > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!l_preppoc > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!fee_dismcase > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!l_att341 > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!l_dil > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!l_initial > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_reqjud > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!l_prepabstract > 0 Then
+VTransactions = VTransactions + 1
+End If
+If [Forms]![billingmainediteviction]!evicdc_comp > 0 Then
+VTransactions = VTransactions + 1
+End If
+If [Forms]![billingmainediteviction]!evicmd_mjap > 0 Then
+VTransactions = VTransactions + 1
+End If
+If [Forms]![billingmainediteviction]!evicva_UD > 0 Then
+VTransactions = VTransactions + 1
+End If
+If [Forms]![billingmainediteviction]!sheriff_fee > 0 Then
+VTransactions = VTransactions + 1
+End If
+If [Forms]![billingmainediteviction]!evicdc_sps > 0 Then
+VTransactions = VTransactions + 1
+End If
+If [Forms]![billingmainediteviction]!evicmd_pshco > 0 Then
+VTransactions = VTransactions + 1
+End If
+If [Forms]![billingmainediteviction]!evicdc_spnq > 0 Then
+VTransactions = VTransactions + 1
+End If
+If [Forms]![billingmainediteviction]!evicdc_usmf > 0 Then
+VTransactions = VTransactions + 1
+End If
+If [Forms]![billingmainediteviction]!writ_fee > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!forbearance > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!l_appearance > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!l_preptitle > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_titlesearch > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_filing > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_process > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_recording > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_bondprem > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_auctfee > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_audfee > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_realestatetaxes > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_transfee > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_titleins > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_adv > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_advnisi > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_liencert > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!ps_liencert > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!otherm1 > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!fee_prepassignment > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!re_recording > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!otherm2 > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!otherm10 > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!feeothermoney > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!d_servbymail > 0 Then
+VTransactions = VTransactions + 1
+End If
+If Forms!billingmainediteviction!add_court_costs > 0 Then
+VTransactions = VTransactions + 1
+End If
+
+If Forms!billingmainediteviction!otherm1 > 0 And IsNull(Forms!billingmainediteviction!IClear_Misc3) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+If Forms!billingmainediteviction!otherm2 > 0 And IsNull(Forms!billingmainediteviction!IClear_misc4) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+If Forms!billingmainediteviction!otherm10 > 0 And IsNull(Forms!billingmainediteviction!IClear_Misc2) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+If Forms!billingmainediteviction!feeothermoney > 0 And IsNull(Forms!billingmainediteviction!IClear_Misc1) Then
+MsgBox ("Miscellaneous Field is input but there is Not an IClear Code selected please Update and Run Again")
+Exit Function
+End If
+With rsIClear
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+!loantype = VTypeLoan
+!VendorFileNumber = Forms![foreclosure database screen]!filenum
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![InvoiceDate] = [Forms]![billingmainediteviction]![billingdate]
+![InvoiceType] = [Forms]![billingmainediteviction]!invoiceIClear
+![TotalAmount] = [Forms]![billingmainediteviction]![balance due]
+![LoanNumber] = rsCases![ClientRefNumber]
+![PropertyState] = rsCases![PropertyState]
+![BorrowerFirstName] = rsCases![FirstNameDebtor1]
+![BorrowerLastName] = rsCases![LastNameDebtor1]
+![PropertyAddress] = rsCases![PropAddress]
+![PropertyCity] = rsCases!PropertyCity
+If Len(rsCases!propzip) > 10 Then
+MsgBox ("Zipcode is too long please update and dump again")
+Exit Function
+Else
+![PropertyZipCode] = rsCases!propzip
+End If
+
+!InvestorID = ""
+If IsNull(Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]) Then
+!CaseNo = ""
+Else
+!CaseNo = Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]
+End If
+!InvoiceComments = ""
+!TotalTransactions = VTransactions
+.Update
+End With
+
+If [Forms]![billingmainediteviction]![process_service] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "32231"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]![process_service]
+!Reimbursable = "N"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]![Attorney Fee] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "31111"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]![Attorney Fee]
+!Reimbursable = "N"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!CompleteDate = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+!CompleteDate = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]![fee_dismcase] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "12273"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]![fee_dismcase]
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+!comments = "Filing Fee for Dismissal of Foreclosure Case."
+
+.Update
+End With
+End If
+
+
+
+If [Forms]![billingmainediteviction]![fee_prepassignment] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "19147"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]![fee_prepassignment]
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+!comments = ""
+.Update
+End With
+End If
+
+
+If [Forms]![billingmainediteviction]!l_preppoc > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "21112"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!l_preppoc
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!l_att341 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "11113"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!l_att341
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!l_dil > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "41111"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!l_dil
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!l_initial > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmainediteviction]!Category = "Bankruptcy" Then
+!LineItemCode = "21116"
+ElseIf Forms![billingmainediteviction]!Category <> "Bankruptcy" Then
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "12340"
+Else
+![LineItemCode] = "11113"
+End If
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!l_initial
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_reqjud > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "31111"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_reqjud
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!evicdc_comp > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "32211"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!evicdc_comp
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+
+If [Forms]![billingmainediteviction]!evicdc_spnq > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "32231"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!evicdc_spnq
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!evicmd_mjap > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "32211"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!evicmd_mjap
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!sheriff_fee > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "32214"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!sheriff_fee
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!evicva_UD > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "32211"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!evicva_UD
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!evicmd_pshco > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "32231"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!evicmd_pshco
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!evicdc_sps > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "32231"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!evicdc_sps
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!writ_fee > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "32211"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!writ_fee
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!evicdc_usmf > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "32211"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!evicdc_usmf
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+
+If [Forms]![billingmainediteviction]!l_prepabstract > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "11113"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!l_prepabstract
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!forbearance > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "11113"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!forbearance
+!Reimbursable = "N"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!l_appearance > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "12218"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!l_appearance
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!l_preptitle > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "19121"
+Else
+![LineItemCode] = "12326"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!l_preptitle
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleClaimSent) Then
+!CompleteDate = Forms!billingmainediteviction!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleClaimSent
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_titlesearch > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmainediteviction]!Category = "Bankruptcy" Then
+!LineItemCode = "22213"
+ElseIf Forms![billingmainediteviction]!Category <> "Bankruptcy" _
+And Forms![billingmainediteviction]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12321"
+ElseIf Forms![billingmainediteviction]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42321"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_titlesearch
+!Reimbursable = "Y"
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_ord = "" Or IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_ord) Then
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved] = "" Or IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved]) Then
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportOrdered]
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved]
+End If
+
+Else
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_recd]) Then
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_ord]
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_recd]
+End If
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_filing > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmainediteviction]!Category = "Bankruptcy" Then
+!LineItemCode = "22211"
+ElseIf Forms![billingmainediteviction]!Category <> "Bankruptcy" _
+And Forms![billingmainediteviction]!Category <> "Eviction" Then
+![LineItemCode] = "12211"
+If Forms![foreclosure database screen]!Propertycounty = "Baltimore City" _
+Or Forms![foreclosure database screen]!Propertycounty = "Harford" _
+Or Forms![foreclosure database screen]!Propertycounty = "Baltimore" Then
+!comments = "Filing Fee = MD, Baltimore City Charges $125.00 to Docket Suit"
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Montgomery" Then
+!comments = "Filing Fee = MD, Baltimore City Charges $105.00 to Docket Suit"
+Else
+!comments = "Filing Fee = MD, Baltimore City Charges $115.00 to Docket Suit"
+End If
+ElseIf Forms![billingmainediteviction]!Category = "Eviction" Then
+![LineItemCode] = "32211"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_filing
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]) Then
+!CompleteDate = Forms!billingmainediteviction!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_process > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmainediteviction]!Category = "Bankruptcy" Then
+!LineItemCode = "22212"
+ElseIf Forms![billingmainediteviction]!Category <> "Bankruptcy" _
+And Forms![billingmainediteviction]!Category <> "Eviction" Then
+![LineItemCode] = "12231"
+ElseIf Forms![billingmainediteviction]!Category = "Eviction" Then
+![LineItemCode] = "32231"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_process
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_recording > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmainediteviction]!Category = "Bankruptcy" Then
+!LineItemCode = "22241"
+ElseIf Forms![billingmainediteviction]!Category <> "Bankruptcy" _
+And Forms![billingmainediteviction]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12246"
+ElseIf Forms![billingmainediteviction]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42241"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_recording
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]) Then
+!CompleteDate = Forms!billingmainediteviction!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![DocsSentCourt]
+Dim VDeedType As String
+VDeedType = "0"
+Do While VDeedType <> "1" And VDeedType <> "2"
+VDeedType = InputBox("1.  DOA" & vbCr & "2. Trustees Deed" & vbCr & vbCr & "Please select either 1 or 2 for Comments to IClear")
+If VDeedType <> "1" And VDeedType <> "2" Then
+MsgBox ("Please enter either a 1 or 2!")
+End If
+
+Loop
+
+
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_bondprem > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = "12276"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_bondprem
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!comments = "MD Law Requires that a Bond is Ordered prior to Foreclosure Sale in the Amount of the Statement of Debt in Purchase Price, whichever is higher."
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_auctfee > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "12270"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_auctfee
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![fc_cooper]) Then
+!CompleteDate = Forms!billingmainediteviction!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![fc_cooper]
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_audfee > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+![LineItemCode] = "12271"
+Else
+![LineItemCode] = "12267"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_audfee
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!billingmainediteviction!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!re_recording > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+![LineItemCode] = "12242"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!re_recording
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_realestatetaxes > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmainediteviction]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12330"
+ElseIf Forms![billingmainediteviction]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42325"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_realestatetaxes
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!billingmainediteviction!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+If IsNull(Forms!billingmainediteviction!ret_notes) Then
+!comments = ""
+Else
+!comments = Forms!billingmainediteviction!ret_notes
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_transfee > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmainediteviction]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12381"
+ElseIf Forms![billingmainediteviction]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42381"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_transfee
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_titleins > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmainediteviction]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12324"
+ElseIf Forms![billingmainediteviction]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42324"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_titleins
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_adv > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = "12274"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_adv
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad]) Then
+!CompleteDate = Forms!billingmainediteviction!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] - 3
+End If
+If IsNull(Forms!billingmainediteviction!adv_notes) Then
+!comments = ""
+Else
+!comments = Forms!billingmainediteviction!adv_notes
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_advnisi > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = "12234"
+![Quantity] = 1
+If Forms![foreclosure database screen]!Client Like "Citi*" Or Forms![foreclosure database screen]!Client Like "Mortgage Lender*" Then
+!comments = "MD Law required that a Notice of Sale be Published for 3 successive weeks after the sale.  The purpose is to put interested parties on notice that the sale occurred, and the amount that the property sold for, and to provide them an opportunity to file Exceptions/Objections to the sale/ratification."
+End If
+!Rate = [Forms]![billingmainediteviction]!d_advnisi
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!billingmainediteviction!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_liencert > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![foreclosure database screen]!PropertyState = "DC" And _
+(Forms![foreclosure database screen]!Client Like "Citi*" Or Forms![foreclosure database screen]!Client Like "Wells*") Then
+!LineItemCode = "12245"
+ElseIf Forms![billingmainediteviction]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12331"
+ElseIf Forms![billingmainediteviction]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42331"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_liencert
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+If IsNull(Forms!billingmainediteviction!lien_notes) Then
+!comments = "Ordered Lien Certificate"
+Else
+!comments = Forms!billingmainediteviction!lien_notes
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!ps_liencert > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmainediteviction]!Category <> "Deed in Lieu" Then
+![LineItemCode] = "12331"
+ElseIf Forms![billingmainediteviction]!Category = "Deed in Lieu" Then
+![LineItemCode] = "42331"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!ps_liencert
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!d_servbymail > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+If Forms![billingmainediteviction]!Category = "Bankruptcy" Then
+!LineItemCode = "22212"
+ElseIf Forms![billingmainediteviction]!Category <> "Bankruptcy" _
+And Forms![billingmainediteviction]!Category <> "Eviction" Then
+![LineItemCode] = "12252"
+If Forms![foreclosure database screen]!Client Like "Citi*" Then
+!comments = "Pursuant to state law, proper notice of sale is required to be served upon borrower, owner, and all other interested persons.  This is necessary to complete a proper sale."
+Else
+!comments = "Please be advised that " & LetterCount() & " were needed so that we could convey clear and marketable title after foreclosure sale"
+End If
+
+ElseIf Forms![billingmainediteviction]!Category = "Eviction" Then
+![LineItemCode] = "32231"
+End If
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!d_servbymail
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]) Then
+!CompleteDate = Forms!billingmainediteviction!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]
+End If
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!add_court_costs > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = "12273"
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!add_court_costs
+!Reimbursable = "Y"
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+!CompleteDate = Forms!billingmainediteviction!billingdate
+Else
+!CompleteDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+If Forms![foreclosure database screen]!Client Like "Citi*" Or Forms![foreclosure database screen]!Client Like "Mortgage Lender*" Then
+!comments = "Additional Court Costs is an Administrative cost charge by the Clerk of the Court and is mandatory charge that must be paid."
+ElseIf IsNull(Forms!billingmainediteviction!cc_notes) Then
+!comments = ""
+Else
+!comments = Forms!billingmainediteviction!cc_notes
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!otherm1 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = [Forms]![billingmainediteviction]!IClear_Misc3
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!otherm1
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!otherm2 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = [Forms]![billingmainediteviction]!IClear_misc4
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!otherm2
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!otherm10 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = [Forms]![billingmainediteviction]!IClear_Misc2
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!otherm10
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]!feeothermoney > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainediteviction]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = [Forms]![billingmainediteviction]!IClear_Misc1
+![Quantity] = 1
+!Rate = [Forms]![billingmainediteviction]!feeothermoney
+!Reimbursable = "Y"
+!CompleteDate = Forms!billingmainediteviction!billingdate
+.Update
+End With
+End If
+
+'END OF MODULE
+
+Else
+Exit Function
+End If
+End If
+
+End Function
+Public Function ExportIClearBK()
+
+If [Forms]![billingmainedit-bk]!attn <> "Notice of Default" And [Forms]![billingmainedit-bk]!attn <> "Notice of Default - 2nd" And _
+[Forms]![billingmainedit-bk]!attn <> "Notice of Default - 3rd" And [Forms]![billingmainedit-bk]!attn <> "Preacipe" And _
+[Forms]![billingmainedit-bk]!attn <> "Motion for Relief Withdrawal" And [Forms]![billingmainedit-bk]!attn <> "Obtain Order Lift Stay" And _
+[Forms]![billingmainedit-bk]!attn <> "Obtain Order Lift Stay-2nd" And [Forms]![billingmainedit-bk]!attn <> "Obtain Order Lift Stay-3rd" And _
+[Forms]![billingmainedit-bk]!attn <> "Obtain Order Lift Stay-MFR" And [Forms]![billingmainedit-bk]!attn <> "Filing Fees" And _
+[Forms]![billingmainedit-bk]!attn <> "Proposed Order" And [Forms]![billingmainedit-bk]!attn <> "Notice of Appearance" And _
+[Forms]![billingmainedit-bk]!attn <> "Notice of Hearing" And [Forms]![billingmainedit-bk]!attn <> "Objection to Plan" And _
+[Forms]![billingmainedit-bk]!attn <> "Objection to Claim" And [Forms]![billingmainedit-bk]!attn <> "Plan Review" And _
+[Forms]![billingmainedit-bk]!attn <> "Plan Review - Amended" And [Forms]![billingmainedit-bk]!attn <> "Motion to Allow Late Filing of POC" And _
+[Forms]![billingmainedit-bk]!attn <> "Transfer of Claim" And [Forms]![billingmainedit-bk]!attn <> "Proof of Claim" And _
+[Forms]![billingmainedit-bk]!attn <> "Amended POC" And [Forms]![billingmainedit-bk]!attn <> "Transfer Fee" And _
+[Forms]![billingmainedit-bk]!attn <> "Objection to AOD" Then
+Exit Function
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 <> "Notice of Default" And [Forms]![billingmainedit-bk]!services_fees2 <> "Notice of Default - 2nd" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Notice of Default - 3rd" And [Forms]![billingmainedit-bk]!services_fees2 <> "Preacipe" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Motion for Relief Withdrawal" And [Forms]![billingmainedit-bk]!services_fees2 <> "Obtain Order Lift Stay" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Obtain Order Lift Stay-2nd" And [Forms]![billingmainedit-bk]!services_fees2 <> "Obtain Order Lift Stay-3rd" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Obtain Order Lift Stay-MFR" And [Forms]![billingmainedit-bk]!services_fees2 <> "Filing Fees" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Proposed Order" And [Forms]![billingmainedit-bk]!services_fees2 <> "Notice of Appearance" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Notice of Hearing" And [Forms]![billingmainedit-bk]!services_fees2 <> "Objection to Plan" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Objection to Claim" And [Forms]![billingmainedit-bk]!services_fees2 <> "Plan Review" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Plan Review - Amended" And [Forms]![billingmainedit-bk]!services_fees2 <> "Motion to Allow Late Filing of POC" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Transfer of Claim" And [Forms]![billingmainedit-bk]!services_fees2 <> "Proof of Claim" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Amended POC" And [Forms]![billingmainedit-bk]!services_fees2 <> "Transfer Fee" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Objection to AOD" Then
+Exit Function
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 <> "Notice of Default" And [Forms]![billingmainedit-bk]!services_fees3 <> "Notice of Default - 2nd" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Notice of Default - 3rd" And [Forms]![billingmainedit-bk]!services_fees3 <> "Preacipe" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Motion for Relief Withdrawal" And [Forms]![billingmainedit-bk]!services_fees3 <> "Obtain Order Lift Stay" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Obtain Order Lift Stay-2nd" And [Forms]![billingmainedit-bk]!services_fees3 <> "Obtain Order Lift Stay-3rd" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Obtain Order Lift Stay-MFR" And [Forms]![billingmainedit-bk]!services_fees3 <> "Filing Fees" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Proposed Order" And [Forms]![billingmainedit-bk]!services_fees3 <> "Notice of Appearance" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Notice of Hearing" And [Forms]![billingmainedit-bk]!services_fees3 <> "Objection to Plan" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Objection to Claim" And [Forms]![billingmainedit-bk]!services_fees3 <> "Plan Review" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Plan Review - Amended" And [Forms]![billingmainedit-bk]!services_fees3 <> "Motion to Allow Late Filing of POC" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Transfer of Claim" And [Forms]![billingmainedit-bk]!services_fees3 <> "Proof of Claim" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Amended POC" And [Forms]![billingmainedit-bk]!services_fees3 <> "Transfer Fee" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Objection to AOD" Then
+Exit Function
+Else
+
+   Dim VUpdate, vClient, vIClear, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VINv, VTypeLoan, VChk, DocName, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsIClear, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+   
+   Dim VB As String
+
+VB = "NO"
+
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+VNI = rsClient![newinvoice billing]
+
+If Forms![foreclosure database screen]!Client Like "Citi*" _
+And [Forms]![foreclosure database screen]![ClientRefNumber] Like "20-*" Then
+vIClear = "C9013"
+Else
+vIClear = rsClient!Iclear_Code
+End If
+
+VINv = Forms![billingmainedit-bk]![CustomerID]
+strSQLCNI = "select * from [IClear Header Information] where [VendorInvoiceNumber] = " & VINv & ";"
+
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI, dbOpenDynaset, dbSeeChanges)
+
+If rsChkNI.RecordCount = 1 Then
+
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to continue?", vbYesNo)
+If VChk = vbYes Then
+VB = "YES"
+End If
+
+If VB = "YES" Then
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [IClear Header Information] where vendorinvoicenumber = " & VINv & ";")
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [IClear Detail Information] where vendorinvoicenumber = " & VINv & ";")
+End If
+
+End If
+
+If VB = "YES" Or rsChkNI.RecordCount = 0 Then
+
+If ([Forms]![billingmainedit-bk]![invoiceIClear] = 0 Or _
+IsNull(Forms![billingmainedit-bk]![invoiceIClear])) Then
+MsgBox ("This is an IClear Bill.  All Relevant Information has to be input for uploading. Please Select Invoice Type.")
+Exit Function
+
+Else
+VUpdate = MsgBox("Input Bill Into IClear Batch File?", vbYesNo)
+If IsNull(BKChapter()) Then
+MsgBox ("NO Chapter input, exiting")
+Exit Function
+End If
+
+
+If VUpdate = vbYes Then
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenDynaset, dbSeeChanges)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenDynaset, dbSeeChanges)
+
+'[Forms]![billingmainedit-bk]![Sent] = Date
+Set rsIClear = CurrentDb.OpenRecordset("IClear Header Information", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("IClear Detail Information", dbOpenDynaset, dbSeeChanges)
+
+'Servicer ID Identification and Dept
+
+VInvID = [Forms]![billingmainedit-bk]![invoiceIClear]
+strSQLInv = "Select * from [IClear Invoice Type] where [control id] = " & VInvID & ";"
+
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv, dbOpenDynaset, dbSeeChanges)
+
+'Set up Foreclosure, Cases, Postsale and Bankruptcy databases
+
+vbkchap = BKChapter()
+vbkcase = Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = Forms![foreclosure database screen]!BankruptcySubForm.Form![Date Filed]
+
+If IsNull(Forms![foreclosure database screen]!BankruptcySubForm.Form![362MotionFiled]) Then
+vb362filed = ""
+Else
+vb362filed = Forms![foreclosure database screen]!BankruptcySubForm.Form![362MotionFiled]
+End If
+
+
+
+If IsNull(rsFC!SaleDate) Then
+Vsale = ""
+Else
+Vsale = rsFC!SaleDate
+End If
+
+If rsCases!TypeOfLoan Like "FHA*" Then
+VTypeLoan = "1"
+ElseIf rsCases!TypeOfLoan Like "V*" Then
+VTypeLoan = "2"
+ElseIf rsCases!TypeOfLoan Like "CON*" Then
+VTypeLoan = "3"
+End If
+
+Dim VTransactions As Integer
+VTransactions = 1
+
+With rsIClear
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+!loantype = VTypeLoan
+!VendorFileNumber = Forms![foreclosure database screen]!filenum
+![VendorInvoiceNumber] = [Forms]![billingmainedit-bk]![CustomerID]
+![InvoiceDate] = [Forms]![billingmainedit-bk]![billingdate]
+![InvoiceType] = [Forms]![billingmainedit-bk]!invoiceIClear
+![TotalAmount] = [Forms]![billingmainedit-bk]![billtotal]
+![LoanNumber] = rsCases![ClientRefNumber]
+![PropertyState] = rsCases![PropertyState]
+![BorrowerFirstName] = rsCases![FirstNameDebtor1]
+![BorrowerLastName] = rsCases![LastNameDebtor1]
+![PropertyAddress] = rsCases![PropAddress]
+![PropertyCity] = rsCases!PropertyCity
+![PropertyZipCode] = rsCases!propzip
+!InvestorID = ""
+If IsNull(Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]) Then
+!CaseNo = ""
+Else
+!CaseNo = Forms![foreclosure database screen]!BankruptcySubForm.Form![BKY Case Number]
+End If
+
+!InvoiceComments = ""
+!TotalTransactions = VTransactions
+.Update
+End With
+
+'If [Forms]![billingmainedit-bk]![fees1] > 0 Then
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainedit-bk]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+
+If [Forms]![billingmainedit-bk]!attn Like "Transfer Fee" And _
+(Forms![foreclosure database screen]!Client Like "Citi*" Or _
+Forms![foreclosure database screen]!Client Like "Wells*") Then
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!LineItemCode = "21135"
+!Reimbursable = "N"
+!comments = "Transfer Fee"
+Else
+!LineItemCode = "29362"
+!Reimbursable = "N"
+!comments = "Transfer Fee"
+End If
+
+End If
+
+If [Forms]![billingmainedit-bk]!attn Like "Notice of Default*" Or _
+[Forms]![billingmainedit-bk]!attn = "Preacipe" Then
+If Forms![foreclosure database screen]!Client Like "Citi*" Or _
+Forms![foreclosure database screen]!Client Like "GMAC*" Or _
+Forms![foreclosure database screen]!Client Like "Bank One*" Then
+!LineItemCode = "21130"
+!Reimbursable = "Y"
+Else
+!LineItemCode = "21111"
+!Reimbursable = "Y"
+End If
+
+ElseIf [Forms]![billingmainedit-bk]!attn = "Motion for Relief Withdrawal" Or _
+[Forms]![billingmainedit-bk]!attn Like "Obtain*" Or _
+[Forms]![billingmainedit-bk]!attn Like "Proposed Order" Then
+!LineItemCode = "21113"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!attn = "Filing Fees" Then
+!LineItemCode = "22211"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!attn = "Notice of Appearance" Then
+!LineItemCode = "21115"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!attn = "Notice of Hearing" Or _
+[Forms]![billingmainedit-bk]!attn = "Objection to Plan" Or _
+[Forms]![billingmainedit-bk]!attn = "Objection to Claim" Or _
+[Forms]![billingmainedit-bk]!attn = "Plan Review" Or _
+[Forms]![billingmainedit-bk]!attn = "Plan Review - Amended" Or _
+[Forms]![billingmainedit-bk]!attn = "Transfer of Claim" Then
+!LineItemCode = "21111"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!attn = "Proof of Claim" Or _
+[Forms]![billingmainedit-bk]!attn = "Amended POC" Then
+!LineItemCode = "21112"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!attn = "Objection to AOD" Then
+If Forms![foreclosure database screen]!Client Like "Citi*" Or _
+Forms![foreclosure database screen]!Client Like "GMAC*" Or _
+Forms![foreclosure database screen]!Client Like "Bank One*" Then
+!LineItemCode = "21117"
+!Reimbursable = "Y"
+Else
+!LineItemCode = "21111"
+!Reimbursable = "Y"
+End If
+End If
+
+![Quantity] = 1
+!Rate = Forms![billingmainedit-bk]!fees1
+
+!CompleteDate = Forms![billingmainedit-bk]!billingdate
+.Update
+End With
+'End If
+
+'Fees2
+If [Forms]![billingmainedit-bk]![fees2] > 0 Then
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainedit-bk]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+
+If [Forms]![billingmainedit-bk]!services_fees2 Like "Transfer Fee" And _
+(Forms![foreclosure database screen]!Client Like "Citi*" Or _
+Forms![foreclosure database screen]!Client Like "Wells*") Then
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!LineItemCode = "21135"
+!Reimbursable = "N"
+!comments = "Transfer Fee"
+Else
+!LineItemCode = "29362"
+!Reimbursable = "N"
+!comments = "Transfer Fee"
+End If
+
+End If
+
+If [Forms]![billingmainedit-bk]!services_fees2 Like "Notice of Default*" Or _
+[Forms]![billingmainedit-bk]!services_fees2 = "Preacipe" Then
+If Forms![foreclosure database screen]!Client Like "Citi*" Or _
+Forms![foreclosure database screen]!Client Like "GMAC*" Or _
+Forms![foreclosure database screen]!Client Like "Bank One*" Then
+!LineItemCode = "21130"
+!Reimbursable = "Y"
+Else
+!LineItemCode = "21111"
+!Reimbursable = "Y"
+End If
+
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Motion for Relief Withdrawal" Or _
+[Forms]![billingmainedit-bk]!services_fees2 Like "Obtain*" Or _
+[Forms]![billingmainedit-bk]!services_fees2 Like "Proposed Order" Then
+!LineItemCode = "21113"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Filing Fees" Then
+!LineItemCode = "22211"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Notice of Appearance" Then
+!LineItemCode = "21115"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Notice of Hearing" Or _
+[Forms]![billingmainedit-bk]!services_fees2 = "Objection to Plan" Or _
+[Forms]![billingmainedit-bk]!services_fees2 = "Objection to Claim" Or _
+[Forms]![billingmainedit-bk]!services_fees2 = "Plan Review" Or _
+[Forms]![billingmainedit-bk]!services_fees2 = "Plan Review - Amended" Or _
+[Forms]![billingmainedit-bk]!services_fees2 = "Transfer of Claim" Then
+!LineItemCode = "21111"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Proof of Claim" Or _
+[Forms]![billingmainedit-bk]!services_fees2 = "Amended POC" Then
+!LineItemCode = "21112"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Objection to AOD" Then
+If Forms![foreclosure database screen]!Client Like "Citi*" Or _
+Forms![foreclosure database screen]!Client Like "GMAC*" Or _
+Forms![foreclosure database screen]!Client Like "Bank One*" Then
+!LineItemCode = "21117"
+!Reimbursable = "Y"
+Else
+!LineItemCode = "21111"
+!Reimbursable = "Y"
+End If
+End If
+
+![Quantity] = 1
+!Rate = Forms![billingmainedit-bk]!fees2
+
+!CompleteDate = Forms![billingmainedit-bk]!billingdate
+.Update
+End With
+End If
+'End Fees2
+
+''''
+'fees3
+If [Forms]![billingmainedit-bk]![fees3] > 0 Then
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainedit-bk]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+
+If [Forms]![billingmainedit-bk]!services_fees3 Like "Transfer Fee" And _
+(Forms![foreclosure database screen]!Client Like "Citi*" Or _
+Forms![foreclosure database screen]!Client Like "Wells*") Then
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+!LineItemCode = "21135"
+!Reimbursable = "N"
+!comments = "Transfer Fee"
+Else
+!LineItemCode = "29362"
+!Reimbursable = "N"
+!comments = "Transfer Fee"
+End If
+
+End If
+
+If [Forms]![billingmainedit-bk]!services_fees3 Like "Notice of Default*" Or _
+[Forms]![billingmainedit-bk]!services_fees3 = "Preacipe" Then
+If Forms![foreclosure database screen]!Client Like "Citi*" Or _
+Forms![foreclosure database screen]!Client Like "GMAC*" Or _
+Forms![foreclosure database screen]!Client Like "Bank One*" Then
+!LineItemCode = "21130"
+!Reimbursable = "Y"
+Else
+!LineItemCode = "21111"
+!Reimbursable = "Y"
+End If
+
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Motion for Relief Withdrawal" Or _
+[Forms]![billingmainedit-bk]!services_fees3 Like "Obtain*" Or _
+[Forms]![billingmainedit-bk]!services_fees3 Like "Proposed Order" Then
+!LineItemCode = "21113"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Filing Fees" Then
+!LineItemCode = "22211"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Notice of Appearance" Then
+!LineItemCode = "21115"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Notice of Hearing" Or _
+[Forms]![billingmainedit-bk]!services_fees3 = "Objection to Plan" Or _
+[Forms]![billingmainedit-bk]!services_fees3 = "Objection to Claim" Or _
+[Forms]![billingmainedit-bk]!services_fees3 = "Plan Review" Or _
+[Forms]![billingmainedit-bk]!services_fees3 = "Plan Review - Amended" Or _
+[Forms]![billingmainedit-bk]!services_fees3 = "Transfer of Claim" Then
+!LineItemCode = "21111"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Proof of Claim" Or _
+[Forms]![billingmainedit-bk]!services_fees3 = "Amended POC" Then
+!LineItemCode = "21112"
+!Reimbursable = "Y"
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Objection to AOD" Then
+If Forms![foreclosure database screen]!Client Like "Citi*" Or _
+Forms![foreclosure database screen]!Client Like "GMAC*" Or _
+Forms![foreclosure database screen]!Client Like "Bank One*" Then
+!LineItemCode = "21117"
+!Reimbursable = "Y"
+Else
+!LineItemCode = "21111"
+!Reimbursable = "Y"
+End If
+End If
+
+![Quantity] = 1
+!Rate = Forms![billingmainedit-bk]!fees3
+
+!CompleteDate = Forms![billingmainedit-bk]!billingdate
+.Update
+End With
+End If
+'End fees3
+
+''''''
+
+If Forms![billingmainedit-bk]!costs1 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainedit-bk]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = "22211"
+![Quantity] = 1
+!Rate = Forms![billingmainedit-bk]!costs1
+!Reimbursable = "Y"
+!CompleteDate = Forms![billingmainedit-bk]!billingdate
+.Update
+End With
+
+
+End If
+
+If Forms![billingmainedit-bk]!costs2 > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![VendorCode] = "A1291"
+![ClientCode] = vIClear
+![VendorInvoiceNumber] = [Forms]![billingmainedit-bk]![CustomerID]
+![LoanNumber] = rsCases![ClientRefNumber]
+!SequenceNumber = 0
+!LineItemCode = "22211"
+![Quantity] = 1
+!Rate = Forms![billingmainedit-bk]!costs2
+!Reimbursable = "Y"
+!CompleteDate = Forms![billingmainedit-bk]!billingdate
+.Update
+End With
+
+
+End If
+
+
+
+'END OF MODULE
+End If
+End If
+End If
+
+
+End If
+
+
+End Function
+
+

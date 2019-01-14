@@ -1,0 +1,69 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "SQLRpt"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+Option Compare Database
+
+Public conn As String
+Public cmd As String
+Private sqlrptconn As Object
+Private sqlcmd As Object
+Public sqlrs As Object
+
+Public Sub CreateSQLRpt(rptcmd As String)
+
+    conn = connstr
+    cmd = rptcmd
+    Set sqlrptconn = CreateObject("ADODB.Connection")
+    Set sqlcmd = CreateObject("ADODB.Command")
+    
+    'setting the context of the sql command and connection
+    sqlcmd.CommandText = rptcmd
+    sqlcmd.CommandType = 1
+    sqlcmd.CommandTimeout = 120
+    
+    sqlrptconn.Open conn
+    
+    sqlcmd.ActiveConnection = sqlrptconn
+    
+    
+End Sub
+
+'Set parameter = command.CreateParameter (Name, Type, Direction, Size, Value)
+'Type: dstring a string*, dboolean is boolean*, ddate is date*, dtime is time, ddouble is double, dnumeric is numeric*
+
+
+Public Sub AddParam(pname As String, dtype As Double, pval As Variant)
+
+Dim param As Object: Set param = CreateObject("ADODB.Parameter")
+
+    Set param = sqlcmd.CreateParameter(pname, dtype, 1, Len(pval), pval)
+    
+    sqlcmd.Parameters.Append param
+    'MsgBox sqlcmd.Parameters.Count
+
+End Sub
+
+
+Public Sub SetRecordSet()
+
+Set RecordSet = CreateObject("ADODB.Recordset")
+
+    Set sqlrs = sqlcmd.Execute
+
+End Sub
+
+Public Sub Clean()
+
+    ' Clean up
+    sqlrptconn.Close
+    Set sqlrptconn = Nothing
+    Set sqlrs = Nothing
+    Set sqlcmd = Nothing
+
+End Sub

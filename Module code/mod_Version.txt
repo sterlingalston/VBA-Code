@@ -1,0 +1,298 @@
+Attribute VB_Name = "Version"
+Option Compare Database
+Option Explicit
+
+Global Const Version = 9682
+'9652
+Declare Function GetUserName& Lib "advapi32.dll" Alias "GetUserNameA" (ByVal lpBuffer As String, nSize As Long)
+Public Function MaxLocks()
+DAO.DBEngine.SetOption dbMaxLocksPerFile, 15000
+DBEngine.SetOption dbMaxBufferSize, 512
+End Function
+
+Private Sub ClearRecent()
+Call CleanTables
+
+CurrentDb.Execute "DELETE * FROM Recent;", dbFailOnError
+
+End Sub
+Public Function CleanTables()
+
+Dim rs As RecordSet
+Dim strtblname As String
+On Error Resume Next
+Set rs = CurrentDb.OpenRecordset("CLEANTABLESList", dbOpenForwardOnly)
+
+Do While Not rs.EOF
+
+    strtblname = rs("TableName").Value
+    CurrentDb.Execute "Delete * from " & strtblname & ";", dbFailOnError
+
+rs.MoveNext
+
+Loop
+
+rs.Close
+Set rs = Nothing
+
+
+Set rs = CurrentDb.OpenRecordset("DROPTABLESList", dbOpenForwardOnly)
+
+Do While Not rs.EOF
+
+    strtblname = rs("TableName").Value
+    CurrentDb.Execute "drop table " & strtblname & ";", dbFailOnError
+
+rs.MoveNext
+
+Loop
+
+rs.Close
+Set rs = Nothing
+End Function
+
+Public Sub CheckVersion(AskUpgrade As Boolean)
+Dim f As Integer
+Dim ver As String
+Dim retval
+
+On Error GoTo CheckVersionErr
+
+f = FreeFile(1)
+Open DBLocation & "version.txt" For Input As #f
+Input #f, ver
+Close #f
+
+If ver > Version Then
+    If AskUpgrade Or (InStr(1, "Charlene,Lucinda,Rebecca,Eric,MatthewAlston", username() & ",") > 0) Then
+        If MsgBox("A newer version of the Database is available.  Do you want to upgrade now?", vbQuestion + vbYesNo) = vbYes Then Call UpdateVersion
+    Else
+        Call UpdateVersion
+    End If
+End If
+    
+Exit Sub
+
+CheckVersionErr:
+    MsgBox "Error checking version of database.  You may not have logged in to the network properly.  Please contact support for additional help." & vbNewLine & Err.description, vbExclamation
+    DoCmd.Quit
+End Sub
+
+
+Private Sub UpdateVersion()
+
+Open Environ("temp") & "\Update.bat" For Output As #1
+Print #1, "If Not ""%localappdata%"" == """" Goto VarOK"
+Print #1, "Set localappdata=%userprofile%\Local Settings\Application Data"
+Print #1, ": VarOK"
+Print #1, "Set /A Counter=1"
+Print #1, ": Test"
+Print #1, "ping 192.0.2.2 -n 1 -w 2000 > nul"
+Print #1, "If Not Exist ""%localappdata%\Programs\fc.ldb"" Goto Continue"
+Print #1, "Set /A Counter=%Counter%+1"
+Print #1, "If %Counter% GEQ 30 Goto Stuck"
+Print #1, "Goto Test"
+Print #1, ": Continue"
+Print #1, "If Exist ""%localappdata%\Programs"" Goto DirOK"
+Print #1, "MkDir ""%localappdata%\Programs"""
+Print #1, ": DirOK"
+Print #1, "Call %systemroot%\setlocalserver.bat"
+Print #1, "If Not ""%copyfromserver%"" == """" Goto ServerOK"
+Print #1, "Set copyfromserver=server2"
+Print #1, ": ServerOK"
+Print #1, "copy \\%copyfromserver%\4closure\fc.mde ""%localappdata%\Programs\fc.mde"""
+Print #1, "cscript \\%copyfromserver%\4closure\CreateShortcut.vbs"
+Print #1, "Start """ & SysCmd(acSysCmdAccessDir) & "msaccess.exe"" ""%localappdata%\Programs\fc.mde"""
+Print #1, "Exit"
+Print #1, ": Stuck"
+Print #1, "Del ""%localappdata%\Programs\fc.ldb"""
+Print #1, "If Not Exist ""%localappdata%\Programs\fc.ldb"" Goto Continue"
+Print #1, "Pause ""Cannot update database.  You may have another copy of the database running; it needs to be closed.  Otherwise, contact support."""
+Close #1
+Shell Environ("temp") & "\Update.bat", vbNormalFocus
+
+DoCmd.Quit
+
+End Sub
+
+Public Function GetVersion() As String
+GetVersion = Version
+End Function
+
+Public Sub GetPermissions()
+'
+' Get user's permissions.  This reads the Permissions view in the foreclosure database,
+' which looks at the Permissions table in the Employees database.
+'
+Dim rstPermissions As RecordSet
+
+If gblUserName = "" Then Call username
+
+Set rstPermissions = CurrentDb.OpenRecordset("SELECT * FROM Permissions WHERE Login = " & """" & gblUserName & """", dbOpenSnapshot)
+
+If Not rstPermissions.EOF Then
+    PrivEditMemo = rstPermissions!EditMemo
+    PrivForceUnlock = rstPermissions!ForceUnlockFiles
+    PrivReadOnlyLockExempt = rstPermissions!ReadOnlyLockExempt    ' CAUTION! This assumes that the user has read-only permissions on the SQL database.  Any other use is in violation of lender requirements!
+    PrivCeaseCommunications = rstPermissions!CeaseCommunications
+End If
+rstPermissions.Close
+
+End Sub
+
+Public Function username() As String
+'
+' Return windows user name
+'
+Dim s$, cnt&, dl&
+cnt& = 199
+s$ = String$(200, 0)
+dl& = GetUserName(s$, cnt)
+gblUserName = Left$(s$, cnt - 1)
+username = gblUserName
+
+
+
+End Function
+
+Public Function logcaseTEST(Optional msg As String)
+'
+' Make an entry in the log file
+If gblUserName = "" Then Call username
+
+Dim filespec As String          ' log file path and name
+
+filespec = "\\rvdv-fs01\DataTransfer\Walz\Testing\WalzTime.log"
+Open filespec For Append As #1
+Print #1, Format$(Now(), "yyyy-mm-dd hh:nn:ss"), Forms![foreclosure database screen]!filenum, gblUserName, msg
+Close #1
+End Function
+
+Public Function logcaseOPEN(filenum As Long, Optional msg As String)
+'
+Dim filespec As String          ' log file path and name
+
+If gblUserName = "" Then Call username  ' make sure user name is initialized
+
+filespec = "\\rvdv-fs01\DataTransfer\Logs\" & Format$(Date, "yyyymm") & ".log"
+Open filespec For Append As #1
+Print #1, Format$(Now(), "yyyy-mm-dd hh:nn:ss"), filenum, gblUserName, msg
+Close #1
+
+End Function
+
+Public Function logcaseAlt(gblmsg, gblfieldname, Optional gblfieldtext, Optional gblPT)
+
+Set rst = CurrentDb.OpenRecordset("'logcase", dbOpenDynaset, dbSeeChanges)
+
+If gblUserName = "" Then Call username  ' make sure user name is initialized
+
+With rst
+    .AddNew
+    '![BGWW#] = gblFileNum
+    !LogDate = Now()
+    !logmsg = gblmsg
+    !Processor = gblUserName
+    !field_Name = gblfieldname
+    !field_Text = gblfieldtext
+    '!Field_Date = gblfielddate
+    '!prev_date = gblPD
+    !prev_text = gblPT
+       
+    .Update
+    .Close
+End With
+
+End Function
+
+Public Function logcaseBtn(gblmsg)
+
+Set rst = CurrentDb.OpenRecordset("'logcase", dbOpenDynaset, dbSeeChanges)
+
+If gblUserName = "" Then Call username  ' make sure user name is initialized
+
+With rst
+    .AddNew
+    !LogDate = Now()
+    !logmsg = gblmsg
+    !Processor = gblUserName
+    .Update
+    .Close
+End With
+
+End Function
+
+Public Function logcaseScrn(GblFilenum, gblmsg)
+
+Set rst = CurrentDb.OpenRecordset("'logcase", dbOpenDynaset, dbSeeChanges)
+
+If gblUserName = "" Then Call username  ' make sure user name is initialized
+
+With rst
+    .AddNew
+    ![BGWW#] = GblFilenum
+    !LogDate = Now()
+    !logmsg = gblmsg
+    !Processor = gblUserName
+    .Update
+    .Close
+End With
+
+End Function
+
+Public Function logcaseADD(gblmsg, gblfieldname, Optional gblfielddate, Optional gblfieldtext, Optional gblPD, Optional gblPT)
+
+Set rst = CurrentDb.OpenRecordset("'logcase", dbOpenDynaset, dbSeeChanges)
+
+If gblUserName = "" Then Call username  ' make sure user name is initialized
+
+With rst
+    .AddNew
+    ![BGW#] = GblFilenum
+    !LogDate = Now()
+    !logmsg = gblmsg
+    !Processor = gblUserName
+    !field_Name = gblfieldname
+    !field_Text = gblfieldtext
+    !Field_Date = gblfielddate
+    !prev_date = gblPD
+    !prev_text = gblPT
+       
+    .Update
+    .Close
+End With
+
+End Function
+
+Public Sub logcase(filenum As Long, Optional msg As String)
+'
+' Make an entry in the log file
+'
+Dim filespec As String          ' log file path and name
+
+If gblUserName = "" Then Call username  ' make sure user name is initialized
+
+filespec = DBLocation & "log\" & Format$(Date, "yyyymm") & ".log"
+Open filespec For Append As #1
+Print #1, Format$(Now(), "yyyy-mm-dd hh:nn:ss"), filenum, gblUserName, msg
+Close #1
+End Sub
+
+Public Function WarningsNowFalse()
+
+
+Application.SetOption "Confirm Action Queries", 0
+Application.SetOption "Confirm Document Deletions", 0
+Application.SetOption "Confirm Record Changes", 0
+Application.SetOption "OLE/DDE timeout (sec)", 120
+DoCmd.SetWarnings False
+'MsgBox "warnings should now be false!", vbInformation, "Horray!!!"
+End Function
+
+Public Sub ListOpenForms()
+Dim frm As Object
+
+    For Each frm In CurrentProject.AllForms
+        If frm.IsLoaded Then Debug.Print frm.name
+    Next
+End Sub

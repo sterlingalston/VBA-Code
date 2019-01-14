@@ -1,0 +1,5 @@
+Public Sub ExportCSV(query As String, path As String, Optional name As String)
+
+    DoCmd.TransferText acExportDelim, , query, path & IIf(Len(name) = 0, query, name) & ".csv", True
+
+End Sub

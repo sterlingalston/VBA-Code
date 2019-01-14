@@ -1,0 +1,188 @@
+Attribute VB_Name = "Notary"
+Option Compare Database
+Public Function NotaryDOA()
+Dim NotaryDOA1, NotaryDOA2, NotaryDOA3, NotaryDOA4, NotaryDOA5
+
+If Client() Like "Seter*" Then
+NotaryDOA = "______________________________, authorized agent of " & Client() & ", as attorney-in-fact for Fannie Mae (" & """" & "Federal National Mortgage Association" & """" & "), personally appeared before me in the jurisdiction aforesaid and executed the foregoing Appointment of Substitute Trustee."
+
+ElseIf (Forms![foreclosure database screen]![TypeOfLoan] = "FNMA" Or _
+Forms![foreclosure database screen]![TypeOfLoan] = "FHLMC" Or _
+Forms![foreclosure database screen]![TypeOfLoan] = "GNMA") And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+NotaryDOA = "___________________ of " & servicer() & ", authorized servicer for " & LoanInvestor() & ", personally appeared before me in the jurisdiction aforesaid and executed the foregoing Appointment of Substitute Trustee."
+
+ElseIf Client() Like "HomEq*" Or Client() Like "Wells*" Then
+NotaryDOA = DOANotaryHomEq()
+
+ElseIf Client() Like "Ocwen*" Then
+NotaryDOA = DOANotaryOcwen()
+
+ElseIf Client() Like "MGC*" Then
+NotaryDOA = PartOneDOA1() & ", " & PartOneDOA2() & " "
+
+Else
+
+NotaryDOA1 = "_______________________________"
+
+
+If Forms![foreclosure database screen]!SPsameasCl = 1 Or _
+Forms![foreclosure database screen]![SPsameasCl] = -1 Then
+NotaryDOA2 = ", authorized by "
+Else
+NotaryDOA2 = ", authorized agent of "
+End If
+
+
+If Forms![foreclosure database screen]![SPsigns] = 1 Or _
+Forms![foreclosure database screen]![SPsigns] = -1 Or _
+Forms![foreclosure database screen]![SPsameasCl] = 1 Or _
+Forms![foreclosure database screen]![SPsameasCl] = -1 Then
+NotaryDOA3 = ""
+Else
+NotaryDOA3 = " " & servicer() & ", "
+End If
+
+
+If (Client() Like "Ocwen*" And _
+(Forms![foreclosure database screen]![SPsameasCl] = 0 Or _
+IsNull(Forms![foreclosure database screen]![SPsameasCl]))) Or _
+(Client() Like "JP*" Or _
+Forms![foreclosure database screen]![signature block] Like "*Attorney-in*") Then
+
+NotaryDOA2 = "as Attorney-in-Fact for "
+Else
+NotaryDOA2 = " Authorized Servicer for "
+End If
+
+
+
+
+
+NotaryDOA = NotaryDOA1 + NotaryDOA2 + NotaryDOA3 + NotaryDOA4 + LSecured() & ", personally appeared before me in the jurisdiction aforesaid and executed the foregoing Appointment of Substitute Trustee."
+
+
+
+End If
+
+
+
+
+End Function
+Function NotaryAdd()
+
+Set rs = CurrentDb.OpenRecordset("notary", dbOpenDynaset, dbSeeChanges)
+
+Dim VType
+Dim VDate
+Dim VInititals
+Dim VNotary
+Dim Vproc
+Dim VNotsigned
+Dim VSigned
+Dim rsEmp As RecordSet
+Dim strsqlEmp As String
+
+VType = InputBox("What type of documents were notarized?" & vbCr & vbCr & "1. Summons and SCRA Affidavit" & vbCr & "2. Summons" & vbCr & "3. Military Affidavit" & vbCr & "4. Other" & vbCr & vbCr & "Enter 1-4")
+
+'Person Signed
+Vproc = "NO"
+Do While Vproc <> "YES"
+vInitials = getEmployeeInitials(Environ("username"))
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials, please re-input")
+Else
+Vproc = "YES"
+If Not IsNull(rsEmp!MiddleName) Then
+VSigned = rsEmp!FirstName & " " & rsEmp!MiddleName & " " & rsEmp!LastName
+Else
+VSigned = rsEmp!FirstName & " " & rsEmp!LastName
+End If
+End If
+Loop
+
+'Notary Signed
+Vproc = "NO"
+Do While Vproc <> "YES"
+VNotary = InputBox("Enter Initials of notary:")
+strsqlEmp = "select * from employees where employeeid = " & """" & VNotary & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials, please re-input")
+Else
+Vproc = "YES"
+If Not IsNull(rsEmp!MiddleName) Then
+VNotsigned = rsEmp!FirstName & " " & rsEmp!MiddleName & " " & rsEmp!LastName
+Else
+VNotsigned = rsEmp!FirstName & " " & rsEmp!LastName
+End If
+End If
+Loop
+
+
+VDate = InputBox("Enter date notarized:")
+
+If VType = 1 Then
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!Date_Signed = VDate
+!Document_Signed = "Summons"
+!Notary = VNotary
+!Signer_Name = vInitials
+!TypeOfAct = "Affirmation"
+!ID_Method = "Personal knowledge"
+!Signer_Signature = "See uniform signature doc"
+!Signer_Address = "6003 Executive Blvd. Suite 101, Rockville, MD 20852"
+
+.Update
+End With
+
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!Date_Signed = VDate
+!Document_Signed = "SCRA Affidavit"
+!Notary = VNotary
+!Signer_Name = vInitials
+!TypeOfAct = "Affirmation"
+!ID_Method = "Personal knowledge"
+!Signer_Signature = "See uniform signature doc"
+!Signer_Address = "6003 Executive Blvd. Suite 101, Rockville, MD 20852"
+.Update
+.Close
+End With
+
+ElseIf VType <> 1 Then
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!Date_Signed = VDate
+!Signer_Signature = "See uniform signature doc"
+!Signer_Address = "6003 Executive Blvd. Suite 101, Rockville, MD 20852"
+
+If VType = 2 Then
+!Document_Signed = "Summons"
+ElseIf VType = 3 Then
+!Document_Signed = "Military Affidavit"
+ElseIf VType = 4 Or (VType <> 1 And VType <> 2 And VType <> 3 And VType <> 4) Then
+VType = InputBox("Enter Document:")
+!Document_Signed = VType
+End If
+!Notary = VNotary
+!Signer_Name = vInitials
+!TypeOfAct = "Affirmation"
+!ID_Method = "Personal knowledge"
+.Update
+.Close
+End With
+
+
+End If
+MsgBox ("Added to Notary Table")
+
+
+End Function
+

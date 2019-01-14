@@ -1,0 +1,1169 @@
+Attribute VB_Name = "NewTrak"
+Option Compare Database
+Public Function NTrakCiti()
+
+DoCmd.OutputTo acOutputReport, "newtrakyesterdayCITI", acFormatSNP, pathuser() & "\VSFCFilesCITI.snp"
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "Carrie.Ward@bww-law.com; Rebecca.Delaney@bww-law.com"
+MyMail.Subject = "Vendorscape Daily for Citi Files: " & Date - 1
+MyMail.body = "Attached is the Vendorscape Report."
+MyMail.Attachments.ADD pathuser() & "\VSFCFilesCITI.snp"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+End Function
+Public Function NewTrakDailyEmail()
+
+DoCmd.OutputTo acOutputReport, "newtrakyesterday", acFormatSNP, pathuser() & "\NTrakDailyFCFiles.snp"
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "Carrie.Ward@bww-law.com; Rebecca.Delaney@bww-law.com"
+MyMail.Subject = "New Trak Daily for: " & Date - 1
+MyMail.body = "Attached is the New Trak Report."
+MyMail.Attachments.ADD pathuser() & "\NTrakDailyFCFiles.snp"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+Call NTrakCiti
+End Function
+
+
+
+Public Function NTrakUploadSale()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox
+VMsgBox = ""
+
+If IsNull(Forms![VirginiaSales]!notice_processor) Then
+VMsgBox = ("No initials input for Notice Processor at top of screen.  Please go back and input.  This will be the User Name uploaded to New Trak for this record.")
+ElseIf IsNull(Forms![VirginiaSales]![1st_ad]) Then
+VMsgBox = ("No 1st Pub Date input.  Please go back and input.")
+ElseIf IsNull(Forms![VirginiaSales]![SaleDate]) Then
+VMsgBox = ("No Sale Date input.  Please go back and input.")
+End If
+
+If Not IsNull(Forms![VirginiaSales]!resume_recd) Then
+VMsgBox = ("This file is a Resume not uploading Resumes for New Trak")
+End If
+
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+strsql = "select * from NTRID where filenum = " & Forms!VirginiaSales!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & Forms!VirginiaSales!notice_processor & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms!VirginiaSales!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+Set rs = CurrentDb.OpenRecordset("NTUpload", dbOpenDynaset, dbSeeChanges)
+If rs.EOF Then
+VID = 1
+Else
+rs.MoveLast
+VID = rs!idNo
+End If
+
+'Dim VId
+'With RS
+'.AddNew
+'!Vendorstepidentifier = Forms![virginiasales]!FIleNum
+'!NTRID = VNtrid
+'!ntsid = "NTFC0090"
+'!DateCompleted = Forms!virginiasales![1st_ad]
+'!updatecomment = ""
+'!UserName = VUserName
+'!Action = "Complete"
+'!idno = VId + 1
+'.Update
+'End With
+
+'With RS
+'.AddNew
+'!Vendorstepidentifier = Forms![virginiasales]!FIleNum
+'!NTRID = VNtrid
+'!ntsid = "NTFC0220"
+'!DateCompleted = Forms!virginiasales![SaleDate]
+'!updatecomment = ""
+'!UserName = VUserName
+'!Action = "Complete"
+'!idno = VId + 2
+'.Update
+'End With
+'RS.Close
+
+
+'Set fs = CreateObject("Scripting.FileSystemObject")
+'Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "a.xml", True)
+
+'A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+'A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+'A.WriteLine ("<NTIEEUploadItem>")
+'A.WriteLine ("     <uld_Step>")
+'A.WriteLine ("       <VendorStepIdentifier>" & Forms![virginiasales]!FIleNum & "</VendorStepIdentifier>")
+'A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+'A.WriteLine ("       <NTSID>" & "NTFC0090" & "</NTSID>")
+'A.WriteLine ("       <DateCompleted>" & Forms!virginiasales![1st_ad] & "</DateCompleted>")
+'A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+'A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+'A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+'A.WriteLine ("     </uld_Step>")
+'A.WriteLine ("</NTIEEUploadItem>")
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![VirginiaSales]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTFC0220" & "</NTSID>")
+A.WriteLine ("       <DateCompleted>" & Forms!VirginiaSales![SaleDate] & "</DateCompleted>")
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+
+
+
+End Function
+Public Function NTrakUploadSALEFC()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox, vInitials
+VMsgBox = ""
+
+
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+VMsgBox = ("No Sale Date input.  Please go back and input.")
+End If
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!notice_processor) Then
+vInitials = getEmployeeInitials(Environ("username"))
+Else
+vInitials = Forms![foreclosure database screen]!ForeclosureSubForm.Form!notice_processor
+End If
+
+strsql = "select * from NTRID where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![service_complete]) Then
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTFC0230" & "</NTSID>")
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!ForeclosureSubForm.Form![service_complete] & "</DateCompleted>")
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+End If
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTFC0220" & "</NTSID>")
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate] & "</DateCompleted>")
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+End Function
+Public Function NTrakUploadRatMD()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox, vInitials
+VMsgBox = ""
+
+
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form![RatDateMD]) Then
+VMsgBox = ("No Rat Date input (Save Record if it is input).  Please go back.")
+End If
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+vInitials = getEmployeeInitials(Environ("username"))
+
+strsql = "select * from NTRID where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials")
+Exit Function
+End If
+
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTFC0210" & "</NTSID>")
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!PostsaleSubForm.Form![RatDateMD] & "</DateCompleted>")
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+End Function
+Public Function NTrakUploadSALEHeld()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox, vInitials
+VMsgBox = ""
+
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+VMsgBox = ("No Rat Date input (Save Record if it is input).  Please go back.")
+End If
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+vInitials = getEmployeeInitials(Environ("username"))
+
+strsql = "select * from NTRID where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials")
+Exit Function
+End If
+
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+If Forms![foreclosure database screen]!Client Like "EMC*" Then
+A.WriteLine ("       <NTSID>" & "EMC_NTFC0200" & "</NTSID>")
+
+Else
+A.WriteLine ("       <NTSID>" & "NTFC0200" & "</NTSID>")
+End If
+
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate] & "</DateCompleted>")
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+End Function
+Public Function NTrakUploadEvicRef()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox, vInitials
+VMsgBox = ""
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+
+If Not IsNull(rsE!DateMotionForPossessionRequested) Then
+VVar = rsE!DateMotionForPossessionRequested
+Else
+VVar = Null
+End If
+
+Else
+VVar = Null
+
+End If
+rsE.Close
+'End Eviction Code
+
+
+If IsNull(VVar) Then
+VMsgBox = ("No Referral Rec'd input (Save Record if it is input).")
+End If
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+vInitials = getEmployeeInitials(Environ("username"))
+
+strsql = "select * from NTRID where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials")
+Exit Function
+End If
+
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTEV0003" & "</NTSID>")
+A.WriteLine ("       <DateCompleted>" & VVar & "</DateCompleted>")
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+End Function
+
+Public Function NTrakUploadNTQ()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox, vInitials
+VMsgBox = ""
+
+
+If IsNull(Forms![foreclosure database screen]!evictionsubform.Form![DateNoticeToQuitSent_VA]) Then
+VMsgBox = ("No Notice to Quit input (Save Record if it is input).")
+End If
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+vInitials = getEmployeeInitials(Environ("username"))
+
+strsql = "select * from NTRID where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials")
+Exit Function
+End If
+
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTEV0350" & "</NTSID>")
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!EvictionSubFormVA.Form![DateNoticeToQuitSent_VA] & "</DateCompleted>")
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+End Function
+
+
+Public Function NTrakUploadUD()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox, vInitials
+VMsgBox = ""
+
+
+If IsNull(Forms![foreclosure database screen]!evictionsubform.Form![DateUnlawfulDetainerFiled_VA]) Then
+VMsgBox = ("No Unlawful Detainer input (Save Record if it is input).")
+End If
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+vInitials = getEmployeeInitials(Environ("username"))
+
+strsql = "select * from NTRID where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials")
+Exit Function
+End If
+
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTEV0390" & "</NTSID>")
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!EvictionSubFormVA.Form![DateUnlawfulDetainerFiled_VA] & "</DateCompleted>")
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+End Function
+
+
+Public Function NTrakUploadEVComp()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox, vInitials
+VMsgBox = ""
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+If IsNull(Forms![foreclosure database screen]!evictionsubform.Form![DateMotionForPossessionSentOrFiled]) Then
+VMsgBox = ("No MFP Sent to Court input (Save Record if it is input).")
+End If
+End If
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+vInitials = getEmployeeInitials(Environ("username"))
+
+strsql = "select * from NTRID where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials")
+Exit Function
+End If
+
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTEV0100" & "</NTSID>")
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!EvictionSubFormVA.Form![DateUnlawfulDetainerFiled_VA] & "</DateCompleted>")
+Else
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!EvictionSubFormMD.Form![DateMotionForPossessionSentOrFiled] & "</DateCompleted>")
+
+End If
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+End Function
+
+Public Function NTrakUploadWritReq()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox, vInitials
+VMsgBox = ""
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+If IsNull(Forms![foreclosure database screen]!evictionsubform.Form![DateWritSent_RESTOFMD]) Then
+VMsgBox = ("No Writ Filed Date input (Save Record if it is input).")
+End If
+Else
+If IsNull(Forms![foreclosure database screen]!evictionsubform.Form![WritToSheriffSent_VA]) Then
+VMsgBox = ("No Writ Filed Date input (Save Record if it is input).")
+End If
+
+End If
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+vInitials = getEmployeeInitials(Environ("username"))
+
+strsql = "select * from NTRID where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials")
+Exit Function
+End If
+
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTEV0490" & "</NTSID>")
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!EvictionSubFormVA.Form![WritToSheriffSent_VA] & "</DateCompleted>")
+Else
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!EvictionSubFormMD.Form![DateWritSent_RESTOFMD] & "</DateCompleted>")
+End If
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+End Function
+
+Public Function NTrakUploadPutOut()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox, vInitials
+VMsgBox = ""
+
+
+If IsNull(Forms![foreclosure database screen]!evictionsubform.Form![PutOutDate]) Then
+VMsgBox = ("No Put Out Date input (Save Record if it is input).")
+End If
+
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+vInitials = getEmployeeInitials(Environ("username"))
+
+strsql = "select * from NTRID where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials")
+Exit Function
+End If
+
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTEV0310" & "</NTSID>")
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!EvictionSubFormMD.Form![PutOutDate] & "</DateCompleted>")
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+End Function
+Public Function NTrakUploadEvicJud()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox, vInitials
+VMsgBox = ""
+
+
+If IsNull(Forms![foreclosure database screen]!EvictionSubFormMD.Form![DateMotionForPossessionSigned_RESTOFMD]) Then
+VMsgBox = ("No Order for Possesion Granted Date input (Save Record if it is input).")
+End If
+
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+vInitials = getEmployeeInitials(Environ("username"))
+
+strsql = "select * from NTRID where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials")
+Exit Function
+End If
+
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTEV0130" & "</NTSID>")
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!EvictionSubFormMD.Form![DateMotionForPossessionSigned_RESTOFMD] & "</DateCompleted>")
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+End Function
+
+
+Public Function NTrakUploadCrtVA()
+
+Dim rs, rsEmp As RecordSet
+Dim strsql, strsqlEmp, VNtrid, VUserName, VMsgBox, vInitials
+VMsgBox = ""
+
+
+If IsNull(Forms![foreclosure database screen]!EvictionSubFormVA.Form![ReturnDate_VA]) Then
+VMsgBox = ("No Hearing Date input (Save Record if it is input).")
+End If
+
+
+If VMsgBox <> "" Then
+MsgBox (VMsgBox)
+
+Exit Function
+
+Else
+
+vInitials = getEmployeeInitials(Environ("username"))
+
+strsql = "select * from NTRID where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials")
+Exit Function
+End If
+
+VUserName = rsEmp!NewTrak
+Dim Vemailadd
+Vemailadd = rsEmp!EmailName
+
+rsEmp.Close
+
+If rs.EOF Then
+strsql = "select * from ntrid_previous where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("NO New Trak (NTRID) Number in our system for this BWW# can not upload to New Trak must do manually")
+rs.Close
+Exit Function
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+Else
+VNtrid = rs!NTRID
+rs.Close
+
+End If
+
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set A = fs.CreateTextFile("\\FCTasks\DataTransfer\NewTrak\Upload\" & VNtrid & Format$(Date, "mmddyy") & "b.xml", True)
+
+A.WriteLine ("<?xml version=" & """" & "1.0" & """" & "?>")
+A.WriteLine ("<!DOCTYPE NTIEEUploadItem>")
+A.WriteLine ("<NTIEEUploadItem>")
+A.WriteLine ("     <uld_Step>")
+A.WriteLine ("       <VendorStepIdentifier>" & Forms![foreclosure database screen]!filenum & "</VendorStepIdentifier>")
+A.WriteLine ("       <NTRID>" & VNtrid & "</NTRID>")
+A.WriteLine ("       <NTSID>" & "NTEV0110" & "</NTSID>")
+A.WriteLine ("       <DateCompleted>" & Forms![foreclosure database screen]!EvictionSubFormVA.Form![ReturnDate_VA] & "</DateCompleted>")
+A.WriteLine ("       <UpdateComment>" & "" & "</UpdateComment>")
+A.WriteLine ("       <UserName>" & VUserName & "</UserName>")
+A.WriteLine ("       <Action>" & "Complete" & "</Action>")
+A.WriteLine ("       <Email>" & Vemailadd & "</Email>")
+A.WriteLine ("     </uld_Step>")
+A.WriteLine ("</NTIEEUploadItem>")
+
+'-------------------------------------
+
+MsgBox ("New Trak upload file in Queue")
+
+End If
+End Function
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

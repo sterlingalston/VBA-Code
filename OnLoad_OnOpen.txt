@@ -1,0 +1,13 @@
+Consider the order events falls in when opening/closing form:
+
+OnOpen -> OnLoad -> Activate (I think) -> OnCurrent -> DeActivate -> OnUnLoad -> OnClose
+
+Now, because of the ordering, you can cancel a OnOpen load, but not Load (as it's already open), and you can cancel a UnLoad (because it's not removed from screen just yet) but not the OnClose.
+
+Open and Close events has to do with "loading" the forms into the memory but they are not quite on the screen.
+
+Load/Unload event is when forms actually shows on the screen.
+
+Activate/Deactive is when forms has focus or lost focus.
+
+I hope that helps.

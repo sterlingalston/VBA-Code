@@ -1,0 +1,421 @@
+Attribute VB_Name = "ClientModule"
+Option Compare Database
+
+
+Public Function SCRASearchCHK()
+
+Dim rs As RecordSet
+Dim VYesNo As Integer
+
+Set rs = CurrentDb.OpenRecordset("SCRASearchQRY", dbOpenSnapshot)
+rs.MoveFirst
+
+Do While Not rs.EOF
+If username = rs!Login Then
+VYesNo = 1
+End If
+rs.MoveNext
+Loop
+
+rs.Close
+
+If VYesNo = 0 Then
+MsgBox ("Can not Access SCRA Search Menu.")
+Exit Function
+Else
+DoCmd.OpenForm ("Scrasearches")
+
+End If
+
+
+End Function
+
+Public Function ClientLM()
+Dim strsqlClient As String
+Dim rsClient As RecordSet
+Dim PExt
+Dim NOIPhone
+
+strsqlClient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+
+If Forms![foreclosure database screen]!Client Like "Suntrust*" And _
+Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+ClientLM = "(877) 657-8433"
+ElseIf Forms![foreclosure database screen]!Client Like "Citi*" Then
+ClientLM = "(866) 272-4749"
+ElseIf Forms![foreclosure database screen]!Client Like "Penny*" Then
+ClientLM = "(866) 945-9070"
+ElseIf Forms![foreclosure database screen]!Client Like "Auro*" Then
+ClientLM = "(866) 519-9242"
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+ClientLM = "(877) 596-8580"
+ElseIf Forms![foreclosure database screen]!Client Like "Acq*" Then
+ClientLM = "(469) 941-5319"
+
+
+Else
+ClientLM = rsClient!loss_mit_no
+If IsNull(rsClient!Loss_mit_no_ext) Then
+Else
+ClientLM = LMN & ", " & rsClient!Loss_mit_no_ext
+End If
+End If
+
+End Function
+Public Function servicerVA()
+
+If (Not IsNull(Forms![foreclosure database screen]!servicer) Or _
+Forms![foreclosure database screen]!servicer <> "") And _
+Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+servicerVA = Forms![foreclosure database screen]!servicer
+
+Else
+
+servicerVA = Client()
+End If
+
+
+End Function
+
+Public Function servicer()
+
+If Not IsNull(Forms![foreclosure database screen]!servicer) Or _
+Forms![foreclosure database screen]!servicer <> "" Then
+
+servicer = Forms![foreclosure database screen]!servicer
+
+Else
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+servicer = Forms![foreclosure database screen]!Client
+Else
+servicer = Client()
+End If
+
+End If
+
+
+End Function
+
+Public Function ClientSaleRatAdd() As String
+
+Dim formname As String
+Dim clientname, VarSP As String
+
+strsql = "SELECT Clients.Address, Clients.claddress2, clients.cl_state, Clients.City, Clients.State, " _
+& " Clients.PostalCode, Clients.OrganizationName from Clients where Clients.OrganizationName = " & """" & [Forms]![Sale Ratified Taxes Water to be Billed]![Client] & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If IsNull(rs!claddress2) Then
+ADD = rs!Address
+Else
+ADD = rs!Address & ", " & rs!claddress2
+End If
+
+ClientSaleRatAdd = ADD
+
+End Function
+
+
+Public Function Client() As String
+
+Dim formname As String
+Dim clientname, VarSP As String
+
+formname = Application.CurrentObjectName
+
+If formname Like "dem*" Or formname = "Breech Bill" Then
+clientname = Forms![demand letter screen]![Client]
+
+If IsNull(Forms![demand letter screen]![abbrsec]) Then
+VarSP = ""
+Else
+VarSP = Forms![demand letter screen]![SecuredParty]
+End If
+
+Else
+
+clientname = Forms![foreclosure database screen]![Client]
+
+If IsNull(Forms![foreclosure database screen]![abbrsec]) And _
+IsNull(Forms![foreclosure database screen]!longsecured) Then
+VarSP = ""
+ElseIf IsNull(Forms![foreclosure database screen]![abbrsec]) Then
+VarSP = Forms![foreclosure database screen]!longsecured
+Else
+VarSP = Forms![foreclosure database screen]![abbrsec]
+End If
+
+End If
+
+If clientname Like "JPMorgan*" Or clientname Like "CHASE" Then
+Client = "JPMorgan Chase Bank, National Association"
+ElseIf clientname Like "washington*" Or clientname Like "WAMU" Then
+Client = "Washington Mutual Bank"
+ElseIf clientname = "Suntrust Mortgage, Inc. (CONSTRUCTION)" Then
+Client = "Suntrust Mortgage, Inc."
+ElseIf clientname Like "Well*" And Forms![foreclosure database screen]!Asc_wff = 2 Then
+Client = "Wells Fargo Financial Maryland, Inc."
+ElseIf clientname Like "Foreclosur*" Then
+Client = VarSP
+'ElseIf ClientName Like "OneW*" And _
+'(Forms![foreclosure database screen]!FF = -1 Or Forms![foreclosure database screen]!FF = 1) Or _
+'ClientName Like "OneWest Bank, FSB (d/b/a*" Then
+'Client = "OneWest Bank, FSB"
+Else
+Client = clientname
+End If
+
+'MsgBox (Client)
+
+
+End Function
+Public Function servicersig() As String
+
+If Not IsNull(Forms![foreclosure database screen]!servicer) Or _
+Forms![foreclosure database screen]!servicer <> "" Then
+servicersig = Forms![foreclosure database screen]!servicer & Forms![foreclosure database screen]![signature block]
+
+Else
+
+servicersig = Client()
+End If
+
+
+
+End Function
+Public Function ClientAbbr() As String
+
+Dim strsql As String
+Dim rs As RecordSet
+
+clientname = Forms![foreclosure database screen]![Client]
+strsql = "select * from clients where organizationname = " & """" & clientname & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+ClientAbbr = rs!CustomerID
+rs.Close
+
+End Function
+Public Function ClientPart1()
+Dim formname As String
+Dim clientname, VarSP As String
+
+clientname = Forms![foreclosure database screen]![Client]
+
+If IsNull(Forms![foreclosure database screen]![abbrsec]) And IsNull(Forms![foreclosure database screen]!longsecured) Then
+VarSP = ""
+ElseIf IsNull(Forms![foreclosure database screen]![abbrsec]) Then
+VarSP = Forms![foreclosure database screen]!longsecured
+Else
+VarSP = Forms![foreclosure database screen]![abbrsec]
+End If
+
+If Forms![foreclosure database screen]!SPsigns = -1 Then
+ClientPart1 = LSecured()
+ElseIf clientname Like "JPMorgan*" Or clientname Like "CHASE" Then
+ClientPart1 = "JPMorgan Chase Bank, National Association"
+ElseIf clientname Like "washington*" Or clientname Like "WAMU" Then
+ClientPart1 = "Washington Mutual Bank"
+ElseIf clientname Like "Foreclosur*" Then
+ClientPart1 = VarSP
+ElseIf Forms![foreclosure database screen]!SPsigns = -1 Then
+ClientPart1 = LSecured()
+Else
+ClientPart1 = clientname
+End If
+
+
+End Function
+
+Public Function LoanInvestor()
+Dim VFHA
+
+If ((Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+
+'VFha = MsgBox("Loan Type is FHA. Is Government National Mortgage Association the loan investory?", vbYesNo)
+'If VFha = vbYes Then
+'LoanInvestor = "Government National Mortgage Association"
+'Else
+LoanInvestor = LSecured()
+'End If
+ElseIf Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+LoanInvestor = "Federal Home Loan Mortgage Corporation"
+ElseIf Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+If Client() Like "Seter*" Then
+LoanInvestor = "Federal National Mortgage Association (" & """" & "FNMA" & """" & ")"
+Else
+LoanInvestor = "Federal National Mortgage Association"
+End If
+
+ElseIf Forms![foreclosure database screen]!TypeOfLoan = "GNMA" Then
+LoanInvestor = "Government National Mortgage Association"
+End If
+
+End Function
+Public Function checkClient()
+
+'If Forms![Foreclosure Database Screen]!PropertyState = "DC" And _
+(Forms![Foreclosure Database Screen]!PostsaleSubForm.Form!tenant_occupied = -1 Or _
+Forms![Foreclosure Database Screen]!PostsaleSubForm.Form!tenant_occupied = 1) Then
+
+'VPsswd = InputBox("This is a DC property and it is Tenant Occupied.  Password needed to proceed.")
+'If VPsswd = "tenant" Then
+'Else
+'MsgBox ("Incorrect password")
+'Exit Function
+'End If
+
+'End If
+
+If IsNull(Forms![foreclosure database screen]!Client) Or _
+IsNull(Forms![foreclosure database screen]!SecuredParty) Then
+If IsNull(Forms![foreclosure database screen]!Client) Then
+MsgBox ("!!! NO CLIENT INPUT!!! Do not continue until Client is INPUT!!!")
+End If
+If IsNull(Forms![foreclosure database screen]!SecuredParty) Then
+MsgBox ("!!! NO SECURED PARTY INPUT!!! Do not continue until Secured Party is INPUT!!!")
+End If
+End If
+
+
+End Function
+Public Function CheckTitleFidelity()
+    
+    Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from tblfidelity where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+Dim rsTE As RecordSet
+Set rsTE = CurrentDb.OpenRecordset("Tblfidelity", dbOpenDynaset, dbSeeChanges)
+
+With rsTE
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+End If
+
+End Function
+
+Public Function CheckTITLEReview()
+
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from titlereview where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+If rs.EOF Then
+rs.Close
+Set rs = CurrentDb.OpenRecordset("titlereview", dbOpenDynaset, dbseecharge)
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+End If
+
+End Function
+Public Function ClientKillBill()
+Dim ADD As String, strsql As String
+
+Dim rs As RecordSet
+
+strsql = "SELECT Clients.Address, Clients.claddress2, clients.cl_state, Clients.City, Clients.State, " _
+& " Clients.PostalCode, Clients.OrganizationName from Clients where Clients.OrganizationName = " & """" & [Forms]![foreclosure database screen]![Client] & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!assigned) Then
+ClientKillBill = ""
+Else
+ClientKillBill = rs!assigned
+End If
+
+End Function
+Public Function ClientAdd()
+Dim ADD As String, strsql As String
+
+Dim rs As RecordSet
+
+strsql = "SELECT Clients.Address, Clients.claddress2, clients.cl_state, Clients.City, Clients.State, " _
+& " Clients.PostalCode, Clients.OrganizationName from Clients where Clients.OrganizationName = " & """" & [Forms]![foreclosure database screen]![Client] & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If IsNull(rs!claddress2) Then
+ADD = rs!Address
+Else
+ADD = rs!Address & ", " & rs!claddress2
+End If
+
+ClientAdd = ADD & ", " & rs!City & "  " & rs!cl_state & "  " & rs!PostalCode
+
+End Function
+Public Function ClientAddONLY()
+Dim ADD As String, strsql As String
+
+Dim rs As RecordSet
+
+strsql = "SELECT Clients.Address, Clients.claddress2, clients.cl_state, Clients.City, Clients.State, " _
+& " Clients.PostalCode, Clients.OrganizationName from Clients where Clients.OrganizationName = " & """" & [Forms]![foreclosure database screen]![Client] & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If IsNull(rs!claddress2) Then
+ADD = rs!Address
+Else
+ADD = rs!Address & ", " & rs!claddress2
+End If
+
+ClientAddONLY = ADD
+
+End Function
+Public Function ClientCity()
+Dim ADD As String, strsql As String
+
+Dim rs As RecordSet
+
+strsql = "SELECT Clients.Address, Clients.claddress2, clients.cl_state, Clients.City, Clients.State, " _
+& " Clients.PostalCode, Clients.OrganizationName from Clients where Clients.OrganizationName = " & """" & [Forms]![foreclosure database screen]![Client] & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+ClientCity = rs!City
+rs.Close
+
+End Function
+Public Function ClientState()
+Dim ADD As String, strsql As String
+
+Dim rs As RecordSet
+
+strsql = "SELECT Clients.Address, Clients.claddress2, clients.cl_state, Clients.City, Clients.State, " _
+& " Clients.PostalCode, Clients.OrganizationName from Clients where Clients.OrganizationName = " & """" & [Forms]![foreclosure database screen]![Client] & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+ClientState = rs!cl_state
+rs.Close
+
+End Function
+Public Function Clientzip()
+Dim ADD As String, strsql As String
+
+Dim rs As RecordSet
+
+strsql = "SELECT Clients.Address, Clients.claddress2, clients.cl_state, Clients.City, Clients.State, " _
+& " Clients.PostalCode, Clients.OrganizationName from Clients where Clients.OrganizationName = " & """" & [Forms]![foreclosure database screen]![Client] & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Clientzip = rs!PostalCode
+rs.Close
+
+End Function
+

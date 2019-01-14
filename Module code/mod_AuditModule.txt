@@ -1,0 +1,16 @@
+Attribute VB_Name = "AuditModule"
+Option Compare Database
+
+Public Function MovementRpt()
+ 
+
+CurrentDb.Execute "Delete * from ProductivityTemp;", dbFailOnError
+
+DoCmd.OpenQuery "AuditLogQuery"
+
+ExcelSaveAsQRY ("MovementRpt")
+
+
+ 
+
+End Function

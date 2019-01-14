@@ -1,0 +1,2839 @@
+Attribute VB_Name = "TitleModule"
+Option Compare Database
+Public Function Emailtitleform()
+
+Dim emailsubject As String
+Dim emailmessage As String, Purchaser As String
+Dim superiorliens, Property, position, OrgAmount As String
+Dim parcel2 As String
+Dim TaxYears As String
+Dim TaxAmts, juniorliens, Other, resolution, Assignments As String
+Dim strsql, VLiens As String
+Dim VJliens, CountyAtt, countyadd1, countyadd2, countyadd3, countyadd4
+Dim rs As RecordSet
+Dim Vst
+Dim DelTaxes
+Dim rst
+Dim StrsqlT
+Dim VAss
+Dim VAssDOT
+Dim VTclaims
+Dim VTn
+Dim VMers
+Dim titleclaimliens As String
+
+
+'IRS LIENS
+
+If IsNull([Forms]![titleform]![county att]) Then
+CountyAtt = ""
+Else
+CountyAtt = [Forms]![titleform]![county att]
+End If
+If IsNull([Forms]![titleform]![countyadd1]) Then
+countyadd1 = ""
+Else
+countyadd1 = [Forms]![titleform]!countyadd1
+End If
+If IsNull([Forms]![titleform]![countyadd2]) Then
+countyadd2 = ""
+Else
+countyadd2 = [Forms]![titleform]!countyadd2
+End If
+If IsNull([Forms]![titleform]![countyadd3]) Then
+countyadd3 = ""
+Else
+countyadd3 = vbCr & [Forms]![titleform]!countyadd3
+End If
+If IsNull([Forms]![titleform]![countyadd4]) Then
+countyadd4 = ""
+Else
+countyadd4 = vbCr & [Forms]![titleform]!countyadd4
+End If
+
+If IsNull([Forms]![titleform]!TaxYears) Then
+TaxYears = ""
+Else
+TaxYears = "Tax Years Due: " & [Forms]![titleform]!TaxYears
+End If
+If IsNull([Forms]![titleform]!TaxAmts) Then
+TaxAmts = ""
+Else
+TaxAmts = "Tax Amts: " & [Forms]![titleform]!TaxAmts
+End If
+
+Dim vwater
+If IsNull([Forms]![titleform]!waterdue) Or Forms!titleform!waterdue = 0 Then
+vwater = ""
+Else
+vwater = "Water Due: " & Format([Forms]![titleform]!waterdue, "$###,##0.00")
+End If
+
+If IsNull([Forms]![titleform]!Other) Then
+Other = ""
+Else
+Other = "Other Issues: " & [Forms]![titleform]!Other & vbCr
+End If
+
+If IsNull([Forms]![titleform]!mers) Or [Forms]![titleform]!mers = 0 Then
+VMers = Forms!titleform!OrgLender & " shows as beneficiary of record" & vbCr & vbCr
+Else
+VMers = "MERS as nominee for " & Forms!titleform!OrgLender & " shows as beneficiary of record" & vbCr & vbCr
+End If
+
+'BENEFICIARIES__________________________________________________________________________
+strsql = "select * from tblbeneficiary where filenum = " & Forms!titleform!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Dim VLnCnt
+VLnCnt = 0
+Dim VLnJrCnt
+VLnJrCnt = 0
+Dim VLf
+
+
+If Not rs.EOF Then
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+If Forms!titleform!PropertyState = "MD" Then
+VLf = " Liber " & rs!ta_book & " Folio " & rs!ta_page
+ElseIf Forms!titleform!PropertyState = "VA" Then
+If Not IsNull(rs!ta_ini) Then
+VLf = " Instrument #: " & rs!ta_ini
+Else
+VLf = " Deed Book " & rs!ta_book & " Page " & rs!ta_page
+End If
+ElseIf Forms!titleform!PropertyState = "DC" Then
+VLf = " Instrument #: " & rs!ta_ini
+End If
+
+
+If rs!ta_selection Like "Sen*" Or rs!ta_selection Like "Titl*" Then
+VLnCnt = VLnCnt + 1
+
+If IsNull(rs!ta_ass) Then
+'assignments = "DOT granted by " & rs!ta_grantor & " in favor of " & rs!ta_lender & vbCr
+'& " shows as beneficiary of record."
+Else
+Assignments = " Assigned to: " & rs!ta_ass
+End If
+
+VLiens = VLiens & "(" & VLnCnt & ") DOT granted by " & rs!ta_grantor & " in favor of " & rs!ta_lender & " dated " & rs!ta_dotdate & " and recorded on " & rs!ta_recorded & " at" & VLf & " in the amount of " & Format(rs!ta_orgloan, "$###,##0.00") & ". " & Assignments & vbCr
+
+If rs!ta_selection Like "title*" Then
+VTclaims = VTclaims & VLiens
+End If
+
+End If
+
+If rs!ta_selection Like "Juni*" Then
+VLnJrCnt = VLnJrCnt + 1
+
+If IsNull(rs!ta_ass) Then
+'assignments = rs!ta_lender & " shows as beneficiary of record."
+Else
+Assignments = "Assigned to: " & rs!ta_ass & vbCr
+End If
+
+VJliens = VJliens & "(" & VLnJrCnt & ") DOT granted by " & rs!ta_grantor & " in favor of " & rs!ta_lender & " dated " & rs!ta_dotdate & " and recorded on " & rs!ta_recorded & " at " & VLf & " in the amount of " & Format(rs!ta_orgloan, "$###,##0.00") & ". " & Assignments & vbCr
+End If
+
+If rs!ta_ass <> "" Then
+VAss = VAss & rs!ta_ass & " : "
+End If
+
+'Our DOT---------------------------------------------------------
+Dim VLfDot
+Dim DOTDate
+
+
+If rs!ta_dot = 1 Or rs!ta_dot = -1 Then
+DOTDate = rs!ta_dotdate
+
+If Forms!titleform!PropertyState = "MD" Then
+VLfDot = " Liber " & rs!ta_book & " Folio " & rs!ta_page
+ElseIf Forms!titleform!PropertyState = "VA" Then
+If Not IsNull(rs!ta_ini) Then
+VLfDot = " Instrument #: " & rs!ta_ini
+Else
+VLfDot = " Deed Book " & rs!ta_book & " Page " & rs!ta_page
+End If
+ElseIf Forms!titleform!PropertyState = "DC" Then
+VLfDot = " Instrument #: " & rs!ta_ini
+End If
+
+
+If IsNull(rs!ta_ass) Then
+'VAssDOT = rs!ta_lender
+Else
+VAssDOT = " Assigned to: " & rs!ta_ass
+End If
+
+If rs!ta_mortgage = 1 Then
+Vst = "st"
+ElseIf rs!ta_mortgage = 2 Then
+Vst = "nd"
+ElseIf rs!ta_mortgage = 3 Then
+Vst = "rd"
+ElseIf rs!ta_mortgage >= 4 Then
+Vst = "th"
+End If
+position = rs!ta_mortgage & Vst
+End If
+'msgbox (rs!ta_selection & "/SUP: " & VLiens & ": JUN:" & juniorliens & ": Ass:" & VAss)
+rs.MoveNext
+Loop
+rs.Close
+End If
+'End of DOT------------------------------------------------------------------
+
+If VLiens <> "" Then
+superiorliens = "Superior Liens: " & VLiens & vbCr
+End If
+
+'MsgBox (superiorliens)
+
+If VJliens <> "" Then
+juniorliens = "Junior Liens: " & vbCr & VJliens & vbCr
+End If
+
+'JUDGMENTS___________________________________________________________________
+Dim VJud
+Dim VJudJr
+Dim VJudJrCnt
+
+VJudJr = ""
+VJudJrCnt = VLnJrCnt
+
+strsql = "select * from titlejudgments where filenum = " & Forms!titleform!filenum & " order by ta_order;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Dim VJudCnt
+'VJudJrCnt = 0
+VJudCnt = 0
+
+If Not rs.EOF Then
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+
+If rs!ta_selection Like "Sen*" Or rs!ta_selection Like "Titl*" Then
+VJudCnt = VJudCnt + 1
+
+VJud = VJud & "(" & VJudCnt & ") Judgment against " & rs!Defendant & " in favor of " & rs!plaintiff & " in the amount of " & Format(rs!Amt, "$###,##0.00") & " and recorded on " & rs!recdate & " as case number " & rs!CaseNo & vbCr
+
+If rs!ta_selection = "title claim" Then
+'VTclaims = VTclaims & VJud
+VTclaims = "junior judgment"
+End If
+End If
+
+If rs!ta_selection Like "Junio*" Then
+
+VJudJrCnt = VJudJrCnt + 1
+
+VJudJr = VJudJr & "(" & VJudJrCnt & ") Judgment against " & rs!Defendant & " in favor of " & rs!plaintiff & " in the amount of " & Format(rs!Amt, "$###,##0.00") & " and recorded on " & rs!recdate & " as case number " & rs!CaseNo & vbCr
+End If
+
+rs.MoveNext
+Loop
+rs.Close
+End If
+
+'Taxes........................
+Dim VTxJrCnt
+
+
+If VJudJrCnt > 0 Then
+VTxJrCnt = VJudJrCnt
+ElseIf VLnJrCnt > 0 Then
+VTxJrCnt = VLnJrCnt
+Else
+VTxJrCnt = 0
+End If
+
+
+StrsqlT = "select * from titleliens where filenum = " & Forms!titleform!filenum & ";"
+Set rst = CurrentDb.OpenRecordset(StrsqlT, dbOpenSnapshot)
+Dim JDelTaxes As String
+JDelTaxes = ""
+DelTaxes = ""
+
+If Not rst.EOF Then
+rst.MoveFirst
+Do While Not rst.EOF
+If Not IsNull(rst!Defendant) Then
+If rst!ta_selection = "Junior" Then
+VTxJrCnt = VTxJrCnt + 1
+JDelTaxes = JDelTaxes & "(" & VTxJrCnt & ") IRS Lien against " & rst!Defendant & " in the amount of " & Format(rst!Amt, "$###,##0.00") & " recorded on " & rst!recdate & vbCr & vbCr
+Else
+DelTaxes = DelTaxes & "IRS Lien against " & rst!Defendant & " in the amount of " & Format(rst!Amt, "$###,##0.00") & " recorded on " & rst!recdate & vbCr & vbCr
+End If
+
+If rst!ta_selection = "title claim" Then
+VTclaims = VTclaims & DelTaxes
+End If
+End If
+rst.MoveNext
+Loop
+
+rst.Close
+End If
+
+If VJud <> "" Then
+VJud = "Superior Judgments: " & vbCr & VJud & vbCr
+'Else
+'VJud = "No Superior Judgments." & vbCr & vbCr
+End If
+
+If VJudJr <> "" Then
+VJudJr = VJudJr
+'ElseIf VJudJr = "" And VJud = "" Then
+'VJudJr = "No Junior Judgments" & vbCr & vbCr
+End If
+
+
+If VLiens = "" And VJud = "" Then
+superiorliens = "The Title Search does not reveal any superior interests." & vbCr & vbCr
+End If
+
+If VJliens = "" And VJudJr = "" And JDelTaxes = "" Then
+juniorliens = "The Title Search does not reveal any junior interests." & vbCr & vbCr
+
+ElseIf JDelTaxes <> "" Then
+
+If VJudJr = "" And VJliens = "" Then
+juniorliens = "Junior Liens: " & vbCr & JDelTaxes
+ElseIf VJudJr = "" And VJliens <> "" Then
+juniorliens = "Junior Liens: " & vbCr & VJliens & vbCr & JDelTaxes
+ElseIf VJudJr <> "" And VJliens = "" Then
+juniorliens = "Junior Liens: " & vbCr & VJudJr & vbCr & JDelTaxes
+Else
+juniorliens = "Junior Liens: " & vbCr & VJliens & vbCr & VJudJr & vbCr & JDelTaxes
+
+End If
+
+Else
+
+juniorliens = "Junior Liens: " & vbCr & VJliens & vbCr & VJudJr
+End If
+
+'____________________________________________________________________________
+Property = propTE()
+
+If IsNull([Forms]!titleform![OrgAmount]) Then
+OrgAmount = 0
+Else
+OrgAmount = Format([Forms]!titleform![OrgAmount], "$###,##0.00")
+End If
+
+If IsNull(Forms!titleform![taxidfield]) Then
+parcel2 = ""
+Else
+parcel2 = Forms!titleform!taxidfield
+End If
+
+If Forms!titleform![Title needed] = 1 Or Forms!titleform![Title needed] = -1 Then
+VTn = "Title Curative Needed: T/C needed due to " & Forms!titleform!title_issue & vbCr & vbCr
+ElseIf Forms!titleform![fa_under] = 1 Or Forms!titleform![fa_under] = -1 Then
+VTn = "Title Curative Needed: U/R needed due to " & Forms!titleform!title_issue & vbCr & vbCr
+Else
+VTn = "No Title Resolution Work Needed" & vbCr & vbCr
+End If
+
+emailsubject = debtorsFORETExam() & " - **TITLE INFORMATION**"
+emailmessage = "FORECLOSURE TITLE WORKSHEET: " & vbCr & vbCr & _
+"Loan No.: " & Forms![titleform]!ClientRefNumber & vbCr & _
+"Borrower(s): " & debtorsFORETExam() & vbCr & _
+"Property Address: " & Property & vbCr & _
+"County: " & Forms!titleform!Propertycounty & vbCr & vbCr & _
+"Delinquent Taxes: " & (Chr(13)) & CountyAtt & (Chr(13)) & countyadd1 & (Chr(13)) & countyadd2 & (Chr(13)) & countyadd3 & (Chr(13)) & countyadd4 & vbCr & vbCr & _
+"Tax ID#: " & parcel2 & vbCr & vbCr & _
+TaxAmts & vbCr & vbCr & _
+TaxYears & vbCr & vbCr & _
+vwater & vbCr & vbCr & _
+superiorliens & _
+DelTaxes & _
+VJud & _
+VMers & _
+"The Deed of Trust which is the subject of the foreclosure action is in " & _
+position & " position.  The DOT is dated " & DOTDate & " and recorded at" & VLfDot & _
+" in the amount of " & OrgAmount & VAssDOT & vbCr & vbCr & _
+juniorliens & _
+Other & _
+VTn
+
+Dim varsendemail, varappend As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage + vbCr & "BWW Law Group, LLC" + vbCr + "Phone: 301-961-6555" & vbCr + "Main Fax: 301-961-6545" + vbCr
+
+MyMail.Display
+
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+varappend = MsgBox("Appending Memo Section, proceed?", vbYesNo)
+If varappend = vbYes Then
+
+Dim rsapp As RecordSet
+Dim strsqlapp, VMemo As String
+
+Call AddJournalEntry(Forms![titleform]!filenum, emailmessage)
+
+End If
+
+End Function
+
+Public Function HOAAddressSub()
+strsql = "select * from tblFidelity where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+
+HOAAddressSub = ""
+Else
+HOAAddressSub = rs!HOA
+End If
+
+rs.Close
+
+End Function
+Public Function OpenTitleIssue()
+Dim rs As RecordSet
+Dim strsql As String
+
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+strsql = "select * from titleissue where subfilenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("titleissue", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!SubFileNum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+Set rs = Nothing
+
+
+strsql = "select * from title where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("title", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+Set rs = Nothing
+
+
+
+    Dim stDocName As String
+    Dim stLinkCriteria As String
+
+stDocName = "TitleIssueFrm"
+
+
+    stLinkCriteria = "[subFileNum]=" & GblFilenum
+    DoCmd.OpenForm stDocName, , , stLinkCriteria
+    
+'
+End Function
+Public Function WF()
+
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from titlereview where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+WF = 0
+
+If Not rs.EOF Then
+If rs!wf12 = -1 Or rs!wf12 = 1 Then
+WF = 1
+ElseIf rs!wf2 = -1 Or rs!wf2 = 1 Then
+WF = 2
+End If
+End If
+
+rs.Close
+
+'MsgBox (WF)
+
+End Function
+Public Function BillTitleCo()
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 1 Then
+BillTitleCo = "Compass"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 2 Then
+BillTitleCo = "Landsafe"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 3 Then
+BillTitleCo = "LPS"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 4 Then
+BillTitleCo = "Powerlink"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 5 Then
+BillTitleCo = "Ocwen"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 6 Then
+BillTitleCo = "Linear"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 7 Then
+BillTitleCo = "SkyCreek"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 8 Then
+BillTitleCo = "SolStar"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 9 Then
+BillTitleCo = "National"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 10 Then
+BillTitleCo = "FirstAm"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 11 Then
+BillTitleCo = "ServLink"
+
+Else
+BillTitleCo = ""
+End If
+End Function
+Public Function TitlesJUR()
+Dim VPsd
+VPsd = InputBox("Enter Password for Listing")
+If VPsd = "michael" Then
+DoCmd.OpenQuery "jurisdictionlisting"
+End If
+
+
+End Function
+Public Function Emailtitleexamination()
+
+Dim emailsubject As String
+Dim emailmessage As String, Purchaser As String
+Dim superiorliens, Property, position, OrgAmount As String
+Dim parcel2 As String
+Dim TaxYears As String
+Dim TaxAmts, juniorliens, Other, resolution, Assignments As String
+Dim strsql, VLiens As String
+Dim VJliens, CountyAtt, countyadd1, countyadd2, countyadd3, countyadd4
+Dim rs As RecordSet
+Dim Vst
+Dim DelTaxes
+Dim rst
+Dim StrsqlT
+Dim VAss
+Dim VAssDOT
+Dim VTclaims
+Dim VTn
+Dim VMers
+Dim titleclaimliens As String
+
+
+'IRS LIENS
+
+If IsNull([Forms]![titleform]![county att]) Then
+CountyAtt = ""
+Else
+CountyAtt = [Forms]![titleform]![county att]
+End If
+If IsNull([Forms]![titleform]![countyadd1]) Then
+countyadd1 = ""
+Else
+countyadd1 = [Forms]![titleform]!countyadd1
+End If
+If IsNull([Forms]![titleform]![countyadd2]) Then
+countyadd2 = ""
+Else
+countyadd2 = [Forms]![titleform]!countyadd2
+End If
+If IsNull([Forms]![titleform]![countyadd3]) Then
+countyadd3 = ""
+Else
+countyadd3 = vbCr & [Forms]![titleform]!countyadd3
+End If
+If IsNull([Forms]![titleform]![countyadd4]) Then
+countyadd4 = ""
+Else
+countyadd4 = vbCr & [Forms]![titleform]!countyadd4
+End If
+
+If IsNull([Forms]![titleform]!TaxYears) Then
+TaxYears = ""
+Else
+TaxYears = "Tax Years Due: " & [Forms]![titleform]!TaxYears
+End If
+If IsNull([Forms]![titleform]!TaxAmts) Then
+TaxAmts = ""
+Else
+TaxAmts = "Tax Amts: " & [Forms]![titleform]!TaxAmts
+End If
+
+Dim vwater
+If IsNull([Forms]![titleform]!waterdue) Or Forms!titleform!waterdue = 0 Then
+vwater = ""
+Else
+vwater = "Water Due: " & Format([Forms]![titleform]!waterdue, "$###,##0.00")
+End If
+
+If IsNull([Forms]![titleform]!Other) Then
+Other = ""
+Else
+Other = "Other Issues: " & [Forms]![titleform]!Other & vbCr
+End If
+
+If IsNull([Forms]![titleform]!mers) Or [Forms]![titleform]!mers = 0 Then
+VMers = Forms!titleform!OrgLender & " shows as beneficiary of record" & vbCr & vbCr
+Else
+VMers = "MERS as nominee for " & Forms!titleform!OrgLender & " shows as beneficiary of record" & vbCr & vbCr
+End If
+
+'BENEFICIARIES__________________________________________________________________________
+strsql = "select * from tblbeneficiary where filenum = " & Forms!titleform!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Dim VLnCnt
+VLnCnt = 0
+Dim VLnJrCnt
+VLnJrCnt = 0
+Dim VLf
+
+
+If Not rs.EOF Then
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+If Forms!titleform!PropertyState = "MD" Then
+VLf = " Liber " & rs!ta_book & " Folio " & rs!ta_page
+ElseIf Forms!titleform!PropertyState = "VA" Then
+If Not IsNull(rs!ta_ini) Then
+VLf = " Instrument #: " & rs!ta_ini
+Else
+VLf = " Deed Book " & rs!ta_book & " Page " & rs!ta_page
+End If
+ElseIf Forms!titleform!PropertyState = "DC" Then
+VLf = " Instrument #: " & rs!ta_ini
+End If
+
+
+If rs!ta_selection Like "Sen*" Or rs!ta_selection Like "Titl*" Then
+VLnCnt = VLnCnt + 1
+
+If IsNull(rs!ta_ass) Then
+'assignments = "DOT granted by " & rs!ta_grantor & " in favor of " & rs!ta_lender & vbCr
+'& " shows as beneficiary of record."
+Else
+Assignments = " Assigned to: " & rs!ta_ass
+End If
+
+VLiens = VLiens & "(" & VLnCnt & ") DOT granted by " & rs!ta_grantor & " in favor of " & rs!ta_lender & " dated " & rs!ta_dotdate & " and recorded on " & rs!ta_recorded & " at" & VLf & " in the amount of " & Format(rs!ta_orgloan, "$###,##0.00") & ". " & Assignments & vbCr
+
+If rs!ta_selection Like "title*" Then
+VTclaims = VTclaims & VLiens
+End If
+
+End If
+
+If rs!ta_selection Like "Juni*" Then
+VLnJrCnt = VLnJrCnt + 1
+
+If IsNull(rs!ta_ass) Then
+'assignments = rs!ta_lender & " shows as beneficiary of record."
+Else
+Assignments = "Assigned to: " & rs!ta_ass & vbCr
+End If
+
+VJliens = VJliens & "(" & VLnJrCnt & ") DOT granted by " & rs!ta_grantor & " in favor of " & rs!ta_lender & " dated " & rs!ta_dotdate & " and recorded on " & rs!ta_recorded & " at " & VLf & " in the amount of " & Format(rs!ta_orgloan, "$###,##0.00") & ". " & Assignments & vbCr
+End If
+
+If rs!ta_ass <> "" Then
+VAss = VAss & rs!ta_ass & " : "
+End If
+
+'Our DOT---------------------------------------------------------
+Dim VLfDot
+Dim DOTDate
+
+
+If rs!ta_dot = 1 Or rs!ta_dot = -1 Then
+DOTDate = rs!ta_dotdate
+
+If Forms!titleform!PropertyState = "MD" Then
+VLfDot = " Liber " & rs!ta_book & " Folio " & rs!ta_page
+ElseIf Forms!titleform!PropertyState = "VA" Then
+If Not IsNull(rs!ta_ini) Then
+VLfDot = " Instrument #: " & rs!ta_ini
+Else
+VLfDot = " Deed Book " & rs!ta_book & " Page " & rs!ta_page
+End If
+ElseIf Forms!titleform!PropertyState = "DC" Then
+VLfDot = " Instrument #: " & rs!ta_ini
+End If
+
+
+If IsNull(rs!ta_ass) Then
+'VAssDOT = rs!ta_lender
+Else
+VAssDOT = " Assigned to: " & rs!ta_ass
+End If
+
+If rs!ta_mortgage = 1 Then
+Vst = "st"
+ElseIf rs!ta_mortgage = 2 Then
+Vst = "nd"
+ElseIf rs!ta_mortgage = 3 Then
+Vst = "rd"
+ElseIf rs!ta_mortgage >= 4 Then
+Vst = "th"
+End If
+position = rs!ta_mortgage & Vst
+End If
+'msgbox (rs!ta_selection & "/SUP: " & VLiens & ": JUN:" & juniorliens & ": Ass:" & VAss)
+rs.MoveNext
+Loop
+rs.Close
+End If
+'End of DOT------------------------------------------------------------------
+
+If VLiens <> "" Then
+superiorliens = "Superior Liens: " & VLiens & vbCr
+End If
+
+'MsgBox (superiorliens)
+
+If VJliens <> "" Then
+juniorliens = "Junior Liens: " & vbCr & VJliens & vbCr
+End If
+
+'JUDGMENTS___________________________________________________________________
+Dim VJud
+Dim VJudJr
+Dim VJudJrCnt
+
+VJudJr = ""
+VJudJrCnt = VLnJrCnt
+
+strsql = "select * from titlejudgments where filenum = " & Forms!titleform!filenum & " order by ta_order;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Dim VJudCnt
+'VJudJrCnt = 0
+VJudCnt = 0
+
+If Not rs.EOF Then
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+
+If rs!ta_selection Like "Sen*" Or rs!ta_selection Like "Titl*" Then
+VJudCnt = VJudCnt + 1
+
+VJud = VJud & "(" & VJudCnt & ") Judgment against " & rs!Defendant & " in favor of " & rs!plaintiff & " in the amount of " & Format(rs!Amt, "$###,##0.00") & " and recorded on " & rs!recdate & " as case number " & rs!CaseNo & vbCr
+
+If rs!ta_selection = "title claim" Then
+'VTclaims = VTclaims & VJud
+VTclaims = "junior judgment"
+End If
+End If
+
+If rs!ta_selection Like "Junio*" Then
+
+VJudJrCnt = VJudJrCnt + 1
+
+VJudJr = VJudJr & "(" & VJudJrCnt & ") Judgment against " & rs!Defendant & " in favor of " & rs!plaintiff & " in the amount of " & Format(rs!Amt, "$###,##0.00") & " and recorded on " & rs!recdate & " as case number " & rs!CaseNo & vbCr
+End If
+
+rs.MoveNext
+Loop
+rs.Close
+End If
+
+'Taxes........................
+Dim VTxJrCnt
+
+
+If VJudJrCnt > 0 Then
+VTxJrCnt = VJudJrCnt
+ElseIf VLnJrCnt > 0 Then
+VTxJrCnt = VLnJrCnt
+Else
+VTxJrCnt = 0
+End If
+
+
+StrsqlT = "select * from titleliens where filenum = " & Forms!titleform!filenum & ";"
+Set rst = CurrentDb.OpenRecordset(StrsqlT, dbOpenSnapshot)
+Dim JDelTaxes As String
+JDelTaxes = ""
+DelTaxes = ""
+
+If Not rst.EOF Then
+rst.MoveFirst
+Do While Not rst.EOF
+If Not IsNull(rst!Defendant) Then
+If rst!ta_selection = "Junior" Then
+VTxJrCnt = VTxJrCnt + 1
+JDelTaxes = JDelTaxes & "(" & VTxJrCnt & ") IRS Lien against " & rst!Defendant & " in the amount of " & Format(rst!Amt, "$###,##0.00") & " recorded on " & rst!recdate & vbCr & vbCr
+Else
+DelTaxes = DelTaxes & "IRS Lien against " & rst!Defendant & " in the amount of " & Format(rst!Amt, "$###,##0.00") & " recorded on " & rst!recdate & vbCr & vbCr
+End If
+
+If rst!ta_selection = "title claim" Then
+VTclaims = VTclaims & DelTaxes
+End If
+End If
+rst.MoveNext
+Loop
+
+rst.Close
+End If
+
+If VJud <> "" Then
+VJud = "Superior Judgments: " & vbCr & VJud & vbCr
+'Else
+'VJud = "No Superior Judgments." & vbCr & vbCr
+End If
+
+If VJudJr <> "" Then
+VJudJr = VJudJr
+'ElseIf VJudJr = "" And VJud = "" Then
+'VJudJr = "No Junior Judgments" & vbCr & vbCr
+End If
+
+
+If VLiens = "" And VJud = "" Then
+superiorliens = "The Title Search does not reveal any superior interests." & vbCr & vbCr
+End If
+
+If VJliens = "" And VJudJr = "" And JDelTaxes = "" Then
+juniorliens = "The Title Search does not reveal any junior interests." & vbCr & vbCr
+
+ElseIf JDelTaxes <> "" Then
+
+If VJudJr = "" And VJliens = "" Then
+juniorliens = "Junior Liens: " & vbCr & JDelTaxes
+ElseIf VJudJr = "" And VJliens <> "" Then
+juniorliens = "Junior Liens: " & vbCr & VJliens & vbCr & JDelTaxes
+ElseIf VJudJr <> "" And VJliens = "" Then
+juniorliens = "Junior Liens: " & vbCr & VJudJr & vbCr & JDelTaxes
+Else
+juniorliens = "Junior Liens: " & vbCr & VJliens & vbCr & VJudJr & vbCr & JDelTaxes
+
+End If
+
+Else
+
+juniorliens = "Junior Liens: " & vbCr & VJliens & vbCr & VJudJr
+End If
+
+'____________________________________________________________________________
+Property = propTE()
+
+If IsNull([Forms]!titleform![OrgAmount]) Then
+OrgAmount = 0
+Else
+OrgAmount = Format([Forms]!titleform![OrgAmount], "$###,##0.00")
+End If
+
+If IsNull(Forms!titleform![taxidfield]) Then
+parcel2 = ""
+Else
+parcel2 = Forms!titleform!taxidfield
+End If
+
+If Forms!titleform![Title needed] = 1 Or Forms!titleform![Title needed] = -1 Then
+VTn = "Title Curative Needed: T/C needed due to " & Forms!titleform!title_issue & vbCr & vbCr
+ElseIf Forms!titleform![fa_under] = 1 Or Forms!titleform![fa_under] = -1 Then
+VTn = "Title Curative Needed: U/R needed due to " & Forms!titleform!title_issue & vbCr & vbCr
+Else
+VTn = "No Title Resolution Work Needed" & vbCr & vbCr
+End If
+
+emailsubject = debtorsFORETExam() & " - **TITLE INFORMATION**"
+emailmessage = "FORECLOSURE TITLE WORKSHEET: " & vbCr & vbCr & _
+"Loan No.: " & Forms![titleform]!ClientRefNumber & vbCr & _
+"Borrower(s): " & debtorsFORETExam() & vbCr & _
+"Property Address: " & Property & vbCr & _
+"County: " & Forms!titleform!Propertycounty & vbCr & vbCr & _
+"Delinquent Taxes: " & (Chr(13)) & CountyAtt & (Chr(13)) & countyadd1 & (Chr(13)) & countyadd2 & (Chr(13)) & countyadd3 & (Chr(13)) & countyadd4 & vbCr & vbCr & _
+"Tax ID#: " & parcel2 & vbCr & vbCr & _
+TaxAmts & vbCr & vbCr & _
+TaxYears & vbCr & vbCr & _
+vwater & vbCr & vbCr & _
+superiorliens & _
+DelTaxes & _
+VJud & _
+VMers & _
+"The Deed of Trust which is the subject of the foreclosure action is in " & _
+position & " position.  The DOT is dated " & DOTDate & " and recorded at" & VLfDot & _
+" in the amount of " & OrgAmount & VAssDOT & vbCr & vbCr & _
+juniorliens & _
+Other & _
+VTn
+
+Dim varsendemail, varappend As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage + vbCr & "BWW Law Group, LLC" + vbCr + "Phone: 301-961-6555" & vbCr + "Main Fax: 301-961-6545" + vbCr
+
+MyMail.Display
+
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+varappend = MsgBox("Appending Memo Section, proceed?", vbYesNo)
+If varappend = vbYes Then
+
+Dim rsapp As RecordSet
+Dim strsqlapp, VMemo As String
+
+Call AddJournalEntry(Forms![titleform]!filenum, emailmessage)
+
+End If
+
+End Function
+
+Public Function Emailtitleexaminationrpt()
+
+Dim emailsubject As String
+Dim emailmessage As String, Purchaser As String
+Dim superiorliens, Property, position, OrgAmount As String
+Dim parcel, TaxYears, TaxAmts, juniorliens, Other, resolution, Assignments As String
+Dim strsql, VLiens As String
+Dim VJliens
+Dim rs As RecordSet
+Dim Vst
+Dim DelTaxes
+Dim rst
+Dim StrsqlT
+Dim VAss
+Dim VAssDOT
+
+StrsqlT = "select * from titleliens where filenum = " & Forms![titleexaminationrpt]!filenum & ";"
+Set rst = CurrentDb.OpenRecordset(StrsqlT, dbOpenSnapshot)
+
+DelTaxes = ""
+
+If Not rst.EOF Then
+rst.MoveFirst
+Do While Not rst.EOF
+DelTaxes = DelTaxes & rst!Defendant & ", Amount: " & rst!Amt & vbCr
+rst.MoveNext
+Loop
+rst.Close
+End If
+
+If DelTaxes = "" Then
+DelTaxes = "No Delinquent Taxes.  "
+Else
+DelTaxes = "Delinquent Taxes: " & rst!Defendant & ", Amount: " & rst!Amt
+End If
+
+strsql = "select * from tblbeneficiary where filenum = " & Forms![titleexaminationrpt]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+rs.MoveFirst
+
+Do While Not rs.EOF
+If rs!ta_selection Like "Sen*" Or rs!ta_selection Like "Titl*" Then
+If IsNull(rs!ta_ass) Then
+Assignments = "No Assignments(s) are needed.  " & rs!ta_lender & " shows as beneficiary of record."
+Else
+Assignments = "Assignments Needed: " & rs!ta_ass & vbCr
+End If
+VLiens = VLiens & rs!ta_lender & ": " & Assignments & vbCr
+End If
+
+If rs!ta_selection Like "Junio*" Then
+If IsNull(rs!ta_ass) Then
+Assignments = "No Assignments(s) are needed.  " & rs!ta_lender & " shows as beneficiary of record."
+Else
+Assignments = "Assignments Needed: " & rs!ta_ass & vbCr
+End If
+VJliens = VJliens + rs!ta_lender & ": " & Assignments & vbCr
+End If
+
+If rs!ta_ass <> "" Then
+VAss = VAss & rs!ta_ass & " : "
+End If
+
+If rs!ta_dot = 1 Or rs!ta_dot = -1 Then
+If IsNull(rs!ta_ass) Then
+VAssDOT = "No Assignments(s) are needed.  " & rs!ta_lender & " shows as beneficiary of record."
+Else
+VAssDOT = "Assignments Needed: " & rs!ta_ass
+End If
+
+If rs!ta_mortgage = 1 Then
+Vst = "st"
+ElseIf rs!ta_mortgage = 2 Then
+Vst = "nd"
+ElseIf rs!ta_mortgage = 3 Then
+Vst = "st"
+ElseIf rs!ta_mortgage >= 4 Then
+Vst = "th"
+End If
+
+position = rs!ta_mortgage & Vst
+End If
+
+'msgbox (rs!ta_selection & "/SUP: " & VLiens & ": JUN:" & juniorliens & ": Ass:" & VAss)
+rs.MoveNext
+Loop
+rs.Close
+
+End If
+
+If VLiens <> "" Then
+superiorliens = "Superior Liens: " & VLiens
+Else
+superiorliens = "The Title Search does not reveal any superior interests."
+End If
+'MsgBox (superiorliens)
+
+If VLiens <> "" Then
+juniorliens = "Junior Liens: " & VJliens
+Else
+juniorliens = "The Title Search does not reveal any junior interests."
+End If
+
+Property = PROP()
+
+'If IsNull(Forms!citisubformNEW!position) Then
+'position = 0
+'Else
+'position = [Forms]![citisubformNEW]!position
+'End If
+
+If IsNull([Forms]![titleexaminationrpt]![OrgAmount]) Then
+OrgAmount = 0
+Else
+OrgAmount = Format([Forms]![titleexaminationrpt]![OrgAmount], "$###,##0.00")
+End If
+
+If IsNull(Forms![titleexaminationrpt]![taxid]) Then
+parcel = ""
+Else
+parcel = Forms![titleexaminationrpt]![taxid]
+End If
+
+'If IsNull([Forms]![citisubformNEW]!TaxYears) Then
+'TaxYears = ""
+'Else
+'TaxYears = [Forms]![citisubformNEW]!TaxYears
+'End If
+'If IsNull([Forms]![citisubformNEW]!TaxAmts) Then
+'TaxAmts = ""
+'Else
+'TaxAmts = [Forms]![citisubformNEW]!TaxAmts
+'End If
+'If IsNull([Forms]![citisubformNEW]!Other) Then
+'Other = ""
+'Else
+'Other = [Forms]![citisubformNEW]!Other
+'End If
+
+'If IsNull([Forms]![citisubformNEW]!Resolution) And Forms!citisubformNEW!titleneeded = 0 Then
+'Resolution = "No Title Resolution Work Needed."
+'Else
+'Resolution = "TITLE CURATIVE NEEDED: " & [Forms]![citisubformNEW]!Resolution
+'End If
+
+emailsubject = debtorsFORETExam() & " - **TITLE INFORMATION**"
+emailmessage = "FORECLOSURE TITLE WORKSHEET: " & vbCr & vbCr & _
+"Period of Title Examination: From: To:" & vbCr & _
+"Loan No.: " & Forms![titleexaminationrpt]!ClientRefNumber & vbCr & _
+"Borrower(s): " & debtorsFORETExam() & vbCr & vbCr & _
+superiorliens & _
+"Property Address: " & Property & vbCr & _
+"Your Deed of Trust is reflected in " & position & " position; subject deed is in the amount of " & OrgAmount & ": " & VAssDOT & vbCr & vbCr & _
+DelTaxes & vbCr & "County: " & County() & vbCr & vbCr & _
+"Tax ID#: " & parcel & vbCr & vbCr & _
+ juniorliens
+
+'& _
+"Tax Amounts: " & TaxAmts & vbcr & vbcr & _
+"Tax Years Due: " & TaxYears & vbcr & vbcr & _
+"Other Issues: " & Other & vbcr & vbcr & _
+Resolution
+
+Dim varsendemail, varappend As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage + vbCr & "BWW Law Group, LLC" + vbCr + "Phone: 301-961-6555" & vbCr + "Main Fax: 301-961-6545" + vbCr + "Fax: 301-961-6545"
+
+MyMail.Display
+
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+varappend = MsgBox("Append Memo Section?", vbYesNo)
+If varappend = vbYes Then
+
+Dim rsapp As RecordSet
+Dim strsqlapp, VMemo As String
+
+Call AddJournalEntry(Forms![titleexaminationrpt]!filenum, emailmessage)
+
+End If
+
+End Function
+
+Public Function EmailTitleExam()
+
+Dim emailsubject As String
+Dim emailmessage As String, Purchaser As String
+Dim superiorliens, serioustitle, Property, position, OrgAmount, CountyAtt, countyadd1, countyadd2, countyadd3, countyadd4, countyadd5 As String
+Dim parcel, TaxYears, TaxAmts, juniorliens, Other, resolution, Assignments As String
+
+If IsNull([Forms]![citisubform]![juniorliens]) Then
+juniorliens = ""
+Else
+juniorliens = [Forms]![citisubform]!juniorliens
+End If
+
+If IsNull([Forms]![citisubform]![superiorliens]) Then
+superiorliens = "The Title Search does not reveal any superior interests."
+Else
+superiorliens = "Superior Liens: " & [Forms]![citisubform]![superiorliens]
+End If
+
+Property = PROP()
+
+If IsNull(Forms!citisubform!position) Then
+position = 0
+Else
+position = [Forms]![citisubform]!position
+End If
+
+If IsNull([Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![OrgAmount]) Then
+OrgAmount = 0
+Else
+OrgAmount = Format([Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![OrgAmount], "$###,##0.00")
+End If
+
+'If IsNull([Forms]![citisubform]![assignments]) Then
+Assignments = [Forms]![citisubform]!beneficiary & " shows as beneficiary of record."
+'Else
+'assignments = "Assignments Needed: " & [Forms]![citisubform]![assignments]
+'End If
+
+If IsNull([Forms]![citisubform]![county att]) Then
+CountyAtt = ""
+Else
+CountyAtt = [Forms]![citisubform]![county att]
+End If
+If IsNull([Forms]![citisubform]![countyadd1]) Then
+countyadd1 = ""
+Else
+countyadd1 = [Forms]![citisubform]!countyadd1
+End If
+If IsNull([Forms]![citisubform]![countyadd2]) Then
+countyadd2 = ""
+Else
+countyadd2 = [Forms]![citisubform]!countyadd2
+End If
+If IsNull([Forms]![citisubform]![countyadd3]) Then
+countyadd3 = ""
+Else
+countyadd3 = vbCr & [Forms]![citisubform]!countyadd3
+End If
+If IsNull([Forms]![citisubform]![countyadd4]) Then
+countyadd4 = ""
+Else
+countyadd4 = vbCr & [Forms]![citisubform]!countyadd4
+End If
+
+If IsNull(Forms![foreclosure database screen]![PostsaleSubForm].[Form]![taxid]) Then
+parcel = ""
+Else
+parcel = Forms![foreclosure database screen]![PostsaleSubForm].[Form]![taxid]
+End If
+If IsNull([Forms]![citisubform]!TaxYears) Then
+TaxYears = ""
+Else
+TaxYears = [Forms]![citisubform]!TaxYears
+End If
+If IsNull([Forms]![citisubform]!TaxAmts) Then
+TaxAmts = ""
+Else
+TaxAmts = [Forms]![citisubform]!TaxAmts
+End If
+If IsNull([Forms]![citisubform]!Other) Then
+Other = ""
+Else
+Other = [Forms]![citisubform]!Other
+End If
+If IsNull([Forms]![citisubform]!resolution) And (Forms!citisubform!titleneeded = 0 Or IsNull(Forms!citisubform!titleneeded)) Then
+resolution = "No Title Resolution Work Needed."
+Else
+resolution = "TITLE CURATIVE NEEDED: " & [Forms]![citisubform]!resolution
+End If
+
+Dim rsCL As RecordSet
+Dim strsqlCL, NTNote As String
+NTNote = ""
+
+
+strsqlCL = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsCL = CurrentDb.OpenRecordset(strsqlCL, dbOpenSnapshot)
+If rsCL!NewTrak = 1 And (Forms!citisubform!titleneeded = -1 Or Forms!citisubform!titleneeded = 1) And (Forms!citisubform!serioustitle = 0 Or IsNull(Forms!citisubform!serioustitle)) Then
+NTNote = "Despite the Issues Raised, as long as a title policy is provided that does not take exception to any of the issues raised above, we are proceeding to sale unless otherwise directed by Fidelity."
+End If
+rsCL.Close
+
+
+emailsubject = debtorsFORE() & " - **TITLE INFORMATION**"
+If Forms![foreclosure database screen]!Client Like "Citi Res*" Then
+emailmessage = _
+"FORECLOSURE TITLE WORKSHEET: " & (Chr(13)) & (Chr(13)) & _
+"Period of Title Examination: From: To:" & _
+"Loan No.: " & Forms![foreclosure database screen]!ClientRefNumber & _
+"Borrower(s): " & debtorsFORE() & _
+superiorliens & (Chr(13)) & (Chr(13)) & _
+"Property Address: " & Property & (Chr(13)) & (Chr(13)) & _
+"Your Deed of Trust is reflected in " & position & " position; subject deed is in the amount of " & OrgAmount & (Chr(13)) & (Chr(13)) & _
+Assignments & (Chr(13)) & (Chr(13)) & _
+"Delinquent Taxes: " & (Chr(13)) & CountyAtt & (Chr(13)) & countyadd1 & (Chr(13)) & countyadd2 & countyadd3 & countyadd4 & countyadd5 & _
+(Chr(13)) & (Chr(13)) & "County: " & County() & (Chr(13)) & (Chr(13)) & _
+"Tax ID#: " & parcel & (Chr(13)) & (Chr(13)) & _
+"Tax Amounts: " & TaxAmts & (Chr(13)) & (Chr(13)) & _
+"Tax Years Due: " & TaxYears & (Chr(13)) & (Chr(13)) & _
+"Junior Liens: " & juniorliens & (Chr(13)) & (Chr(13)) & _
+"Other Issues: " & Other & (Chr(13)) & (Chr(13)) & _
+resolution & vbCr & vbCr & _
+NTNote
+
+Else
+emailmessage = _
+"TITLE INFORMATION: " & (Chr(13)) & (Chr(13)) & _
+superiorliens & (Chr(13)) & (Chr(13)) & _
+"Property Address: " & Property & (Chr(13)) & (Chr(13)) & _
+"Your Deed of Trust is reflected in " & position & " position; subject deed is in the amount of " & OrgAmount & (Chr(13)) & (Chr(13)) & _
+Assignments & (Chr(13)) & (Chr(13)) & _
+"Delinquent Taxes: " & (Chr(13)) & CountyAtt & (Chr(13)) & countyadd1 & (Chr(13)) & countyadd2 & countyadd3 & countyadd4 & countyadd5 & _
+(Chr(13)) & (Chr(13)) & "County: " & County() & (Chr(13)) & (Chr(13)) & _
+"Tax ID#: " & parcel & (Chr(13)) & (Chr(13)) & _
+"Tax Amounts: " & TaxAmts & (Chr(13)) & (Chr(13)) & _
+"Tax Years Due: " & TaxYears & (Chr(13)) & (Chr(13)) & _
+"Junior Liens: " & juniorliens & (Chr(13)) & (Chr(13)) & _
+"Other Issues: " & Other & (Chr(13)) & (Chr(13)) & _
+resolution & vbCr & vbCr & _
+NTNote
+End If
+
+Dim VSend
+VSend = InputBox("Send (E)mail or (A)ppend Memo ONLY. Type in E or A")
+
+If VSend = "E" Then
+
+Dim varsendemail, varappend As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.Subject = emailsubject
+'MyMail.Body = emailmessage + (Chr(13)) + (Chr(13)) + sig1 + (Chr(13)) + "Paralegal" + (Chr(13)) + "BWW Law Group, LLC" + (Chr(13)) + "Phone: 301-961-6555" & (Chr(13)) + "Main Fax: 301-961-6545" + (Chr(13)) + "Fax: 301-961-6545"
+MyMail.body = emailmessage + SigEmail()
+
+MyMail.Display
+
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+varappend = MsgBox("Append Memo Section?", vbYesNo)
+If varappend = vbYes Then
+Dim rsapp As RecordSet
+Dim strsqlapp, VMemo As String
+VMemo = Forms!citisubform!comments
+Call AddJournalEntry(Forms![foreclosure database screen]!filenum, emailmessage)
+End If
+
+Else
+Call AddJournalEntry(Forms![foreclosure database screen]!filenum, emailmessage)
+End If
+
+
+DoCmd.Close acForm, "Citisubform"
+
+End Function
+
+Public Function OpenTitleExamFC()
+
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from titlereview where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+If rs.EOF Then
+rs.Close
+Set rs = CurrentDb.OpenRecordset("titlereview", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+End If
+
+strsql = "select * from tblFidelity where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+
+Set rs = CurrentDb.OpenRecordset("tblFidelity", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+
+End If
+
+DocName = "titleform"
+linkcriteria = "[filenum] = " & Forms![foreclosure database screen]!filenum
+DoCmd.OpenForm DocName, , , linkcriteria
+
+End Function
+
+Public Function OpenTitleTriage()
+
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from titlereview where filenum = " & Forms![titles to be triaged]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+If rs.EOF Then
+rs.Close
+Set rs = CurrentDb.OpenRecordset("titlereview", dbOpenDynaset, dbseecharge)
+With rs
+.AddNew
+!filenum = Forms![titles to be triaged]!filenum
+.Update
+.Close
+End With
+End If
+
+strsql = "select * from tblFidelity where filenum = " & Forms![titles to be triaged]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+
+Set rs = CurrentDb.OpenRecordset("tblFidelity", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!filenum = Forms![titles to be triaged]!filenum
+.Update
+.Close
+End With
+
+End If
+
+DocName = "titleform"
+linkcriteria = "[filenum] = " & Forms![titles to be triaged]!filenum
+DoCmd.OpenForm DocName, , , linkcriteria
+'DoCmd.OpenForm DocName
+
+DoCmd.Close acForm, "titles to be triaged"
+
+End Function
+
+
+Public Function OpenTitleExamToBeReported()
+
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from titlereview where filenum = " & Forms![titles to be reported]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql)
+If rs.EOF Then
+rs.Close
+Set rs = CurrentDb.OpenRecordset("titlereview", dbOpenDynaset, dbseecharge)
+With rs
+.AddNew
+!filenum = Forms![titles to be reported]!filenum
+.Update
+.Close
+End With
+End If
+
+strsql = "select * from tblFidelity where filenum = " & Forms![titles to be reported]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+
+Set rs = CurrentDb.OpenRecordset("tblFidelity", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!filenum = Forms![titles to be reported]!filenum
+.Update
+.Close
+End With
+
+End If
+
+DocName = "titleform"
+linkcriteria = "[filenum] = " & Forms![titles to be reported]!filenum
+DoCmd.OpenForm DocName, , , linkcriteria
+'DoCmd.OpenForm DocName
+
+DoCmd.Close acForm, "Titles to be reported"
+
+End Function
+Public Function LienClaimInfo()
+Dim rs As RecordSet
+Dim strsql As String
+Dim vFile
+Dim LfTa
+
+vFile = Forms![foreclosure database screen]!filenum
+
+strsql = "Select * from titleliens where ta_selection = " & """" & "Title Claim" & """" & " and filenum = " & vFile & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+
+LienClaimInfo = ""
+Do While Not rs.EOF
+
+LienClaimInfo = LienClaimInfo + "IRS Lien recorded on " & rs!recdate & " case " & rs!file & " in the amount of " & Format(rs!Amt, "$###,##0.00") & " / "
+
+
+rs.MoveNext
+Loop
+End If
+
+rs.Close
+End Function
+Public Function JudgmentClaimInfo()
+Dim rs As RecordSet
+Dim strsql As String
+Dim vFile
+Dim LfTa
+
+vFile = Forms![foreclosure database screen]!filenum
+
+strsql = "Select * from titlejudgments where ta_selection = " & """" & "Title Claim" & """" & " and filenum = " & vFile & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+
+JudgmentClaimInfo = ""
+Do While Not rs.EOF
+
+JudgmentClaimInfo = JudgmentClaimInfo + "Judgment in favor of " & rs!plaintiff & " against " & rs!Defendant & " recorded in " & rs!CaseNo & " on " & rs!recdate & " in the amount of " & Format(rs!Amt, "$###,##0.00") & " / "
+
+rs.MoveNext
+Loop
+End If
+
+rs.Close
+
+End Function
+Public Function DOTClaimInfo()
+Dim rs As RecordSet
+Dim strsql As String
+Dim vFile
+Dim LfTa
+
+vFile = Forms![foreclosure database screen]!filenum
+
+strsql = "Select * from tblbeneficiary where ta_selection = " & """" & "Title Claim" & """" & " and filenum = " & vFile & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+
+DOTClaimInfo = ""
+Do While Not rs.EOF
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+LfTa = "book " & rs!ta_book & ", page " & rs!ta_page
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+LfTa = "Instrument No. " & rs!ta_inst
+Else
+If rs!ta_inst <> "" Then
+LfTa = "Instrument No. " & rs!ta_inst
+Else
+LfTa = "Deed Book " & rs!ta_book & " Page " & rs!ta_page
+End If
+
+End If
+
+DOTClaimInfo = DOTClaimInfo + "DOT securing " & rs!ta_lender & ", dated " & rs!ta_dotdate & ", recorded " & rs!ta_recorded & ", " & LfTa & " in the amount of " & Format(rs!ta_orgloan, "$###,##0.00") & " / "
+
+rs.MoveNext
+Loop
+End If
+
+rs.Close
+End Function
+Public Function EmailTitleUpdate()
+Dim VSubject
+
+Dim Vselect As String, Vfilename As String
+Dim Vtowho
+Dim VLraPl
+VLraPl = ""
+Dim VContinue
+VContinue = vbNo
+
+If Forms![foreclosure database screen]!Status = "Postsale" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) Then
+
+VContinue = MsgBox("File is in post sale status, confirm update is to be ordered?", vbYesNo)
+
+ElseIf (VContinue = vbNo And Forms![foreclosure database screen]!Status <> "Foreclosure") And _
+Forms![foreclosure database screen]!Status <> "Deed In Lieu" And _
+Forms![foreclosure database screen]!Status <> "DC Judicial" Then
+MsgBox ("Update will NOT PRINT OUT.  The Status of the File is NOT Foreclosure or Deed in Lieu please update status, Save Record and reenter Update Ordered date.")
+Exit Function
+End If
+
+
+
+If Forms![foreclosure database screen]!Propertycounty = "Anne Arundel" Then
+MsgBox ("ORDER CERTIFIED COPY OF DOA AND DOT FOR ANNE ARUNDEL COUNTY!")
+End If
+
+Vfilename = Forms![foreclosure database screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_UPDATE_" & "CompassOrder.xls"
+
+Vselect = InputBox("Do you want to (p)rint or (e)-mail?")
+If Vselect = "p" Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+DoCmd.OpenReport "OrderTitle Letter-Update", acViewNormal
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+DoCmd.OpenReport "OrderTitle Letter VA-Update", acViewNormal
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+DoCmd.OpenReport "OrderTitle Letter DC-Update", acViewNormal
+End If
+
+ElseIf Vselect = "e" Then
+
+If Forms![foreclosure database screen]!Client Like "Nations Def*" Then
+MsgBox ("This is a " & Client() & " File for: " & Forms![foreclosure database screen]!PropertyState & ", this client provides their own titles.  Contact client directly.  Will not create email.")
+Exit Function
+End If
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+
+Dim VParalegal, strsqlClients, VFidFirst, VTo, strsql, E1, e1a, E2, e2a, e2Aa, E3, e4, e5, e5a, e5b, e6, e6a, e6b, e10a, vPT, e7, e8, e9, e10, e11, e12, e13, e14, emailbody As String
+Dim rs, rsclients As RecordSet
+
+VParalegal = Environ("username")
+
+strsql = "SELECT Employees.FirstName, Employees.MiddleName, " _
+& "Employees.LastName from Employees " _
+& " WHERE (Employees.login)= " & """" & VParalegal & """" & ";"
+
+strsqlClients = "SELECT * from Clients  " _
+& " WHERE (clients.organizationname)= " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsclients = CurrentDb.OpenRecordset(strsqlClients, dbOpenSnapshot)
+VFidFirst = ""
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+vPT = PriorTitle()
+E1 = "Date: " & Date
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+Dim VResume
+Dim VRes
+VRes = "Err"
+Do While VRes = "Err"
+VRes = InputBox("IS THIS A NEW RESUME? type YES or NO")
+If VRes = "YES" Then
+VResume = "THIS IS A RESTART PLEASE BILL $75.00"
+ElseIf VRes = "NO" Then
+VResume = "THIS IS AN UPDATE TO YOUR TITLE: NO CHARGE"
+Else
+VRes = "Err"
+End If
+Loop
+
+If Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+MyMail.To = "bww-md@ocwen.com"
+MyMail.CC = "ordertitles@bww-law.com"
+VTo = "OCWEN"
+
+'elseIf Forms![foreclosure database screen]!Client Like "Resid*" Then
+'MyMail.To = "bww-md@ocwen.com"
+'MyMail.CC = "ordertitles@bww-law.com"
+'VTo = "Sky Creek"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Quantu*" Then
+MyMail.To = "abstracts@lineartitle.com"
+MyMail.CC = "ordertitles@bww-law.com"
+VTo = "Linear Title"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Nationst*" And Forms![foreclosure database screen]!TypeOfLoan = "CONV" Then
+MyMail.To = "SSAttorney@solutionstar.com"
+MyMail.CC = "ordertitles@bww-law.com"
+VTo = "Solution Star"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Champion*" And (Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC" And Forms![foreclosure database screen]!TypeOfLoan <> "FNMA") Then
+MyMail.To = "championtitle@solutionstar.com"
+MyMail.CC = "ordertitles@bww-law.com"
+VTo = "Solution Star"
+'championtitle@solutionstar.com
+
+ElseIf (Forms![foreclosure database screen]!Client Like "Specialized*" And _
+Forms![foreclosure database screen]!PropertyState <> "VA") Then
+MyMail.To = "FCL.Orders@SLS.net"
+MyMail.CC = "ordertitles@bww-law.com"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Nations Def*" Then
+MyMail.To = "Rebecca.Delaney@bww-law.com"
+MyMail.CC = "ordertitles@bww-law.com"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Or _
+Forms![foreclosure database screen]!Client Like "Rushmo*" Then
+MyMail.To = "LRAUpdates@lpsvcs.com"
+MyMail.CC = "ordertitles@bww-law.com"
+
+
+Else
+
+Vtowho = 2
+
+If Vtowho = 1 Then
+MyMail.To = "orders@hcrsearch.com"
+MyMail.CC = "ordertitles@bww-law.com"
+VTo = "Harbor City Research"
+Forms![foreclosure database screen]!titleordfrom = "Harbor"
+
+Else
+
+DoCmd.OutputTo acOutputQuery, "CompassOrdersBGWUPDATE", acFormatXLS, "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+MyMail.To = "DCOrders@compassresearchgroup.com"
+MyMail.CC = "ordertitles@bww-law.com"
+Else
+MyMail.To = "MDOrders@compassresearchgroup.com"
+MyMail.CC = "ordertitles@bww-law.com"
+End If
+
+MyMail.CC = "ordertitles@bww-law.com"
+MyMail.Attachments.ADD "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+VTo = "Compass Research Group"
+Forms![foreclosure database screen]!titleordfrom = "Compass"
+End If
+
+MyMail.CC = "ordertitles@bww-law.com"
+VSubject = "* * * Title Update * * * BWW#: " & Forms![foreclosure database screen]!filenum
+
+MyMail.Subject = VSubject
+
+End If
+
+'ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+'MyMail.To = "NONCHL@Landsafe.com"
+'MyMail.CC = "ordertitles@bww-law.com"
+'vto = "LANDSAFE"
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+
+Dim VLsCom
+VLsCom = InputBox("Order via" & vbCr & vbCr & "1. Landsafe" & vbCr & "2. Compass")
+
+If VLsCom = 2 Then
+MyMail.To = "VAOrders@compassresearchgroup.com"
+MyMail.CC = "ordertitles@bww-law.com"
+VTo = "COMPASS"
+
+Else
+
+MyMail.To = "CHL@Landsafe.com"
+MyMail.CC = "ordertitles@bww-law.com"
+VTo = "LANDSAFE"
+End If
+
+
+Else
+
+Vtowho = 0
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 1 Then
+Vtowho = 2
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 2 Then
+Vtowho = 1
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_sent = 7 Then
+Vtowho = 4
+Else
+Vtowho = InputBox("Title Update" & vbCr & "Send to" & vbCr & vbCr & "1. Landsafe" & vbCr & "2. Compass Research" & vbCr & "3. LRA")
+
+End If
+
+If Vtowho = 2 Then
+MyMail.To = "VAOrders@compassresearchgroup.com"
+MyMail.CC = "ordertitles@bww-law.com"
+Vfilename = Forms![foreclosure database screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_UPDATE_" & "CompassOrder.xls"
+DoCmd.OutputTo acOutputQuery, "CompassOrdersBGWUPDATE", acFormatXLS, "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+VTo = "Compass Research Group"
+Forms![foreclosure database screen]!titleordfrom = "Compass"
+
+ElseIf Vtowho = 3 Then
+MyMail.To = "wellsupdates@lpsvcs.com"
+MyMail.BCC = "VAOrders@compassresearchgroup.com"
+
+ElseIf Vtowho = 4 Then
+MyMail.CC = "FCL.customerservice@firstam.com"
+MyMail.To = "ndts.orders@firstam.com"
+MyMail.BCC = "VAOrders@compassresearchgroup.com"
+
+If Forms![foreclosure database screen]!PropertyState = "VA" And Forms![foreclosure database screen]!Client Like "Wells*" Then
+MyMail.CC = "ordertitles@bww-law.com; wellsupdates@lpsvcs.com"
+Else
+MyMail.CC = "ordertitles@bww-law.com"
+End If
+
+VTo = "LRA"
+Forms![foreclosure database screen]!titleordfrom = "LRA"
+
+If IsNull([Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![landsafeno].[Form]![landsafe_no]) Or _
+[Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![landsafeno].[Form]![landsafe_no] = "" Then
+VSubject = "* * * Title Update * * * BWW#: " & Forms![foreclosure database screen]!filenum
+Else
+VSubject = "* * * Title Update * * * BWW#: " & Forms![foreclosure database screen]!filenum & "/LRA ID: " & [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![landsafeno].[Form]![landsafe_no]
+End If
+
+Else
+MyMail.To = "NonCHL@landsafe.com"
+MyMail.CC = "katherine.yee@landsafe.com; ordertitles@bww-law.com"
+VTo = "LANDSAFE"
+Forms![foreclosure database screen]!titleordfrom = "Landsafe"
+
+
+End If
+
+
+
+
+End If
+End If
+'MyMail.Subject = "* * * Title Update * * *"
+End If
+
+Dim VSD31
+VSD31 = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate - 31
+
+If VSubject = "" Then
+VSubject = "* * * Title Update * * * BWW#: " & Forms![foreclosure database screen]!filenum
+End If
+
+MyMail.Subject = VSubject
+
+e1a = "<br> <br>" & VResume
+E2 = "<br> <b> To: </b>" & VTo
+e2Aa = "<br> <b> </b>" & VLraPl
+e2a = "<br> <br> " & VFidFirst
+E3 = "<br> <b>From: </b>BWW Law Group, LLC : " & rs!FirstName & " " & rs!LastName
+e4 = "<br> <br> <b>Re:</b> Request title update on below referenced loan"
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+e5 = "<br> <b>DUE DATE: </b>" & Date + 7
+e5a = "<br> <b>Sale Date : </b>" & Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+e5b = "<br> <b>Please do not process this request until: </b>" & VSD31
+Else
+e5 = "<br> <b>DUE DATE: </b>" & Date + 5
+End If
+e6 = "<br> <br> Please update your last title search"
+e6a = "<br> <br> " & vPT
+
+If Vtowho = 2 Then
+
+e6b = "<br> <br> " & "BWW#: " & Forms![foreclosure database screen]!filenum
+
+MyMail.Attachments.ADD "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+
+Else
+e6b = "<br> <br> " & "ID#: " & Forms![foreclosure database screen]!PostsaleSubForm.Form!landsafe_no
+End If
+e7 = "<br> <br> <b>Borrowers:</b> " & debtorsFORE()
+e8 = "<br> <br> <b>Address:</b> " & PROP()
+e9 = "<br> <br> <b>County: </b>" & County()
+e10 = "<br> <br> <b>Date of D-O-T:</b> " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!DOTDate
+e10a = "<br> <br> <b> Orginal Loan Amt: </b> " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgAmount, "$###,##0.00")
+e11 = "<br> <br> <b>Liber/folio/Inst#: </b>" & liberfolio()
+e12 = "<br> <br> <b>Client/Loan #: </b>" & Client() & " / " & Forms![foreclosure database screen]!ClientRefNumber
+'e13 = "<br> <br> <b>Through Date: </b>" & Forms![Foreclosure Database Screen]!ForeclosureSubForm.Form!title_thru
+e13 = ""
+e14 = ""
+
+emailbody = E1 & vbCr & e1a & vbCr & vbCr & E2 & vbCr & e2Aa & vbCr & e2a & vbCr & vbCr & E3 & vbCr & vbCr & e4 & vbCr & vbCr & e5 & vbCr & e5a & vbCr & e5b & vbCr & e6 & vbCr & e6a & vbCr & e6b & vbCr & e7 & vbCr & vbCr & e8 & vbCr & vbCr & e9 & vbCr & vbCr & e10 & vbCr & vbCr & e10a & vbCr & vbCr & e11 & vbCr & vbCr & e12 & vbCr & vbCr & e13 & vbCr & vbCr & e14
+
+MyMail.HTMLBody = emailbody
+
+MyMail.Display
+
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+End Function
+Public Function ordertitlemdtoDIL()
+
+If (Forms![DILForm]!DILSub.Form!Client <> "BAC Home Loans, Inc." And Forms![DILForm]!DILSub.Form!Client <> "Bank of America, N.A." And _
+Forms![DILForm]!DILSub.Form!Client <> "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP") Then
+ordertitlemdtoDIL = "Compass Research Group"
+Else
+ordertitlemdtoDIL = "Landsafe Title"
+End If
+
+End Function
+
+Public Function OrderTitleMDTO()
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+OrderTitleMDTO = "LRA"
+ElseIf (Forms![foreclosure database screen]!Client <> "BAC Home Loans, Inc." And _
+Forms![foreclosure database screen]!Client <> "Bank of America, N.A." And _
+Forms![foreclosure database screen]!Client <> "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP") Then
+OrderTitleMDTO = "Compass Research Group"
+Else
+OrderTitleMDTO = "Landsafe Title"
+End If
+
+End Function
+Public Function OrderTitleMDTo2()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "SELECT Abstractors.OrganizationName from Abstractors " _
+& "WHERE (((Abstractors.OrganizationName)= " & """" & [Forms]![First American/Fidelity Title Orders Screen]![abstractor] & """" & "));"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+OrderTitleMDTo2 = "Compass Research Group"
+End Function
+Public Function OrderTitleMDFax2()
+Dim strsql As String
+Dim rs As RecordSet
+
+'strsql = "SELECT Abstractors.FaxNumber from Abstractors " _
+& "WHERE (((Abstractors.OrganizationName)= " & """" & [Forms]![first american/fidelity title orders screen]![abstractor] & """" & "));"
+
+'Set rs = CurrentDb.OpenRecordset(strsql, dbopensnapshot)
+
+'If ([Forms]![first american/fidelity title orders screen]![Client] <> "Ocwen Loan Servicing, LLC" _
+'And [Forms]![first american/fidelity title orders screen]![Client] <> "Washington Mutual Bank" _
+'And [Forms]![first american/fidelity title orders screen]![Client] <> "select portfolio servicing, Inc." _
+'And [Forms]![first american/fidelity title orders screen]![Client] <> "Homecomings" _
+'And [Forms]![first american/fidelity title orders screen]![Client] <> "Homecomings Financial, LLC" _
+'And [Forms]![first american/fidelity title orders screen]![Client] <> "Litton Loan Servicing, LP" _
+'And Forms![first american/fidelity title orders screen]![Client] <> "EMC Mortgage Corporation" _
+'And Forms![first american/fidelity title orders screen]![Client] <> "Foreclosure Management Company" _
+'And [Forms]![first american/fidelity title orders screen]![Client] <> "Option One Mortgage Corp.") Or
+
+'If Forms![first american/fidelity title orders screen]!County = "Allegany" Then
+'OrderTitleMDFax2 = rs!FaxNumber
+'Else
+'OrderTitleMDFax2 = "(410) 659-0517"
+OrderTitleMDFax2 = ""
+'End If
+
+End Function
+Public Function OrderTitleMDFax()
+'Dim strsql As String
+'Dim rs As Recordset
+
+'strsql = "SELECT Abstractors.FaxNumber from Abstractors " _
+'& "WHERE (((Abstractors.OrganizationName)= " & """" & [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![abstractor] & """" & "));"
+
+'Set rs = CurrentDb.OpenRecordset(strsql, dbopensnapshot)
+
+'If ([Forms]![foreclosure database screen]![Client] <> "Ocwen Loan Servicing, LLC" _
+'And [Forms]![foreclosure database screen]![Client] <> "Washington Mutual Bank" _
+'And [Forms]![foreclosure database screen]![Client] <> "select portfolio servicing, Inc." _
+'And [Forms]![foreclosure database screen]![Client] <> "Homecomings" _
+'And [Forms]![foreclosure database screen]![Client] <> "Homecomings Financial, LLC" _
+'And [Forms]![foreclosure database screen]![Client] <> "Litton Loan Servicing, LP" _
+'And Forms![foreclosure database screen]![Client] <> "EMC Mortgage Corporation" _
+'And Forms![foreclosure database screen]![Client] <> "Foreclosure Management Company" _
+'And [Forms]![foreclosure database screen]![Client] <> "Option One Mortgage Corp.") Or
+
+'If Forms![foreclosure database screen]!PropertyCounty = "Allegany" Then
+OrderTitleMDFax = ""
+'Else
+'OrderTitleMDFax = "(410) 659-0517"
+'OrderTitlemdfax = ""
+'End If
+End Function
+Public Function ordertitleselect()
+
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" Then
+
+DoCmd.OpenReport "OrderTitle Letter", acViewPreview
+End If
+If [Forms]![foreclosure database screen]![PropertyState] = "VA" Then
+DoCmd.OpenReport "OrderTitle Letter VA", acViewPreview
+End If
+If [Forms]![foreclosure database screen]![PropertyState] = "DC" Then
+DoCmd.OpenReport "OrderTitle Letter DC", acViewPreview
+End If
+
+
+End Function
+Public Function ordertitle()
+Dim prtorder As String
+Dim Client As String
+Dim LoanNo As String
+Dim subj As String
+Dim DocName As String
+
+Dim emailto As String
+Dim ccTo As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+Dim strsql As String
+Dim rs As RecordSet
+Dim VOrders
+Dim VPropertyCounty
+
+VPropertyCounty = Forms![foreclosure database screen]!Propertycounty
+
+strsql = "Select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs!ClientSpecificTitleCo = 4 And (Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+VOrders = 4
+ElseIf rs!ClientSpecificTitleCo = 5 And (Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+VOrders = 5
+ElseIf (rs!titles_MD = -1 Or rs!titles_MD = 1) And Forms![foreclosure database screen]!PropertyState = "MD" Then
+VOrders = 1
+ElseIf (rs!titles_DC = -1 Or rs!titles_DC = 1) And Forms![foreclosure database screen]!PropertyState = "DC" Then
+VOrders = 2
+ElseIf (rs!titles_VA = -1 Or rs!titles_VA = 1) And Forms![foreclosure database screen]!PropertyState = "VA" Then
+VOrders = 3
+End If
+
+
+'MsgBox (VOrders & ": " & rs!titles_VA)
+
+
+If Forms![foreclosure database screen]!Status <> "Foreclosure" And _
+Forms![foreclosure database screen]!Status <> "Deed in Lieu" And _
+Forms![foreclosure database screen]!Status <> "DC Judicial" And _
+Forms![foreclosure database screen]!Status <> "Bankruptcy" Then
+MsgBox ("THIS FILE IS NOT IN FORECLOSURE/DIL STATUS SO TITLE WILL NOT ORDER!  please upgrade to foreclosure status then run again!")
+rs.Close
+Exit Function
+End If
+
+If ((VOrders = 2 Or VOrders = 1 Or VOrders = 3) And _
+Forms![foreclosure database screen]!Client <> "Wells Fargo Bank, NA") Then
+
+
+If ((Forms![foreclosure database screen]!Client Like "Bank of Am*" Or _
+Forms![foreclosure database screen]!Client Like "Residen*") And _
+(Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FNMA")) Then
+Else
+
+Dim VOrder
+
+VOrder = InputBox("We do not NORMALLY Order Titles for " & Forms![foreclosure database screen]!Client & " for: " & Forms![foreclosure database screen]!PropertyState & ".  If you DO need to order title you can proceed by typing in ORDERTITLE!")
+
+If VOrder = "ORDERTITLE" Then
+gAttachment1 = ""
+
+SigEmailBlock = SigEmail()
+
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" Then
+VConvRpt = "OrderTitle Letter"
+ElseIf [Forms]![foreclosure database screen]![PropertyState] = "VA" Then
+VConvRpt = "ordertitle Letter VA"
+ElseIf [Forms]![foreclosure database screen]![PropertyState] = "DC" Then
+VConvRpt = "ordertitle Letter DC"
+End If
+'Call ConvertPDFALL
+Call ConvertPDFUSER
+
+'Email Start
+
+Client = Forms![foreclosure database screen]![Client]
+LoanNo = Forms![foreclosure database screen]![ClientRefNumber]
+GSubject = Client & " /Type of Loan: " & Forms![foreclosure database screen]!TypeOfLoan
+gBody = "Borrower: " & debtorsFORE() & vbCr & "Property: " & Forms![foreclosure database screen]!PropAddress & vbCr & "Loan#: " & Forms![foreclosure database screen]![ClientRefNumber] & vbCr & "Org Prin Balance: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgAmount, "$###,##0.00") & " /County: " & Forms![foreclosure database screen]!Propertycounty & "/ Type of Loan: " & Forms![foreclosure database screen]!TypeOfLoan + SigEmailBlock
+
+
+If Forms![foreclosure database screen]!Client Like "Seter*" Then
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+gRecipients = "DCOrders@compassresearchgroup.com"
+Else
+gRecipients = "mdorders@compassresearchgroup.com"
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Quantu*" Then
+gRecipients = "abstracts@lineartitle.com"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Nationst*" And Forms![foreclosure database screen]!TypeOfLoan = "CONV" Then
+gRecipients = "SSAttorney@solutionstar.com"
+Vfilename = Forms![foreclosure database screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "SolutionStar.xls"
+DoCmd.OutputTo acOutputQuery, "SolutionStarOrders", acFormatXLS, "\\rvdv-fs01\Datatransfer\SolutionStar\" & Vfilename
+gAttachment1 = "\\rvdv-fs01\Datatransfer\SolutionStar\" & Vfilename
+DoCmd.OpenQuery ("TitleOrderedSolutionStar")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Champion*" And (Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC" And Forms![foreclosure database screen]!TypeOfLoan <> "FNMA") Then
+gRecipients = "championtitle@solutionstar.com"
+Vfilename = Forms![foreclosure database screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "SolutionStar.xls"
+DoCmd.OutputTo acOutputQuery, "SolutionStarOrders", acFormatXLS, "\\rvdv-fs01\Datatransfer\SolutionStar\" & Vfilename
+gAttachment1 = "\\rvdv-fs01\Datatransfer\SolutionStar\" & Vfilename
+DoCmd.OpenQuery ("TitleOrderedSolutionStar")
+
+
+Else
+gRecipients = ""
+End If
+
+gCCRecipients = "ordertitles@bww-law.com"
+
+If gAttachment1 = "" Then
+gAttachment1 = pathuser() & "\" & VConvRpt & ".pdf"
+End If
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = gRecipients
+MyMail.CC = gCCRecipients
+
+MyMail.Attachments.ADD gAttachment1
+MyMail.Subject = GSubject
+MyMail.body = gBody
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+'Email Finish
+
+MsgBox ("Email Complete will exit")
+Exit Function
+Else
+MsgBox ("Incorrect entry, will exit")
+Exit Function
+
+End If
+End If
+End If
+
+'Start of Regular email selections.
+
+Client = Forms![foreclosure database screen]![Client]
+prtorder = InputBox("(E)mail or (P)rint Order Title")
+
+If prtorder = "P" Then
+Call ordertitleselect
+
+Else
+'EMAIL Orders
+
+Dim strsqlJur As String
+Dim rsJur As RecordSet
+strsqlJur = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & ";"
+Set rsJur = CurrentDb.OpenRecordset(strsqlJur, dbOpenSnapshot)
+
+SigEmailBlock = SigEmail()
+
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" Then
+VConvRpt = "OrderTitle Letter"
+ElseIf [Forms]![foreclosure database screen]![PropertyState] = "VA" Then
+VConvRpt = "ordertitle Letter VA"
+ElseIf [Forms]![foreclosure database screen]![PropertyState] = "DC" Then
+VConvRpt = "ordertitle Letter DC"
+End If
+
+Call ConvertPDFALL
+
+If IsNull(Forms![foreclosure database screen]![ClientRefNumber]) Then
+MsgBox ("No Loan# Input, exiting")
+Exit Function
+End If
+
+LoanNo = Forms![foreclosure database screen]![ClientRefNumber]
+GSubject = Client & "/Type of Loan: " & Forms![foreclosure database screen]!TypeOfLoan
+gBody = "Borrower: " & debtorsFORE() & vbCr & "Property: " & Forms![foreclosure database screen]!PropAddress & vbCr & "Loan#: " & Forms![foreclosure database screen]![ClientRefNumber] & vbCr & "Org Prin Balance: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgAmount, "$###,##0.00") & " /County: " & Forms![foreclosure database screen]!Propertycounty & "/ Type of Loan: " & Forms![foreclosure database screen]!TypeOfLoan + SigEmailBlock
+
+'Maryland Code...
+If [Forms]![foreclosure database screen]![PropertyState] <> "VA" Then
+
+If VOrders = 4 Or VOrders = 10 Then
+gRecipients = "ndts.orders@firstam.com"
+gCCRecipients = "ordertitles@bww-law.com; FCL.customerservice@firstam.com"
+Vfilename = Forms![foreclosure database screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "FirstAM.xls"
+DoCmd.OutputTo acOutputQuery, "SkyCreekOrders", acFormatXLS, "\\rvdv-fs01\Datatransfer\FirstAm\" & Vfilename
+gAttachment1 = pathuser() & "\" & VConvRpt & ".pdf"
+gAttachment2 = "\\rvdv-fs01\Datatransfer\FirstAm\" & Vfilename
+gAttachment3 = ""
+gattachment4 = ""
+Call SendEmail(gRecipients, gCCRecipients, GSubject, gBody, gAttachment1, gAttachment2, gAttachment3, gattachment4)
+DoCmd.OpenQuery ("TitleOrderedSkyCreek")
+rs.Close
+Exit Function
+
+ElseIf VOrders = 6 Then
+If Forms![foreclosure database screen]!Client Like "Nationstar*" And Forms![foreclosure database screen]!TypeOfLoan <> "Conv" Then
+
+Else
+If Forms![foreclosure database screen]!Client Like "Nationstar*" Then
+gRecipients = "SSAttorney@solutionstar.com"
+ElseIf Forms![foreclosure database screen]!Client Like "Champion*" Then
+gRecipients = "championtitle@solutionstar.com"
+
+End If
+
+gCCRecipients = "ordertitles@bww-law.com"
+Vfilename = Forms![foreclosure database screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "SolutionStar.xls"
+DoCmd.OutputTo acOutputQuery, "SolutionStarOrders", acFormatXLS, "\\rvdv-fs01\Datatransfer\SolutionStar\" & Vfilename
+'gAttachment1 = pathuser() & "\" & VConvRpt & ".pdf"
+gAttachment1 = "\\rvdv-fs01\Datatransfer\SolutionStar\" & Vfilename
+gAttachment3 = ""
+gattachment4 = ""
+Call SendEmail(gRecipients, gCCRecipients, GSubject, gBody, gAttachment1, gAttachment2, gAttachment3, gattachment4)
+DoCmd.OpenQuery ("TitleOrderedSolutionStar")
+rs.Close
+Exit Function
+End If
+
+ElseIf VOrders = 5 Then
+gRecipients = "PFS_Order_Entry@nationallinklp.com"
+gCCRecipients = "ordertitles@bww-law.com"
+Vfilename = Forms![foreclosure database screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "National.xls"
+DoCmd.OutputTo acOutputQuery, "NationalOrders", acFormatXLS, "\\rvdv-fs01\Datatransfer\National\" & Vfilename
+gAttachment1 = "\\rvdv-fs01\Datatransfer\National\" & Vfilename
+gAttachment3 = ""
+gattachment4 = ""
+Call SendEmail(gRecipients, gCCRecipients, GSubject, gBody, gAttachment1, gAttachment2, gAttachment3, gattachment4)
+DoCmd.OpenQuery ("TitleOrderedNational")
+rs.Close
+Exit Function
+
+ElseIf Forms![foreclosure database screen]!Client Like "Quantu*" Then
+gRecipients = "abstracts@lineartitle.com"
+gCCRecipients = "ordertitles@bww-law.com"
+gAttachment1 = pathuser() & "\" & VConvRpt & ".pdf"
+gAttachment2 = ""
+gAttachment3 = ""
+gattachment4 = ""
+Call SendEmail(gRecipients, gCCRecipients, GSubject, gBody, gAttachment1, gAttachment2, gAttachment3, gattachment4)
+DoCmd.OpenQuery ("TitleOrderedQuantum")
+rs.Close
+Exit Function
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+gRecipients = "pstquality@altisource.com"
+gCCRecipients = "ordertitles@bww-law.com"
+gAttachment1 = pathuser() & "\" & VConvRpt & ".pdf"
+gAttachment2 = ""
+gAttachment3 = ""
+gattachment4 = ""
+Call SendEmail(gRecipients, gCCRecipients, GSubject, gBody, gAttachment1, gAttachment2, gAttachment3, gattachment4)
+DoCmd.OpenQuery ("TitleOrderedOcwen")
+rs.Close
+Exit Function
+
+
+Else
+
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+gRecipients = "DCOrders@compassresearchgroup.com"
+Else
+gRecipients = "MDOrders@compassresearchgroup.com"
+End If
+
+gCCRecipients = "ordertitles@bww-law.com"
+Vfilename = Forms![foreclosure database screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "CompassOrder.xls"
+DoCmd.OutputTo acOutputQuery, "CompassOrdersBGW", acFormatXLS, "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+gAttachment1 = pathuser() & "\" & VConvRpt & ".pdf"
+gAttachment2 = "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+gAttachment3 = ""
+gattachment4 = ""
+Call SendEmail(gRecipients, gCCRecipients, GSubject, gBody, gAttachment1, gAttachment2, gAttachment3, gattachment4)
+DoCmd.OpenQuery ("TitleOrderedCompass")
+rs.Close
+Exit Function
+End If
+
+If Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+gRecipients = "Dewey.Brown@bww-law.com; Stefani.Sherer-Ballew@bww-law.com"
+GSubject = "Title Ordered = Maryland Ocwen File" & Date
+gBody = "Borrower: " & debtorsFORE() & vbCr & "Property: " & Forms![foreclosure database screen]!PropAddress & vbCr & "Loan#: " & Forms![foreclosure database screen]![ClientRefNumber] & vbCr & "Org Prin Balance: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgAmount, "$###,##0.00") & " /County: " & Forms![foreclosure database screen]!Propertycounty
+gAttachment1 = ""
+gAttachment2 = ""
+gAttachment3 = ""
+gattachment4 = ""
+Call SendEmail(gRecipients, gCCRecipients, GSubject, gBody, gAttachment1, gAttachment2, gAttachment3, gattachment4)
+rs.Close
+Exit Function
+End If
+
+End If
+
+'VIRGINIA Specific
+
+If Forms![foreclosure database screen]![PropertyState] = "VA" Then
+
+
+If VOrders = 4 Then
+gRecipients = "product@skycreekms.com"
+gCCRecipients = "ordertitles@bww-law.com"
+Vfilename = Forms![foreclosure database screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "SkyCreek.xls"
+DoCmd.OutputTo acOutputQuery, "SkyCreekOrders", acFormatXLS, "\\rvdv-fs01\Datatransfer\SkyCreek\" & Vfilename
+gAttachment1 = pathuser() & "\" & VConvRpt & ".pdf"
+gAttachment2 = "\\rvdv-fs01\Datatransfer\SkyCreek\" & Vfilename
+gAttachment3 = ""
+gattachment4 = ""
+Call SendEmail(gRecipients, gCCRecipients, GSubject, gBody, gAttachment1, gAttachment2, gAttachment3, gattachment4)
+DoCmd.OpenQuery ("TitleOrderedSkyCreek")
+rs.Close
+Exit Function
+
+
+ElseIf (rsJur!PreparesTItles = 1) Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Or _
+(rs!ClientSpecificTitleCo = 1 And _
+(VPropertyCounty <> "Craig" And VPropertyCounty <> "Norton City" And VPropertyCounty <> "Alleghany" And VPropertyCounty <> "Charles City" And VPropertyCounty <> "Northampton" And VPropertyCounty <> "Surry" And VPropertyCounty <> "Rappahannock" And VPropertyCounty <> "Wise" And VPropertyCounty <> "Bath" And VPropertyCounty <> "Buchanan" And VPropertyCounty <> "Dickenson" And VPropertyCounty <> "Russell" And VPropertyCounty <> "Highland" And VPropertyCounty <> "Emporia City" And VPropertyCounty <> "Lee")) Then
+Vfilename = Forms![foreclosure database screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "CompassOrder.xls"
+DoCmd.OutputTo acOutputQuery, "CompassOrdersBGW", acFormatXLS, "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+gRecipients = "VAOrders@compassresearchgroup.com"
+gCCRecipients = "ordertitles@bww-law.com"
+gAttachment1 = pathuser() & "\" & VConvRpt & ".pdf"
+gAttachment2 = "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+gAttachment3 = ""
+gattachment4 = ""
+Call SendEmail(gRecipients, gCCRecipients, GSubject, gBody, gAttachment1, gAttachment2, gAttachment3, gattachment4)
+DoCmd.OpenQuery ("TitleOrderedcompass")
+
+Else
+
+gRecipients = "NonCHL@landsafe.com"
+gCCRecipients = "katherine.yee@landsafe.com; ordertitles@bww-law.com"
+gAttachment1 = pathuser() & "\" & VConvRpt & ".pdf"
+gAttachment2 = ""
+gAttachment3 = ""
+gattachment4 = ""
+Call SendEmail(gRecipients, gCCRecipients, GSubject, gBody, gAttachment1, gAttachment2, gAttachment3, gattachment4)
+DoCmd.OpenQuery ("TitleOrderedLandsafe")
+End If
+End If
+
+
+rs.Close
+Exit Function
+End If
+
+
+'If Forms![Foreclosure Database Screen]!PropertyState = "DC" Then
+'gRecipients = "DCOrders@compassresearchgroup.com"
+'Else
+'gRecipients = "MDOrders@compassresearchgroup.com"
+'End If
+
+
+End Function
+
+Public Function SAVEMe()
+
+Dim varsendemail As String
+varsendemail = MsgBox("Sending Email, Continue?", vbYesNo)
+
+If varsendemail = vbYes Then
+Dim rsPL As RecordSet
+VarParaLegal = InputBox("Enter Initials")
+strPL = "Select * from employees where EmployeeID = " & """" & VarParaLegal & """" & ";"
+Set rsPL = CurrentDb.OpenRecordset(strPL, dbOpenSnapshot)
+
+If rsPL.EOF Then
+MsgBox "Entered Incorrect Initials", vbOKOnly
+rsPL.Close
+Exit Function
+
+Else
+
+If IsNull(rsPL!MiddleName) Then
+sig1 = rsPL!FirstName & " " & rsPL!LastName
+
+If IsNull(rsPL!Title) Then
+vtitle = ""
+Else
+vtitle = rsPL!Title
+End If
+
+Else
+
+sig1 = rsPL!FirstName & " " & rsPL!MiddleName & " " & rsPL!LastName
+
+If IsNull(rsPL!Title) Then
+vtitle = ""
+Else
+vtitle = rsPL!Title
+End If
+
+End If
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+If IsNull(rsPL!EmailName) Then
+ccTo = "ordertitles@bww-law.com"
+Else
+ccTo = rsPL!EmailName & "; ordertitles@bww-law.com"
+End If
+End If
+
+End If
+
+rsPL.Close
+
+SigEmailBlock = vbCr & vbCr & sig1 & vbCr & vtitle + (Chr(13)) + "BWW Law Group, LLC" + (Chr(13)) + "Phone: 301-961-6555" & (Chr(13)) + "Main Fax: 301-961-6545" + (Chr(13)) + "Fax: 301-961-6545"
+
+End If
+
+End Function
+
+Public Function OrderTitleVA()
+Dim strsqlJur As String
+Dim rsJur As RecordSet
+
+strsqlJur = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & ";"
+Set rsJur = CurrentDb.OpenRecordset(strsqlJur, dbOpenSnapshot)
+
+If (rsJur!PreparesTItles = 1) And _
+(Forms![foreclosure database screen]!Client <> "BAC Home Loans, Inc." And Forms![foreclosure database screen]!Client <> "Bank of America, N.A." And _
+Forms![foreclosure database screen]!Client <> "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP") Then
+OrderTitleVA = "Compass Research Group"
+Else
+OrderTitleVA = "Landsafe Title"
+End If
+
+rsJur.Close
+
+End Function
+Public Function TitleScreenOpen()
+
+    Dim stDocName As String
+    Dim stLinkCriteria As String
+    
+    Dim vClient
+    vClient = Forms![foreclosure database screen]!Client
+    GblFilenum = Forms![foreclosure database screen]![filenum]
+    'DoCmd.Close acForm, "foreclosure database screen"
+    stDocName = "First American/Fidelity Title Orders Screen"
+    stLinkCriteria = "[bgw_FileNum]=" & GblFilenum
+    DoCmd.OpenForm stDocName, , , stLinkCriteria
+    If IsNull(Forms![First American/Fidelity Title Orders Screen]!ben_seller) Then
+    Forms![First American/Fidelity Title Orders Screen]!ben_seller = vClient
+    End If
+    
+
+    
+End Function
+
+Public Function TitleChk()
+
+Dim VLoanTitleScr, VLoanFAmScr, VLoanFCScr As String
+Dim VPropTitleScr, VPropFAmScr, VPropFCScr As String
+Dim VFAMTitRcd, VFCTitRcd, VFCDebtor, VFAMDebtor As String
+Dim rsClient, rsFAm, rsFC As RecordSet
+Dim strFAM, strFC, strsql As String
+Dim vFileNo, VTempNo As Integer
+
+Dim VCancel As String
+VCancel = ""
+
+If IsNull(Forms![title open screen]![loan#]) Then
+VLoanTitleScr = ""
+Else
+VLoanTitleScr = Forms![title open screen]![loan#]
+End If
+
+If IsNull(Forms![title open screen]![Address1]) Then
+VPropTitleScr = ""
+Else
+VPropTitleScr = Forms![title open screen]![Address1]
+End If
+
+strFAM = "select filenum, lastname, firstname, address1, [loan#], titleORD from title where [loan#] = " & """" & VLoanTitleScr & """" & ";"
+Set rsFAm = CurrentDb.OpenRecordset(strFAM, dbOpenSnapshot)
+
+VTempNo = 0
+
+If rsFAm.EOF Then
+VLoanFAmScr = ""
+VFAMTitRcd = ""
+VFAMDebtor = ""
+VTempNo = 0
+Else
+VLoanFAmScr = rsFAm![loan#]
+VFAMTitRcd = rsFAm!TitleOrd
+VTempNo = rsFAm!filenum
+VFAMDebtor = rsFAm!FirstName & " " & rsFAm!LastName
+
+End If
+
+strFAM = ""
+rsFAm.Close
+strFAM = "select firstname, lastname, address1, [loan#], filenum, titleord from title where address1 like " & """" & VPropTitleScr & "*"" "
+Set rsFAm = CurrentDb.OpenRecordset(strFAM, dbOpenSnapshot)
+
+If rsFAm.EOF Then
+VPropFAmScr = ""
+VFAMTitRcd = ""
+If VTempNo <> 0 Then
+Else
+VTempNo = 0
+End If
+Else
+VPropFAmScr = rsFAm![Address1]
+VFAMTitRcd = rsFAm!TitleOrd
+VFAMDebtor = rsFAm!FirstName & " " & rsFAm!LastName
+
+VTempNo = rsFAm!filenum
+End If
+
+strFAM = ""
+rsFAm.Close
+
+strFC = "select firstnamedebtor1, lastnamedebtor1, clientrefnumber, filenum from cases where clientrefnumber = " & """" & VLoanTitleScr & """" & ";"
+Set rsFC = CurrentDb.OpenRecordset(strFC, dbOpenSnapshot)
+
+vFileNo = 0
+
+If rsFC.EOF Then
+VLoanFCScr = ""
+vFileNo = 0
+Else
+VLoanFCScr = rsFC![ClientRefNumber]
+vFileNo = rsFC!filenum
+VFCDebtor = rsFC!FirstNameDebtor1 & " " & rsFC!LastNameDebtor1
+
+End If
+'MsgBox (VLoanFCScr & " : " & VFileNo)
+
+strFC = ""
+rsFC.Close
+
+
+strFC = "select filenum, firstnamedebtor1, lastnamedebtor1, propaddress, clientrefnumber from cases where propaddress like " & """" & VPropTitleScr & "*"" "
+Set rsFC = CurrentDb.OpenRecordset(strFC, dbOpenSnapshot)
+
+If rsFC.EOF Then
+VPropFCScr = ""
+If vFileNo <> 0 Then
+Else
+vFileNo = 0
+End If
+
+Else
+VPropFCScr = rsFC!PropAddress
+vFileNo = rsFC!filenum
+VFCDebtor = rsFC!FirstNameDebtor1 & " " & rsFC!LastNameDebtor1
+
+End If
+strFC = ""
+rsFC.Close
+
+If vFileNo <> 0 Then
+strFC = "select TITLEREPORTORDERED from foreclosure where subfilenum =" & vFileNo & ";"
+Set rsFC = CurrentDb.OpenRecordset(strFC, dbOpenSnapshot)
+
+If rsFC.EOF Then
+VFCTitRcd = ""
+Else
+VFCTitRcd = rsFC!TitleReportOrdered
+End If
+strFC = ""
+rsFC.Close
+End If
+
+If (vFileNo <> 0 And VFCTitRcd <> "") Or _
+(VFAMTitRcd <> "" And VTempNo <> Forms![title open screen]!filenum) Then
+
+    If vFileNo <> 0 Then
+        If VFCTitRcd <> "" Then
+            If VPropFCScr <> "" And VLoanFCScr <> "" Then
+
+            VCancel = MsgBox("There is a File in Foreclosure Database with Loan# and Similar Property: " & vbCr & "Loan#: " & _
+            VLoanFCScr & vbCr & "Property: " & VPropFCScr & vbCr & "Debtor: " & VFCDebtor & vbCr & "Title Ord'd: " & _
+            VFCTitRcd & vbCr & "BWW#: " & vFileNo & vbCr & "Do you want to Cancel Email?", vbYesNo)
+
+            ElseIf VPropFCScr <> "" And VLoanFCScr = "" Then
+            
+            VCancel = MsgBox("There is a File in Foreclosure Database with similar Property: " & _
+            vbCr & "Property: " & VPropFCScr & vbCr & "Debtor: " & VFCDebtor & vbCr & "Title Ord'd: " & _
+            VFCTitRcd & vbCr & "BWW#: " & vFileNo & vbCr & "Do you want to Cancel Email?", vbYesNo)
+    
+            ElseIf VPropFCScr = "" And VLoanFCScr <> "" Then
+            
+            VCancel = MsgBox("There is a File in Foreclosure Database with Loan #: " & _
+            vbCr & "Loan#: " & VLoanFCScr & vbCr & "Debtor: " & VFCDebtor & vbCr & "Title Ord'd: " & _
+            VFCTitRcd & vbCr & "BWW#: " & vFileNo & vbCr & "Do you want to Cancel Email?", vbYesNo)
+            End If
+        End If
+    End If
+   If VFAMTitRcd <> "" And VTempNo <> Forms![title open screen]!filenum Then
+            If VPropFAmScr <> "" And VLoanFAmScr <> "" Then
+
+            VCancel = MsgBox("There is a File in First American Database: " & vbCr & "Loan#: " & _
+            VLoanFAmScr & vbCr & "Property: " & VPropFAmScr & vbCr & "Debtor: " & VFAMDebtor & vbCr & "Title Ord'd: " & _
+            VFAMTitRcd & vbCr & "Temp#: " & VTempNo & vbCr & "Do you want to Cancel Email?", vbYesNo)
+
+            ElseIf VPropFAmScr <> "" And VLoanFAmScr = "" Then
+            
+            VCancel = MsgBox("There is a File in First American Database: " & _
+            vbCr & "Property: " & VPropFAmScr & vbCr & "Debtor: " & VFAMDebtor & vbCr & "Title Ord'd: " & _
+            VFAMTitRcd & vbCr & "Temp#: " & VTempNo & vbCr & "Do you want to Cancel Email?", vbYesNo)
+    
+            ElseIf VPropFAmScr = "" And VLoanFAmScr <> "" Then
+            
+            VCancel = MsgBox("There is a File in First American Database: " & _
+            vbCr & "Loan#: " & VLoanFAmScr & vbCr & "Debtor: " & VFAMDebtor & vbCr & "Title Ord'd: " & _
+            VFAMTitRcd & vbCr & "Temp#: " & VTempNo & vbCr & "Do you want to Cancel Email?", vbYesNo)
+            End If
+        End If
+         
+  
+  
+  
+
+If VCancel = vbYes Then
+Exit Function
+Else
+'If Forms![title open screen]!County = "Allegany" Then
+'DoCmd.OpenReport "OrderTitle Letter OPEN Screen", acViewPreview
+'Else
+Call TitleEmail
+'End If
+
+End If
+Else
+'If Forms![title open screen]!County = "Allegany" Then
+'DoCmd.OpenReport "OrderTitle Letter OPEN Screen", acViewPreview
+'Else
+Call TitleEmail
+'End If
+
+End If
+End Function
+Public Function TitleEmail()
+Dim varemailto As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim VTo, VFax, vCounty, VRecording, Vdue, VLanguage, VAdd, VLang, VLang2, VLang3, VLang4, VLang5, VLang6, VLang7 As String
+Dim E1, E2, E3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, Vss1, Vss2 As String
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+
+Dim emailmessage, emailmessage2 As String
+Dim emailsubject, Client, LoanNo As String
+
+Client = Forms![title open screen]![Client]
+
+If IsNull(Forms![title open screen]![titleorderno]) Then
+LoanNo = "_________"
+Else
+LoanNo = Forms![title open screen]![titleorderno]
+End If
+
+emailsubject = "* * * NEW TITLE ORDER DUE " & Forms![title open screen]!TitleOrd + 5 & " * * * Borrower: " & Forms![title open screen]!LastName & ", " & Forms![title open screen]!FirstName & ":  Jurisdiction: " & Forms![title open screen]!County & ": Client: " & Forms![title open screen]!Client
+
+
+If Forms![title open screen]!State = "MD" Then
+
+If Forms![title open screen]![Client] Like "Bank of Am*" Or Forms![title open screen]!Client = "Bank of America, N.A." Then
+MyMail.To = "CHL@landsafe.com"
+MyMail.CC = "ordertitles@bww-law.com"
+emailsubject = Forms![title open screen]!TitleOrd + 5 & " * * * Borrower: " & Forms![title open screen]!LastName & ", " & Forms![title open screen]!FirstName & ":  Jurisdiction: " & Forms![title open screen]!County & ": Client: " & Forms![title open screen]!Client
+
+Else
+Vfilename = Forms![title open screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "CompassOrder_TitleOpenScrn.xls"
+DoCmd.OutputTo acOutputQuery, "CompassOrdersBGWMD-TitleOpen", acFormatXLS, "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+
+
+MyMail.To = "MDOrders@compassresearchgroup.com"
+MyMail.CC = "ordertitles@bww-law.com"
+
+'End If
+
+End If
+
+Else
+If Forms![title open screen]![Client] <> "BAC Home Loans, Inc." And _
+ Forms![title open screen]!Client <> "Bank of America, N.A." _
+    And Forms![title open screen]![Client] <> "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP" _
+    And [Forms]![title open screen]![Client] <> "Ocwen Loan Servicing, LLC" Then
+    emailsubject = "EXTERNAL ORDER (Non CHL): " & Forms![title open screen]!TitleOrd + 5 & " * * * Borrower: " & Forms![title open screen]!LastName & ", " & Forms![title open screen]!FirstName & ":  Jurisdiction: " & Forms![title open screen]!County & ": Client: " & Forms![title open screen]!Client
+ElseIf Forms![title open screen]![Client] = "BAC Home Loans, Inc." Or _
+Forms![title open screen]!Client = "Bank of America, N.A." Or _
+Forms![title open screen]![Client] = "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP" Then
+    emailsubject = Forms![title open screen]!TitleOrd + 5 & " * * * Borrower: " & Forms![title open screen]!LastName & ", " & Forms![title open screen]!FirstName & ":  Jurisdiction: " & Forms![title open screen]!County & ": Client: " & Forms![title open screen]!Client
+Else
+    emailsubject = "EXTERNAL ORDER: " & Forms![title open screen]!TitleOrd + 5 & " * * * Borrower: " & Forms![title open screen]!LastName & ", " & Forms![title open screen]!FirstName & ":  Jurisdiction: " & Forms![title open screen]!County & ": Client: " & Forms![title open screen]!Client
+    
+    End If
+
+If Forms![title open screen]!Client Like "Bank of Am*" Or Forms![title open screen]!Client = "Bank of America, N.A." Then
+MyMail.To = "CHL@Landsafe.com"
+MyMail.CC = "ordertitles@bww-law.com; Joe_hannigan@bankofamerica.com"
+
+Else
+If (Forms![title open screen]!County = "Prince William" Or _
+Forms![title open screen]!County = "Fairfax" Or _
+Forms![title open screen]!County = "Loudoun" Or _
+Forms![title open screen]!County = "Arlington" Or _
+Forms![title open screen]!County = "City of Alexandria" Or _
+Forms![title open screen]!County = "Fauquier" Or _
+Forms![title open screen]!County = "Stafford" Or _
+Forms![title open screen]!County = "Falls Church City" Or _
+Forms![title open screen]!County = "Spotsylvania") And _
+Forms![title open screen]!Client <> "BAC Home Loans, Inc." And _
+Forms![title open screen]!Client <> "Bank of America, N.A." And _
+Forms![title open screen]![Client] <> "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP" Then
+MyMail.To = "VAOrders@compassresearchgroup.com"
+MyMail.CC = "ordertitles@bww-law.com"
+Vfilename = Forms![title open screen]!filenum & "_" & Format(Date, "m-d-yy") & "_" & Format(TIME(), "hh-nn-ss") & "_" & "CompassOrder_TitleOpenScrn.xls"
+DoCmd.OutputTo acOutputQuery, "CompassOrdersBGWVA-TitleOpen", acFormatXLS, "\\rvdv-fs01\Datatransfer\CompassTitles\" & Vfilename
+
+Else
+MyMail.To = "NonCHL@landsafe.com"
+MyMail.CC = "ordertitles@bww-law.com; katherine.yee@landsafe.com; Joe_hannigan@bankofamerica.com"
+End If
+
+End If
+
+
+End If
+
+If Forms![title open screen]![State] = "DC" Or Forms![title open screen]![State] = "va" Then
+If (Forms![title open screen]!County = "Prince William" Or _
+Forms![title open screen]!County = "Fairfax" Or _
+Forms![title open screen]!County = "Loudoun" Or _
+Forms![title open screen]!County = "Arlington" Or _
+Forms![title open screen]!County = "City of Alexandria" Or _
+Forms![title open screen]!County = "Fauquier" Or _
+Forms![title open screen]!County = "Stafford" Or _
+Forms![title open screen]!County = "Falls Church City" Or _
+Forms![title open screen]!County = "Spotsylvania") And _
+Forms![title open screen]!Client <> "BAC Home Loans, Inc." And _
+Forms![title open screen]!Client = "Bank of America, N.A." And _
+Forms![title open screen]![Client] <> "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP" Then
+MyMail.To = "Compass Research Group"
+Else
+VTo = "LANDSAFE TITLE"
+End If
+Else
+VTo = "Compass Research Group"
+'vto = "Title and Abstract Services"
+'Else
+'vto = "Harbor City Research"
+End If
+
+If Forms![title open screen]![State] = "DC" Or Forms![title open screen]![State] = "va" Then
+VFax = "(954) 202-7356"
+ElseIf Forms![title open screen]!County = "Allegany" Then
+VFax = ""
+Else
+VFax = "(410) 659-0517"
+End If
+
+VRecording = liberfolioTITLE()
+
+If Forms![title open screen]![State] = "MD" Then
+Vdue = Date + 5
+
+If Forms![title open screen]!Client Like "Nations Def*" Then
+VLang = ""
+Else
+VLang = "THE SEARCH MUST INCLUDE COPIES OF ALL DEEDS, DEED OF TRUST/MORTGAGES (A FULL COPY OF OUR DOT), JUDGMENTS, LIENS, INCLUDING US DISTRICT COURT JUDGMENTS/LIENS."
+End If
+
+If Forms![title open screen]!Client Like "Litton*" Or _
+Forms![title open screen]!Client Like "EMC*" Or _
+Forms![title open screen]!Client Like "Homecoming*" Or _
+Forms![title open screen]!Client = "select portfolio servicing, Inc." Or _
+Forms![title open screen]!Client Like "Ocwen*" Or _
+Forms![title open screen]!Client Like "Homeward*" Or _
+Forms![title open screen]!Client = "JPMorgan Chase Bank, National Association" Or _
+Forms![title open screen]!Client = "washington mutual bank" Then
+VLang2 = "<br> <br> PLEASE SEND THE TITLE SEARCH TO: <br>" & "<br>" & "BWW Law Group, LLC, Attn: Mary Beth Dalto" & "<br>" _
+& "6003 Executive Blvd. Suite 101" & "<br>" _
+& "Rockville, MD 20852" & "<br>" & "Phone: 301-961-6555, Fax: 301-961-6469 <br>"
+Else
+VLang2 = ""
+End If
+
+
+VLang3 = "<br>" & "<br>" & "*SPECIAL INSTRUCTIONS*:" & "<br><br>"
+
+If Forms![title open screen]!Client Like "Nations Def*" Then
+
+Dim Vinput As String
+
+Vinput = MsgBox("This is a Foreclosure Management File, Do you need to Order Title? " & "<br>" & "(Answering Yes will print out 2 Owner Back Search Language.  " & "<br>" & "Answering No, Certified Copy of D/T Language will print).", vbYesNo)
+If Vinput = vbYes Then
+VLang4 = "<b> <font color = " & """" & "red" & """" & "> PLEASE PROVIDE THE ORIGINAL CERTIFIED COPY OF OUR DEED OF TRUST WITHIN 48 TO 72 HOURS.  IT IS REQUIRED TO DOCKET OUR SUIT TO MEET OUR TIMELINE.  ALSO, PLEASE PROVIDE A FULL COPY OF OUR DEED OF TRUST IN THE TITLE ABSTRACT. </b><br><br> </font>"
+Else
+VLang4 = "<b> <font color = " & """" & "red" & """" & "> PLEASE PROVIDE THE ORIGINAL CERTIFIED COPY OF OUR DEED OF TRUST WITHIN 48 TO 72 HOURS.  IT IS REQUIRED TO DOCKET OUR SUIT TO MEET OUR TIMELINE.  </b><br><br> </font>"
+End If
+
+Else
+'VLang4 = "<b> <font color = " & """" & "red" & """" & "> THE SEARCH MUST INCLUDE FULL COPIES OF ALL DEEDS, DEED OF TRUST/MORTGAGES (A FULL COPY OF OUR DOT), JUDGMENTS, LIENS, INCLUDING US DISTRICT COURT JUDGMENTS/LIENS.  </b><br><br> </font>"
+End If
+
+If Forms![title open screen]!PropertyState = "MD" Then
+VLang5 = "<br>" & "<br>" & "SEARCH MUST INCLUDE FULL COPIES OF ALL DEEDS, DOTS, JUDGMENTS AND LIENS." & "<br><br>"
+Else
+VLang5 = ""
+End If
+
+VLanguage = "PLEASE RUN A 2 OWNER - BACK TITLE SEARCH. <br> <br> " + VLang + VLang2 + VLang3 + VLang4 + VLang5
+
+End If
+
+If Forms![title open screen]![State] = "DC" Then
+Vdue = Date + 5
+
+If Forms![title open screen]!Client = "JPMorgan Chase Bank, National Association" Or _
+Forms![title open screen]!Client = "washington mutual bank" Then
+VLang = "In addition to the below requested information, please provide within 48 hours from this request a copy of the recorded deed of trust.  Please fax same to 301-961-6545."
+Else
+VLang = "THE SEARCH MUST INCLUDE COPIES OF ALL DEEDS, DEED OF TRUST/MORTGAGES (A FULL COPY OF OUR DOT), JUDGMENTS, LIENS, INCLUDING US DISTRICT COURT JUDGMENTS/LIENS. <br> <br>"
+End If
+
+VLang2 = "<br>" & "<br>" & "*SPECIAL INSTRUCTIONS*:" & "<br><br>"
+
+VLang3 = "DATE DUE IS 5 DAYS FROM DATE OF ORDER.  (THIS CLIENT REALLY DEMANDS THAT WE HAVE THE TITLE REPORT WITHIN FIVE DAYS!!!)" & "<br>"
+
+VLanguage = "PLEASE RUN A 2 OWNER - BACK TITLE SEARCH. <br> <br> " + VLang + VLang2 + VLang3
+
+End If
+
+
+If Forms![title open screen]![State] = "VA" Then
+Vdue = Date + 5
+
+If Forms![title open screen]!Client = "JPMorgan Chase Bank, National Association" Or _
+Forms![title open screen]!Client = "washington mutual bank" Then
+VLang = "PLEASE RUN A 2 OWNER - BACK TITLE SEARCH. PLEASE SEND A COPY OF THE SEARCH TO: " & "<br>" & "BWW Law Group, LLC"""
+Else
+VLang = "PLEASE RUN A 2 OWNER - BACK TITLE SEARCH. <br> <br> THE SEARCH MUST INCLUDE COPIES OF ALL DEEDS, DEED OF TRUST/MORTGAGES (A FULL COPY OF OUR DOT), JUDGMENTS, LIENS, INCLUDING US DISTRICT COURT JUDGMENTS/LIENS. <br> <br> "
+End If
+
+VLang2 = "<br>" & "<br>" & "*SPECIAL INSTRUCTIONS*:" & "<br>"
+
+VLang3 = "DATE DUE IS 5 DAYS FROM DATE OF ORDER.  (THIS CLIENT REALLY DEMANDS THAT WE HAVE THE TITLE REPORT WITHIN FIVE DAYS!!!)" & "<br>"
+
+
+VLanguage = VLang + VLang2 + VLang3
+
+End If
+
+Dim VLSq As String
+If IsNull(Forms![title open screen]!lot) And IsNull(Forms![title open screen]!square) Then
+VLSq = ""
+Else
+If IsNull(square) Then
+VLSq = ", Lot: " & Forms![title open screen]!lot
+ElseIf IsNull(lot) Then
+VLSq = ", Square: " & Forms![title open screen]!square
+Else
+VLSq = ", Lot: " & Forms![title open screen]!lot & ", Square: " & Forms![title open screen]!square
+End If
+End If
+
+
+If IsNull(Forms![title open screen]!Address2) Then
+VAdd = Forms![title open screen]!Address1
+Else
+VAdd = Forms![title open screen]!Address1 & ", " & Forms![title open screen]!Address2
+End If
+
+If IsNull(Forms![title open screen]![ssno]) Then
+Vss1 = ""
+Else
+Vss1 = ", SS#: " & "xxx-xx-" & Right(Forms![title open screen]![ssno], 4)
+End If
+
+
+If IsNull(Forms![title open screen]![ssno2]) Then
+Vss2 = ""
+Else
+Vss2 = ", SS#: " & "xxx-xx-" & Right(Forms![title open screen]![ssno2], 4)
+End If
+
+strsql = "select * from clients where organizationname = " & """" & Forms![title open screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rsClient.EOF Then
+MsgBox ("NO Client input or Client is not correct in drop down listing.  Please check. will cancel")
+Exit Function
+End If
+
+
+If rsClient!OrganizationName Like "Litton*" Then
+Dim Vask As String
+Vask = InputBox("1. First American File?" & vbCr & "2. Fidelity?")
+End If
+
+If Forms![title open screen]!PropertyState <> "MD" Then
+If rsClient!Fidelity = 1 Or Vask = "2" Then
+vfafid = "<b> <font color = " & """" & "red" & """" & "> THIS IS A FIDELITY CASE - PLS USE FIDELITY FORM</b><br><br> </font>"
+ElseIf rsClient!first_american = 1 Or Vask = "1" Then
+vfafid = "<b> <font color = " & """" & "red" & """" & "> THIS IS A FIRST AMERICAN CASE - PLS USE FIRST AMERICAN FORM </b><br><br></font>"
+End If
+End If
+
+Dim VAnd As String
+If IsNull(Forms![title open screen]!lastname2) Then
+VAnd = ""
+Else
+VAnd = " & "
+End If
+
+
+'(Put e1 back in emailmessage!) e1 = "<h2><b><u>KEN, PLEASE HOLD THE CERT. COPY OF THE DEED OF TRUST SO THAT YOU CAN DOCKET OUR CASE." & "<br>" & "<br></u></h2>"
+E2 = "<b>COUNTY: </b>" & Forms![title open screen]!County & "<br>" & "<br>"
+E3 = "<b>GRANTORS' NAME: </b>" & Forms![title open screen]!FirstName & " " & Forms![title open screen]!LastName & Vss1 & VAnd & Forms![title open screen]!firstname2 & " " & Forms![title open screen]!lastname2 & Vss2 & "<br>"
+e4 = "<b>PROPERTY ADDRESS: </b>" & VAdd & ", " & Forms![title open screen]!City & ", " & Forms![title open screen]!State & "  " & Forms![title open screen]!zip & VLSq & "<br>" & "<br>"
+e5 = "<b>DUE DATE: </b>" & Vdue & "<br>" & "<br>"
+e6 = "<b>RECORDING INFO: </b>" & VRecording & "<br>" & "<br> <b> ORIGINAL PRINCIPAL BALANCE: </b>" & Format(Forms![title open screen]!loanamt, "$###,##0.00")
+e7 = "<br><br><b>DEED OF TRUST DATE: </b>" & Forms![title open screen]!DOTDate & "<br>" & "<br> "
+e8 = "<br> <br> <b>" & VLanguage & "<br>" & "<br>"
+
+e9 = "PLEASE NOTE THAT SAME IS DUE 5 DAYS FROM TODAY.</b>" & "<br>"
+e10 = ""
+
+
+MyMail.Subject = emailsubject
+MyMail.HTMLBody = vfafid + E2 + E3 + e4 + e5 + e6 + e7 + e8 + e9 + e10
+
+MyMail.Display
+
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End Function
+
+
+

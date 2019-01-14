@@ -1,0 +1,10 @@
+Attribute VB_Name = "CompassModules"
+Option Compare Database
+Public Function CompassTitleNotRecd()
+DoCmd.OutputTo acOutputQuery, "CompassOrdersTITLESNotRecd", acFormatXLS, pathuser() & "\CompassOrderesTITLESNotRecd.xls"
+End Function
+Public Function CompassUpdatesNotRecd()
+DoCmd.OutputTo acOutputQuery, "CompassOrdersUPDATESNotRecd", acFormatXLS, pathuser() & "\CompassOrderesUPDATESNotRecd.xls"
+End Function
+
+

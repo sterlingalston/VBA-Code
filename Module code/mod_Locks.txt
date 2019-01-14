@@ -1,0 +1,161 @@
+Attribute VB_Name = "Locks"
+Option Compare Database
+Option Explicit
+
+' Caution! Constant values below must match values in table LocksActions.
+Const LogAction_InUse = 1001
+Const LogAction_Unlock = 2001
+Const LogAction_Lock = 3001
+Const LogAction_Expired = 3002
+Const LogAction_ReLock = 3003
+Const LogAction_Force = 3004
+
+Public Function LockInfo(FileID As Long) As String
+Dim rstLocks As RecordSet
+ 
+Set rstLocks = CurrentDb.OpenRecordset("SELECT * FROM Locks WHERE FileID=" & FileID, dbOpenSnapshot)
+If rstLocks.EOF Then
+    LockInfo = "File " & FileID & " is not in use"
+Else
+    If IsNull(rstLocks!username) Then
+        LockInfo = "File " & FileID & " is not in use"
+    Else
+        LockInfo = "File " & FileID & " is in use by " & rstLocks!username & " " & Format$(rstLocks!LockTime, "mm/dd/yyyy hh:nn am/pm")
+    End If
+End If
+rstLocks.Close
+
+End Function
+
+Public Sub ReleaseFile(FileID As Long, Optional Force As Boolean)
+Dim rstLocks As RecordSet, OldLockInfo As String
+
+If gblUserName = "" Then Call username
+If Force Then OldLockInfo = LockInfo(FileID)
+
+Set rstLocks = CurrentDb.OpenRecordset("SELECT * FROM Locks WHERE FileID=" & FileID, dbOpenDynaset, dbSeeChanges)
+If rstLocks.EOF Then
+    ' Lock not found
+    Call LogLock(FileID, gblUserName, LogAction_Unlock, "Lock not found in table Locks")
+Else
+    With rstLocks
+        .Edit
+        !username = Null
+        !LockTime = Null
+        .Update
+    End With
+    If Force Then
+        Call LogLock(FileID, gblUserName, LogAction_Force, OldLockInfo)
+    Else
+        Call LogLock(FileID, gblUserName, LogAction_Unlock)
+    End If
+End If
+rstLocks.Close
+    
+End Sub
+
+Public Sub ReleaseOtherLocks(FileID As Long)
+'
+' Release all but the specified File for the current user
+'
+Dim rstLocks As RecordSet
+
+If gblUserName = "" Then Call username
+
+Set rstLocks = CurrentDb.OpenRecordset("SELECT * FROM Locks WHERE Username='" & gblUserName & "' AND FileID<>" & FileID, dbOpenDynaset, dbSeeChanges)
+Do While Not rstLocks.EOF
+    Call LogLock(FileID, gblUserName, LogAction_Unlock)
+    With rstLocks
+        .Edit
+        !username = Null
+        !LockTime = Null
+        .Update
+    End With
+    rstLocks.MoveNext
+Loop
+rstLocks.Close
+    
+End Sub
+
+Public Function LockFile(FileID As Long) As Boolean
+Dim rstLocks As RecordSet, OldLockInfo As String
+
+If PrivReadOnlyLockExempt Then
+    ' CAUTION! This assumes that the user has read-only permissions on the SQL database.  Any other use is in violation of lender requirements!
+    LockFile = True
+    Exit Function
+End If
+
+If gblUserName = "" Then Call username
+LockFile = False
+
+Set rstLocks = CurrentDb.OpenRecordset("SELECT * FROM Locks WHERE FileID=" & FileID, dbOpenDynaset, dbSeeChanges)
+If rstLocks.EOF Then
+    ' No lock record yet for this file, so create it
+    With rstLocks
+        .AddNew
+        !FileID = FileID
+        !username = gblUserName
+        !LockTime = Now()
+        .Update
+    End With
+    Call LogLock(FileID, gblUserName, LogAction_Lock)
+    LockFile = True     ' lock is granted
+Else
+    ' Found lock record.  See if it is locked.
+    If IsNull(rstLocks!username) Then
+        ' Not locked
+        With rstLocks
+            .Edit
+            !username = gblUserName
+            !LockTime = Now()
+            .Update
+        End With
+        Call LogLock(FileID, gblUserName, LogAction_Lock)
+        LockFile = True     ' lock is granted
+    Else
+        ' File is locked.
+        OldLockInfo = LockInfo(FileID)
+        ' See if its the same user, then update and grant.
+        If rstLocks!username = gblUserName Then
+            With rstLocks
+                .Edit
+                !LockTime = Now()
+                .Update
+            End With
+            Call LogLock(FileID, gblUserName, LogAction_ReLock, OldLockInfo)
+            LockFile = True     ' lock is granted
+        End If
+        ' See if the lock is old.
+        If Year(Date) <> Year(rstLocks!LockTime) Or Month(Date) <> Month(rstLocks!LockTime) Or day(Date) <> day(rstLocks!LockTime) Then
+            With rstLocks
+                .Edit
+                !username = gblUserName
+                !LockTime = Now()
+                .Update
+            End With
+            Call LogLock(FileID, gblUserName, LogAction_Expired, OldLockInfo)
+            LockFile = True     ' lock is granted
+        End If
+    End If
+End If
+rstLocks.Close
+
+If LockFile Then
+    ' This file locked, release any others
+    Call ReleaseOtherLocks(FileID)
+    'MsgBox ("HERE")
+Else
+    ' Unable to lock this file
+    Call LogLock(FileID, gblUserName, LogAction_InUse)
+    MsgBox "You cannot work on this file at this time" & vbNewLine & OldLockInfo, vbCritical
+End If
+
+End Function
+
+Private Sub LogLock(FileID As Long, username As String, Action As Long, Optional Info As String)
+DoCmd.SetWarnings False
+CurrentDb.Execute ("INSERT INTO LocksHistory (FileId, Username, ActionTime, LockActionID, Info) VALUES (" & FileID & ",""" & username & """,#" & Now() & "#," & Action & ",""" & Info & """)")
+End Sub
+
+

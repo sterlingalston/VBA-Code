@@ -1,0 +1,81 @@
+Attribute VB_Name = "Letterhead"
+Option Compare Database
+
+Public Function LtrheadBethesdaAdd1()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("attorneys", dbOpenSnapshot)
+
+LtrheadBethesdaAdd1 = rs![AAddress] & ", " & rs![AAddress2]
+
+rs.Close
+
+End Function
+
+Public Function LtrheadBethesdaAdd2()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("attorneys", dbOpenSnapshot)
+
+LtrheadBethesdaAdd2 = rs![ACity] & ", " & rs![AState] & " " & rs![AZip]
+
+rs.Close
+
+End Function
+Public Function LtrheadBethesdaphone()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("attorneys", dbOpenSnapshot)
+
+LtrheadBethesdaphone = rs![APhone]
+
+rs.Close
+End Function
+
+Public Function LtrheadBethesdafax()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("attorneys", dbOpenSnapshot)
+
+LtrheadBethesdafax = rs![AFax]
+
+rs.Close
+End Function
+
+
+Public Function LtrheadRichmondAdd1()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("attorneys", dbOpenSnapshot)
+
+LtrheadRichmondAdd1 = rs![Office2_Address] & ", " & rs![Office2_Address2]
+
+rs.Close
+
+End Function
+
+Public Function LtrheadRichmondAdd2()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("attorneys", dbOpenSnapshot)
+
+LtrheadRichmondAdd2 = rs![Office2_City] & ", " & rs![Office2_State] & " " & rs![Office2_Zip]
+
+rs.Close
+
+End Function
+Public Function LtrheadRichmondphone()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("attorneys", dbOpenSnapshot)
+
+LtrheadRichmondphone = rs![office2_phone]
+
+rs.Close
+End Function
+
+Public Function LtrheadRichmondfax()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("attorneys", dbOpenSnapshot)
+
+LtrheadRichmondfax = rs![office2_fax]
+
+rs.Close
+End Function
+
+
+
+

@@ -1,0 +1,367 @@
+Attribute VB_Name = "EmailReportFunctions"
+Option Compare Database
+
+Public Function LienCertsNadel()
+
+
+If Forms![deedtransfer]!Propertycounty = "Baltimore City" Then
+DoCmd.OpenReport ("LienCert-BaltoCity-Nadel"), acViewPreview
+ElseIf Forms![deedtransfer]!Propertycounty = "Baltimore" Then
+DoCmd.OpenForm ("LienBaltoCO-Nadel")
+ElseIf Forms![deedtransfer]!Propertycounty = "Carroll" Then
+DoCmd.OpenReport ("LienCert-Carroll-Nadel"), acViewPreview
+ElseIf Forms![deedtransfer]!Propertycounty = "Charles" Then
+DoCmd.OpenReport ("LienCert-Charles-Nadel"), acViewPreview
+ElseIf Forms![deedtransfer]!Propertycounty = "Harford" Then
+DoCmd.OpenReport ("LienCert-Harford-Nadel"), acViewPreview
+Else
+MsgBox ("Only Baltimore City, Baltimore, Carroll, Charles and Harford Counties Lien Cert Apps are complete at the moment")
+End If
+
+
+
+End Function
+
+Public Function LienCerts()
+
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!RatDateMD) Then
+MsgBox ("THIS SALE HAS NOT RATIFIED.  THE DEED IS NOT RIPE FOR RECORDING.")
+Exit Function
+
+Else
+
+If Forms![foreclosure database screen]!Propertycounty = "Baltimore City" Then
+DoCmd.OpenReport ("LienCert-BaltoCity"), acViewPreview
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Baltimore" Then
+DoCmd.OpenForm ("LienBaltoCO")
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Carroll" Then
+DoCmd.OpenReport ("LienCert-Carroll"), acViewPreview
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Charles" Then
+DoCmd.OpenReport ("LienCert-Charles"), acViewPreview
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Harford" Then
+DoCmd.OpenReport ("LienCert-Harford"), acViewPreview
+ElseIf Forms![foreclosure database screen]!Propertycounty = "Howard" Then
+MsgBox ("Howard County is not 100% completed yet.  Please get back with updates")
+DoCmd.OpenReport ("LienCert-Howard"), acViewPreview
+Else
+MsgBox ("Only Baltimore City, Baltimore, Carroll, Charles and Harford Counties Lien Cert Apps are complete at the moment")
+End If
+
+End If
+
+End Function
+Public Function EmailClosingInst3rd()
+
+Dim strsql, vARDate, varemailto, VarClient, varborrower, VarLoan, VarParaLegal, VarDocsSent As String
+Dim emailsubject, emailmessage, E1, E2, E3, e4, e5 As String
+Dim rsNew As RecordSet
+
+vARDate = Date - 10
+
+'MsgBox (Vardate)
+
+
+strsql = "SELECT cases.filenum, cases.LastNameDebtor1, cases.firstnamedebtor1, cases.propertystate, " _
+& " foreclosure.dotdate, postsale.buyer, postsale.buyer_abbr, postsale.ratdatemd, postsale.buyer_add1, " _
+& " postsale.buyer_csz, postsale.purchaser_last, postsale.caseno, cases.propertycounty, cases.status, cases.Client, cases.ClientRefNumber " _
+& " FROM ((Cases INNER JOIN Foreclosure ON " _
+& " Cases.FileNum = Foreclosure.subfilenum) " _
+& " INNER JOIN Postsale ON Cases.Filenum = Postsale.Subfilenum) " _
+& " WHERE PostSale.[3rd_party] = " & "Yes" & " And " _
+& " postsale.[3rd_party_paid] = " & "No" & " and " _
+& " cases.propertystate = " & """" & "MD" & """" & " and " _
+& " postsale.closingletter_date = #" & vARDate & "#;"
+
+Set rsNew = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rsNew.EOF Then
+rsNew.MoveFirst
+End If
+
+Do Until rsNew.EOF
+'MsgBox (rsNew!FIleNum)
+
+'MsgBox ("Sending....")
+CurrentDb.Execute "DELETE * FROM tblmotionresell;", dbFailOnError
+Dim rsMRS As RecordSet
+Set rsMRS = CurrentDb.OpenRecordset("TblMotionResell", dbOpenDynaset, dbSeeChanges)
+
+With rsMRS
+.AddNew
+!filenum = rsNew!filenum
+!RatDateMD = rsNew!RatDateMD
+!Buyer = rsNew!Buyer
+!buyer_add1 = rsNew!buyer_add1
+!buyer_csz = rsNew!buyer_csz
+!Purchaser_Last = rsNew!Purchaser_Last
+!CaseNo = rsNew!CaseNo
+!buyer_abbr = rsNew!buyer_abbr
+.Update
+End With
+
+rsMRS.Close
+DoCmd.OutputTo acOutputReport, "MotionResell-Email", acFormatSNP, pathuser() & "\MotionResell.snp"
+
+If rsNew![Propertycounty] = "Baltimore City" And rsNew![Propertycounty] = "Baltimore" Then
+DoCmd.OutputTo acOutputReport, "ordershowBC-EMAIL", acFormatSNP, pathuser() & "\MotionResellOrder.snp"
+Else
+DoCmd.OutputTo acOutputReport, "MotionResell2ndPart-EMAIL", acFormatSNP, pathuser() & "\MotionResellOrder.snp"
+End If
+
+varborrower = rsNew!FirstNameDebtor1 & " " & rsNew!LastNameDebtor1
+emailsubject = rsNew!Client & "/" & varborrower
+E1 = "The third party purchaser has not yet settled.  Time to prepare a Motion to Default.  Motion to Resell attached"
+emailmessage = E1
+varemailto = "Matt.Cohen@bww-law.com; Sarah.Byrne@bww-law.com; Abric.Pitt@bww-law.com"
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varemailto
+MyMail.CC = "Janice.Hill@bww-law.com"
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\" & "\MotionResell.snp" & ";" & pathuser() & "\MotionResellOrder.snp"
+
+MyMail.Display
+Set MyMail = Nothing
+
+
+
+rsNew.MoveNext
+
+Loop
+
+End Function
+Public Function countyEMAIL()
+Dim rs As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("QryEmail")
+
+If rs![Propertycounty] = "James City" Then
+countyEMAIL = "City of Williamsburg and County of James City"
+Else
+
+If rs![Propertycounty] Like "*City" Or _
+rs![Propertycounty] Like "City*" Then
+countyEMAIL = rs![Propertycounty]
+Else
+countyEMAIL = rs![Propertycounty] & " County"
+End If
+
+End If
+rs.Close
+
+End Function
+Public Function liberfolioEmail()
+Dim rs As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("QryEmail")
+
+If IsNull(rs![reliber]) And _
+IsNull(rs![Liber]) And _
+IsNull(rs![InstrumentNo]) Then
+liberfolioEmail = " Liber _______, Folio _______"
+ElseIf (IsNull(rs![reliber]) And _
+rs![Liber] <> "") Or _
+(rs![Liber] <> "" And _
+rs![InstrumentNo] <> "") Then
+liberfolioEmail = " Liber " & rs![Liber] & ", Folio " & rs![Folio]
+ElseIf IsNull(rs![reliber]) And _
+rs![InstrumentNo] <> "" And _
+IsNull(rs![Liber]) Then
+liberfolioEmail = " Receipt # " & rs![InstrumentNo]
+Else
+liberfolioEmail = " Liber " & rs![Liber] & ", Folio " & rs![Folio] & ", and re-recorded as Liber " & rs!reliber & ", Folio " & rs!refolio
+End If
+
+rs.Close
+
+
+End Function
+Public Function DebtorsForeEMAIL()
+Dim firstdebtor As String
+Dim secondDebtor As String
+Dim thirddebtor As String
+Dim fourthdebtor As String
+Dim fifthdebtor As String
+Dim fs As String
+Dim st As String
+Dim tf As String
+Dim FF As String
+
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("QryEmail")
+
+fs = ""
+st = ""
+tf = ""
+FF = ""
+
+If IsNull(rs![MiddleNameDebtor1]) Then
+firstdebtor = Trim(rs![FirstNameDebtor1] & " " & rs![LastNameDebtor1])
+Else
+firstdebtor = Trim(rs![FirstNameDebtor1] & " " & rs![MiddleNameDebtor1] & " " & rs![LastNameDebtor1])
+End If
+
+If IsNull(rs![MiddleNameDebtor2]) Then
+secondDebtor = Trim(rs![FirstNameDebtor2] & " " & rs![LastNameDebtor2])
+Else
+secondDebtor = Trim(rs![FirstNameDebtor2] & " " & rs![MiddleNameDebtor2] & " " & rs![LastNameDebtor2])
+End If
+
+If IsNull(rs![MiddleNameDebtor3]) Then
+thirddebtor = Trim(rs![FirstNameDebtor3] & " " & rs![LastNameDebtor3])
+Else
+thirddebtor = Trim(rs![FirstNameDebtor3] & " " & rs![MiddleNameDebtor3] & " " & rs![LastNameDebtor3])
+End If
+
+If IsNull(rs![middlenamedebtor4]) Then
+fourthdebtor = Trim(rs![firstnamedebtor4] & " " & rs![lastnamedebtor4])
+Else
+fourthdebtor = Trim(rs![firstnamedebtor4] & " " & rs![middlenamedebtor4] & " " & rs![lastnamedebtor4])
+End If
+
+If IsNull(rs![middlenamedebtor5]) Then
+fifthdebtor = rs![firstnamedebtor5] & " " & rs![lastnamedebtor5]
+Else
+fifthdebtor = Trim(rs![firstnamedebtor5] & " " & rs![middlenamedebtor5] & " " & rs![lastnamedebtor5])
+End If
+
+If secondDebtor <> "" Then
+If thirddebtor <> "" Then
+fs = ", "
+Else
+fs = " and "
+End If
+End If
+
+If thirddebtor <> "" Then
+If fourthdebtor <> "" Then
+st = ", "
+Else
+st = " and "
+End If
+End If
+
+If fourthdebtor <> "" Then
+If fifthdebtor <> "" Then
+tf = ", "
+Else
+tf = " and "
+End If
+End If
+
+If fifthdebtor <> "" Then
+FF = " and "
+End If
+
+
+
+
+DebtorsForeEMAIL = firstdebtor & fs & secondDebtor & st & thirddebtor & tf & fourthdebtor & FF & fifthdebtor
+rs.Close
+
+
+End Function
+Public Function propEMAIL()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("QryEMAIL")
+
+
+If IsNull(rs![propaddress2]) Then
+If IsNull(rs![unit_no]) Or rs![unit_no] = "" Then
+propEMAIL = rs![PropAddress] & ", " & rs![PropertyCity] & ", " & rs![PropertyState] & "  " & rs![propzip]
+Else
+propEMAIL = rs![PropAddress] & ", Unit # " & rs![unit_no] & ", " & rs![PropertyCity] & ", " & rs![PropertyState] & "  " & rs![propzip]
+End If
+
+Else
+If IsNull(rs![unit_no]) Or rs![unit_no] = "" Then
+propEMAIL = rs![PropAddress] & ", " & rs![propaddress2] & ", " & rs![PropertyCity] & ", " & rs![PropertyState] & "  " & rs![propzip]
+Else
+propEMAIL = rs![PropAddress] & ", Unit # " & rs![unit_no] & ", " & rs![propaddress2] & ", " & rs![PropertyCity] & ", " & rs![PropertyState] & "  " & rs![propzip]
+End If
+End If
+rs.Close
+
+End Function
+Public Function CountyStateEMAIL()
+Dim rs As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("QryEmail")
+
+If rs![Propertycounty] = "James City" Then
+CountyStateEMAIL = "City of Williamsburg and County of James City, Virginia"
+Else
+Dim VState As String
+If rs!PropertyState = "MD" Then
+VState = "Maryland"
+ElseIf rs!PropertyState = "DC" Then
+VState = ""
+ElseIf rs!PropertyState = "VA" Then
+VState = "Virginia"
+End If
+
+If rs![Propertycounty] Like "*City" Then
+CountyStateEMAIL = rs![Propertycounty] & ", " & VState
+Else
+CountyStateEMAIL = rs![Propertycounty] & " County" & ", " & VState
+End If
+
+End If
+
+End Function
+Public Function purchaserEMAIL() As String
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("QryEmail")
+
+If rs![Buyer] = "REO" Or rs!Purchaser_Last = "REO" Then
+purchaserEMAIL = LSecured()
+ElseIf IsNull(rs![Buyer]) Then
+purchaserEMAIL = "_____________________________________________"
+Else
+purchaserEMAIL = rs![Buyer]
+End If
+
+rs.Close
+
+End Function
+
+Public Function propadd2EMAIL() As String
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("QryEmail")
+
+If IsNull(rs![propaddress2]) Then
+propadd2EMAIL = rs![PropertyCity] & ", " & rs![PropertyState] & "  " & rs![propzip]
+Else
+propadd2EMAIL = rs![propaddress2]
+End If
+rs.Close
+
+End Function
+Public Function propadd3EMAIL() As String
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("QryEmail")
+
+If IsNull(rs![propaddress2]) Then
+propadd3EMAIL = ""
+Else
+propadd3EMAIL = rs![PropertyCity] & ", " & rs![PropertyState] & "  " & rs![propzip]
+End If
+End Function
+Public Function propaddEMAIL() As String
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("QryEmail")
+
+If IsNull(rs![unit_no]) Or rs![unit_no] = "" Then
+propaddEMAIL = rs![PropAddress]
+Else
+propaddEMAIL = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+
+rs.Close
+End Function
+

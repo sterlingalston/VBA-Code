@@ -1,0 +1,19 @@
+Public Function SendEmail()
+
+
+dim MyMail as Object 'not sure forgot and need to figure this out
+
+Set MyMail = New clsSendMail
+MyMail.SMTPHost = "mail.bgw-llc.com" 'need this
+MyMail.from = "bww@bww-law.com" 'need this
+MyMail.FromDisplayName = "BWW" 'need this
+MyMail.ReplyToAddress = "bww@bww-law.com"
+MyMail.Recipient = "matthew.alston@gsa.gov"
+MyMail.Subject = "Email Subject:" & " " & Format(Date, "mmmm d, yyyy")
+MyMail.message = "See attached spreadsheets"
+MyMail.Attachment = LocalLocation & "\test_file.txt"
+
+MyMail.Send
+
+
+End Function

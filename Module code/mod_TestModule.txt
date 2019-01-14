@@ -1,0 +1,118 @@
+Attribute VB_Name = "TestModule"
+Option Compare Database
+
+Function TestODBCErr(strTableName As String)
+
+   On Error GoTo ODBCErrHandler
+
+   Dim db As DAO.Database
+   Dim rs As DAO.RecordSet
+   Set db = CurrentDb()
+   Set rs = db.OpenRecordset(strTableName, dbOpenDynaset, dbSeeChanges)
+   With rs
+      .AddNew
+      ![filenum] = 99999
+      
+      ' Note you do not supply data for the required field contract.
+      .Update
+      .Close
+   End With
+
+Exit_function:
+   Exit Function
+
+ODBCErrHandler:
+   Dim errX As DAO.Error
+
+   If Errors.Count > 1 Then
+      For Each errX In DAO.Errors
+         Debug.Print "ODBC Error"
+         Debug.Print errX.Number
+         Debug.Print errX.description
+      Next errX
+   Else
+      Debug.Print "VBA Error"
+      Debug.Print Err.Number
+      Debug.Print Err.description
+   End If
+   Resume Exit_function
+End Function
+
+Public Function ReporttoPDFUsingPrint(REPORTNAME As String)
+
+Dim strDefaultPrinter As String
+Dim PrinterName As String
+Dim i As Integer
+strDefaultPrinter = Application.Printer.DeviceName
+
+PrinterName = "Adobe PDF"
+
+On Error GoTo handler
+
+Set Application.Printer = Application.Printers(PrinterName)
+DoCmd.OpenReport REPORTNAME, acViewPreview
+DoCmd.PrintOut printrange:=acPrintAll
+DoCmd.Close acReport, REPORTNAME, acSaveNo
+Set Application.Printer = Application.Printers(strDefaultPrinter)
+
+Exit Function
+
+handler:
+
+    ReporttoPDFUsingPrint = "No PDF printer"
+    Exit Function
+
+End Function
+Public Function TestRpt()
+ReporttoPDFUsingPrint ("Appeals Report")
+
+End Function
+Public Function CopyFileOpenPDF(pathname As String, REPORTNAME As String)
+
+On Error GoTo handler
+
+Dim sourcefile As String: sourcefile = pathname & REPORTNAME & ".pdf"
+Dim txtname As String: txtname = Forms![foreclosure database screen]!filenum & "_" & REPORTNAME & ".pdf"
+Dim destinationfile As String: destinationfile = pathname & txtname
+
+FileCopy sourcefile, destinationfile
+Exit Function
+handler:
+
+CopyFileOpenPDF = False
+
+Exit Function
+End Function
+
+Public Function CopyFileFromServOpenPDF(sourcefile As String)
+
+On Error GoTo handler
+
+'Dim sourcefile As String: sourcefile = pathname & reportname & ".pdf"
+Dim REPORTNAME As String
+Dim i As Integer
+
+If InStr(1, sourcefile, "\") > 0 Then
+    i = 1
+    Do While Mid$(Right$(sourcefile, i), 1, 1) <> "\"
+    i = i + 1
+    REPORTNAME = Right$(sourcefile, i)
+    
+    Loop
+    
+End If
+
+REPORTNAME = Replace$(Replace$(REPORTNAME, "\", ""), ".pdf", "")
+
+Dim txtname As String: txtname = Forms![foreclosure database screen]!filenum & "_" & REPORTNAME & ".pdf"
+
+Dim destinationfile As String: destinationfile = pathuser & txtname
+
+FileCopy sourcefile, destinationfile
+Exit Function
+handler:
+
+CopyFileFromServOpenPDF = False
+
+Exit Function
+End Function

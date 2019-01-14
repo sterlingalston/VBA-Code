@@ -1,0 +1,40 @@
+Attribute VB_Name = "ErrorModules"
+Option Compare Database
+
+Function TestODBCErr(strTableName As String)
+
+   On Error GoTo ODBCErrHandler
+
+   Dim db As DAO.Database
+   Dim rs As DAO.RecordSet
+   Set db = CurrentDb()
+   Set rs = db.OpenRecordset(strTableName, dbOpenDynaset, dbSeeChanges)
+   With rs
+      .AddNew
+      ![PKey] = VID
+      ![filenum] = Forms!estateform!filenum
+      ' Note you do not supply data for the required field contract.
+      .Update
+      .Close
+   End With
+
+Exit_function:
+   Exit Function
+
+ODBCErrHandler:
+   Dim errX As DAO.Error
+
+   If Errors.Count > 1 Then
+      For Each errX In DAO.Errors
+         Debug.Print "ODBC Error"
+         Debug.Print errX.Number
+         Debug.Print errX.description
+      Next errX
+   Else
+      Debug.Print "VBA Error"
+      Debug.Print Err.Number
+      Debug.Print Err.description
+   End If
+   Resume Exit_function
+End Function
+            

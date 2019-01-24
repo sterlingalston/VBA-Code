@@ -1,0 +1,26 @@
+
+Public Function sendemail()
+
+Dim mail As New Message
+Dim config As Configuration
+Set config = mail.Configuration
+
+config(cdoSendUsingMethod) = cdoSendUsingPort
+config(cdoSMTPServer) = "smtp.gmail.com"
+config(cdoSMTPServerPort) = 465
+config(cdoSMTPAuthenticate) = cdoBasic
+config(cdoSMTPUseSSL) = True
+config(cdoSendUserName) = "*************@gmail.com"
+config(cdoSendPassword) = "********"
+config.Fields.Update
+
+mail.To = "sendto@example.com"
+mail.From = config(cdoSendUserName)
+mail.Subject = "vba send something"
+mail.HTMLBody = "<b> sending something here </b>"
+
+'mail.AddAttachment ""
+
+mail.Send
+
+End Function

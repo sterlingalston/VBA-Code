@@ -1,0 +1,25 @@
+Public Function rngToArray(rng As Range)
+
+Dim rCnt%, cCnt%
+Dim rng1 As Range, rng2 As Range
+Dim r As Integer, c As Integer
+
+rCnt = rng.Rows.Count
+cCnt = rng.Columns.Count
+
+ReDim arr1(0) As Variant
+ReDim arr2(0) As Variant
+
+For r = 1 To rCnt
+    For c = 1 To cCnt
+        ReDim Preserve arr2(c - 1)
+        arr2(c - 1) = rng.Cells(r, c).Value
+    Next
+    
+    ReDim Preserve arr1(r - 1)
+    arr1(r - 1) = arr2
+    ReDim arr2(0)
+Next
+
+
+End Function

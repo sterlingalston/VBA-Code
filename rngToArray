@@ -2,9 +2,9 @@ Option Explicit
 
 Public Function rngToArray(rng As Range)
 
-Dim rCnt%, cCnt%
+Dim rCnt as long, cCnt as long
 Dim rng1 As Range, rng2 As Range
-Dim r As Integer, c As Integer
+Dim r As long, c As long
 
 rCnt = rng.Rows.Count
 cCnt = rng.Columns.Count

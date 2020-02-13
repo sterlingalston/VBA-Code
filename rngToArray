@@ -1,3 +1,5 @@
+Option Explicit
+
 Public Function rngToArray(rng As Range)
 
 Dim rCnt%, cCnt%
@@ -21,5 +23,6 @@ For r = 1 To rCnt
     ReDim arr2(0)
 Next
 
+rngToArray = arr1
 
 End Function

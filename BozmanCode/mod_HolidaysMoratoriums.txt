@@ -1,0 +1,118 @@
+Attribute VB_Name = "HolidaysMoratoriums"
+Option Compare Database
+
+Public Function Holiday(VHoliday As Date)
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from holidays where holiday = #" & VHoliday & "# and client is null;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+MsgBox ("The " & rs!Holiday & " is a Holiday (" & "" & rs!Holiday_Name & "" & ").  Please change date.")
+End If
+rs.Close
+
+End Function
+
+Public Function HolidayClientVA(VHoliday As Date)
+Dim rs As RecordSet
+Dim strsql As String
+
+
+strsql = "select * from holidays where holiday = #" & VHoliday & "# and client = " & """" & Forms![VirginiaSales]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+MsgBox ("The " & rs!Holiday & " is a Holiday (" & "" & rs!Holiday_Name & "" & ") for " & """" & rs!Client & """" & ".  Please change date.")
+End If
+rs.Close
+
+End Function
+Public Function HolidayClientMD(VHoliday As Date)
+Dim rs As RecordSet
+Dim strsql As String
+
+
+strsql = "select * from holidays where holiday = #" & VHoliday & "# and (client is null or client = " & """" & Forms![MDSetSales]!Client & """" & ");"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+MsgBox ("The " & rs!Holiday & " is a Holiday (" & "" & rs!Holiday_Name & "" & ") for " & """" & rs!Client & """" & ".  Please change date.")
+End If
+rs.Close
+End Function
+Public Function HolidayClient(VHoliday)
+
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from holidays where holiday = #" & VHoliday & "# and client = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+MsgBox ("The " & rs!Holiday & " is a Holiday (" & "" & rs!Holiday_Name & "" & ") for " & """" & rs!Client & """" & ".  Please change date.")
+End If
+
+rs.Close
+
+
+
+End Function
+Public Function AddMoratorium()
+Dim VBeg As Date
+Dim VEnd As Date
+Dim vClient As String
+Dim strsql As String
+Dim rs As RecordSet
+Dim RsH As RecordSet
+Dim VDate As Date
+Dim VarDay
+Dim VDateEnd As Date
+
+Dim VINv As String
+
+DoCmd.Close acForm, "Holiday Moratorium Screen"
+
+VBeg = InputBox("Enter 1st Date of Moratorium (example: 01/01/2014")
+VEnd = InputBox("Enter Last Date of Moratorium (example: 01/31/2014")
+vClient = InputBox("Enter Client (copy exact name of client from screen and paste here)")
+VDate = Format(VBeg, "mm/dd/yy")
+VDateEnd = Format(VEnd, "mm/dd/yy")
+
+
+strsql = "select * from holidays where holiday >= #" & VDate & "# and holiday <= #" & VDateEnd & "# and client = " & """" & vClient & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+MsgBox ("Some or all of the Holiday/Moratorium Dates are in the system for " & vClient & ".  This update will not run")
+Else
+Set RsH = CurrentDb.OpenRecordset("holidays", dbOpenDynaset, dbSeeChanges)
+
+
+Do While VDate < VEnd
+
+'VINv = GetAutoNumber("NextBillNum")
+VarDay = Format(VDate, "dddd")
+
+If VarDay <> "Saturday" And VarDay <> "Sunday" Then
+With RsH
+.AddNew
+'!ID = VINv
+!Holiday = VDate
+!Holiday_Name = "Moratorium"
+!Client = vClient
+.Update
+End With
+End If
+VDate = VDate + 1
+Loop
+
+End If
+
+DoCmd.OpenForm "Holiday Moratorium Screen"
+
+
+End Function
+
+

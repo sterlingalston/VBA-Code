@@ -1,0 +1,863 @@
+Attribute VB_Name = "RegisterModule"
+Option Compare Database
+
+Public Function FilesClosedMoneyInRegister()
+
+    ExcelSaveAsQRY ("filesclosed_moneyinregqry")
+
+End Function
+
+Public Function RegisterDeedSentNotRecordedDCMd()
+CurrentDb.Execute "Delete * from tempps;", dbFailOnError
+DoCmd.OpenQuery ("DeedSentNotRecorded")
+Dim rs As RecordSet
+Dim RsReg As RecordSet
+Dim strsql As String
+Dim VRegister
+Dim VBal
+
+Set rs = CurrentDb.OpenRecordset("TempPS", dbOpenDynaset, dbSeeChanges)
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+strsql = "select * from register where Fileid = " & rs!filenum & ";"
+VRegister = 0
+VBal = 0
+Set RsReg = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not RsReg.EOF Then
+RsReg.MoveFirst
+GblFilenum = RsReg!FileID
+Do While Not RsReg.EOF
+If RsReg!TransAmount > 0 Then
+VRegister = RsReg!AccountShortName
+End If
+VBal = RsReg!TransAmount + VBal
+RsReg.MoveNext
+Loop
+
+With rs
+.Edit
+!register = VRegister
+!Register_Amt = VBal
+.Update
+End With
+
+End If
+
+rs.MoveNext
+Loop
+
+DoCmd.OpenReport "Deeds Sent Not Recorded: Md/DC Holding Funds Report", acViewPreview
+
+End Function
+Public Function RegisterMoneyCheck()
+Dim rs As RecordSet, RsReg As RecordSet, rsTemp
+Dim strsql As String, VRegister As String
+
+Dim VBal
+
+'Adjust MoneyCheckMakeTABLE query for Register Check
+'After this code is run update your MoneyCheck table using Query: MoneyCheckLinkToReg
+
+CurrentDb.Execute "DELETE * FROM tempcomm;", dbFailOnError
+'DO NOT RENAME. THIS IS SET UP FOR REPORTING.
+Set rs = CurrentDb.OpenRecordset("MoneyCheck")
+rs.MoveFirst
+
+Do While Not rs.EOF
+strsql = "select * from Register where FileID = " & rs!filenum & ";"
+VRegister = ""
+VBal = 0
+
+Set RsReg = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not RsReg.EOF Then
+RsReg.MoveFirst
+GblFilenum = RsReg!FileID
+Do While Not RsReg.EOF
+If RsReg!TransAmount > 0 Then
+VRegister = RsReg!AccountShortName
+End If
+VBal = RsReg!TransAmount + VBal
+RsReg.MoveNext
+Loop
+'If VBal <> 0 Then
+Set rsTemp = CurrentDb.OpenRecordset("tempcomm")
+With rsTemp
+.AddNew
+!filenum = GblFilenum
+!register = VRegister
+!Bal_Money = VBal
+!Status = rs!Status
+!PropertyState = rs!PropertyState
+!Client = rs!Client
+!TypeOfLoan = rs!TypeOfLoan
+'!SaleDate = rs!SaleDate
+.Update
+.Close
+End With
+End If
+'End If
+rs.MoveNext
+Loop
+
+
+End Function
+
+Public Function RegisterMoniesZero()
+
+Dim rs As RecordSet, RsReg As RecordSet, rsTemp
+Dim strsql As String, VRegister As String
+
+Dim VBal
+
+CurrentDb.Execute "DELETE * FROM tempcomm;", dbFailOnError
+Set rs = CurrentDb.OpenRecordset("TempVASales")
+rs.MoveFirst
+
+Do While Not rs.EOF
+strsql = "select * from Register where FileID = " & rs!filenum & ";"
+VRegister = ""
+VBal = 0
+Set RsReg = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not RsReg.EOF Then
+RsReg.MoveFirst
+GblFilenum = RsReg!FileID
+Do While Not RsReg.EOF
+VRegister = RsReg!AccountShortName
+VBal = RsReg!TransAmount + VBal
+RsReg.MoveNext
+Loop
+
+If VBal = 0 Then
+Set rsTemp = CurrentDb.OpenRecordset("tempcomm")
+With rsTemp
+.AddNew
+!filenum = GblFilenum
+!register = VRegister
+'!Register = VRegister
+!Bal_Money = VBal
+.Update
+.Close
+End With
+End If
+End If
+
+
+rs.MoveNext
+Loop
+
+
+End Function
+
+
+
+Public Function RegisterMonies()
+Dim rs As RecordSet, RsReg As RecordSet, rsTemp
+Dim strsql As String, VRegister As String
+
+Dim VBal
+
+CurrentDb.Execute "DELETE * FROM tempcomm;", dbFailOnError
+Set rs = CurrentDb.OpenRecordset("TempVASales")
+If rs.EOF Then
+MsgBox ("No records meet the criteria, exiting...")
+Exit Function
+End If
+
+rs.MoveFirst
+
+Do While Not rs.EOF
+strsql = "select * from Register where FileID = " & rs!filenum & ";"
+VRegister = ""
+VBal = 0
+Set RsReg = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not RsReg.EOF Then
+RsReg.MoveFirst
+GblFilenum = RsReg!FileID
+Do While Not RsReg.EOF
+VRegister = RsReg!AccountShortName
+VBal = RsReg!TransAmount + VBal
+RsReg.MoveNext
+Loop
+
+If VBal <> 0 Then
+Set rsTemp = CurrentDb.OpenRecordset("tempcomm")
+With rsTemp
+.AddNew
+!filenum = GblFilenum
+!register = VRegister
+'!Register = VRegister
+!Bal_Money = VBal
+.Update
+.Close
+End With
+End If
+End If
+
+
+rs.MoveNext
+Loop
+
+
+End Function
+
+Public Function RegisterMoniesEsc4()
+Dim rs As RecordSet
+Dim strsql As String, VRegister As String
+
+Dim VBal
+
+CurrentDb.Execute "DELETE * FROM tempcomm;", dbFailOnError
+
+Set rs = CurrentDb.OpenRecordset("TempVASales")
+If rs.EOF Then
+    MsgBox ("No records meet the criteria, exiting...")
+    Exit Function
+End If
+
+rs.Close
+Set rs = Nothing
+
+
+End Function
+
+Public Function RegisterCompass()
+ 
+ 
+
+CurrentDb.Execute "Delete * from TempRegister;", dbFailOnError
+Dim rs, rsTemp As RecordSet
+Set rsTemp = CurrentDb.OpenRecordset("TempRegister", dbOpenDynaset, dbSeeChanges)
+
+Set rs = CurrentDb.OpenRecordset("BGW_NONEPAID", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+With rsTemp
+.AddNew
+!compassid = rs![compassid]
+!filenum = rs![ordernumber]
+!AbstractDate = rs!searchdate
+!compassfee = rs!abstractfee
+.Update
+End With
+
+rs.MoveNext
+Loop
+rsTemp.Close
+rs.Close
+
+Call RegisterMoniesCompass
+'DoCmd.OpenQuery ("VaAcctUpdate3")
+'DoCmd.OpenReport "RegisterStatusLandsafe", acViewPreview
+
+End Function
+
+Public Function RegisterLandsafe()
+ 
+ 
+
+CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+Dim rs, rsTemp As RecordSet
+Set rsTemp = CurrentDb.OpenRecordset("tempvasales", dbOpenDynaset, dbSeeChanges)
+
+Set rs = CurrentDb.OpenRecordset("LandsafeUnPaid", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+With rsTemp
+.AddNew
+!filenum = rs![Customer File / Loan#]
+!Inv_No = rs![Inv#]
+!bill_paid = rs!bill_paid
+!Comm_Fee = rs!d_titlesearch
+!OrgAmount = rs!Amount
+!DocsRecClient = rs!compass_pd
+!decree_recd = rs!landsafe_pd
+.Update
+End With
+
+rs.MoveNext
+Loop
+rsTemp.Close
+rs.Close
+
+Call RegisterMonies
+DoCmd.OpenQuery ("VaAcctUpdate3")
+DoCmd.OpenReport "RegisterStatusLandsafe", acViewPreview
+End Function
+
+Public Function RegisterStatus()
+
+ 
+
+CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+Dim rs, rsTemp As RecordSet
+Dim VState
+Dim vClient
+Dim VStatus
+
+VState = InputBox("Enter State or Return for ALL")
+vClient = InputBox("Enter Client or Return for ALL")
+VStatus = InputBox("Enter Status")
+
+strsql = "SELECT PostSale.acct_approved_date, PostSale.SubFileNum, postsale.deedrecorded, CASES.LastNameDebtor1, " _
+& " CASES.PropAddress, CASES.PropertyCity, cases.status, CASES.PropertyCounty, CASES.PropertyState, CASES.PropZip, " _
+& " CASES.Client, CASES.ClientRefNumber, CASES.[Date Recieved], CASES.propaddress2, CASES.Unit_no " _
+& " FROM CASES INNER JOIN PostSale ON CASES.FileNum = PostSale.SubFileNum " _
+& " WHERE cases.status = " & """" & VStatus & """" & " and CASES.PropertyState like " & """" & VState & "*""" & " AND " _
+& " CASES.Client Like " & """*" & vClient & "*""" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+
+With rsTemp
+.AddNew
+!filenum = rs!SubFileNum
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropAddress = rs!PropAddress
+!ClientRefNumber = rs!ClientRefNumber
+!Client = rs!Client
+!PropertyState = rs!PropertyState
+!Propertycounty = rs!Propertycounty
+!propzip = rs!propzip
+!propaddress2 = rs!propaddress2
+!unit_no = rs!unit_no
+!Status = rs!Status
+!SaleDate = rs!DeedRecorded
+If Not IsNull(rs![Date Recieved]) Then
+![Date Recieved] = rs![Date Recieved]
+End If
+.Update
+End With
+
+
+rs.MoveNext
+Loop
+rsTemp.Close
+rs.Close
+
+Call RegisterMonies
+DoCmd.OpenQuery ("VaAcctUpdate3")
+DoCmd.OpenReport "RegisterStatus", acViewPreview
+End Function
+
+Public Function RegisterSaleNotCancelled()
+
+ 
+
+CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+Dim rs, rsTemp As RecordSet
+Dim VState
+Dim vClient
+Dim VDate
+'VDate = Date - 14
+
+'VState = InputBox("Enter State or Return for ALL")
+'VClient = InputBox("Enter Client or Return for ALL")
+
+strsql = "SELECT foreclosure.sale_cancelled, foreclosure.SubFileNum, CASES.LastNameDebtor1, " _
+& " CASES.PropAddress, foreclosure.saledate, CASES.PropertyCity, cases.status, CASES.PropertyCounty, CASES.PropertyState, CASES.PropZip, " _
+& " CASES.Client, CASES.ClientRefNumber, CASES.[Date Recieved], CASES.propaddress2, CASES.Unit_no " _
+& " FROM CASES INNER JOIN foreclosure ON CASES.FileNum = foreclosure.SubFileNum " _
+& " WHERE foreclosure.sale_cancelled is null;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+'If rs!Status = "closed" Or rs!Status = "archived" Then
+With rsTemp
+.AddNew
+!filenum = rs!SubFileNum
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropAddress = rs!PropAddress
+!ClientRefNumber = rs!ClientRefNumber
+!Client = rs!Client
+!PropertyState = rs!PropertyState
+!Propertycounty = rs!Propertycounty
+!propzip = rs!propzip
+!propaddress2 = rs!propaddress2
+!unit_no = rs!unit_no
+!Status = rs!Status
+!SaleDate = rs!SaleDate
+If Not IsNull(rs![Date Recieved]) Then
+![Date Recieved] = rs![Date Recieved]
+End If
+.Update
+End With
+
+rs.MoveNext
+Loop
+rsTemp.Close
+rs.Close
+
+Call RegisterMonies
+DoCmd.OpenQuery ("VaAcctUpdate3")
+
+
+'DoCmd.OpenReport "Register Sale Cancelled", acViewPreview
+End Function
+
+    
+    Public Function RegisterSaleCancelled()
+    
+     
+    
+    CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+    Dim rs, rsTemp As RecordSet
+    Dim VState
+    Dim vClient
+    Dim VDate
+    VDate = Date - 30
+    
+    'VState = InputBox("Enter State or Return for ALL")
+    'VClient = InputBox("Enter Client or Return for ALL")
+    
+    strsql = "SELECT foreclosure.sale_cancelled, foreclosure.SubFileNum, CASES.LastNameDebtor1, " _
+    & " CASES.PropAddress, CASES.PropertyCity, cases.status, CASES.PropertyCounty, CASES.PropertyState, CASES.PropZip, " _
+    & " CASES.Client, CASES.ClientRefNumber, CASES.[Date Recieved], CASES.propaddress2, CASES.Unit_no " _
+    & " FROM CASES INNER JOIN foreclosure ON CASES.FileNum = foreclosure.SubFileNum " _
+    & " WHERE foreclosure.sale_cancelled < #" & VDate & "#;"
+    
+    Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+    
+    Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+    
+    If Not rs.EOF Then
+    rs.MoveFirst
+    End If
+    
+    Do While Not rs.EOF
+    'If rs!Status = "closed" Or rs!Status = "archived" Then
+    With rsTemp
+    .AddNew
+    !filenum = rs!SubFileNum
+    !LastNameDebtor1 = rs!LastNameDebtor1
+    !PropAddress = rs!PropAddress
+    !ClientRefNumber = rs!ClientRefNumber
+    !Client = rs!Client
+    !PropertyState = rs!PropertyState
+    !Propertycounty = rs!Propertycounty
+    !propzip = rs!propzip
+    !propaddress2 = rs!propaddress2
+    !unit_no = rs!unit_no
+    !Status = rs!Status
+    !SaleDate = rs!sale_cancelled
+    If Not IsNull(rs![Date Recieved]) Then
+    ![Date Recieved] = rs![Date Recieved]
+    End If
+    .Update
+    End With
+    
+    rs.MoveNext
+    Loop
+    rsTemp.Close
+    rs.Close
+    
+    Call RegisterMonies
+    DoCmd.OpenQuery ("VaAcctUpdate3")
+    DoCmd.OpenQuery ("VaAcctUpdate3a")
+    DoCmd.OpenQuery ("VaAcctUpdate3b")
+    
+    DoCmd.OpenReport "Register Sale Cancelled", acViewPreview
+    End Function
+
+
+    
+    Public Function RegisterSaleCancelledFundsRecd()
+    
+     
+    
+    CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+    Dim rs, rsTemp As RecordSet
+    Dim VState
+    Dim vClient
+    Dim VDate
+    VDate = Date - 30
+    
+    'VState = InputBox("Enter State or Return for ALL")
+    'VClient = InputBox("Enter Client or Return for ALL")
+    
+    strsql = "SELECT foreclosure.sale_cancelled, foreclosure.SubFileNum, CASES.LastNameDebtor1, " _
+    & " CASES.PropAddress, CASES.PropertyCity, cases.status, CASES.PropertyCounty, CASES.PropertyState, CASES.PropZip, " _
+    & " CASES.Client, CASES.ClientRefNumber, CASES.[Date Recieved], CASES.propaddress2, CASES.Unit_no " _
+    & " FROM CASES INNER JOIN foreclosure ON CASES.FileNum = foreclosure.SubFileNum " _
+    & " WHERE foreclosure.sale_cancelled is not null;"
+    
+    Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+    
+    Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+    
+    If Not rs.EOF Then
+    rs.MoveFirst
+    End If
+    
+    Do While Not rs.EOF
+    'If rs!Status = "closed" Or rs!Status = "archived" Then
+    With rsTemp
+    .AddNew
+    !filenum = rs!SubFileNum
+    !LastNameDebtor1 = rs!LastNameDebtor1
+    !PropAddress = rs!PropAddress
+    !ClientRefNumber = rs!ClientRefNumber
+    !Client = rs!Client
+    !PropertyState = rs!PropertyState
+    !Propertycounty = rs!Propertycounty
+    !propzip = rs!propzip
+    !propaddress2 = rs!propaddress2
+    !unit_no = rs!unit_no
+    !Status = rs!Status
+    !SaleDate = rs!sale_cancelled
+    If Not IsNull(rs![Date Recieved]) Then
+    ![Date Recieved] = rs![Date Recieved]
+    End If
+    .Update
+    End With
+    
+    rs.MoveNext
+    Loop
+    rsTemp.Close
+    rs.Close
+    
+    Call RegisterMonies
+    DoCmd.OpenQuery ("VaAcctUpdate3")
+    DoCmd.OpenQuery ("VaAcctUpdate3a")
+    DoCmd.OpenReport "Register Sale Cancelled Funds Recd", acViewPreview
+    End Function
+
+
+Public Function RegisterClosedArchived()
+
+ 
+
+CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+Dim rs, rsTemp As RecordSet
+Dim VState
+Dim vClient
+
+VState = InputBox("Enter State or Return for ALL")
+vClient = InputBox("Enter Client or Return for ALL")
+
+strsql = "SELECT PostSale.acct_approved_date, PostSale.SubFileNum, postsale.deedrecorded, CASES.LastNameDebtor1, " _
+& " CASES.PropAddress, CASES.PropertyCity, cases.status, CASES.PropertyCounty, CASES.PropertyState, CASES.PropZip, " _
+& " CASES.Client, CASES.ClientRefNumber, CASES.[Date Recieved], CASES.propaddress2, CASES.Unit_no " _
+& " FROM CASES INNER JOIN PostSale ON CASES.FileNum = PostSale.SubFileNum " _
+& " WHERE PostSale.deedrecorded Is Not Null AND CASES.PropertyState like " & """" & VState & "*""" & " AND " _
+& " CASES.Client Like " & """*" & vClient & "*""" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+If rs!Status = "closed" Or rs!Status = "archived" Then
+With rsTemp
+.AddNew
+!filenum = rs!SubFileNum
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropAddress = rs!PropAddress
+!ClientRefNumber = rs!ClientRefNumber
+!Client = rs!Client
+!PropertyState = rs!PropertyState
+!Propertycounty = rs!Propertycounty
+!propzip = rs!propzip
+!propaddress2 = rs!propaddress2
+!unit_no = rs!unit_no
+!SaleDate = rs!DeedRecorded
+If Not IsNull(rs![Date Recieved]) Then
+![Date Recieved] = rs![Date Recieved]
+End If
+.Update
+End With
+End If
+
+rs.MoveNext
+Loop
+rsTemp.Close
+rs.Close
+
+Call RegisterMonies
+DoCmd.OpenQuery ("VaAcctUpdate3")
+DoCmd.OpenReport "RegisterClosedArchived", acViewPreview
+End Function
+
+Public Function RegisterDeedAcctApp()
+Call WarningsNowFalse
+
+CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+CurrentDb.Execute "DELETE * FROM tempcomm;", dbFailOnError
+
+Dim rs As RecordSet
+
+
+DoCmd.OpenQuery "RegisterAcctApprovedQRY"
+
+Set rs = CurrentDb.OpenRecordset("TempVASales")
+If rs.EOF Then
+    MsgBox ("No records meet the criteria, exiting...")
+    rs.Close
+    Set rs = Nothing
+    Exit Function
+End If
+
+rs.Close
+Set rs = Nothing
+
+Call RegisterMoniesEsc4
+
+DoCmd.OpenQuery ("VaAcctUpdate3_recsetmktbl")
+DoCmd.OpenQuery ("VaAcctUpdate3")
+DoCmd.OpenReport "RegisterDeedRecordedAcctApproved", acViewPreview
+
+End Function
+
+Public Function RegisterAcctApproved()
+ 
+
+CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+Dim rs, rsTemp As RecordSet
+Dim strsql As String
+Dim VState
+Dim vClient
+
+VState = InputBox("Enter State or Return for ALL")
+vClient = InputBox("Enter Client or Return for ALL")
+
+strsql = "SELECT PostSale.acct_approved_date, PostSale.SubFileNum, postsale.deedrecorded, CASES.LastNameDebtor1, " _
+& " CASES.PropAddress, CASES.PropertyCity, CASES.PropertyCounty, CASES.PropertyState, CASES.PropZip, " _
+& " CASES.Client, CASES.ClientRefNumber, CASES.[Date Recieved], CASES.propaddress2, CASES.Unit_no " _
+& " FROM CASES INNER JOIN PostSale ON CASES.FileNum = PostSale.SubFileNum " _
+& " WHERE PostSale.acct_approved_date Is Not Null AND CASES.PropertyState like " & """" & VState & "*""" & " AND " _
+& " CASES.Client Like " & """*" & vClient & "*""" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+With rsTemp
+.AddNew
+!filenum = rs!SubFileNum
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropAddress = rs!PropAddress
+!ClientRefNumber = rs!ClientRefNumber
+!Client = rs!Client
+!PropertyState = rs!PropertyState
+!Propertycounty = rs!Propertycounty
+!propzip = rs!propzip
+!propaddress2 = rs!propaddress2
+!unit_no = rs!unit_no
+!SaleDate = rs!DeedRecorded
+If Not IsNull(rs![Date Recieved]) Then
+![Date Recieved] = rs![Date Recieved]
+End If
+
+.Update
+End With
+rs.MoveNext
+Loop
+rsTemp.Close
+rs.Close
+
+Call RegisterMonies
+DoCmd.OpenQuery ("VaAcctUpdate3")
+DoCmd.OpenReport "RegisterAcctApproved", acViewPreview
+
+End Function
+
+Public Function RegisterDeedRecorded()
+
+ 
+
+CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+Dim rs, rsTemp As RecordSet
+Dim VState
+Dim vClient
+
+VState = InputBox("Enter State or Return for ALL")
+vClient = InputBox("Enter Client or Return for ALL")
+
+strsql = "SELECT PostSale.acct_approved_date, PostSale.SubFileNum, postsale.deedrecorded, CASES.LastNameDebtor1, " _
+& " CASES.PropAddress, CASES.PropertyCity, CASES.PropertyCounty, CASES.PropertyState, CASES.PropZip, " _
+& " CASES.Client, CASES.ClientRefNumber, CASES.[Date Recieved], CASES.propaddress2, CASES.Unit_no " _
+& " FROM CASES INNER JOIN PostSale ON CASES.FileNum = PostSale.SubFileNum " _
+& " WHERE PostSale.deedrecorded Is Not Null AND CASES.PropertyState like " & """" & VState & "*""" & " AND " _
+& " CASES.Client Like " & """*" & vClient & "*""" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+With rsTemp
+.AddNew
+!filenum = rs!SubFileNum
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropAddress = rs!PropAddress
+!ClientRefNumber = rs!ClientRefNumber
+!Client = rs!Client
+!PropertyState = rs!PropertyState
+!Propertycounty = rs!Propertycounty
+!propzip = rs!propzip
+!propaddress2 = rs!propaddress2
+!unit_no = rs!unit_no
+!SaleDate = rs!DeedRecorded
+If Not IsNull(rs![Date Recieved]) Then
+![Date Recieved] = rs![Date Recieved]
+End If
+
+.Update
+End With
+rs.MoveNext
+Loop
+rsTemp.Close
+rs.Close
+
+Call RegisterMonies
+DoCmd.OpenQuery ("VaAcctUpdate3")
+DoCmd.OpenReport "RegisterDeedRecorded", acViewPreview
+End Function
+
+Public Function RegisterDeedRecordedNoMoneyInRegister()
+
+ 
+
+CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+Dim rs, rsTemp As RecordSet
+Dim VState
+Dim vClient
+
+VState = InputBox("Enter State or Return for ALL")
+vClient = InputBox("Enter Client or Return for ALL")
+
+strsql = "SELECT PostSale.acct_approved_date, PostSale.SubFileNum, postsale.deedrecorded, CASES.LastNameDebtor1, " _
+& " CASES.PropAddress, CASES.PropertyCity, CASES.PropertyCounty, CASES.PropertyState, CASES.PropZip, " _
+& " CASES.Client, CASES.ClientRefNumber, CASES.[Date Recieved], CASES.propaddress2, CASES.Unit_no " _
+& " FROM CASES INNER JOIN PostSale ON CASES.FileNum = PostSale.SubFileNum " _
+& " WHERE PostSale.deedrecorded Is Not Null AND CASES.PropertyState like " & """" & VState & "*""" & " AND " _
+& " CASES.Client Like " & """*" & vClient & "*""" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+With rsTemp
+.AddNew
+!filenum = rs!SubFileNum
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropAddress = rs!PropAddress
+!ClientRefNumber = rs!ClientRefNumber
+!Client = rs!Client
+!PropertyState = rs!PropertyState
+!Propertycounty = rs!Propertycounty
+!propzip = rs!propzip
+!propaddress2 = rs!propaddress2
+!unit_no = rs!unit_no
+!SaleDate = rs!DeedRecorded
+If Not IsNull(rs![Date Recieved]) Then
+![Date Recieved] = rs![Date Recieved]
+End If
+
+.Update
+End With
+rs.MoveNext
+Loop
+rsTemp.Close
+rs.Close
+
+Call RegisterMoniesZero
+'DoCmd.OpenQuery ("VaAcctUpdate3")
+DoCmd.OpenQuery "RegisterDeedRecordedNoMonies", acViewPreview
+End Function
+Public Function RegisterMoniesCompass()
+Dim rs As RecordSet, RsReg As RecordSet, rsTemp
+Dim strsql As String, VRegister As String
+
+Dim VBal
+
+CurrentDb.Execute "Delete * from TempRegisterComm;", dbFailOnError
+Set rs = CurrentDb.OpenRecordset("TempRegister")
+rs.MoveFirst
+
+Do While Not rs.EOF
+If Not IsNull(rs!filenum) Then
+
+strsql = "select * from Register where FileID = " & rs!filenum & ";"
+VRegister = ""
+VBal = 0
+Set RsReg = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+End If
+
+If Not RsReg.EOF Then
+RsReg.MoveFirst
+vcompassid = rs!compassid
+VDC = rs!compassfee
+GblFilenum = RsReg!FileID
+Do While Not RsReg.EOF
+VRegister = RsReg!AccountShortName
+VBal = RsReg!TransAmount + VBal
+
+
+RsReg.MoveNext
+Loop
+
+If VBal <> 0 Then
+Set rsTemp = CurrentDb.OpenRecordset("tempregistercomm")
+With rsTemp
+.AddNew
+![BGWW#] = GblFilenum
+!register = VRegister
+!RegisterBalance = VBal
+!DueCompass = VDC
+!compassid = vcompassid
+.Update
+.Close
+End With
+End If
+End If
+
+
+rs.MoveNext
+Loop
+
+
+End Function
+

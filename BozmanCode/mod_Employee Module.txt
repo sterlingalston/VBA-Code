@@ -1,0 +1,267 @@
+Attribute VB_Name = "Employee Module"
+
+Option Compare Database
+
+Public Function getEmployeeName(initials As Variant) As Variant
+
+Dim fname, lname As String
+
+On Error GoTo handler
+
+fname = Trim$(Nz(DLookup("[FirstName]", "Employees", "[EmployeeID]= " & """" & initials & """"), ""))
+lname = Trim$(Nz(DLookup("[LastName]", "Employees", "[EmployeeID]= " & """" & initials & """"), ""))
+getEmployeeName = Null
+If Len(fname) > 0 And Len(lname) > 0 Then getEmployeeName = fname & " " & lname
+
+
+
+Exit Function
+
+handler:
+
+getEmployeeName = Null
+
+Exit Function
+
+End Function
+
+Public Function getdeedreccosts_proc(filenum As Double) As Variant
+
+On Error GoTo handler
+
+Dim Client As String: Client = DLookup("Client", "Cases", "filenum = " & filenum)
+Dim procinitials As String
+Dim rs As RecordSet
+Dim rsisOpen As Boolean
+procinitials = DLookup("deedreccosts_proc", "Clients", "[OrganizationName] = " & """" & Client & """")
+
+Set rs = CurrentDb.OpenRecordset("select firstname, lastname, employeeid from employees where employeeid = " & """" & procinitials & """", dbOpenSnapshot)
+rsisOpen = True
+
+If Not rs.EOF Then
+    getdeedreccosts_proc = rs!EmployeeID
+End If
+
+rs.Close
+Set rs = Nothing
+
+Exit Function
+
+handler:
+
+If rsisOpen Then
+    rs.Close
+    Set rs = Nothing
+End If
+getdeedreccosts_proc = Null
+
+Exit Function
+
+End Function
+
+Public Function getEmployeeFullName(Login As String) As Variant
+
+Dim fname, mname, lname As String
+
+On Error GoTo handler
+
+fname = Trim$(Nz(DLookup("[FirstName]", "Employees", "[login]= " & """" & Login & """"), ""))
+mname = Trim$(Nz(DLookup("[MiddleName]", "Employees", "[login]= " & """" & Login & """"), ""))
+lname = Trim$(Nz(DLookup("[LastName]", "Employees", "[login]= " & """" & Login & """"), ""))
+
+getEmployeeFullName = fname & " " & IIf(Len(mname) > 0, mname & " ", "") & lname
+
+Exit Function
+
+handler:
+
+getEmployeeFullName = Null
+
+Exit Function
+
+End Function
+
+Public Function getEmployeeInitials(Login As String) As Variant
+
+On Error GoTo handler
+
+getEmployeeInitials = DLookup("[EmployeeID]", "Employees", "[login]= " & """" & Login & """")
+    
+Exit Function
+
+handler:
+
+getEmployeeInitials = Null
+
+Exit Function
+    
+End Function
+Public Function GetEmployee()
+vInitials = getEmployeeInitials(Environ("username"))
+GetEmployee = getEmployeeName(vInitials)
+
+End Function
+Public Function getEmployeeEmail(FieldName As String) As Variant
+
+On Error GoTo handler
+
+getEmployeeEmail = DLookup("[EmailName]", "Employees", "[EmployeeID]= " & """" & [FieldName] & """")
+    
+Exit Function
+
+handler:
+
+getEmployeeEmail = Null
+
+Exit Function
+    
+End Function
+Public Function empname()
+Dim Vproc
+Vproc = "NO"
+Dim rsEmp As RecordSet
+Dim strsqlEmp As String
+Dim VMiddle
+Dim vInitials
+
+
+Do While Vproc <> "YES"
+vInitials = getEmployeeInitials(Environ("username"))
+'sssss
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials, Will not Exit until correct intials input")
+Else
+Vproc = "YES"
+If Not IsNull(rsEmp!MiddleName) Then
+VMiddle = " " & rsEmp!MiddleName
+Else
+VMiddle = ""
+End If
+
+
+empname = rsEmp!FirstName & VMiddle & " " & rsEmp!LastName
+
+
+End If
+
+Loop
+End Function
+
+
+
+Public Function EmpNameEmail()
+Dim Vproc
+Dim rsEmp As RecordSet
+Dim strsqlEmp As String
+Dim VMiddle
+Dim vInitials
+
+vInitials = getEmployeeInitials(Environ("username"))
+'sssss
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+
+
+If Not IsNull(rsEmp!EmailName) Then
+
+EmpNameEmail = rsEmp!EmailName
+Else
+
+EmpNameEmail = ""
+End If
+
+
+
+End Function
+
+Public Function EmpNamePhone()
+Dim Vproc
+Vproc = "NO"
+Dim rsEmp As RecordSet
+Dim strsqlEmp As String
+Dim VMiddle
+Dim vInitials
+
+Do While Vproc <> "YES"
+vInitials = getEmployeeInitials(Environ("username"))
+'sssss
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials, Will not Exit until correct intials input")
+Else
+Vproc = "YES"
+If Not IsNull(rsEmp!MiddleName) Then
+VMiddle = " " & rsEmp!MiddleName
+Else
+VMiddle = ""
+End If
+
+If Not IsNull(rsEmp!WorkPhone) Then
+
+EmpNamePhone = rsEmp!FirstName & VMiddle & " " & rsEmp!LastName & " at " & rsEmp!WorkPhone
+Else
+
+EmpNamePhone = rsEmp!FirstName & VMiddle & " " & rsEmp!LastName & " at 301-961-6555"
+End If
+
+
+End If
+
+Loop
+End Function
+
+
+Public Function EmpNameTitle()
+Dim Vproc
+Vproc = "NO"
+Dim vInitials
+Dim rsEmp As RecordSet
+Dim strsqlEmp As String
+Dim VMiddle
+
+Do While Vproc <> "YES"
+vInitials = getEmployeeInitials(Environ("username"))
+'sssss
+strsqlEmp = "select * from employees where employeeid = " & """" & vInitials & """" & ";"
+Set rsEmp = CurrentDb.OpenRecordset(strsqlEmp, dbOpenSnapshot)
+If rsEmp.EOF Then
+MsgBox ("Incorrect Initials, Will not Exit until correct intials input")
+Else
+Vproc = "YES"
+If Not IsNull(rsEmp!MiddleName) Then
+VMiddle = " " & rsEmp!MiddleName
+Else
+VMiddle = ""
+End If
+
+If Not IsNull(rsEmp!Title) Then
+
+EmpNameTitle = rsEmp!FirstName & VMiddle & " " & rsEmp!LastName & ", " & rsEmp!Title
+Else
+
+EmpNameTitle = rsEmp!FirstName & VMiddle & " " & rsEmp!LastName
+End If
+
+
+End If
+
+Loop
+End Function
+
+Public Function EmployeeCheck()
+
+DoCmd.OpenQuery ("EmployeeAppend")
+DoCmd.OpenQuery ("EmployeeHRID")
+DoCmd.OpenQuery ("EmployeeUserName")
+DoCmd.OpenQuery ("EmployeeLogin")
+DoCmd.OpenQuery ("EmployeeDepartment")
+DoCmd.OpenQuery ("EmployeeEmail")
+DoCmd.OpenQuery ("EmployeeOffice")
+DoCmd.OpenQuery ("EmployeeFax")
+DoCmd.OpenQuery ("EmployeePhoneExt")
+DoCmd.OpenQuery ("EmployeePhone")
+
+End Function

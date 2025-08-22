@@ -1,0 +1,53 @@
+Attribute VB_Name = "SpreadsheetMenuAudit"
+Option Compare Database
+
+Sub SpreadsheetMenuAudit()
+
+CurrentDb.Execute ("delete from tblSpreadsheetsMenu")
+
+Dim spreadctrls As Object: Set spreadctrls = Application.CommandBars.Item("Foreclosure Menu").Controls("Spreadsheets").Controls
+Dim spreadctrls_dc As Object: Set spreadctrls_dc = spreadctrls.Item("DC Spreadsheets").Controls
+
+For Each ctrl In spreadctrls
+    'Debug.Print ctrl.caption & " " & ctrl.OnAction
+    CurrentDb.Execute ("insert into tblspreadsheetsmenu values (" & _
+        """" & ctrl.Caption & """" & "," & _
+        """" & "'" & ctrl.OnAction & """" & _
+        ")")
+Next ctrl
+
+For Each ctrl In spreadctrls_dc
+    'Debug.Print ctrl.caption & " " & ctrl.OnAction
+    CurrentDb.Execute ("insert into tblspreadsheetsmenu values (" & _
+        """" & ctrl.Caption & """" & "," & _
+        """" & "'" & ctrl.OnAction & """" & _
+        ")")
+Next ctrl
+
+MsgBox "Spreadsheet audit completed", vbInformation, "Spreadsheet Audit"
+DoCmd.OpenTable "tblSpreadsheetsMenu", acViewNormal
+
+End Sub
+
+
+Sub MenuAudit()
+
+CurrentDb.Execute ("delete from tblMenuAudit")
+
+Dim menuctrls As Object: Set menuctrls = Application.CommandBars.Item("Foreclosure Menu").Controls("Documents").Controls("Pre-sale Documents").Controls
+
+For Each ctrl In menuctrls
+    'Debug.Print ctrl.caption & " " & ctrl.OnAction
+    CurrentDb.Execute ("insert into tblMenuAudit values (" & _
+        """" & ctrl.Caption & """" & "," & _
+        """" & "'" & ctrl.OnAction & """" & _
+        ")")
+Next ctrl
+
+
+MsgBox "Menu audit completed", vbInformation, "Menu Audit"
+DoCmd.OpenTable "tblMenuAudit", acViewNormal
+
+End Sub
+
+

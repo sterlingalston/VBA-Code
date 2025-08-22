@@ -1,0 +1,1548 @@
+Attribute VB_Name = "FNMAReportModule"
+
+Option Compare Database
+Public Function FNMADeedREPORT()
+
+CurrentDb.Execute "Delete * from FNMADeedTable;", dbFailOnError
+
+DoCmd.OpenQuery "FNMADeedAppend"
+
+'Update comments
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("FNMADeedTable", dbOpenDynaset, dbSeeChanges)
+Dim rsB As RecordSet
+Dim strsqlB As String
+Dim VNotes
+
+
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+strsqlB = "Select d_realestatetaxes, d_transfee, water, customerid, bill_paid, billingdate from billing where filenum = " & rs![BWW#] & ";"
+Set rsB = CurrentDb.OpenRecordset(strsqlB, dbOpenSnapshot)
+
+Do While Not rsB.EOF
+VNotes = "Unpaid: "
+
+If rsB![d_realestatetaxes] > 0 And IsNull(rsB!bill_paid) Then
+VNotes = VNotes + "Inv#: " & Format(rsB![CustomerID], "############") & ": Date Billed: " & Format(rsB!billingdate, "mm/dd/yy") & ", Real Estate Taxes: " & Format(rsB![d_realestatetaxes], "$###,##0.00") & "; "
+End If
+
+If rsB![water] > 0 And IsNull(rsB!bill_paid) Then
+VNotes = VNotes + "Inv#: " & Format(rsB![CustomerID], "############") & ": Date Billed: " & Format(rsB!billingdate, "mm/dd/yy") & ", Water: " & Format(rsB![water], "$###,##0.00") & ";"
+End If
+
+
+If rsB![d_transfee] > 0 And IsNull(rsB!bill_paid) Then
+VNotes = VNotes + "Inv#: " & Format(rsB![CustomerID], "############") & ": Date Billed: " & Format(rsB!billingdate, "mm/dd/yy") & ", Transfer Taxes: " & Format(rsB![d_transfee], "$###,##0.00") & ";"
+End If
+
+With rs
+.Edit
+If VNotes <> "Unpaid: " Then
+!filenotes = VNotes
+End If
+
+.Update
+End With
+
+rsB.MoveNext
+Loop
+
+rs.MoveNext
+Loop
+
+
+ExcelSaveAsQRY ("FNMADeedQRY")
+
+End Function
+Public Function FNMAUpdate()
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+'Dim rs As Recordset
+'Dim strsql As String
+'strsql = "select update_dt from cases where filenum = " & gblfilenum
+'Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+'If Not rs.EOF Then
+'With rs
+'.Edit
+'!UPDATE_DT = Date
+'.Update
+'.Close
+'End With
+'End If
+
+'Forms![foreclosure database screen]!UPDATE_DT = Date
+
+
+
+End Function
+Public Function FNMAUpdateFileClosed()
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "select update_dt, mccalla from cases where filenum = " & GblFilenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+With rs
+.Edit
+!UPDATE_DT = Date
+!mccalla = True
+.Update
+.Close
+End With
+End If
+End Function
+Public Function FNMAUpdateBK()
+
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "select update_dt_bk from bankruptcy where counter = " & GblBKNo
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+With rs
+.Edit
+!Update_DT_Bk = Date
+.Update
+.Close
+End With
+End If
+
+
+End Function
+Public Function FNMASaleSch()
+ExcelSaveAsQRY ("FNMASaleScheduled")
+ExcelSaveAsQRY ("FNMASaleScheduledPriorCancelled")
+
+End Function
+Public Function FNMABKComparison()
+Dim vFile As String
+ 
+
+If IsTable("FNMABKComparison") Then
+DoCmd.DeleteObject acTable, "FNMABKComparison"
+End If
+
+MsgBox ("You must have 1 spreadsheet copied into your \\rvdv-fs01\datatransfer\FNMATabs directory" & vbCr & vbCr & "BKTab")
+
+'VFIle = "BKTab.xls"
+DoCmd.TransferSpreadsheet acImport, , "FNMABKComparison", "\\rvdv-fs01\datatransfer\FNMATabs\BKTab.xls", 1
+
+DoCmd.OpenQuery ("FNMAQueryB Without Matching FNMABKComparison")
+
+ 
+
+End Function
+Public Function FNMAFCComparison()
+Dim vFile As String
+ 
+
+If IsTable("FNMAFCComparison") Then
+DoCmd.DeleteObject acTable, "FNMAFCComparison"
+End If
+
+MsgBox ("You must have 1 spreadsheet copied into your \\rvdv-fs01\datatransfer\FNMATabs directory" & vbCr & vbCr & "FCTab")
+
+'VFIle = "BKTab.xls"
+DoCmd.TransferSpreadsheet acImport, , "FNMAFCComparison", "\\rvdv-fs01\datatransfer\FNMATabs\FCTab.xls", 1
+
+DoCmd.OpenQuery ("FNMAQueryF Without Matching FNMAFCComparison")
+
+ 
+
+End Function
+
+Public Function FNMACloseRpt()
+DoCmd.OpenQuery "FNMAClosedQRY"
+DoCmd.OpenQuery "FNMAQryArchives"
+DoCmd.OpenReport "FNMA Close", acViewPreview
+
+End Function
+Function fixXLFNMA(mySheetPath)
+Dim VHoldReason
+
+'On Error Resume Next
+ 
+
+If dir(mySheetPath) = "" Then
+  MsgBox "Can't find '" & mySheetPath & "'"
+  Exit Function
+End If
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheetMain As Excel.Worksheet
+Dim xlSheet As Excel.Worksheet
+Dim xlSheet3 As Excel.Worksheet
+Dim xlSheet4 As Excel.Worksheet
+Dim xlSheet5 As Excel.Worksheet
+
+'appends table
+CurrentDb.Execute "Delete * from FNMAQueryF;", dbSeeChanges
+
+
+
+DoCmd.OpenQuery ("FNMAQueryFC-Create")
+'appends table
+DoCmd.OpenQuery ("FNMAQueryFC-Closed")
+DoCmd.OpenQuery ("FNMAQueryFC-Archived")
+
+DoCmd.OpenQuery ("FNMAQueryFC-POSTSALE")
+'updates table
+DoCmd.OpenQuery ("FNMAQueryFC-FCTracking")
+DoCmd.OpenQuery ("FNMAQueryFC-NOI")
+CurrentDb.Execute "Delete * from FNMAQueryB;", dbSeeChanges
+DoCmd.OpenQuery ("FNMAQueryBK")
+DoCmd.OpenQuery ("FNMAUpdateFCTrackingHOLDS-BK")
+
+
+Set xl = CreateObject("Excel.Application")
+xl.Visible = True
+Set xlBook = xl.Workbooks.Open(mySheetPath)
+Set xlSheetMain = xlBook.Worksheets(1)
+Set xlSheet = xlBook.Worksheets(2)
+Set xlSheet3 = xlBook.Worksheets(3)
+Set xlSheet4 = xlBook.Worksheets(4)
+Set xlSheet5 = xlBook.Worksheets(5)
+
+Dim strsql
+Dim rs As RecordSet
+Dim vFile
+Dim VCellNo
+Dim VLCom
+Dim VLComDate
+Dim VOccupancy
+
+VCellNo = 5
+'Foreclosure
+Dim rsF As RecordSet
+Dim strsqlF As String
+
+Set rs = CurrentDb.OpenRecordset("fnmaqueryf", dbOpenDynaset, dbSeeChanges)
+
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+VHoldReason = Null
+
+
+If rs!salecancel_reason = "FBP" Or rs!salecancel_reason Like "For*" Then
+VHoldReason = "Hold for Forbearance Plan"
+ElseIf rs!salecancel_reason = "LnMOD" Or rs!salecancel_reason Like "Loan Modification" Then
+VHoldReason = "Hold for Loan Modification"
+ElseIf rs!salecancel_reason = "HAMP" Then
+VHoldReason = "Hold for HAMP"
+ElseIf rs!salecancel_reason Like "Loss M*" Then
+VHoldReason = "Hold for Loss Mitigation"
+ElseIf rs!salecancel_reason Like "Short*" Then
+VHoldReason = "Hold for Short Sale"
+ElseIf rs!salecancel_reason Like "B*" Then
+VHoldReason = "Bankruptcy"
+ElseIf rs!salecancel_reason Like "Repayment*" Then
+VHoldReason = "Hold for Repayment Plan"
+ElseIf rs!Status = "Bankruptcy" Then
+VHoldReason = "Bankruptcy"
+ElseIf rs!Status = "Title Issue" Then
+VHoldReason = "Title Issue"
+ElseIf rs!Status = "Litigation" Then
+VHoldReason = "Litigation"
+'ElseIf rs!Status = "Moratorium" Then
+'VHoldReason = "Sale on hold due to moratorium"
+ElseIf rs!Status = "Moratorium" Then
+VHoldReason = "Sale Postponed due to moratorium"
+ElseIf rs!Status = "DIL" Then
+VHoldReason = "Hold for DIL"
+ElseIf Not IsNull(rs!salecancel_reason) And rs!salecancel_reason <> "" Then
+VHoldReason = "Hold for " & rs!salecancel_reason
+End If
+
+VLCom = Null
+VLComDate = Null
+
+If IsNull(rs![service_complete]) Then
+
+ VLCom = "Referral"
+ 
+ If Not IsNull(rs!resume_recd) Then
+ VLComDate = rs!resume_recd
+ Else
+ VLComDate = rs![referral/resume]
+ End If
+ 
+ ElseIf Not IsNull(rs![service_complete]) And IsNull(rs![Part 1 Filed]) Then
+
+ VLCom = "Service Complete"
+ VLComDate = rs![service_complete]
+ 
+ElseIf Not IsNull(rs![Part 1 Filed]) And IsNull(rs!SaleDate) Then
+
+ VLCom = "1st Legal Filed"
+ VLComDate = rs![Part 1 Filed]
+ 
+ElseIf rs!SaleDate >= Date And IsNull(rs!sale_cancelled) Then
+
+ VLCom = "Sale Scheduled"
+ VLComDate = rs![SaleDate]
+ 
+ ElseIf Not IsNull(rs![Purchaser]) And (rs!Status = "Postsale") Then
+
+ VLCom = "Sale Held"
+ VLComDate = rs![SaleDate]
+ 
+ End If
+ 
+VSaleDate = Null
+If (rs!SaleDate > Date And IsNull(rs!sale_cancelled)) Or _
+(rs!Status = "Postsale") Then
+VSaleDate = rs!SaleDate
+End If
+
+
+VCa = "a" & VCellNo
+xlSheetMain.Range(VCa).Value = rs![Investor#]
+
+VCa = "b" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!Client
+
+VCa = "c" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!ClientRefNumber
+
+VCa = "d" & VCellNo
+xlSheetMain.Range(VCa).Value = rs![filenum]
+
+VCa = "e" & VCellNo
+xlSheetMain.Range(VCa).Value = VLCom
+
+VCa = "f" & VCellNo
+xlSheetMain.Range(VCa).Value = VLComDate
+
+'vca = "g" & VCellNo
+'xlSheetMain.Range(vca).Value = rs![resume_recd]
+
+VCa = "g" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!Occupancy
+
+VCa = "h" & VCellNo
+xlSheetMain.Range(VCa).Value = rs![referral/resume]
+
+VCa = "j" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!PropertyState
+
+VCa = "k" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!Propertycounty
+
+'vca = "h" & VCellNo
+'xlSheetMain.Range(vca).Value = rs![part 1 filed]
+
+'vca = "i" & VCellNo
+'xlSheetMain.Range(vca).Value = rs!Service_complete
+
+VCa = "m" & VCellNo
+xlSheetMain.Range(VCa).Value = VSaleDate
+
+VCa = "n" & VCellNo
+xlSheetMain.Range(VCa).Value = rs![Principal Balance]
+
+VCa = "o" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!LPIDate
+
+VCa = "p" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!ClosedReason
+
+VCa = "q" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!ClosedDate
+
+VCa = "r" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!Purchaser
+
+VCa = "s" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!SalePrice
+
+VCa = "t" & VCellNo
+xlSheetMain.Range(VCa).Value = rs!SalePrice
+
+rs.MoveNext
+VCellNo = VCellNo + 1
+
+Loop
+
+
+Set rs = CurrentDb.OpenRecordset("fnmaqueryb")
+VCellNo = 5
+
+rs.MoveFirst
+Do While Not rs.EOF
+VOccupancy = ""
+
+'If rs!occupancy = 1 Then
+'VOccupancy = "Owner"
+'ElseIf rs!occupancy = 2 Then
+'VOccupancy = "Unknown"
+'ElseIf rs!occupancy = 3 Then
+'VOccupancy = "Tenant"
+'ElseIf rs!occupancy = 4 Then
+'VOccupancy = "Vacant"
+'End If
+
+
+VCa = "a" & VCellNo
+xlSheet.Range(VCa).Value = rs![Investor#]
+
+VCa = "b" & VCellNo
+xlSheet.Range(VCa).Value = rs!Client
+
+VCa = "c" & VCellNo
+xlSheet.Range(VCa).Value = rs!ClientRefNumber
+
+VCa = "d" & VCellNo
+xlSheet.Range(VCa).Value = rs!filenum
+
+VCa = "e" & VCellNo
+xlSheet.Range(VCa).Value = VOccupancy
+
+VCa = "f" & VCellNo
+xlSheet.Range(VCa).Value = Format(rs![BK Referral Date], "mm/dd/yy")
+
+VCa = "h" & VCellNo
+xlSheet.Range(VCa).Value = rs!chapter
+
+VCa = "i" & VCellNo
+xlSheet.Range(VCa).Value = rs![BKY Case Number]
+
+VCa = "k" & VCellNo
+xlSheet.Range(VCa).Value = rs!Jurisdiction
+
+VCa = "l" & VCellNo
+xlSheet.Range(VCa).Value = Format(rs![filed date], "mm/dd/yy")
+
+VCa = "j" & VCellNo
+xlSheet.Range(VCa).Value = rs!PropertyState
+
+rs.MoveNext
+VCellNo = VCellNo + 1
+
+Loop
+'HOLDS/Missing Docs/Postpone
+
+
+DoCmd.OpenQuery ("FNMAQueryFCSelectPostCan")
+
+DoCmd.OpenQuery ("FNMAUpdateFCTrackingPC")
+
+DoCmd.OpenQuery ("FNMAQueryFCSelectHOLD")
+DoCmd.OpenQuery ("FNMAUpdateFCTrackingHolds")
+DoCmd.OpenQuery ("FNMAUpdateNOIHolds")
+DoCmd.OpenQuery ("FNMAUpdateAffHOLDS")
+DoCmd.OpenQuery ("FNMAQueryFCSelectMDocs")
+
+
+
+
+DoCmd.OpenQuery ("FNMAQueryFCSelectNONOIMDocs")
+DoCmd.OpenQuery ("FNMAQueryFCSelectFCTrackingMdocs")
+DoCmd.OpenQuery ("FNMAUpdateFCTrackingMDocs")
+
+
+
+DoCmd.OpenQuery ("FNMAUpdateNOIMDocs")
+DoCmd.OpenQuery ("FNMAUpdateMissingDocsMDocs")
+DoCmd.OpenQuery ("FNMAUpdateAffMDocs")
+
+DoCmd.OpenQuery ("FNMAUpdateAffPC")
+
+
+Set RsPC = CurrentDb.OpenRecordset("FNMAPC", dbOpenDynaset, dbSeeChanges)
+Set rshold = CurrentDb.OpenRecordset("FNMAHOLDS", dbOpenDynaset, dbSeeChanges)
+Set rsmdocs = CurrentDb.OpenRecordset("FNMAMDocs", dbOpenDynaset, dbSeeChanges)
+
+rshold.MoveFirst
+VCellNo = 5
+
+Do While Not rshold.EOF
+VHoldReason = Null
+If rshold!salecancel_reason = "FBP" Or rshold!salecancel_reason Like "For*" Then
+VHoldReason = "Hold for Forebearance Plan"
+ElseIf rshold!salecancel_reason = "LnMOD" Or rshold!salecancel_reason Like "Loan Modification" Then
+VHoldReason = "Hold for Loan Modification"
+ElseIf rshold!salecancel_reason = "HAMP" Then
+VHoldReason = "Hold for HAMP"
+ElseIf rshold!salecancel_reason Like "Loss M*" Then
+VHoldReason = "Hold for Loss Mitigation"
+ElseIf rshold!salecancel_reason Like "Short*" Then
+VHoldReason = "Hold for Short Sale"
+ElseIf rshold!salecancel_reason Like "B*" Then
+VHoldReason = "Bankruptcy"
+ElseIf rshold!salecancel_reason Like "Repayment*" Then
+VHoldReason = "Hold for Repayment Plan"
+ElseIf rshold!Status = "Bankruptcy" Then
+VHoldReason = "Bankruptcy"
+ElseIf rshold!Status = "Title Issue" Then
+VHoldReason = "Title Issue"
+ElseIf rshold!Status = "Litigation" Then
+VHoldReason = "Litigation"
+ElseIf rshold!Status = "Moratorium" Then
+VHoldReason = "Sale on hold due to moratorium"
+ElseIf rshold!Status = "DIL" Then
+VHoldReason = "Hold for DIL"
+Else
+VHoldReason = "Hold for " & rshold!salecancel_reason
+End If
+
+VHoldDate = rshold!sale_cancelled
+
+VCa = "a" & VCellNo
+xlSheet3.Range(VCa).Value = rshold![Investor#]
+VCa = "b" & VCellNo
+xlSheet3.Range(VCa).Value = VHoldReason
+VCa = "c" & VCellNo
+xlSheet3.Range(VCa).Value = VHoldDate
+VCa = "d" & VCellNo
+xlSheet3.Range(VCa).Value = rshold!filenum
+VCellNo = VCellNo + 1
+rshold.MoveNext
+Loop
+
+rsmdocs.MoveFirst
+VCellNo = 5
+Dim Vcnt
+
+
+Do While Not rsmdocs.EOF
+
+If IsNull(rsmdocs!PAff_Retd) And IsNull(rsmdocs!FAff_Retd) And _
+IsNull(rsmdocs!pre_docket_filed) And IsNull(rsmdocs!final_docket_filed) Or _
+(IsNull(rsmdocs!PAff_Retd) And IsNull(rsmdocs!FAff_Retd) And _
+IsNull(rsmdocs!pre_docket_filed) And IsNull(rsmdocs!final_docket_filed) And _
+((Not IsNull(rsmdocs!PAff_Sent) Or Not IsNull(rsmdocs!FAff_Sent) Or _
+Not IsNull(rsmdocs![Part 1 Filed])) And Not IsNull(rsmdocs!date_reset))) Then
+
+
+VNotes = ""
+
+If rsmdocs!Client Like "Bank of Am*" Or _
+rsmdocs!Client Like "Bank of A*" Or _
+rsmdocs!Client Like "Nationst*" Or _
+rsmdocs!Client Like "Financial*" Or _
+rsmdocs!Client Like "Residen*" Or _
+rsmdocs!Client Like "Saxon*" Or _
+rsmdocs!Client Like "Select*" Then
+VNotes = "Awaiting servicer instruction for compliance with HB472"
+ElseIf rsmdocs!Client Like "Chase H*" Then
+VNotes = "Awaiting final information from servicer to issue NOI's"
+ElseIf (rsmdocs!Client Like "Homeward*" Or _
+rsmdocs!Client Like "Citi*" Or _
+rsmdocs!Client Like "JPMor*" Or _
+rsmdocs!Client Like "EMC*" Or _
+rsmdocs!Client Like "Washington Mutu*" Or _
+rsmdocs!Client Like "Nationwide*") And _
+IsNull(rsmdocs!noi_sent) Then
+VNotes = "Servicer is issuing NOI.  Awaiting copies to proceed."
+ElseIf Not IsNull(rsmdocs!comments) Then
+VNotes = rsmdocs!comments
+Else
+VNotes = ""
+End If
+
+vtypedoc = ""
+VInitialReq = Null
+
+If rsmdocs!copynote <> "" Then
+If VNotes <> "" Then
+vtypedoc = "Copy of Note"
+End If
+VInitialReq = rsmdocs!copynote
+
+ElseIf rsmdocs!Figures <> "" Then
+If VNotes <> "" Then
+vtypedoc = "Judgment/Payoff Figures"
+End If
+VInitialReq = rsmdocs!Figures
+
+ElseIf rsmdocs!PAff_Sent <> "" And (rsmdocs!PAff_Retd = "" Or IsNull(rsmdocs!PAff_Retd)) Then
+
+If VNotes <> "" Then
+vtypedoc = "Affidavit - Prelim Loss Mit - MD"
+End If
+
+VInitialReq = rsmdocs!PAff_Sent
+
+ElseIf rsmdocs!affcert_to_client <> "" And (rsmdocs!affcert_recd_client = "" Or IsNull(rsmdocs!affcert_recd_client)) Then
+
+If VNotes <> "" Then
+vtypedoc = "Affidavit - Certifying Ownership - MD"
+End If
+
+VInitialReq = rsmdocs!affcert_to_client
+
+ElseIf rsmdocs!Aff_to_Client <> "" And (rsmdocs!Aff_Recd_Client = "" Or IsNull(rsmdocs!Aff_Recd_Client)) Then
+
+If VNotes <> "" Then
+vtypedoc = "Affidavit of Default - MD"
+End If
+
+VInitialReq = rsmdocs!Aff_to_Client
+
+ElseIf rsmdocs!FAff_Sent <> "" And (rsmdocs!FAff_Retd = "" Or IsNull(rsmdocs!FAff_Retd)) Then
+
+If VNotes <> "" Then
+vtypedoc = "Affidavit - Final Loss Mit - MD"
+End If
+
+VInitialReq = rsmdocs!FAff_Sent
+
+
+Else
+
+vtypedoc = "Affidavit"
+End If
+
+If IsNull(VInitialReq) Then
+VInitialReq = rsmdocs!InitialReq
+End If
+
+If (vtypedoc <> "") And vtypedoc <> "Affidavit" Then
+
+
+VCa = "a" & VCellNo
+xlSheet4.Range(VCa).Value = rsmdocs![Investor#]
+VCa = "b" & VCellNo
+xlSheet4.Range(VCa).Value = vtypedoc
+VCa = "c" & VCellNo
+xlSheet4.Range(VCa).Value = VInitialReq
+VCa = "d" & VCellNo
+xlSheet4.Range(VCa).Value = rsmdocs!filenum
+
+VCellNo = VCellNo + 1
+End If
+
+End If
+
+rsmdocs.MoveNext
+
+Loop
+
+
+RsPC.MoveFirst
+VCellNo = 5
+
+Do While Not RsPC.EOF
+
+VHoldReason = Null
+
+If RsPC!salecancel_reason = "FBP" Or RsPC!salecancel_reason Like "For*" Then
+VHoldReason = "Cancelled for Forebearance Plan"
+ElseIf RsPC!salecancel_reason = "LnMOD" Or RsPC!salecancel_reason Like "Loan Modification" Then
+VHoldReason = "Cancelled for Loan Modification"
+ElseIf RsPC!salecancel_reason = "HAMP" Then
+VHoldReason = "Cancelled for HAMP"
+ElseIf RsPC!salecancel_reason Like "Loss M*" Then
+VHoldReason = "Cancelled for Loss Mitigation"
+ElseIf RsPC!salecancel_reason Like "Short*" Then
+VHoldReason = "Cancelled for Short Sale"
+ElseIf RsPC!salecancel_reason Like "Repayment*" Then
+VHoldReason = "Cancelled for Repayment Plan"
+ElseIf RsPC!Status = "Moratorium" Then
+VHoldReason = "Sale Postponed due to moratorium"
+Else
+VHoldReason = "Cancelled for " & RsPC!salecancel_reason
+End If
+
+VCa = "a" & VCellNo
+xlSheet5.Range(VCa).Value = RsPC![Investor#]
+VCa = "c" & VCellNo
+xlSheet5.Range(VCa).Value = Format(RsPC!sale_cancelled, "MM/DD/YY")
+VCa = "b" & VCellNo
+xlSheet5.Range(VCa).Value = VHoldReason
+VCa = "d" & VCellNo
+xlSheet5.Range(VCa).Value = RsPC!filenum
+
+RsPC.MoveNext
+VCellNo = VCellNo + 1
+Loop
+'End of Holds etc.
+
+
+
+
+xlBook.Save
+xlBook.Close
+xl.Quit
+
+ 
+End Function
+Public Function CreateTblMDocs()
+
+CurrentDb.Execute ("delete * from FNMAMDocsALL")
+CurrentDb.Execute ("delete * from FNMAMDocs")
+
+DoCmd.OpenQuery ("FNMAQueryFCSelectFCTrackingMdocs")
+'DoCmd.OpenQuery ("FNMAQueryFCSelectMDocs")
+
+DoCmd.OpenQuery ("FNMAUpdateFCTrackingMDocs")
+'DoCmd.OpenQuery ("FNMAUpdateMissingDocsMDocs")
+
+Dim rsmdocs As RecordSet
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("FNMAMDocsAll", dbOpenDynaset, dbSeeChanges)
+
+Set rsmdocs = CurrentDb.OpenRecordset("fnmaMDocs", dbOpenDynaset, dbSeeChanges)
+
+rsmdocs.MoveFirst
+
+Do While Not rsmdocs.EOF
+
+'If IsNull(rsmdocs!PAff_Retd) And IsNull(rsmdocs!FAff_Retd) And _
+'IsNull(rsmdocs!pre_docket_filed) And IsNull(rsmdocs!final_docket_filed) Or _
+'(IsNull(rsmdocs!PAff_Retd) And IsNull(rsmdocs!FAff_Retd) And _
+'IsNull(rsmdocs!pre_docket_filed) And IsNull(rsmdocs!final_docket_filed) And _
+'((Not IsNull(rsmdocs!PAff_Sent) Or Not IsNull(rsmdocs!FAff_Sent) Or _
+'Not IsNull(rsmdocs![Part 1 Filed])) And Not IsNull(rsmdocs!date_reset))) Then
+'VNotes = ""
+'End If
+
+If rsmdocs!Client Like "Bank of Am*" Or _
+rsmdocs!Client Like "Bank of A*" Or _
+rsmdocs!Client Like "Nationst*" Or _
+rsmdocs!Client Like "Financial*" Or _
+rsmdocs!Client Like "Residen*" Or _
+rsmdocs!Client Like "Saxon*" Or _
+rsmdocs!Client Like "Select*" Then
+VNotes = "Awaiting servicer instruction for compliance with HB472"
+ElseIf rsmdocs!Client Like "Chase H*" Then
+VNotes = "Awaiting final information from servicer to issue NOI's"
+ElseIf (rsmdocs!Client Like "Homeward*" Or _
+rsmdocs!Client Like "Citi*" Or _
+rsmdocs!Client Like "JPMor*" Or _
+rsmdocs!Client Like "EMC*" Or _
+rsmdocs!Client Like "Washington Mutu*" Or _
+rsmdocs!Client Like "Nationwide*") And _
+IsNull(rsmdocs!noi_sent) Then
+VNotes = "Servicer is issuing NOI.  Awaiting copies to proceed."
+ElseIf Not IsNull(rsmdocs!comments) Then
+VNotes = rsmdocs!comments
+Else
+VNotes = ""
+End If
+
+If Not IsNull(rsmdocs!affdebt_to_client) And IsNull(rsmdocs!affdebt_from_client) Then
+If VNotes <> "" Then
+With rs
+.AddNew
+!TypeDoc = "Affidavit of Debt"
+!InitialReq = rsmdocs!affdebt_to_client
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs!filenum
+
+.Update
+End With
+End If
+End If
+
+If Not IsNull(rsmdocs!AffMailing_sent) And IsNull(rsmdocs!AffMailing_recd) Then
+If VNotes <> "" Then
+With rs
+.AddNew
+!TypeDoc = "Affidavit of Mailing"
+!InitialReq = rsmdocs!AffMailing_sent
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs!filenum
+
+.Update
+End With
+End If
+End If
+
+
+If Not IsNull(rsmdocs!DocsSentClient) And IsNull(rsmdocs!DocsRecClient) Then
+If VNotes <> "" Then
+With rs
+.AddNew
+!TypeDoc = "SOT"
+!InitialReq = rsmdocs!DocsSentClient
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs!filenum
+
+.Update
+End With
+End If
+End If
+
+
+If Not IsNull(rsmdocs!MilAff_To_Client) And IsNull(rsmdocs!MilAff_From_Client) Then
+If VNotes <> "" Then
+With rs
+.AddNew
+!TypeDoc = "Non-Military Affidavit"
+![BGWW#] = rsmdocs!filenum
+
+!InitialReq = rsmdocs!MilAff_To_Client
+![Investor#] = rsmdocs![Investor#]
+!Status = rsmdocs!Status
+
+.Update
+End With
+End If
+End If
+
+If rsmdocs!PAff_Sent <> "" And (rsmdocs!PAff_Retd = "" Or IsNull(rsmdocs!PAff_Retd)) Then
+
+If VNotes <> "" Then
+With rs
+.AddNew
+!TypeDoc = "Affidavit - Prelim Loss Mit"
+!InitialReq = rsmdocs!PAff_Sent
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs!filenum
+!Status = rsmdocs!Status
+
+.Update
+End With
+
+End If
+End If
+
+
+If rsmdocs!affcert_to_client <> "" And (rsmdocs!affcert_recd_client = "" Or IsNull(rsmdocs!affcert_recd_client)) Then
+
+If VNotes <> "" Then
+With rs
+.AddNew
+!TypeDoc = "Affidavit Certifying Ownership"
+!InitialReq = rsmdocs!affcert_to_client
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs!filenum
+
+.Update
+End With
+End If
+End If
+
+If rsmdocs!Aff_to_Client <> "" And (rsmdocs!Aff_Recd_Client = "" Or IsNull(rsmdocs!Aff_Recd_Client)) Then
+If VNotes <> "" Then
+With rs
+.AddNew
+!TypeDoc = "Affidavit of Default and Mailing - MD"
+!InitialReq = rsmdocs!Aff_to_Client
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs!filenum
+!Status = rsmdocs!Status
+
+.Update
+End With
+End If
+End If
+
+If rsmdocs!FAff_Sent <> "" And (rsmdocs!FAff_Retd = "" Or IsNull(rsmdocs!FAff_Retd)) Then
+
+If VNotes <> "" Then
+With rs
+.AddNew
+!TypeDoc = "Affidavit - Final Loss Mit"
+!InitialReq = rsmdocs!FAff_Sent
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs!filenum
+!Status = rsmdocs!Status
+.Update
+End With
+End If
+End If
+
+rsmdocs.MoveNext
+Loop
+
+rs.Close
+rsmdocs.Close
+
+End Function
+Public Function CreateTblMDocsNew()
+
+CurrentDb.Execute ("delete * from FNMAMDocsALL")
+CurrentDb.Execute ("delete * from FNMAMDocs")
+
+DoCmd.OpenQuery ("FNMAQueryFCSelectFCTrackingMdocs")
+'DoCmd.OpenQuery ("FNMAQueryFCSelectMDocs")
+
+DoCmd.OpenQuery ("FNMAUpdateFCTrackingMDocs")
+'DoCmd.OpenQuery ("FNMAUpdateMissingDocsMDocs")
+
+'Dim rsmdocs As Recordset
+'Dim rs As Recordset
+'Set rs = CurrentDb.OpenRecordset("FNMAMDocsAll", dbOpenDynaset, dbSeeChanges)
+'
+'Set rsmdocs = CurrentDb.OpenRecordset("fnmaMDocs", dbOpenDynaset, dbSeeChanges)
+'
+'rsmdocs.MoveFirst
+'
+'Do While Not rsmdocs.EOF
+
+'If IsNull(rsmdocs!PAff_Retd) And IsNull(rsmdocs!FAff_Retd) And _
+'IsNull(rsmdocs!pre_docket_filed) And IsNull(rsmdocs!final_docket_filed) Or _
+'(IsNull(rsmdocs!PAff_Retd) And IsNull(rsmdocs!FAff_Retd) And _
+'IsNull(rsmdocs!pre_docket_filed) And IsNull(rsmdocs!final_docket_filed) And _
+'((Not IsNull(rsmdocs!PAff_Sent) Or Not IsNull(rsmdocs!FAff_Sent) Or _
+'Not IsNull(rsmdocs![Part 1 Filed])) And Not IsNull(rsmdocs!date_reset))) Then
+'VNotes = ""
+'End If
+
+'Migrate to query
+ 
+'DoCmd.OpenQuery "FNMAMdocsHoldsAll"
+DoCmd.OpenQuery "FNMAmdocsaffdebt"
+DoCmd.OpenQuery "FNMAmdocsaffmailing"
+DoCmd.OpenQuery "FNMAmdocsDocsSent"
+DoCmd.OpenQuery "FNMAmdocsMilAff"
+DoCmd.OpenQuery "FNMAmdocsPaff"
+DoCmd.OpenQuery "FNMAmdocsaffcert"
+DoCmd.OpenQuery "FNMAmdocsaffdefault"
+DoCmd.OpenQuery "FNMAmdocsFaff"
+ 
+'If rsmdocs!Client Like "Bank of Am*" Or _
+'rsmdocs!Client Like "Bank of A*" Or _
+'rsmdocs!Client Like "Nationst*" Or _
+'rsmdocs!Client Like "Financial*" Or _
+'rsmdocs!Client Like "Residen*" Or _
+'rsmdocs!Client Like "Saxon*" Or _
+'rsmdocs!Client Like "Select*" Then
+'VNotes = "Awaiting servicer instruction for compliance with HB472"
+'ElseIf rsmdocs!Client Like "Chase H*" Then
+'VNotes = "Awaiting final information from servicer to issue NOI's"
+'ElseIf (rsmdocs!Client Like "Homeward*" Or _
+'rsmdocs!Client Like "Citi*" Or _
+'rsmdocs!Client Like "JPMor*" Or _
+'rsmdocs!Client Like "EMC*" Or _
+'rsmdocs!Client Like "Washington Mutu*" Or _
+'rsmdocs!Client Like "Nationwide*") And _
+'IsNull(rsmdocs!noi_sent) Then
+'VNotes = "Servicer is issuing NOI.  Awaiting copies to proceed."
+'ElseIf Not IsNull(rsmdocs!Comments) Then
+'VNotes = rsmdocs!Comments
+'Else
+'VNotes = ""
+'End If
+
+'Parse into sql queries?
+'If Not IsNull(rsmdocs!affdebt_to_client) And IsNull(rsmdocs!affdebt_from_client) Then
+'If VNotes <> "" Then
+'With rs
+'.AddNew
+'!TypeDoc = "Affidavit of Debt"
+'!InitialReq = rsmdocs!affdebt_to_client
+'![Investor#] = rsmdocs![Investor#]
+'![BGWW#] = rsmdocs!FIleNum
+'
+'.Update
+'End With
+'End If
+'End If
+'
+'If Not IsNull(rsmdocs!AffMailing_sent) And IsNull(rsmdocs!AffMailing_recd) Then
+'If VNotes <> "" Then
+'With rs
+'.AddNew
+'!TypeDoc = "Affidavit of Mailing"
+'!InitialReq = rsmdocs!AffMailing_sent
+'![Investor#] = rsmdocs![Investor#]
+'![BGWW#] = rsmdocs!FIleNum
+'
+'.Update
+'End With
+'End If
+'End If
+'
+'
+'If Not IsNull(rsmdocs!DocsSentClient) And IsNull(rsmdocs!DocsRecClient) Then
+'If VNotes <> "" Then
+'With rs
+'.AddNew
+'!TypeDoc = "SOT"
+'!InitialReq = rsmdocs!DocsSentClient
+'![Investor#] = rsmdocs![Investor#]
+'![BGWW#] = rsmdocs!FIleNum
+'
+'.Update
+'End With
+'End If
+'End If
+'
+'
+'If Not IsNull(rsmdocs!MilAff_To_Client) And IsNull(rsmdocs!MilAff_From_Client) Then
+'If VNotes <> "" Then
+'With rs
+'.AddNew
+'!TypeDoc = "Non-Military Affidavit"
+'![BGWW#] = rsmdocs!FIleNum
+'
+'!InitialReq = rsmdocs!MilAff_To_Client
+'![Investor#] = rsmdocs![Investor#]
+'!Status = rsmdocs!Status
+'
+'.Update
+'End With
+'End If
+'End If
+'
+'If rsmdocs!PAff_Sent <> "" And (rsmdocs!PAff_Retd = "" Or IsNull(rsmdocs!PAff_Retd)) Then
+'
+'If VNotes <> "" Then
+'With rs
+'.AddNew
+'!TypeDoc = "Affidavit - Prelim Loss Mit"
+'!InitialReq = rsmdocs!PAff_Sent
+'![Investor#] = rsmdocs![Investor#]
+'![BGWW#] = rsmdocs!FIleNum
+'!Status = rsmdocs!Status
+'
+'.Update
+'End With
+'
+'End If
+'End If
+'
+'
+'If rsmdocs!affcert_to_client <> "" And (rsmdocs!affcert_recd_client = "" Or IsNull(rsmdocs!affcert_recd_client)) Then
+'
+'If VNotes <> "" Then
+'With rs
+'.AddNew
+'!TypeDoc = "Affidavit Certifying Ownership"
+'!InitialReq = rsmdocs!affcert_to_client
+'![Investor#] = rsmdocs![Investor#]
+'![BGWW#] = rsmdocs!FIleNum
+'
+'.Update
+'End With
+'End If
+'End If
+'
+'If rsmdocs!aff_to_client <> "" And (rsmdocs!aff_recd_client = "" Or IsNull(rsmdocs!aff_recd_client)) Then
+'If VNotes <> "" Then
+'With rs
+'.AddNew
+'!TypeDoc = "Affidavit of Default and Mailing - MD"
+'!InitialReq = rsmdocs!aff_to_client
+'![Investor#] = rsmdocs![Investor#]
+'![BGWW#] = rsmdocs!FIleNum
+'!Status = rsmdocs!Status
+'
+'.Update
+'End With
+'End If
+'End If
+'
+'If rsmdocs!FAff_Sent <> "" And (rsmdocs!FAff_Retd = "" Or IsNull(rsmdocs!FAff_Retd)) Then
+'
+'If VNotes <> "" Then
+'With rs
+'.AddNew
+'!TypeDoc = "Affidavit - Final Loss Mit"
+'!InitialReq = rsmdocs!FAff_Sent
+'![Investor#] = rsmdocs![Investor#]
+'![BGWW#] = rsmdocs!FIleNum
+'!Status = rsmdocs!Status
+'.Update
+'End With
+'End If
+'End If
+'
+'rsmdocs.MoveNext
+'Loop
+'
+'rs.Close
+'rsmdocs.Close
+
+End Function
+
+Public Function CreateTblHolds()
+CurrentDb.Execute ("delete * from FNMAHoldsAll")
+'
+DoCmd.OpenQuery ("FNMAQueryFCSelectHOLD")
+
+Dim rshold As RecordSet
+Dim rs As RecordSet
+
+Set rshold = CurrentDb.OpenRecordset("fnmaHolds", dbOpenDynaset, dbSeeChanges)
+Set rs = CurrentDb.OpenRecordset("fnmaholdsall", dbOpenDynaset, dbSeeChanges)
+
+rshold.MoveFirst
+
+Do While Not rshold.EOF
+
+With rs
+.AddNew
+![Investor#] = rshold![Investor#]
+!filenum = rshold!filenum
+!Status = rshold!Status
+!sale_cancelled = rshold!sale_cancelled
+!salecancel_reason = rshold!salecancel_reason
+
+!HoldReason = Null
+If rshold!salecancel_reason = "FBP" Or rshold!salecancel_reason Like "For*" Then
+!HoldReason = "Hold for Forebearance Plan"
+ElseIf rshold!salecancel_reason = "LnMOD" Or rshold!salecancel_reason Like "Loan Modification" Then
+!HoldReason = "Hold for Loan Modification"
+ElseIf rshold!salecancel_reason = "HAMP" Then
+!HoldReason = "Hold for HAMP"
+ElseIf rshold!salecancel_reason Like "Loss M*" Then
+!HoldReason = "Hold for Loss Mitigation"
+ElseIf rshold!salecancel_reason Like "Short*" Then
+!HoldReason = "Hold for Short Sale"
+ElseIf rshold!salecancel_reason Like "B*" Then
+!HoldReason = "Bankruptcy"
+ElseIf rshold!salecancel_reason Like "Repayment*" Then
+!HoldReason = "Hold for Repayment Plan"
+ElseIf rshold!Status = "Bankruptcy" Then
+!HoldReason = "Bankruptcy"
+ElseIf rshold!Status = "Title Issue" Then
+!HoldReason = "Title Issue"
+ElseIf rshold!Status = "Litigation" Then
+!HoldReason = "Litigation"
+ElseIf rshold!Status = "Moratorium" Then
+!HoldReason = "Sale on hold due to moratorium"
+ElseIf rshold!Status = "DIL" Then
+!HoldReason = "Hold for DIL"
+Else
+!HoldReason = "Hold for " & rshold!salecancel_reason
+End If
+
+
+.Update
+End With
+
+rshold.MoveNext
+Loop
+rs.Close
+rshold.Close
+
+DoCmd.OpenQuery ("FNMAUpdateFCTrackingHOLDS")
+DoCmd.OpenQuery ("FNMAUpdate-HOLDS-BK")
+End Function
+Public Function CreateTblHoldsNew()
+CurrentDb.Execute ("delete * from FNMAHoldsAll")
+CurrentDb.Execute ("delete * from FNMAHolds")
+'
+DoCmd.OpenQuery ("FNMAQueryFCSelectHOLD")
+DoCmd.OpenQuery ("FNMAholdsAllNew")
+'**Replace with FNMAHoldsAllNew**
+
+'Dim rshold As Recordset
+'Dim rs As Recordset
+'
+'Set rs = CurrentDb.OpenRecordset("fnmaholdsall", dbOpenDynaset, dbSeeChanges)
+'Set rshold = CurrentDb.OpenRecordset("fnmaHolds", dbOpenDynaset, dbSeeChanges)
+'
+'rshold.MoveFirst
+'
+'Do While Not rshold.EOF
+'
+'With rs
+'.AddNew
+'![Investor#] = rshold![Investor#]
+'!FIleNum = rshold!FIleNum
+'!Status = rshold!Status
+'!sale_cancelled = rshold!sale_cancelled
+'!salecancel_reason = rshold!salecancel_reason
+'
+'!HoldReason = Null
+'If rshold!salecancel_reason = "FBP" Or rshold!salecancel_reason Like "For*" Then
+'!HoldReason = "Hold for Forebearance Plan"
+'ElseIf rshold!salecancel_reason = "LnMOD" Or rshold!salecancel_reason Like "Loan Modification" Then
+'!HoldReason = "Hold for Loan Modification"
+'ElseIf rshold!salecancel_reason = "HAMP" Then
+'!HoldReason = "Hold for HAMP"
+'ElseIf rshold!salecancel_reason Like "Loss M*" Then
+'!HoldReason = "Hold for Loss Mitigation"
+'ElseIf rshold!salecancel_reason Like "Short*" Then
+'!HoldReason = "Hold for Short Sale"
+'ElseIf rshold!salecancel_reason Like "B*" Then
+'!HoldReason = "Bankruptcy"
+'ElseIf rshold!salecancel_reason Like "Repayment*" Then
+'!HoldReason = "Hold for Repayment Plan"
+'ElseIf rshold!Status = "Bankruptcy" Then
+'!HoldReason = "Bankruptcy"
+'ElseIf rshold!Status = "Title Issue" Then
+'!HoldReason = "Title Issue"
+'ElseIf rshold!Status = "Litigation" Then
+'!HoldReason = "Litigation"
+'ElseIf rshold!Status = "Moratorium" Then
+'!HoldReason = "Sale on hold due to moratorium"
+'ElseIf rshold!Status = "DIL" Then
+'!HoldReason = "Hold for DIL"
+'Else
+'!HoldReason = "Hold for " & rshold!salecancel_reason
+'End If
+'
+'
+'.Update
+'End With
+'
+'rshold.MoveNext
+'Loop
+'rs.Close
+'rshold.Close
+
+
+
+DoCmd.OpenQuery ("FNMAUpdateFCTrackingHOLDS")
+DoCmd.OpenQuery ("FNMAUpdate-HOLDS-BK")
+End Function
+Public Function CreateTblFCNew()
+'appends table
+CurrentDb.Execute "Delete * from FNMAQueryF", dbSeeChanges
+
+DoCmd.OpenQuery ("FNMAQueryFCNew-Create")
+'appends table
+DoCmd.OpenQuery ("FNMAQueryFCNew-Closed")
+DoCmd.OpenQuery ("FNMAQueryFCNew-Archived")
+DoCmd.OpenQuery ("FNMAQueryFCNew-POSTSALE")
+'updates table
+DoCmd.OpenQuery ("FNMAQueryFC-POSTSALEupdate")
+DoCmd.OpenQuery ("FNMAQueryFC-FCTracking")
+DoCmd.OpenQuery ("FNMAUpdateNOI")
+'FNMA FC Tab
+Dim rsF As RecordSet
+Dim strsqlF As String
+
+Set rs = CurrentDb.OpenRecordset("fnmaqueryf", dbOpenDynaset, dbSeeChanges)
+
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+With rs
+.Edit
+'Last Action
+If rs!Status <> "Archived" Then
+
+ If IsNull(rs![service_complete]) Then
+ !LAComplete = "Referral"
+ 
+ If Not IsNull(rs!resume_recd) Then
+ !LACompleteDate = rs!resume_recd
+ Else
+ !LACompleteDate = rs![referral/resume]
+ End If
+ 
+ ElseIf Not IsNull(rs![service_complete]) And IsNull(rs![Part 1 Filed]) Then
+ !LAComplete = "Service Complete"
+ !LACompleteDate = rs![service_complete]
+ 
+ ElseIf Not IsNull(rs![Part 1 Filed]) And IsNull(rs!SaleDate) Then
+ !LAComplete = "1st Legal Filed"
+ !LACompleteDate = rs![Part 1 Filed]
+ 
+ ElseIf rs!SaleDate >= Date And IsNull(rs!sale_cancelled) Then
+ !LAComplete = "Sale Scheduled"
+ !LACompleteDate = rs![SaleDate]
+ 
+ ElseIf Not IsNull(rs![Purchaser]) And (rs!Status = "Postsale") Then
+ !LAComplete = "Sale Held"
+ !LACompleteDate = rs![SaleDate]
+ 
+ Else
+ !LAComplete = "Referral"
+ 
+ If Not IsNull(rs!resume_recd) Then
+ !LACompleteDate = rs!resume_recd
+ Else
+ !LACompleteDate = rs![referral/resume]
+ End If
+ 
+ End If
+ 
+  Else
+ !LAComplete = "File Closed"
+ !LACompleteDate = rs![ClosedDate]
+ 
+ End If
+ 
+If (rs!SaleDate > Date And IsNull(rs!sale_cancelled)) Or _
+(rs!Status = "Postsale") Then
+!SaleDate = rs!SaleDate
+Else
+!SaleDate = Null
+End If
+
+If Not IsNull(rs!LPIDate) Then
+!LPIDate = rs!LPIDate + 30
+End If
+
+.Update
+End With
+
+rs.MoveNext
+Loop
+
+
+End Function
+Public Function CreateTblFC()
+'appends table
+CurrentDb.Execute "Delete * from FNMAQueryF;", dbSeeChanges
+DoCmd.OpenQuery ("FNMAQueryFC-Create")
+'appends table
+DoCmd.OpenQuery ("FNMAQueryFC-Closed")
+DoCmd.OpenQuery ("FNMAQueryFC-Archived")
+DoCmd.OpenQuery ("FNMAQueryFC-POSTSALE")
+'updates table
+DoCmd.OpenQuery ("FNMAQueryFC-POSTSALEupdate")
+DoCmd.OpenQuery ("FNMAQueryFC-FCTracking")
+DoCmd.OpenQuery ("FNMAUpdateNOI")
+'FNMA FC Tab
+Dim rsF As RecordSet
+Dim strsqlF As String
+
+Set rs = CurrentDb.OpenRecordset("fnmaqueryf", dbOpenDynaset, dbSeeChanges)
+
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+With rs
+.Edit
+'Last Action
+If rs!Status <> "Archived" Then
+
+ If IsNull(rs![service_complete]) Then
+ !LAComplete = "Referral"
+ 
+ If Not IsNull(rs!resume_recd) Then
+ !LACompleteDate = rs!resume_recd
+ Else
+ !LACompleteDate = rs![referral/resume]
+ End If
+ 
+ ElseIf Not IsNull(rs![service_complete]) And IsNull(rs![Part 1 Filed]) Then
+ !LAComplete = "Service Complete"
+ !LACompleteDate = rs![service_complete]
+ 
+ ElseIf Not IsNull(rs![Part 1 Filed]) And IsNull(rs!SaleDate) Then
+ !LAComplete = "1st Legal Filed"
+ !LACompleteDate = rs![Part 1 Filed]
+ 
+ ElseIf rs!SaleDate >= Date And IsNull(rs!sale_cancelled) Then
+ !LAComplete = "Sale Scheduled"
+ !LACompleteDate = rs![SaleDate]
+ 
+ ElseIf Not IsNull(rs![Purchaser]) And (rs!Status = "Postsale") Then
+ !LAComplete = "Sale Held"
+ !LACompleteDate = rs![SaleDate]
+ 
+ Else
+ !LAComplete = "Referral"
+ 
+ If Not IsNull(rs!resume_recd) Then
+ !LACompleteDate = rs!resume_recd
+ Else
+ !LACompleteDate = rs![referral/resume]
+ End If
+ 
+ End If
+ 
+  Else
+ !LAComplete = "File Closed"
+ !LACompleteDate = rs![ClosedDate]
+ 
+ End If
+ 
+If (rs!SaleDate > Date And IsNull(rs!sale_cancelled)) Or _
+(rs!Status = "Postsale") Then
+!SaleDate = rs!SaleDate
+Else
+!SaleDate = Null
+End If
+
+If Not IsNull(rs!LPIDate) Then
+!LPIDate = rs!LPIDate + 30
+End If
+
+
+'Dim monthd, todaydate, yeard
+
+'monthd = Format(rs!LPIDate, "mm") + 1
+
+'todaydate = Format(rs!LPIDate, "dd")
+'yeard = Format(rs!LPIDate, "yyyy")
+
+
+'!LoanDueDate = monthd & "/" & todaydate & "/" & yeard
+'End If
+
+.Update
+End With
+
+rs.MoveNext
+Loop
+
+End Function
+Public Function CreateTablesFNMA()
+Call CreateTblFCNew 'done
+Call CreateTblBK 'leave as is
+Call CreateTblPCNew 'done
+Call CreateTblHoldsNew 'done
+Call CreateTblMDocsNew 'done
+
+
+Dim OutputPath As String
+OutputPath = "\\rvdv-fs01\DataTransfer\FNMATabs\"
+'
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "FNMAqueryF", OutputPath & "FNMA_RANT_FC"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "FNMAqueryB", OutputPath & "FNMA_RANT_BK"
+''DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "FNMAqueryMDocs", OutputPath & "FNMA_RANT_MDocs"
+''DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "FNMAqueryHolds", OutputPath & "FNMA_RANT_Holds"
+''DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "FNMAqueryPC", OutputPath & "FNMA_RANT_PC"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "FNMA-FCtab", OutputPath & "FNMA_RANT_FC_Query"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "FNMA-BKtab", OutputPath & "FNMA_RANT_BK_Query"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "FNMA-MDocstab", OutputPath & "FNMA_RANT_MDocs_Query"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "FNMA-Holdstab", OutputPath & "FNMA_RANT_Holds_Query"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "FNMA-PCtab", OutputPath & "FNMA_RANT_PC_Query"
+
+
+End Function
+Public Function CreateTblBK()
+'BANKRUPTCY Tab
+CurrentDb.Execute "Delete * from FNMAQueryB;", dbSeeChanges
+DoCmd.OpenQuery ("FNMAQueryBK")
+DoCmd.OpenQuery ("FNMAQuery-FC-BK")
+DoCmd.OpenQuery ("FNMAUpdateFCTrackingHOLDS-BK")
+
+
+End Function
+Public Function CreateTblPC()
+'Postpone/Cancel
+CurrentDb.Execute ("Delete * from fnmapcall")
+
+DoCmd.OpenQuery ("FNMAQueryFCSelectPostCan")
+
+Dim RsPC As RecordSet
+Dim rs As RecordSet
+
+Set RsPC = CurrentDb.OpenRecordset("fnmaPC", dbOpenDynaset, dbSeeChanges)
+Set rs = CurrentDb.OpenRecordset("fnmapcall", dbOpenDynaset, dbSeeChanges)
+
+RsPC.MoveFirst
+
+Do While Not RsPC.EOF
+
+With rs
+.AddNew
+![Investor#] = RsPC![Investor#]
+!filenum = RsPC!filenum
+!Status = RsPC!Status
+!sale_cancelled = RsPC!sale_cancelled
+!salecancel_reason = RsPC!salecancel_reason
+If RsPC!salecancel_reason = "FBP" Or RsPC!salecancel_reason Like "For*" Then
+!HoldReason = "Cancelled for Forebearance Plan"
+ElseIf RsPC!salecancel_reason = "LnMOD" Or RsPC!salecancel_reason Like "Loan Modification" Then
+!HoldReason = "Cancelled for Loan Modification"
+ElseIf RsPC!salecancel_reason = "HAMP" Then
+!HoldReason = "Cancelled for HAMP"
+ElseIf RsPC!salecancel_reason Like "Loss M*" Then
+!HoldReason = "Cancelled for Loss Mitigation"
+ElseIf RsPC!salecancel_reason Like "Short*" Then
+!HoldReason = "Cancelled for Short Sale"
+ElseIf RsPC!salecancel_reason Like "Repayment*" Then
+!HoldReason = "Cancelled for Repayment Plan"
+ElseIf RsPC!Status = "Moratorium" Then
+!HoldReason = "Sale Postponed due to moratorium"
+Else
+!HoldReason = "Cancelled for " & RsPC!salecancel_reason
+End If
+
+.Update
+End With
+
+RsPC.MoveNext
+Loop
+rs.Close
+RsPC.Close
+DoCmd.OpenQuery ("FNMAUpdateFCTrackingPC")
+DoCmd.OpenQuery ("FNMAUpdate-PC-BK")
+End Function
+Public Function CreateTblPCNew()
+'Postpone/Cancel
+CurrentDb.Execute ("Delete * from fnmapcall")
+CurrentDb.Execute ("Delete * from fnmapc")
+
+DoCmd.OpenQuery ("FNMAQueryFCSelectPostCan")
+DoCmd.OpenQuery ("FNMAPCallNew")
+'Dim RsPC As Recordset
+'Dim rs As Recordset
+'
+'Set RsPC = CurrentDb.OpenRecordset("fnmaPC", dbOpenDynaset, dbSeeChanges)
+'Set rs = CurrentDb.OpenRecordset("fnmapcall", dbOpenDynaset, dbSeeChanges)
+'
+'RsPC.MoveFirst
+'
+'Do While Not RsPC.EOF
+'
+'With rs
+'.AddNew
+'![Investor#] = RsPC![Investor#]
+'!FIleNum = RsPC!FIleNum
+'!Status = RsPC!Status
+'!sale_cancelled = RsPC!sale_cancelled
+'!salecancel_reason = RsPC!salecancel_reason
+'If RsPC!salecancel_reason = "FBP" Or RsPC!salecancel_reason Like "For*" Then
+'!HoldReason = "Cancelled for Forebearance Plan"
+'ElseIf RsPC!salecancel_reason = "LnMOD" Or RsPC!salecancel_reason Like "Loan Modification" Then
+'!HoldReason = "Cancelled for Loan Modification"
+'ElseIf RsPC!salecancel_reason = "HAMP" Then
+'!HoldReason = "Cancelled for HAMP"
+'ElseIf RsPC!salecancel_reason Like "Loss M*" Then
+'!HoldReason = "Cancelled for Loss Mitigation"
+'ElseIf RsPC!salecancel_reason Like "Short*" Then
+'!HoldReason = "Cancelled for Short Sale"
+'ElseIf RsPC!salecancel_reason Like "Repayment*" Then
+'!HoldReason = "Cancelled for Repayment Plan"
+'ElseIf RsPC!Status = "Moratorium" Then
+'!HoldReason = "Sale Postponed due to moratorium"
+'Else
+'!HoldReason = "Cancelled for " & RsPC!salecancel_reason
+'End If
+'
+'.Update
+'End With
+'
+'RsPC.MoveNext
+'Loop
+'rs.Close
+'RsPC.Close
+DoCmd.OpenQuery ("FNMAUpdateFCTrackingPC")
+DoCmd.OpenQuery ("FNMAUpdate-PC-BK")
+End Function
+Public Function FNMAFCTab()
+ 
+
+Dim VSel
+VSel = InputBox("1. Create new tables for FNMA Tab Screen" & vbCr & "2. Edit tables already in place for FNMA Tab Screen" & vbCr & vbCr & "type in 1 or 2")
+If VSel = 1 Then
+Call CreateTablesFNMA
+End If
+
+
+DoCmd.OpenForm ("FNMATabs")
+
+End Function
+Public Function callExcelFNMA()
+
+Dim Vab
+If Format(Date <= 5) Then
+Vab = "A"
+ElseIf Format(Date > 5) Then
+Vab = "B"
+End If
+
+
+txtname = "\1012-" & Format(Date, "yyyy") & "-" & Format(Date, "mm") & "-" & Vab & "-01.xls"
+docsfldr = pathuser()
+sourcefile = "\\rvdv-fs01\datatransfer\Templates\Excel\FNMAMonthlyInventory.xls"
+destinationfile = docsfldr & txtname
+FileCopy sourcefile, destinationfile
+
+fixXLFNMA (destinationfile)
+
+End Function

@@ -1,0 +1,4642 @@
+Attribute VB_Name = "NOIModule"
+
+Option Compare Database
+Public Function spphone()
+
+Dim strsql As String
+Dim rs As RecordSet
+strsql = "select * from noi where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset)
+
+If Client() Like "Nationstar*" Or Not IsNull([Forms]![NOI Information Screen]![NOITabs].[Form]![sp_phone]) Then
+spphone = [Forms]![NOI Information Screen]![NOITabs].[Form]![sp_phone]
+If Not IsNull(Forms![NOI Information Screen]!NOITabs.Form!co_info) Then
+spphone = spphone + ", " & Forms![NOI Information Screen]!NOITabs.Form!co_info
+End If
+ElseIf Client() Like "select po*" Then
+spphone = "(888) 818-6032 in care of Select Portfolio Servicing, Inc."
+
+Else
+If Not IsNull(rs!secured_phone) Then
+spphone = rs![secured_phone] & IIf(rs![secured_phone_ext] Is Null Or rs![secured_phone_ext] = "", "", ", ext. " & rs![secured_phone_ext])
+If Not IsNull(Forms![NOI Information Screen]!NOITabs.Form!co_info) Then
+spphone = spphone + ", " & Forms![NOI Information Screen]!NOITabs.Form!co_info
+End If
+End If
+
+End If
+
+rs.Close
+'MsgBox (spphone)
+
+End Function
+Public Function NOIOwners()
+If owner1NOI() = "" And owner2NOI() = "" And owner3NOI() = "" And owner2aNOI() = "" Then
+NOIOwners = 1
+Else
+NOIOwners = 0
+End If
+
+
+End Function
+Public Function NOIMailOwners()
+
+If NOIMailOwnerSdat1() = "" And NOIMailOwner1() = "" And NOIMailOwner2() = "" Then
+NOIMailOwners = 1
+Else
+NOIMailOwners = 0
+End If
+
+
+End Function
+Public Function NOIDeleteReadyForReview()
+'DeleteNOIReadyForReview
+Dim VDel
+Dim VPsswd
+VPsswd = InputBox("Password Protected" & vbCr & "Please enter password to delete date")
+If VPsswd = "deletereviewed" Then
+VDel = InputBox("Delete query will prompt for BWW#, do you want to continue?")
+If VDel = "YES" Then
+DoCmd.OpenQuery ("DeleteNOIReadyForReview")
+End If
+Else
+MsgBox ("Incorrect password exiting.")
+
+End If
+
+End Function
+Public Function NOIMailBorrowerSdat1()
+
+If Not IsNull(Forms![foreclosure database screen]![SDatAddress]) Then
+
+If Forms![foreclosure database screen]![Mail_sdat] Like "Gran*" Or _
+Forms![foreclosure database screen]![Mail_sdat] = "Grantors/Owners" Or _
+IsNull(Forms![foreclosure database screen]![Mail_sdat]) Or _
+Forms![foreclosure database screen]![Mail_sdat] = "All Grantors" Then
+NOIMailBorrowerSdat1 = Forms![foreclosure database screen]![SDatAddress]
+End If
+
+
+Else
+NOIMailBorrowerSdat1 = ""
+End If
+
+
+End Function
+Public Function NOIMailBorrowerSdat2()
+
+If Not IsNull(Forms![foreclosure database screen]![SDatAddress2]) Then
+
+If Forms![foreclosure database screen]![Mail_sdat] Like "Gran*" Or _
+Forms![foreclosure database screen]![Mail_sdat] = "Grantors/Owners" Or _
+IsNull(Forms![foreclosure database screen]![Mail_sdat]) Or _
+Forms![foreclosure database screen]![Mail_sdat] = "All Grantors" Then
+NOIMailBorrowerSdat2 = Forms![foreclosure database screen]![SDatAddress2]
+End If
+
+
+Else
+NOIMailBorrowerSdat2 = ""
+End If
+
+
+End Function
+Public Function NOIMailBorrowerSDatCSZ()
+If Not IsNull(Forms![foreclosure database screen]![SDatAddress]) Then
+
+If Forms![foreclosure database screen]![Mail_sdat] Like "Gran*" Or _
+Forms![foreclosure database screen]![Mail_sdat] = "Grantors/Owners" Or _
+IsNull(Forms![foreclosure database screen]![Mail_sdat]) Or _
+Forms![foreclosure database screen]![Mail_sdat] = "All Grantors" Then
+NOIMailBorrowerSDatCSZ = [Forms]![foreclosure database screen]![SDatCity] & "  " & [Forms]![foreclosure database screen]![SDatState] & "  " & [Forms]![foreclosure database screen]![SDatZip]
+End If
+
+Else
+NOIMailBorrowerSDatCSZ = ""
+End If
+End Function
+Public Function NOIMailOwnerSdat1()
+
+If Not IsNull(Forms![foreclosure database screen]![SDatAddress]) Then
+
+If Forms![foreclosure database screen]![Mail_sdat] Like "Own*" Or _
+Forms![foreclosure database screen]![Mail_sdat] = "Grantors/Owners" Or _
+Forms![foreclosure database screen]![Mail_sdat] = "All Owners" Then
+NOIMailOwnerSdat1 = Forms![foreclosure database screen]![SDatAddress]
+End If
+
+
+Else
+NOIMailOwnerSdat1 = ""
+End If
+
+
+End Function
+Public Function NOIMailOwnerSdat2()
+
+If Not IsNull(Forms![foreclosure database screen]![SDatAddress2]) Then
+
+If Forms![foreclosure database screen]![Mail_sdat] Like "Own*" Or _
+Forms![foreclosure database screen]![Mail_sdat] = "Grantors/Owners" Or _
+Forms![foreclosure database screen]![Mail_sdat] = "All Owners" Then
+NOIMailOwnerSdat2 = Forms![foreclosure database screen]![SDatAddress2]
+End If
+
+
+Else
+NOIMailOwnerSdat2 = ""
+End If
+
+
+End Function
+Public Function NOIMailOwnerSDatCSZ()
+If Not IsNull(Forms![foreclosure database screen]![SDatAddress]) Then
+
+If Forms![foreclosure database screen]![Mail_sdat] Like "Own*" Or _
+Forms![foreclosure database screen]![Mail_sdat] = "Grantors/Owners" Or _
+Forms![foreclosure database screen]![Mail_sdat] = "All Owners" Then
+NOIMailOwnerSDatCSZ = [Forms]![foreclosure database screen]![SDatCity] & "  " & [Forms]![foreclosure database screen]![SDatState] & "  " & [Forms]![foreclosure database screen]![SDatZip]
+End If
+
+Else
+NOIMailOwnerSDatCSZ = ""
+End If
+End Function
+Public Function NOIMailBorrower1()
+
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+
+If Forms![foreclosure database screen]![MailA_To] Like "Gran*" Or _
+Forms![foreclosure database screen]![MailA_To] = "Grantors/Owners" Or _
+IsNull(Forms![foreclosure database screen]![MailA_To]) Or _
+Forms![foreclosure database screen]![MailA_To] = "All Grantors" Then
+NOIMailBorrower1 = Forms![foreclosure database screen]![Mailing Address]
+End If
+
+
+Else
+NOIMailBorrower1 = ""
+End If
+
+
+
+
+End Function
+Public Function NOIMailBorrower2()
+
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address2]) Then
+
+If Forms![foreclosure database screen]![MailA_To] Like "Gran*" Or _
+Forms![foreclosure database screen]![MailA_To] = "Grantors/Owners" Or _
+IsNull(Forms![foreclosure database screen]![MailA_To]) Or _
+Forms![foreclosure database screen]![MailA_To] = "All Grantors" Then
+NOIMailBorrower2 = Forms![foreclosure database screen]![Mailing Address2]
+End If
+
+
+Else
+NOIMailBorrower2 = ""
+End If
+End Function
+Public Function NOIMailBorrowerCSZ()
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+
+If Forms![foreclosure database screen]![MailA_To] Like "Gran*" Or _
+Forms![foreclosure database screen]![MailA_To] = "Grantors/Owners" Or _
+IsNull(Forms![foreclosure database screen]![MailA_To]) Or _
+Forms![foreclosure database screen]![MailA_To] = "All Grantors" Then
+NOIMailBorrowerCSZ = [Forms]![foreclosure database screen]![Mailing City] & "  " & [Forms]![foreclosure database screen]![Mailing State] & "  " & [Forms]![foreclosure database screen]![Mailing Zip]
+End If
+
+Else
+NOIMailBorrowerCSZ = ""
+End If
+End Function
+Public Function NOIMailBBorrower1()
+
+If Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+
+If Forms![foreclosure database screen]![MailB_To] Like "Gran*" Or _
+Forms![foreclosure database screen]![MailB_To] = "Grantors/Owners" Or _
+IsNull(Forms![foreclosure database screen]![MailB_To]) Or _
+Forms![foreclosure database screen]![MailB_To] = "All Grantors" Then
+NOIMailBBorrower1 = Forms![foreclosure database screen]![Mailing AddressB]
+End If
+
+
+Else
+NOIMailBBorrower1 = ""
+End If
+
+
+End Function
+Public Function NOIMailBBorrower2()
+
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address2B]) Then
+
+If Forms![foreclosure database screen]![MailB_To] Like "Gran*" Or _
+Forms![foreclosure database screen]![MailB_To] = "Grantors/Owners" Or _
+IsNull(Forms![foreclosure database screen]![MailB_To]) Or _
+Forms![foreclosure database screen]![MailB_To] = "All Grantors" Then
+NOIMailBBorrower2 = Forms![foreclosure database screen]![Mailing Address2B]
+End If
+
+
+Else
+NOIMailBBorrower2 = ""
+End If
+End Function
+Public Function NOIMailBBorrowerCSZ()
+If Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+
+If Forms![foreclosure database screen]![MailB_To] Like "Gran*" Or _
+Forms![foreclosure database screen]![MailB_To] = "Grantors/Owners" Or _
+IsNull(Forms![foreclosure database screen]![MailB_To]) Or _
+Forms![foreclosure database screen]![MailB_To] = "All Grantors" Then
+NOIMailBBorrowerCSZ = [Forms]![foreclosure database screen]![Mailing CityB] & "  " & [Forms]![foreclosure database screen]![Mailing StateB] & "  " & [Forms]![foreclosure database screen]![Mailing ZipB]
+End If
+
+Else
+NOIMailBBorrowerCSZ = ""
+End If
+End Function
+Public Function NOIMailOwner1()
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+
+If Forms![foreclosure database screen]![MailA_To] Like "Own*" Or _
+Forms![foreclosure database screen]![MailA_To] = "Grantors/Owners" Or _
+Forms![foreclosure database screen]![MailA_To] = "All Owners" Then
+NOIMailOwner1 = Forms![foreclosure database screen]![Mailing Address]
+End If
+
+
+Else
+NOIMailOwner1 = ""
+End If
+
+
+
+End Function
+Public Function NOIMailOwner2()
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address2]) Then
+
+If Forms![foreclosure database screen]![MailA_To] Like "Own*" Or _
+Forms![foreclosure database screen]![MailA_To] = "Grantors/Owners" Or _
+Forms![foreclosure database screen]![MailA_To] = "All Owners" Then
+NOIMailOwner2 = Forms![foreclosure database screen]![Mailing Address2]
+End If
+
+
+Else
+NOIMailOwner2 = ""
+
+End If
+End Function
+Public Function NOIMailOwnerCSZ()
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address]) Then
+
+If Forms![foreclosure database screen]![MailA_To] Like "Own*" Or _
+Forms![foreclosure database screen]![MailA_To] = "Grantors/Owners" Or _
+Forms![foreclosure database screen]![MailA_To] = "All Owners" Then
+NOIMailOwnerCSZ = [Forms]![foreclosure database screen]![Mailing City] & "  " & [Forms]![foreclosure database screen]![Mailing State] & "  " & [Forms]![foreclosure database screen]![Mailing Zip]
+End If
+
+Else
+NOIMailOwnerCSZ = ""
+End If
+End Function
+Public Function NOIMailBOwner1()
+If Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+
+If Forms![foreclosure database screen]![MailB_To] Like "Own*" Or _
+Forms![foreclosure database screen]![MailB_To] = "Grantors/Owners" Or _
+Forms![foreclosure database screen]![MailB_To] = "All Owners" Then
+NOIMailBOwner1 = Forms![foreclosure database screen]![Mailing AddressB]
+End If
+
+
+Else
+NOIMailBOwner1 = ""
+End If
+
+
+End Function
+Public Function NOIMailBOwner2()
+
+If Not IsNull(Forms![foreclosure database screen]![Mailing Address2B]) Then
+
+If Forms![foreclosure database screen]![MailB_To] Like "Own*" Or _
+Forms![foreclosure database screen]![MailB_To] = "Grantors/Owners" Or _
+Forms![foreclosure database screen]![MailB_To] = "All Owners" Then
+NOIMailBOwner2 = Forms![foreclosure database screen]![Mailing Address2B]
+End If
+
+
+Else
+NOIMailBOwner2 = ""
+End If
+End Function
+Public Function NOIMailBOwnerCSZ()
+If Not IsNull(Forms![foreclosure database screen]![Mailing AddressB]) Then
+
+If Forms![foreclosure database screen]![MailB_To] Like "Own*" Or _
+Forms![foreclosure database screen]![MailB_To] = "Grantors/Owners" Or _
+Forms![foreclosure database screen]![MailB_To] = "All Owners" Then
+NOIMailBOwnerCSZ = [Forms]![foreclosure database screen]![Mailing CityB] & "  " & [Forms]![foreclosure database screen]![Mailing StateB] & "  " & [Forms]![foreclosure database screen]![Mailing ZipB]
+End If
+
+Else
+NOIMailBOwnerCSZ = ""
+End If
+End Function
+Public Function CreatePrevNOI()
+
+Dim vClient
+vClient = Forms![foreclosure database screen]!Client
+
+''logcase Forms![foreclosure database screen]!FileNum, "Resumed File: " & Date
+Dim VYesNo
+
+Set rsRES = CurrentDb.OpenRecordset("NOIPrevious", dbOpenDynaset, dbSeeChanges)
+VBGW_no = GetAutoNumber("NextResume")
+BGNum = Forms![foreclosure database screen]!filenum
+VState = Forms![foreclosure database screen]!PropertyState
+
+'=====RESUME NOI Client DATA
+
+With rsRES
+    .AddNew
+    ![noi_id] = VBGW_no
+    !filenum = Forms![foreclosure database screen]!filenum
+    !noi_dated = Forms![NOI Information Screen]!NOITabs.Form!noi_dated
+    !noi_error_list = Forms![NOI Information Screen]!NOITabs.Form!noi_error_list
+    !noi_error = Forms![NOI Information Screen]!NOITabs.Form!noi_error
+    !noi_proceed = Forms![NOI Information Screen]!NOITabs.Form!noi_proceed
+    !client_instructions = Forms![NOI Information Screen]!NOITabs.Form!client_instructions
+    If Not IsNull(Forms![NOI Information Screen]!NOITabs.Form!noi_client1) Then
+    !noi_client1 = Forms![NOI Information Screen]!NOITabs.Form!noi_client1
+    End If
+    If Not IsNull(Forms![NOI Information Screen]!NOITabs.Form!noi_client2) Then
+    !noi_client2 = Forms![NOI Information Screen]!NOITabs.Form!noi_client2
+    End If
+    If Not IsNull(Forms![NOI Information Screen]!NOITabs.Form!noi_client3) Then
+    !noi_client3 = Forms![NOI Information Screen]!NOITabs.Form!noi_client3
+    End If
+    
+
+    .Update
+    End With
+        
+    DoCmd.Close acForm, "noi information screen"
+    rsRES.Close
+
+    
+'=======Update NOI Client Table
+
+strsql = "select * from fctracking where filenum = " & BGNum & ";"
+Set rsFC = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+    With rsFC
+    .Edit
+   !noi_dated = Null
+   !noi_error_list = Null
+   !noi_error = 0
+   !noi_proceed = 0
+   !client_instructions = 0
+   !noi_client1 = Null
+   !noi_client2 = Null
+   noi_client3 = Null
+     .Update
+    End With
+rsFC.Close
+
+'========Update QC Table
+strsqlqc = "Select * from qc where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsqc = CurrentDb.OpenRecordset(strsqlqc, dbOpenDynaset, dbSeeChanges)
+
+If Not rsqc.EOF Then
+With rsqc
+.Edit
+!NOI_Approved = 0
+!noi_revd = Null
+!noi_completed = Null
+.Update
+.Close
+End With
+
+End If
+
+
+    
+MsgBox "The Previous NOI Client has been saved.  To access previous NOI click PrevNOI button at top of screen. You will have to reopen the Referral Screen.", vbOKOnly
+
+'DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & BGNum
+
+End Function
+
+Public Function CreatePrevNOIQC()
+
+
+Dim vClient
+vClient = Forms![foreclosure database screen]!Client
+
+''logcase Forms![foreclosure database screen]!FileNum, "Resumed File: " & Date
+Dim VYesNo
+
+Set rsRES = CurrentDb.OpenRecordset("NOIQCPrevious", dbOpenDynaset, dbSeeChanges)
+VBGW_no = GetAutoNumber("NextResume")
+BGNum = Forms![foreclosure database screen]!filenum
+VState = Forms![foreclosure database screen]!PropertyState
+
+'=====RESUME NOI Client DATA
+
+With rsRES
+    .AddNew
+    ![noi_id] = VBGW_no
+    !filenum = Forms![foreclosure database screen]!filenum
+    !noi_dated = Forms![NOI Information Screen]!NOITabs.Form!noi_dated
+    !noi_error_list = Forms![NOI Information Screen]!NOITabs.Form!noi_error_list
+    !noi_error = Forms![NOI Information Screen]!NOITabs.Form!noi_error
+    !noi_proceed = Forms![NOI Information Screen]!NOITabs.Form!noi_proceed
+    !client_instructions = Forms![NOI Information Screen]!NOITabs.Form!client_instructions
+    If Not IsNull(Forms![NOI Information Screen]!NOITabs.Form!noi_client1) Then
+    !client_noi1 = Forms![NOI Information Screen]!NOITabs.Form!noi_client1
+    End If
+    If Not IsNull(Forms![NOI Information Screen]!NOITabs.Form!noi_client2) Then
+    !client_noi2 = Forms![NOI Information Screen]!NOITabs.Form!noi_client2
+    End If
+    If Not IsNull(Forms![NOI Information Screen]!NOITabs.Form!noi_client3) Then
+    !client_noi3 = Forms![NOI Information Screen]!NOITabs.Form!noi_client3
+    End If
+    
+
+    .Update
+    End With
+        
+    DoCmd.Close acForm, "noi information screen"
+    rsRES.Close
+
+    
+'=======Update NOI Client Table
+
+strsql = "select * from fctracking where filenum = " & BGNum & ";"
+Set rsFC = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+    With rsFC
+    .Edit
+   !noi_dated = Null
+   !noi_error_list = Null
+   !noi_error = 0
+   !noi_proceed = 0
+   !client_instructions = 0
+   !noi_client1 = Null
+   !noi_client2 = Null
+   noi_client3 = Null
+     .Update
+    End With
+rsFC.Close
+
+'========Update QC Table
+strsqlqc = "Select * from qc where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsqc = CurrentDb.OpenRecordset(strsqlqc, dbOpenDynaset, dbSeeChanges)
+
+If Not rsqc.EOF Then
+With rsqc
+.Edit
+!NOI_Approved = 0
+!noi_revd = Null
+!noi_completed = Null
+.Update
+.Close
+End With
+
+End If
+
+
+    
+MsgBox "The Previous NOI Client has been saved.  To access previous NOI click PrevNOI button at top of screen. You will have to reopen the Referral Screen.", vbOKOnly
+
+'DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & BGNum
+
+End Function
+
+Public Function NOIDeadline()
+Dim VDL
+Dim VDLDay
+
+VDL = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Approx_1st - 56
+VDLDay = Format(VDL, "dddd")
+
+If VDLDay Like "Sun*" Then
+NOIDeadline = VDL - 2
+ElseIf VDLDay Like "Sat*" Then
+NOIDeadline = VDL - 1
+Else
+NOIDeadline = VDL
+End If
+
+
+'MsgBox (VDL & ":" & VDLDay)
+
+End Function
+Public Function NOISPS()
+
+DoCmd.OpenReport "NOISPS", acViewPreview
+
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\SPSNew.PDF")
+
+End Function
+Public Function DCNODEscrow()
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vtotal
+Vtotal = 0
+
+strsql = "SELECT escrow FROM DC_NOD WHERE DC_NOD.filenum = " & [Forms]![foreclosure database screen]!filenum & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Do While Not rs.EOF
+Vtotal = rs!Escrow + Vtotal
+rs.MoveNext
+Loop
+rs.Close
+
+DCNODEscrow = Format(Vtotal, "$###,##0.00")
+End Function
+
+
+Public Function DCNODPiti()
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vtotal
+Vtotal = 0
+
+strsql = "SELECT piti_amt FROM DC_NOD WHERE DC_NOD.filenum = " & [Forms]![foreclosure database screen]!filenum & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Do While Not rs.EOF
+Vtotal = rs!piti_Amt + Vtotal
+rs.MoveNext
+Loop
+rs.Close
+
+DCNODPiti = Format(Vtotal, "$###,##0.00")
+
+
+End Function
+
+Public Function DCNODLate()
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vtotal
+Vtotal = 0
+
+strsql = "SELECT late_fee FROM DC_NOD WHERE DC_NOD.filenum = " & [Forms]![foreclosure database screen]!filenum & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Do While Not rs.EOF
+Vtotal = rs!Late_fee + Vtotal
+rs.MoveNext
+Loop
+rs.Close
+
+DCNODLate = Format(Vtotal, "$###,##0.00")
+
+End Function
+
+Public Function DCNODOther()
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vtotal
+Vtotal = 0
+
+strsql = "SELECT other FROM DC_NOD WHERE DC_NOD.filenum = " & [Forms]![foreclosure database screen]!filenum & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Do While Not rs.EOF
+Vtotal = rs!Other + Vtotal
+rs.MoveNext
+Loop
+rs.Close
+
+DCNODOther = Format(Vtotal, "$###,##0.00")
+
+End Function
+
+Public Function TotalNODDC()
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vtotal
+Vtotal = 0
+
+strsql = "SELECT * FROM DC_NOD WHERE DC_NOD.filenum = " & [Forms]![foreclosure database screen]!filenum & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Do While Not rs.EOF
+Vtotal = rs!piti_Amt + rs!Late_fee + rs!Other + rs!Escrow + Vtotal
+rs.MoveNext
+Loop
+rs.Close
+
+TotalNODDC = Format(Vtotal, "$###,##0.00")
+
+End Function
+
+Public Function NODDC()
+
+Dim strsql As String
+Dim rs As RecordSet
+Dim rsFC As RecordSet
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+
+Set rsFC = CurrentDb.OpenRecordset("fctracking", dbOpenDynaset, dbSeeChanges)
+
+With rsFC
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+
+rs.Close
+
+End If
+
+
+Call DCNoticeTable
+
+
+DoCmd.OpenReport "NOD-DC-FM-1", acViewPreview
+
+
+End Function
+Public Function DCNoticeTable()
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+Call DebtorsPropOnly
+Call OwnersOnly
+Call CertDCLienholder
+End Function
+Public Function NODLMADC()
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\DC\DCFormFM-1LM.PDF")
+End Function
+Public Function DCForm10L()
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\DC\DCFOrmFM-10L.PDF")
+End Function
+Public Function DCForm10B()
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\DC\DCFOrmFM-10B.PDF")
+End Function
+Public Function DCForm1X()
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\DC\DCFOrmFM-1X.PDF")
+End Function
+Public Function DCForm1AC()
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\DC\DCFormFM-1AC.PDF")
+End Function
+Public Function DCForm1BA()
+
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\DC\DCFormFM-1BA.PDF")
+
+End Function
+Public Function NOITrio()
+Call NOI_AttachmentsVIEW
+DoCmd.OpenReport "NOIClientNewTabs", acViewPreview
+If Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+Else
+PrtPDF ("\\rvdv-fs01\datatransfer\NOI_Application\NOICoverPage.pdf")
+End If
+
+If Forms![NOI Information Screen]!Client Like "Seteru*" Then
+DoCmd.OpenReport "NOI-Cover-Seterus", acViewPreview
+Else
+DoCmd.OpenReport "NOI-COVER", acViewPreview
+End If
+
+If Forms![NOI Information Screen]!NOITabs.Form!Occupied = 5 Or _
+Forms![NOI Information Screen]!NOITabs.Form!Occupied = 4 Then
+DoCmd.OpenReport "NOI-COVER-Occ", acViewPreview
+End If
+
+'If Forms![NOI Information Screen]!Client Like "Ditech*" Then
+'DoCmd.OpenReport "LMOptionsGreentree", acViewPreview
+'CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GreentreeLMA-Options3and4.PDF")
+If Forms![NOI Information Screen]!Client Like "Kondau*" Or _
+Forms![NOI Information Screen]!Client Like "Nations Defaul*" Then
+DoCmd.OpenReport "LMOptions", acViewPreview
+End If
+
+If Forms![NOI Information Screen]!Client Like "EMC*" Or _
+Forms![NOI Information Screen]!Client Like "JP*" Or _
+Forms![NOI Information Screen]!Client Like "Chase*" Or _
+Forms![NOI Information Screen]!Client Like "washing*" Then
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+Call exportACL
+If Forms![NOI Information Screen]!Client Like "EMC*" Then
+DoCmd.OpenReport "ACL-LETTER-EMC", acViewPreview
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCAcl2and3.PDF")
+Else
+DoCmd.OpenReport "ACL-LETTER-chase", acViewPreview
+If Forms![foreclosure database screen]!Client Like "JP*" Or _
+Forms![foreclosure database screen]!Client Like "Washington*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\JPACLPg2.PDF")
+ElseIf Forms![foreclosure database screen]!prime_nonprime = 1 Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeACL3.PDF")
+ElseIf Forms![foreclosure database screen]!prime_nonprime = 2 Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeACL3.PDF")
+End If
+End If
+End If
+
+DoCmd.OpenReport "NOIAddressesCOMM", acViewPreview
+MsgBox ("Pre-Printed Envelope will PREVIEW now.")
+DoCmd.OpenReport "NOIPrePrinted", acViewPreview
+End Function
+Public Function NOIUploadDaily()
+CurrentDb.Execute "DELETE * FROM NOIUploadTbl;", dbFailOnError
+DoCmd.OpenQuery ("NOIUpload")
+Dim Vname
+Vname = (Format$(Now(), "mmddyyyyhhnnss")) & "_NOI.txt"
+
+DoCmd.TransferText acExportDelim, "NOISpecification", "NOIUploadTbl", "\\rvdv-fs01\Shared\NOIUploads\" & Vname
+
+End Function
+
+Public Function NOICommissioner()
+
+End Function
+Public Function NOIBroker_Lic()
+strsql = "select * from NOI where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsFB = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rsFB.EOF Then
+MsgBox ("No NOI Prepared")
+Else
+If rsFB!brokers_lic = "" Then
+MsgBox ("No Lender Number input")
+NOIBroker_Lic = ""
+Else
+NOIBroker_Lic = rsFB!brokers_lic
+End If
+End If
+
+
+End Function
+Public Function NOIDueDate()
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsFB = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rsFB.EOF Or IsNull(rsFB!due_date) Then
+NOIDueDate = Format(InputBox("Enter Due Date, the Date is NOT Input on NOI Screen"), "mmmm dd, yyyy")
+Else
+
+If IsNull(rsFB!due_date) Then
+NOIDueDate = Format(rsFB!date_default - 1, "mmmm dd, yyyy")
+Else
+NOIDueDate = Format(rsFB!due_date, "mmmm dd, yyyy")
+
+End If
+End If
+
+
+End Function
+
+Public Function NOIDefDate()
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsFB = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rsFB.EOF Or IsNull(rsFB!date_default) Then
+NOIDefDate = Format(InputBox("Default Date Not Input on NOI Screen."), "mmmm dd, yyyy")
+
+Else
+NOIDefDate = Format(rsFB!date_default, "mmmm dd, yyyy")
+End If
+
+
+End Function
+Public Function AffDefCheckData()
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsFB = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rsFB!date_default) Or _
+IsNull(rsFB!due_date) Or IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent) Then
+MsgBox ("NOI Sent Date from FC Screen, Default or Due Dates from NOI screen are not filled in Affidavit of Default WILL NOT PRINT.....exiting.....")
+rsFB.Close
+
+AffDefCheckData = "Missing Data"
+
+End If
+
+End Function
+Public Function AffDebtCheckData()
+
+strsql = "select * from affdebt where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsFB = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If AffDebtIntDate = "" Or _
+IsNull(rsFB![extra text]) Or _
+rsFB![extra text] = "" Then
+
+MsgBox ("Interest Thru Date or Interest Rate from Affidavit Debt screen are not filled in Affidavit of Debt WILL NOT PRINT.....exiting.....")
+rsFB.Close
+
+AffDebtCheckData = "Missing Data"
+
+End If
+
+End Function
+
+
+Public Function NOI_SPPhone()
+
+
+strsql = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """"
+Set rsFB = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rsFB!NOI_Phone) Then
+NOI_SPPhone = ""
+Else
+NOI_SPPhone = rsFB!NOI_Phone
+End If
+rsFB.Close
+
+
+
+End Function
+Public Function NOI_SP()
+
+
+strsql = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """"
+Set rsFB = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If IsNull(rsFB!NOI_Contact) Then
+NOI_SP = ""
+Else
+NOI_SP = rsFB!NOI_Contact
+End If
+rsFB.Close
+
+
+
+
+End Function
+Public Function NOISParty()
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" And Client() Like "Seteru*" Then
+NOISParty = "Federal National Mortgage Association (" & """" & "Fannie Mae" & """" & "), a corporation organized and existing under the laws of the United States of America"
+Else
+NOISParty = LSecured()
+End If
+
+End Function
+Public Function brokerslicQC()
+' Verify that the referenced form is still there
+'If Not CurrentProject.AllForms("foreclosure database screen").IsLoaded Then Exit Function
+
+
+End Function
+
+Public Function brokerslic()
+' Verify that the referenced form is still there
+If Not CurrentProject.AllForms("foreclosure database screen").IsLoaded Then Exit Function
+
+
+strsqlBROKER = "select * from brokers where broker_name = " & """" & Forms![foreclosure database screen]!ForeclosureSubForm.Form!brokers_name & """" & ";"
+Set rsBROKER = CurrentDb.OpenRecordset(strsqlBROKER, dbOpenSnapshot)
+
+If Not rsBROKER.EOF Then
+brokerslic = rsBROKER!Broker_License
+End If
+End Function
+Public Function NOIML_Lic()
+' Verify that the referenced form is still there
+If Not CurrentProject.AllForms("foreclosure database screen").IsLoaded Then Exit Function
+
+
+strsql = "select * from NOI where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsFB = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rsFB.EOF Then
+MsgBox ("No NOI Prepared")
+Else
+If rsFB!ml_lic = "" Then
+MsgBox ("No Lender No input")
+NOIML_Lic = ""
+Else
+NOIML_Lic = rsFB!ml_lic
+End If
+End If
+
+
+End Function
+Public Function NOIScreen()
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!commercial = -1 Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!commercial = 1 Or _
+(Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+(IsNull(Forms![foreclosure database screen]!prime_nonprime) Or Forms![foreclosure database screen]!prime_nonprime = 0)) Then
+
+If (Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+(IsNull(Forms![foreclosure database screen]!prime_nonprime) Or _
+Forms![foreclosure database screen]!prime_nonprime = 0)) Then
+MsgBox ("THIS IS A CHASE FILE AND PRIME OR NON-PRIME HAS TO BE SELECTED NEXT TO CLIENT NAME, EXITING....")
+Else
+MsgBox ("THIS IS A NON RESIDENTIAL PROPERTY AND AN NOI DOES NOT NEED TO BE COMPLETED, EXITING....")
+End If
+
+Exit Function
+
+Else
+
+Dim strsql As String, strsqlBROKER As String, strsqlClient As String, BrokerName As String, BrokerLic As String, PExt As String
+Dim LMN As String, LMContact As String
+Dim rsPS As RecordSet
+Dim strsqlPS As String, OLL As String
+Dim rsFB As RecordSet, rsBROKER As RecordSet
+Dim rsClient As RecordSet
+Dim NOIPhone As String
+Dim NOIAdd As String, NOICity As String, NOIState As String, NOIZip As String, LMNExt As String
+
+
+strsql = "select * from NOI where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsFB = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlClient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!orglender_lic) Then
+OLL = ""
+Else
+OLL = Forms![foreclosure database screen]!ForeclosureSubForm.Form!orglender_lic
+End If
+
+If Forms![foreclosure database screen]!Client Like "Chase Home*" And Forms![foreclosure database screen]!prime_nonprime = 1 Then
+
+If IsNull(rsClient!loss_mit_noP) Then
+LMN = ""
+Else
+LMN = rsClient!loss_mit_noP
+End If
+
+If IsNull(rsClient!Loss_mit_no_extP) Then
+LMNExt = ""
+Else
+LMNExt = rsClient!Loss_mit_no_extP
+End If
+
+If IsNull(rsClient!NOI_ExtP) Then
+PExt = ""
+Else
+PExt = rsClient!NOI_ExtP
+End If
+
+If IsNull(rsClient!noi_ContactP) Then
+LMContact = ""
+Else
+LMContact = rsClient!noi_ContactP
+End If
+
+If IsNull(rsClient!NOI_phoneP) Then
+NOIPhone = ""
+Else
+NOIPhone = rsClient!NOI_phoneP
+End If
+
+If IsNull(rsClient!noi_Add1P) Then
+NOIAdd = ""
+Else
+NOIAdd = rsClient!noi_Add1P
+End If
+
+If IsNull(rsClient!NOI_CityP) Then
+NOICity = ""
+Else
+NOICity = rsClient!NOI_CityP
+End If
+
+If IsNull(rsClient!NOI_StateP) Then
+NOIState = ""
+Else
+NOIState = rsClient!NOI_StateP
+End If
+
+If IsNull(rsClient!NOI_ZipP) Then
+NOIZip = ""
+Else
+NOIZip = rsClient!NOI_ZipP
+End If
+
+
+Else
+
+If IsNull(rsClient!loss_mit_no) Then
+LMN = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust*" And _
+Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+LMN = "(877) 657-8433"
+Else
+LMN = rsClient!loss_mit_no
+End If
+
+If IsNull(rsClient!Loss_mit_no_ext) Then
+LMNExt = ""
+Else
+LMNExt = rsClient!Loss_mit_no_ext
+End If
+
+If IsNull(rsClient!NOI_ext) Then
+PExt = ""
+Else
+PExt = rsClient!NOI_ext
+End If
+
+If IsNull(rsClient!NOI_Contact) Then
+LMContact = ""
+Else
+LMContact = rsClient!NOI_Contact
+End If
+
+If IsNull(rsClient!NOI_Phone) Then
+NOIPhone = ""
+Else
+NOIPhone = rsClient!NOI_Phone
+End If
+
+If IsNull(rsClient!NOI_Add1) Then
+NOIAdd = ""
+Else
+NOIAdd = rsClient!NOI_Add1
+End If
+
+If IsNull(rsClient!NOI_City) Then
+NOICity = ""
+Else
+NOICity = rsClient!NOI_City
+End If
+
+If IsNull(rsClient!NOI_State) Then
+NOIState = ""
+Else
+NOIState = rsClient!NOI_State
+End If
+
+If IsNull(rsClient!NOI_Zip) Then
+NOIZip = ""
+Else
+NOIZip = rsClient!NOI_Zip
+End If
+
+End If
+
+strsqlBROKER = "select * from brokers where broker_name = " & """" & Forms![foreclosure database screen]!ForeclosureSubForm.Form!brokers_name & """" & ";"
+Set rsBROKER = CurrentDb.OpenRecordset(strsqlBROKER, dbOpenSnapshot)
+
+If Not rsBROKER.EOF Then
+BrokerName = rsBROKER!Broker_Name
+If Not IsNull(rsBROKER!Broker_License) Then
+BrokerLic = rsBROKER!Broker_License
+Else
+MsgBox ("NO Broker License Input for " & rsBROKER!Broker_Name)
+End If
+
+
+End If
+
+'Dim VCiti
+'VCiti = MsgBox("Have c/o " & Client() & " pop in next to Secured Party number", vbYesNo)
+'If VCiti = vbYes Or _
+'Forms![foreclosure database screen]!Client Like "EMC*" Or Forms![foreclosure database screen]!Client Like "Select*" Then
+'DoCmd.OpenQuery ("NOIUpdateSPPhone")
+'End If
+
+If rsFB.EOF Then
+Set rsFB = CurrentDb.OpenRecordset("NOI", dbOpenDynaset, dbSeeChanges)
+With rsFB
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+
+If [Forms]![foreclosure database screen]![SPsameasCl] = 0 Or IsNull(Forms![foreclosure database screen]!SPsameasCl) Then
+!servicer = [Forms]![foreclosure database screen]![Client]
+End If
+!brokers_name = BrokerName
+!brokers_lic = BrokerLic
+
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+If Forms![foreclosure database screen]!Client Like "Seter*" Then
+!secured_phone = "(800)7-FANNIE"
+Else
+!secured_phone = "(703) 833-6257"
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust*" And _
+Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+!secured_phone = "(877) 675-8433"
+Else
+!secured_phone = Null
+End If
+
+If [Forms]![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+!Secured_Party = "Federal National Mortgage Association"
+ElseIf [Forms]![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+!Secured_Party = "Federal Home Loan Mortgage Corporation"
+Else
+!Secured_Party = [Forms]![foreclosure database screen]!longsecured
+End If
+!payment_client = [Forms]![foreclosure database screen]!Client
+!client_lmn = LMN
+!client_lmn_ext = LMNExt
+!client_lmn_add = NOIAdd
+!client_lmn_city = NOICity
+!client_lmn_state = NOIState
+!client_lmn_zip = NOIZip
+!secured_party_agent = LMContact
+!secured_party_agent_phone = Forms![NOI Information Screen]!NOITabs.Form!serv_phone
+!NOI_ext = PExt
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form![1mortgage] = -1 Then
+!lien = "1"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form![2mortgage] = -1 Then
+!lien = "2"
+Else
+!lien = ""
+End If
+!ml_lic = Forms![foreclosure database screen]!ForeclosureSubForm.Form!orglender_lic
+.Update
+.Close
+End With
+
+Else
+
+'vupdate = MsgBox("NOI exists for this file.  Do you want to update NOI data from FC Screen?", vbYesNo)
+If VUpdate = vbYes Then
+With rsFB
+.Edit
+If [Forms]![foreclosure database screen]![SPsameasCl] = 0 Or IsNull(Forms![foreclosure database screen]!SPsameasCl) Then
+!servicer = [Forms]![foreclosure database screen]![Client]
+End If
+!brokers_name = BrokerName
+!brokers_lic = BrokerLic
+'If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+'!secured_phone = "(703) 833-6257"
+'Else
+'!secured_phone = Null
+'End If
+If [Forms]![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+!Secured_Party = "Federal National Mortgage Association"
+ElseIf [Forms]![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+!Secured_Party = "Federal Home Loan Mortgage Corporation"
+Else
+!Secured_Party = [Forms]![foreclosure database screen]!longsecured
+End If
+!payment_client = [Forms]![foreclosure database screen]!Client
+!client_lmn = LMN
+!client_lmn_ext = LMNExt
+!client_lmn_add = NOIAdd
+!client_lmn_city = NOICity
+!client_lmn_state = NOIState
+!client_lmn_zip = NOIZip
+'!secured_party_agent = LMContact
+'!secured_party_agent_phone = NOIPhone
+!NOI_ext = PExt
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form![1mortgage] = -1 Then
+!lien = "1"
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form![2mortgage] = -1 Then
+!lien = "2"
+Else
+!lien = ""
+End If
+'!ml_lic = OLL
+.Update
+.Close
+End With
+End If
+
+End If
+
+stLinkCriteria = "[subfilenum]= Forms![foreclosure database screen]!FIleNum"
+
+DoCmd.OpenForm "NOI", , , stLinkCriteria
+
+End If
+
+
+End Function
+
+Public Function NOIScreenTabs()
+Dim VNote
+
+If Forms![foreclosure database screen]!Status <> "Foreclosure" And _
+Forms![foreclosure database screen]!Status <> "NOI Only" Then
+MsgBox ("This file is NOT in foreclosure or NOI Only status. NOI will NOT generate.  Closing.")
+Exit Function
+End If
+
+
+If (Forms![foreclosure database screen]!ForeclosureSubForm.Form!commercial = -1 Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!commercial = 1) Or _
+(Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+(IsNull(Forms![foreclosure database screen]!prime_nonprime) Or _
+Forms![foreclosure database screen]!prime_nonprime = 0)) Or _
+IsNull(Forms![foreclosure database screen]!longsecured) Or _
+IsNull(Forms![foreclosure database screen]!PropAddress) Or _
+IsNull(Forms![foreclosure database screen]!PropertyCity) Or _
+IsNull(Forms![foreclosure database screen]!propzip) Or _
+IsNull(Forms![foreclosure database screen]!PropertyState) Or _
+IsNull(Forms![foreclosure database screen]!LastNameDebtor1) Or _
+IsNull(Forms![foreclosure database screen]!ClientRefNumber) Or _
+IsNull(Forms![NOI Information Screen]!NOITabs.Form!noi_prepared) Or _
+IsNull(Forms![NOI Information Screen]!NOITabs.Form!lien) Or _
+(Forms![foreclosure database screen]!Client <> "Celink" And Forms![NOI Information Screen]!NOITabs.Form!rev_mtg <> 1 And _
+IsNull(Forms![NOI Information Screen]!NOITabs.Form!date_last_payment)) Or _
+(Forms![foreclosure database screen]!Client <> "Celink" And Forms![NOI Information Screen]!NOITabs.Form!rev_mtg <> 1 And _
+IsNull(Forms![NOI Information Screen]!NOITabs.Form!last_applied)) Or _
+IsNull(Forms![NOI Information Screen]!NOITabs.Form!date_default) Or _
+IsNull(Forms![NOI Information Screen]!NOITabs.Form!total_amt_owed) Or _
+IsNull(Forms![NOI Information Screen]!NOITabs.Form!sp_phone) Then
+
+VNote = "Missing: " & vbCr
+
+If IsNull(Forms![foreclosure database screen]!longsecured) Then
+VNote = VNote + "Secured Party" & vbCr
+End If
+
+If IsNull(Forms![NOI Information Screen]!NOITabs.Form!sp_phone) Then
+VNote = VNote + "Secured Party phone#" & vbCr
+End If
+
+If IsNull(Forms![foreclosure database screen]!PropAddress) Then
+VNote = VNote + "Property Address" & vbCr
+End If
+
+If IsNull(Forms![foreclosure database screen]!PropertyCity) Then
+VNote = VNote + "Property CITY" & vbCr
+End If
+
+If IsNull(Forms![foreclosure database screen]!PropertyState) Then
+VNote = VNote + "Property STATE" & vbCr
+End If
+
+If IsNull(Forms![foreclosure database screen]!propzip) Then
+VNote = VNote + "Property ZIPCODE" & vbCr
+End If
+
+If IsNull(Forms![foreclosure database screen]!LastNameDebtor1) Then
+VNote = VNote + "Borrower" & vbCr
+End If
+
+If IsNull(Forms![foreclosure database screen]!ClientRefNumber) Then
+VNote = VNote + "Loan#" & vbCr
+End If
+
+If IsNull(Forms![NOI Information Screen]!NOITabs.Form!noi_prepared) Then
+VNote = VNote + "NOI Date" & vbCr
+End If
+
+If IsNull(Forms![NOI Information Screen]!NOITabs.Form!lien) Then
+VNote = VNote + "Lien Position" & vbCr
+End If
+
+If IsNull(Forms![NOI Information Screen]!NOITabs.Form!date_last_payment) Then
+VNote = VNote + "Last Payment Date" & vbCr
+End If
+
+If IsNull(Forms![NOI Information Screen]!NOITabs.Form!last_applied) Then
+VNote = VNote + "Period recent mortgage payment was applied is" & vbCr
+End If
+
+If IsNull(Forms![NOI Information Screen]!NOITabs.Form!date_default) Then
+VNote = VNote + "Date of Default" & vbCr
+End If
+
+If IsNull(Forms![NOI Information Screen]!NOITabs.Form!total_amt_owed) Then
+VNote = VNote + "Total Amount Required to Cure Default" & vbCr
+End If
+
+MsgBox (VNote)
+
+
+If (Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+(IsNull(Forms![foreclosure database screen]!prime_nonprime) Or _
+Forms![foreclosure database screen]!prime_nonprime = 0)) Then
+MsgBox ("THIS IS A CHASE FILE AND PRIME OR NON-PRIME HAS TO BE SELECTED NEXT TO CLIENT NAME, EXITING....")
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!commercial = -1 Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!commercial = 1 Then
+MsgBox ("THIS IS A NON RESIDENTIAL PROPERTY AND AN NOI DOES NOT NEED TO BE COMPLETED, EXITING....")
+End If
+
+Exit Function
+
+Else
+'MsgBox (Forms![noi information screen]!NOITabs.Form!past_due_no)
+
+Dim strsql As String, strsqlBROKER As String, strsqlClient As String, BrokerName As String, BrokerLic As String, PExt As String
+Dim LMN As String, LMContact As String
+Dim rsPS As RecordSet
+Dim strsqlPS As String, OLL As String
+Dim rsFB As RecordSet, rsBROKER As RecordSet
+Dim rsClient As RecordSet
+Dim NOIPhone As String
+Dim NOIAdd As String, NOICity As String, NOIState As String, NOIZip As String, LMNExt As String
+Dim VDate As Date
+Dim vdateM
+Dim pdfprint As String
+
+strsql = "select * into rsFBtbl from NOI where subfilenum = " & Forms![foreclosure database screen]!filenum
+'Set rsFB = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+DoCmd.RunSQL strsql
+strsqlClient = "select * into rsCLienttbl from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """"
+'Set rsCLient = CurrentDb.OpenRecordset(strsqlClient, dbopensnapshot)
+DoCmd.RunSQL strsqlClient
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!orglender_lic) Then
+OLL = ""
+Else
+OLL = Forms![foreclosure database screen]!ForeclosureSubForm.Form!orglender_lic
+End If
+
+If Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 1 Then
+
+'If IsNull(rsCLient!loss_mit_noP) Then
+If Nz(DLookup("loss_mit_noP", "rsCLienttbl"), "") = "" Then
+LMN = ""
+Else
+LMN = Nz(DLookup("loss_mit_noP", "rsCLienttbl"), "")
+'If IsNull(rsCLient!Loss_mit_no_extP) Then
+If Nz(DLookup("Loss_mit_no_extP", "rsCLienttbl"), "") = "" Then
+Else
+LMN = LMN & ", " & Nz(DLookup("Loss_mit_no_extP", "rsCLienttbl"), "")
+End If
+End If
+
+'If IsNull(rsCLient!NOI_ExtP) Then
+If Nz(DLookup("NOI_ExtP", "rsCLienttbl"), "") = "" Then
+PExt = ""
+Else
+PExt = Nz(DLookup("NOI_ExtP", "rsCLienttbl"), "")
+End If
+
+'If IsNull(rsCLient!noi_ContactP) Then
+If Nz(DLookup("noi_ContactP", "rsCLienttbl"), "") = "" Then
+LMContact = ""
+Else
+LMContact = Nz(DLookup("noi_ContactP", "rsCLienttbl"), "")
+End If
+
+'If IsNull(rsCLient!NOI_phoneP) Then
+If Nz(DLookup("NOI_phoneP", "rsCLienttbl"), "") = "" Then
+NOIPhone = ""
+Else
+NOIPhone = Nz(DLookup("NOI_phoneP", "rsCLienttbl"), "")
+End If
+
+'If IsNull(rsCLient!noi_Add1P) Then
+If Nz(DLookup("noi_Add1P", "rsCLienttbl"), "") = "" Then
+NOIAdd = ""
+Else
+NOIAdd = Nz(DLookup("noi_Add1P", "rsCLienttbl"), "")
+End If
+
+'If IsNull(rsCLient!NOI_CityP) Then
+If Nz(DLookup("NOI_CityP", "rsCLienttbl"), "") = "" Then
+NOICity = ""
+Else
+NOICity = Nz(DLookup("NOI_CityP", "rsCLienttbl"), "")
+End If
+
+'If IsNull(rsCLient!NOI_StateP) Then
+If Nz(DLookup("NOI_StateP", "rsCLienttbl"), "") = "" Then
+NOIState = ""
+Else
+NOIState = Nz(DLookup("NOI_StateP", "rsCLienttbl"), "")
+End If
+
+'If IsNull(rsCLient!NOI_ZipP) Then
+If Nz(DLookup("NOI_ZipP", "rsCLienttbl"), "") = "" Then
+NOIZip = ""
+Else
+NOIZip = Nz(DLookup("NOI_ZipP", "rsCLienttbl"), "")
+End If
+
+
+Else
+
+'If IsNull(rsCLient!loss_mit_no) Then
+If Nz(DLookup("loss_mit_no", "rsCLienttbl"), "") = "" Then
+LMN = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust*" And _
+Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+LMN = "(877) 657-8433"
+Else
+LMN = Nz(DLookup("loss_mit_no", "rsCLienttbl"), "")
+'If IsNull(rsCLient!Loss_mit_no_ext) Then
+If Nz(DLookup("Loss_mit_no_ext", "rsCLienttbl"), "") = "" Then
+Else
+LMN = LMN & ", " & Nz(DLookup("Loss_mit_no_ext", "rsCLienttbl"), "")
+End If
+End If
+
+
+'If IsNull(rsCLient!NOI_ext) Then
+If Nz(DLookup("NOI_ext", "rsCLienttbl"), "") = "" Then
+PExt = ""
+Else
+PExt = Nz(DLookup("NOI_ext", "rsCLienttbl"), "")
+End If
+
+'If IsNull(rsCLient!NOI_Contact) Then
+If Nz(DLookup("NOI_Contact", "rsCLienttbl"), "") = "" Then
+LMContact = ""
+Else
+LMContact = Nz(DLookup("NOI_Contact", "rsCLienttbl"), "")
+End If
+
+'If IsNull(rsCLient!NOI_Phone) Then
+If Nz(DLookup("NOI_Phone", "rsCLienttbl"), "") = "" Then
+NOIPhone = ""
+Else
+NOIPhone = Nz(DLookup("NOI_Phone", "rsCLienttbl"), "")
+End If
+
+'If IsNull(rsCLient!NOI_Add1) Then
+If Nz(DLookup("NOI_Add1", "rsCLienttbl"), "") = "" Then
+NOIAdd = ""
+Else
+NOIAdd = Nz(DLookup("NOI_Add1", "rsCLienttbl"), "")
+End If
+
+'changer_recent2
+
+'If IsNull(rsCLient!NOI_City) Then
+If Nz(DLookup("NOI_City", "rsCLienttbl"), "") = "" Then
+NOICity = ""
+Else
+NOICity = Nz(DLookup("NOI_City", "rsCLienttbl"), "")
+End If
+
+'If IsNull(rsCLient!NOI_State) Then
+If Nz(DLookup("NOI_State", "rsCLienttbl"), "") = "" Then
+NOIState = ""
+Else
+NOIState = Nz(DLookup("NOI_State", "rsCLienttbl"), "")
+End If
+
+'If IsNull(rsCLient!NOI_Zip) Then
+If Nz(DLookup("NOI_Zip", "rsCLienttbl"), "") = "" Then
+NOIZip = ""
+Else
+NOIZip = Nz(DLookup("NOI_Zip", "rsCLienttbl"), "")
+End If
+End If
+
+'strsqlBROKER = "select * into rsBROKERtbl from brokers where broker_name = " & """" & Forms![foreclosure database screen]!ForeclosureSubForm.Form!brokers_name & """"
+'DoCmd.RunSQL (strsqlBROKER)
+
+
+'If DCount("*", "rsBROKERtbl") > 0 Then
+'BrokerName = Nz(DLookup("Broker_Name", "rsBROKERtbl"), "")
+
+'If Nz(DLookup("Broker_License", "rsBROKERtbl"), "") <> "" Then
+
+'BrokerLic = Nz(DLookup("Broker_License", "rsBROKERtbl"), "")
+'Else
+'MsgBox ("NO Broker License Input for " & BrokerName)
+'End If
+'End If
+
+If DCount("*", "rsFBtbl") = 0 Then
+strsql = "select * into rsFBtbl from NOI"
+DoCmd.RunSQL strsql
+DoCmd.OpenQuery ("insertrsFBtbl")
+Else
+DoCmd.OpenQuery ("insertrsFBtbl2")
+End If
+
+
+stLinkCriteria = "[subfilenum]= Forms![foreclosure database screen]!FIleNum"
+
+
+'If username Like "Pratima*" Or username Like "MatthewAl*" Or username Like "*shuler" Or username Like "*sherer" Then
+MsgBox ("NOI will preview.  It will preview individual pages not one package")
+
+'pdfprint = ReporttoPDFUsingPrint("NOI_1")
+
+'DoCmd.OpenReport "NOI-LIENHOLDERADDRESSES", acViewPreview
+Wait (2)
+
+'Cover Sheet and Timeline
+
+If Forms![foreclosure database screen]!Client Like "Select Po*" Then
+DoCmd.OpenReport "NOI-Cover-Select", acViewPreview
+
+ElseIf (Forms![foreclosure database screen]!Client Like "Champion*" Or _
+Forms![foreclosure database screen]!Client Like "Wells*" Or _
+Forms![foreclosure database screen]!Client Like "Residential Mor*" Or _
+Forms![foreclosure database screen]!Client Like "Celink*") And _
+[Forms]![NOI Information Screen]![NOITabs].[Form]![rev_mtg] = 1 And _
+([Forms]![NOI Information Screen]![NOITabs].[Form]![reason_default] Like "Taxes*" Or _
+[Forms]![NOI Information Screen]![NOITabs].[Form]![reason_default] Like "Insuranc*") Then
+'[Reports]![noi_1]![CoverOO].Visible = True
+DoCmd.OpenReport "NOI-COVER-OO", acViewPreview
+
+ElseIf [Forms]![NOI Information Screen]![NOITabs].[Form]![rev_mtg] = 1 Or _
+[Forms]![NOI Information Screen]![NOITabs].[Form]![rev_mtg] = 2 Or _
+(Forms![foreclosure database screen]!Client Like "Seter*" And _
+[Forms]![NOI Information Screen]![NOITabs].[Form]![Occupied] = 5) Then
+DoCmd.OpenReport "NOI-COVER-notoo", acViewPreview
+DoCmd.OpenReport "NOITimelineNOO", acViewPreview
+
+Else
+DoCmd.OpenReport "NOI-COVER-OO", acViewPreview
+End If
+Wait (2)
+'End Cover Sheet Timelin
+
+DoCmd.OpenReport "NOI_2", acViewPreview
+Wait (2)
+
+'Loss Mit Options
+If Forms![foreclosure database screen]!Client Like "Champion*" Or _
+Forms![foreclosure database screen]!Client Like "Celink*" Or _
+[Forms]![NOI Information Screen]![NOITabs].[Form]![rev_mtg] = 1 Then
+
+If ([Forms]![NOI Information Screen]![NOITabs].[Form]![reason_default] Like "Taxes*" Or _
+[Forms]![NOI Information Screen]![NOITabs].[Form]![reason_default] Like "Insuranc*") Then
+DoCmd.OpenReport "NOIAddendum4", acViewPreview
+Else
+DoCmd.OpenReport "NOIAddendum", acViewPreview
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "seter*" Then
+DoCmd.OpenReport "NOIAddendum3", acViewPreview
+ElseIf Forms![foreclosure database screen]!Client Like "select P*" Then
+Else
+DoCmd.OpenReport "NOIAddendum2", acViewPreview
+End If
+
+Wait (2)
+'End Loss Mit Options
+
+
+
+'Else
+
+    
+'    VConvRpt = "NOI"
+    
+'    DoCmd.OpenReport "NOI", acViewPreview
+    
+    
+'Call ConvertPDFUSER
+'sourcefile = PathUSER() & "NOI.pdf"
+'txtname = Forms![foreclosure database screen]!filenum & "_NOI.pdf"
+'destinationfile = PathUSER() & txtname
+'FileCopy sourcefile, destinationfile
+'FollowHyperlink (PathUSER() & txtname)
+
+'End If
+
+'sourcefile = PathUSER() & "NOI.pdf"
+'txtname = Forms![foreclosure database screen]!FileNum & "_NOI.pdf"
+'Destinationfile = PathUSER() & txtname
+'FileCopy sourcefile, Destinationfile
+'FollowHyperlink (PathUSER() & txtname)
+
+'DoCmd.OpenReport "NOI", acViewPreview
+
+If Forms![NOI Information Screen]!Client Like "EMC*" Or _
+Forms![NOI Information Screen]!Client Like "JP*" Or _
+Forms![NOI Information Screen]!Client Like "Chase*" Or _
+Forms![NOI Information Screen]!Client Like "washing*" Then
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+Call exportACL
+
+If Forms![NOI Information Screen]!Client Like "EMC*" Then
+DoCmd.OpenReport "ACL-LETTER-EMC", acViewPreview
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCAcl2and3.PDF")
+
+Else
+DoCmd.OpenReport "ACL-LETTER-chase", acViewPreview
+
+If Forms![foreclosure database screen]!Client Like "JP*" Or _
+Forms![foreclosure database screen]!Client Like "Washington*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\JPACLPg2.PDF")
+ElseIf Forms![foreclosure database screen]!prime_nonprime = 1 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeACL3.PDF")
+ElseIf Forms![foreclosure database screen]!prime_nonprime = 2 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeACL3.PDF")
+End If
+End If
+
+End If
+
+End If
+
+
+
+End Function
+
+
+
+Public Function RefreshFcTracking()
+Dim strsql As String
+Dim rs As RecordSet
+Dim strsqlClient As String
+Dim rsClient As RecordSet
+Dim PExt
+Dim NOIPhone
+
+strsqlClient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+
+
+If Forms![foreclosure database screen]!Client Like "Suntrust*" And _
+Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+LMN = "(877) 657-8433"
+Else
+LMN = rsClient!loss_mit_no
+If IsNull(rsClient!Loss_mit_no_ext) Or rsClient!Loss_mit_no_ext = "" Then
+Else
+LMN = LMN & ", ext. " & rsClient!Loss_mit_no_ext
+End If
+End If
+
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FNMA*" Then
+
+Forms![NOI Information Screen]!NOITabs!sp_phone = "(800)7-FANNIE"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust*" And _
+Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+Forms![NOI Information Screen]!NOITabs!sp_phone = "(877) 675-8433"
+Else
+Forms![NOI Information Screen]!NOITabs!sp_phone = LMN
+End If
+
+
+Forms![NOI Information Screen]!NOITabs!serv_phone = LMN
+
+'
+'If [Forms]![foreclosure database screen]![SPsameasCl] = 0 Or IsNull(Forms![foreclosure database screen]!SPsameasCl) Then
+'Forms![noi information screen]!NOITabs!servicer = [Forms]![foreclosure database screen]![Client]
+'End If
+
+rsClient.Close
+
+End Function
+Public Function NOIInfoScreen()
+
+Call AddToFCTracking
+
+
+If Forms![foreclosure database screen]!Client Like "EMC*" Then
+Call AddToACL
+End If
+
+
+DoCmd.OpenForm "NOI Information Screen"
+
+End Function
+Public Function DC_AttachmentsVIEW()
+
+'CopyFileFromServOpenPDF("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LBPS.pdf")
+If Client Like "Citi*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\CitiNonHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Dov*" And _
+ (Forms![foreclosure database screen]!longsecured Like "LNV*" Or _
+Forms![foreclosure database screen]!longsecured Like "LPP*" Or _
+Forms![foreclosure database screen]!longsecured Like "Beal*") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Dov.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Dov*" And _
+Forms![foreclosure database screen]!longsecured Like "Acaci*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\DovAcaciaNonHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Financial F*" Or _
+(Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 1 Or Forms![foreclosure database screen]!FF = -1)) Then
+'CopyFileFromServOpenPDF("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\FinFreedomLMA.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\BAC.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust *" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Suntrust-FHA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust B*" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\SuntrustLMA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust M*" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\SunTrustMortgageNonHAMP.pdf")
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Consumer and Mortgage Lending Inc." And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-CML.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Corporation  - NY" And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FHA" And Forms![foreclosure database screen]!TypeOfLoan <> "VA" And Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MC.pdf")
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Corporation  - NY" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!TypeOfLoan = "VA") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MC-FHA-VA.pdf")
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Services Inc." And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MS.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Wells*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Wells.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Ditech*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GreentreeLMA.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "GMAC*" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GMAC-FHA.pdf")
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GMACLMA.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank, National Association" Or _
+Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank NA c/o Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Or _
+Forms![foreclosure database screen]!Client = "Washington Mutual Bank" Then
+
+If Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank, National Association" Or _
+Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank NA c/o Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "Washington Mutual Bank" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Chase.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseBW04611-12.pdf")
+
+End If
+
+If Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCCover.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCLMA.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+End If
+
+If Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 2 Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeCover.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeLMA.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+End If
+
+
+If Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 1 Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeCover.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeLMA.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+End If
+
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Specialized*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Specialized.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Morequ*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\MorequityNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Assets Rec*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\AssetsRecoveryNonHamp.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LossMitApp.pdf")
+
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\DC\DCFormFM-1LM.pdf")
+End If
+
+End Function
+
+Public Function NOI_AttachmentsVIEW()
+
+Dim Vhamp
+Dim strsql
+Dim rs As RecordSet
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!HAMP) Then
+Vhamp = 0
+Else
+Vhamp = rs!HAMP
+End If
+
+Dim VAttach
+VAttach = 0
+
+
+If (Forms![foreclosure database screen]!Client Like "Champion*" Or _
+Forms![foreclosure database screen]!Client Like "Wells*" Or _
+Forms![foreclosure database screen]!Client Like "Residential Mor*" Or _
+Forms![foreclosure database screen]!Client Like "Celink*") And _
+rs![rev_mtg] = 1 And _
+(rs![reason_default] Like "Taxes*" Or _
+rs![reason_default] Like "Insuranc*") Then
+VAttach = 1
+Else
+VAttach = 0
+End If
+
+
+'MsgBox VAttach
+
+
+If (rs![rev_mtg] = 1 And VAttach = 0) Or rs![rev_mtg] = 2 Then
+
+If Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NOICoverPage.pdf")
+End If
+
+Else
+
+If Vhamp = -1 Or Vhamp = 1 Then
+
+If Forms![foreclosure database screen]!Client Like "Citi*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\CitiHamp.pdf")
+'
+ElseIf Forms![foreclosure database screen]!Client Like "Colonial Sav*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\ColonialSavings.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Carringt*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\CarringtonHAMP-NonHAMP.pdf")
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Mariners Asset Manage*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\MAM.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\EverhomeHAMP.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Pentag*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Pentagon.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Cenla*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\CenlarHAMP.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ditec*" Then
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FHA_VA.pdf")
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "FHLMC*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FNMA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "USDA*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FNMA_FHLMC_USDA.pdf")
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_CONV.pdf")
+
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Dov*" Then
+
+If Forms![foreclosure database screen]!servicer Like "Astor*" And _
+(Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FHLMC") Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\DovHampAstFNMAFHLMC.pdf")
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\DovHamp.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "PNC*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\PNCHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Nationstar*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\NationstarHampPkg.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "BankUnited*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\BankUnitedHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Financial F*" Or _
+(Forms![foreclosure database screen]!Client Like "OneWe*" And (Forms![foreclosure database screen]!FF = 1 Or Forms![foreclosure database screen]!FF = -1)) Then
+'followhyperlink("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\FinFreedomLMA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "OneWest*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBGSE.pdf")
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBNONGSE.pdf")
+End If
+ElseIf Forms![foreclosure database screen]!Client Like "Wells*" Then
+
+If Forms![foreclosure database screen]!Asc_wff = 3 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\WELLS-HEC.pdf")
+
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Wells.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Marix*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Hamp\MarixHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Seter*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\LBPS.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Residential Credit*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\RSCHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OcwenHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "PennyM*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\PennyMacHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "AURORA*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\AURORAHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Select P*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LossMitApp.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\SPSHampNonHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bayview*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\BAYVIEWHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ditec*" Then
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FHA_VA.pdf")
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "FHLMC*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FNMA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "USDA*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FNMA_FHLMC_USDA.pdf")
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_CONV.pdf")
+
+End If
+
+
+
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Selene*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Hamp\SeleneHAMP-NONHAMP.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust M*" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Suntrust.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust *" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Suntrust-FHA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "GMAC*" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\GMACHAMP-FHA.pdf")
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\GMACHamp.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Homeward*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\AHMSIHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "OneWest*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBGSE.pdf")
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBNONGSE.pdf")
+
+End If
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Specialized*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Specialized.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "HSBC*" And _
+(Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]!TypeOfLoan = "FHLMC") Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\HSBCHampFNMAFHLMC.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "JPMorgan Chase Bank, National Association" Or _
+Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank NA c/o Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Or _
+Forms![foreclosure database screen]!Client = "Washington Mutual Bank" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Chase.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+If Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCCover.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 2 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeCover.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 1 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeCover.pdf")
+End If
+
+
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\HAMP.pdf")
+End If
+
+Else
+
+
+'followhyperlink("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LBPS.pdf")
+If Client Like "Citi*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\CitiNonHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EverbanknonHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\OcwenNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Nations Def*" And _
+Forms![foreclosure database screen]!longsecured = "Planet Home Lending*\" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GreenPlanetNonHAMP.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Colonial Sav*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\ColonialSavings.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Carringt*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\CarringtonHAMP-NonHAMP.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Mariners Asset Manage*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\MAM.pdf")
+ElseIf Client Like "Statebrid*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\StatebridgeNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Dov*" And _
+Forms![foreclosure database screen]!servicer Like "Astor*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Astoria.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Select P*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LossMitApp.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\SPSHampNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client = "BSI Financial Services, Inc." Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\BSINonHamp.pdf")
+ElseIf Client Like "MBan*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\TimberlineNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Nationstar*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\NationstarNonHampPkg.pdf")
+ElseIf Client Like "Quan*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\QuantumNonHamp.pdf")
+
+ElseIf Client Like "Acq*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\AcquraNONHAMP.PDF")
+ElseIf Forms![foreclosure database screen]!Client Like "Dov*" And _
+ (Forms![foreclosure database screen]!longsecured Like "LNV*" Or _
+Forms![foreclosure database screen]!longsecured Like "LPP*" Or _
+Forms![foreclosure database screen]!longsecured Like "Beal*") Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Dov.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Dov*" And _
+Forms![foreclosure database screen]!longsecured Like "Acaci*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\DovAcaciaNonHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Financial F*" Or _
+(Forms![foreclosure database screen]!Client Like "OneWe*" And (Forms![foreclosure database screen]!FF = 1 Or Forms![foreclosure database screen]!FF = -1)) Then
+'followhyperlink("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\FinFreedomLMA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "OneWest*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBGSE.pdf")
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBNONGSE.pdf")
+End If
+ElseIf Forms![foreclosure database screen]!Client Like "Residential Credit*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\RSCNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Selene*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Hamp\SeleneHAMP-NONHAMP.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\BAC.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust *" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Suntrust-FHA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust B*" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\SuntrustLMA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust M*" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\SunTrustMortgageNonHAMP.pdf")
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Consumer and Mortgage Lending Inc." And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-CML.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Corporation  - NY" And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FHA" And Forms![foreclosure database screen]!TypeOfLoan <> "VA" And Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MC.pdf")
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Corporation  - NY" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Or Forms![foreclosure database screen]!TypeOfLoan = "VA") Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MC-FHA-VA.pdf")
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Services Inc." And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MS.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Wells*" Then
+
+If Forms![foreclosure database screen]!Asc_wff = 3 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\WELLS-HEC.pdf")
+
+Else
+
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Wells.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ditec*" Then
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FHA_VA.pdf")
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "FHLMC*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FNMA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "USDA*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FNMA_FHLMC_USDA.pdf")
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_CONV.pdf")
+
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "GMAC*" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GMAC-FHA.pdf")
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GMACLMA.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank, National Association" Or _
+Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank NA c/o Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Or _
+Forms![foreclosure database screen]!Client = "Washington Mutual Bank" Then
+
+If Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank, National Association" Or _
+Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank NA c/o Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "Washington Mutual Bank" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Chase.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseBW04611-12.pdf")
+
+End If
+
+If Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCCover.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCLMA.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+End If
+
+If Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 2 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeCover.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeLMA.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+End If
+
+
+If Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 1 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeCover.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeLMA.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+End If
+
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Specialized*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Specialized.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Morequ*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\MorequityNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Fay Serv*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\FayServicing.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Assets Rec*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\AssetsRecoveryNonHamp.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LossMitApp.pdf")
+
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LossMitApp.pdf")
+End If
+
+End If
+
+If Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NOICoverPage.pdf")
+End If
+
+End If
+
+'If Forms![foreclosure database screen]!Client Like "Select Por*" Then
+'FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\TimelineNOI-Select.pdf")
+If VAttach = 1 Or rs![rev_mtg] = 0 Or IsNull(rs![rev_mtg]) Then
+If Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+Else
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\TimelineNOI.pdf")
+End If
+
+End If
+
+'NOI Wells Code
+'End If
+
+If rs![rev_mtg] = 0 Or _
+IsNull(rs![rev_mtg]) Then
+DoCmd.OpenReport "NOIPrePrinted", acViewPreview
+End If
+
+
+End Function
+
+
+Public Function NOI_AttachmentsCOPY()
+
+Dim Vhamp
+Dim strsql
+Dim rs As RecordSet
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!HAMP) Then
+Vhamp = 0
+Else
+Vhamp = rs!HAMP
+End If
+
+Dim VAttach
+VAttach = 0
+
+
+If (Forms![foreclosure database screen]!Client Like "Champion*" Or _
+Forms![foreclosure database screen]!Client Like "Wells*" Or _
+Forms![foreclosure database screen]!Client Like "Residential Mor*" Or _
+Forms![foreclosure database screen]!Client Like "Celink*") And _
+rs![rev_mtg] = 1 And _
+(rs![reason_default] Like "Taxes*" Or _
+rs![reason_default] Like "Insuranc*") Then
+VAttach = 1
+Else
+VAttach = 0
+End If
+
+
+'MsgBox VAttach
+
+
+If (rs![rev_mtg] = 1 And VAttach = 0) Or rs![rev_mtg] = 2 Then
+
+If Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\NOICoverPage.pdf")
+End If
+
+Else
+
+If Vhamp = -1 Or Vhamp = 1 Then
+
+If Forms![foreclosure database screen]!Client Like "Citi*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\CitiHamp.pdf")
+'
+ElseIf Forms![foreclosure database screen]!Client Like "Colonial Sav*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\ColonialSavings.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Carringt*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\CarringtonHAMP-NonHAMP.pdf")
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Mariners Asset Manage*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\MAM.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\EverhomeHAMP.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Pentag*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Pentagon.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Cenla*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\CenlarHAMP.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Dov*" Then
+
+If Forms![foreclosure database screen]!servicer Like "Astor*" And _
+(Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FHLMC") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\DovHampAstFNMAFHLMC.pdf")
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\DovHamp.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "PNC*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\PNCHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Nationstar*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\NationstarHampPkg.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "BankUnited*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\BankUnitedHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Financial F*" Or _
+(Forms![foreclosure database screen]!Client Like "OneWe*" And (Forms![foreclosure database screen]!FF = 1 Or Forms![foreclosure database screen]!FF = -1)) Then
+'CopyFileFromServOpenPDF("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\FinFreedomLMA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "OneWest*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBGSE.pdf")
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBNONGSE.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Wells*" Then
+If Forms![foreclosure database screen]!Asc_wff = 3 Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\WELLS-HEC.pdf")
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Wells.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Marix*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\Hamp\MarixHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Seter*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\LBPS.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Residential Credit*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\RSCHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OcwenHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "PennyM*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\PennyMacHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "AURORA*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\AURORAHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Select P*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LossMitApp.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\SPSHampNonHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bayview*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\BAYVIEWHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ditec*" Then
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FHA_VA.pdf")
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "FHLMC*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FNMA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "USDA*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FNMA_FHLMC_USDA.pdf")
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_CONV.pdf")
+
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Selene*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\Hamp\SeleneHAMP-NONHAMP.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust M*" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Suntrust.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust *" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Suntrust-FHA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "GMAC*" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\GMACHAMP-FHA.pdf")
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\GMACHamp.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Homeward*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\AHMSIHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "OneWest*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBGSE.pdf")
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBNONGSE.pdf")
+
+End If
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Specialized*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Specialized.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "HSBC*" And _
+(Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]!TypeOfLoan = "FHLMC") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\HSBCHampFNMAFHLMC.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "JPMorgan Chase Bank, National Association" Or _
+Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank NA c/o Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Or _
+Forms![foreclosure database screen]!Client = "Washington Mutual Bank" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Chase.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+If Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCCover.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 2 Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeCover.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 1 Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeCover.pdf")
+End If
+
+
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\HAMP.pdf")
+End If
+
+Else
+
+
+'CopyFileFromServOpenPDF("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LBPS.pdf")
+If Client Like "Citi*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\CitiNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EverbanknonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\OcwenNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Nations Def*" And _
+Forms![foreclosure database screen]!longsecured = "Planet Home Lending*\" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GreenPlanetNonHAMP.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Colonial Sav*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\ColonialSavings.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Carringt*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\CarringtonHAMP-NonHAMP.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Mariners Asset Manage*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\MAM.pdf")
+ElseIf Client Like "Statebrid*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\StatebridgeNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Dov*" And _
+Forms![foreclosure database screen]!servicer Like "Astor*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Astoria.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Select P*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LossMitApp.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\SPSHampNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client = "BSI Financial Services, Inc." Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\BSINonHamp.pdf")
+ElseIf Client Like "MBan*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\TimberlineNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Nationstar*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\NationstarNonHampPkg.pdf")
+ElseIf Client Like "Quan*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\QuantumNonHamp.pdf")
+
+ElseIf Client Like "Acq*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\AcquraNONHAMP.PDF")
+ElseIf Forms![foreclosure database screen]!Client Like "Dov*" And _
+ (Forms![foreclosure database screen]!longsecured Like "LNV*" Or _
+Forms![foreclosure database screen]!longsecured Like "LPP*" Or _
+Forms![foreclosure database screen]!longsecured Like "Beal*") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Dov.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Dov*" And _
+Forms![foreclosure database screen]!longsecured Like "Acaci*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\DovAcaciaNonHamp.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Financial F*" Or _
+(Forms![foreclosure database screen]!Client Like "OneWe*" And (Forms![foreclosure database screen]!FF = 1 Or Forms![foreclosure database screen]!FF = -1)) Then
+'CopyFileFromServOpenPDF("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\FinFreedomLMA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "OneWest*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBGSE.pdf")
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBNONGSE.pdf")
+End If
+ElseIf Forms![foreclosure database screen]!Client Like "Residential Credit*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\RSCNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Selene*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\Hamp\SeleneHAMP-NONHAMP.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\BAC.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust *" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Suntrust-FHA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust B*" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\SuntrustLMA.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust M*" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\SunTrustMortgageNonHAMP.pdf")
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Consumer and Mortgage Lending Inc." And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-CML.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Corporation  - NY" And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FHA" And Forms![foreclosure database screen]!TypeOfLoan <> "VA" And Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MC.pdf")
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Corporation  - NY" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Or Forms![foreclosure database screen]!TypeOfLoan = "VA") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MC-FHA-VA.pdf")
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Services Inc." And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MS.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Wells*" Then
+If Forms![foreclosure database screen]!Asc_wff = 3 Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\WELLS-HEC.pdf")
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Wells.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ditec*" Then
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FHA_VA.pdf")
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "FHLMC*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FNMA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "USDA*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FNMA_FHLMC_USDA.pdf")
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_CONV.pdf")
+
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "GMAC*" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GMAC-FHA.pdf")
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GMACLMA.pdf")
+End If
+
+ElseIf Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank, National Association" Or _
+Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank NA c/o Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Or _
+Forms![foreclosure database screen]!Client = "Washington Mutual Bank" Then
+
+If Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank, National Association" Or _
+Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank NA c/o Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "Washington Mutual Bank" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Chase.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseBW04611-12.pdf")
+
+End If
+
+If Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCCover.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCLMA.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+End If
+
+If Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 2 Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeCover.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeLMA.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+End If
+
+
+If Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 1 Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeCover.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeLMA.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseAttach.pdf")
+End If
+
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Specialized*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Specialized.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Morequ*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\MorequityNonHamp.pdf")
+ElseIf Forms![foreclosure database screen]!Client Like "Fay Serv*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\FayServicing.pdf")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Assets Rec*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\AssetsRecoveryNonHamp.pdf")
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LossMitApp.pdf")
+
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LossMitApp.pdf")
+End If
+
+End If
+
+If Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\NOICoverPage.pdf")
+End If
+
+End If
+
+If Forms![foreclosure database screen]!Client Like "Select Por*" Then
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\TimelineNOI-Select.pdf")
+ElseIf VAttach = 1 Or rs![rev_mtg] = 0 Or IsNull(rs![rev_mtg]) Then
+If Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+Else
+CopyFileFromServOpenPDF ("\\rvdv-fs01\datatransfer\NOI_Application\TimelineNOI.pdf")
+End If
+
+End If
+
+'NOI Wells Code
+'End If
+
+If rs![rev_mtg] = 0 Or _
+IsNull(rs![rev_mtg]) Then
+DoCmd.OpenReport "NOIPrePrinted", acViewPreview
+End If
+
+
+End Function
+Public Function NOI_Attachments()
+
+Dim VFileTimeDownload, vfiletime As Date
+Dim vtime As String
+Dim txtname As String
+Dim Vhamp
+Dim txtname2 As String
+
+NOI_Attachments = ""
+
+Vhamp = Forms![NOI Information Screen]!NOITabs.Form!HAMP
+
+If Vhamp = -1 Or Vhamp = 1 Then
+'sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Wells.pdf"
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+
+If Forms![foreclosure database screen]!Asc_wff = 3 Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\WELLS-HEC.pdf"
+Else
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Wells.pdf"
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Cenla*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\CenlarHAMP.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Carringt*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\CarringtonHAMP-NonHAMP.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\EverhomeHAMP.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Pentag*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Pentagon.pdf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Dov*" Then
+If Forms![foreclosure database screen]!servicer Like "Astor*" And _
+(Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FHLMC") Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\DovHampAstFNMAFHLMC.pdf"
+Else
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\DovHamp.pdf"
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Nationstar*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\NationstarHampPkg.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Marix*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\Hamp\MarixHamp.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Select P*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\SPSHamp.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "PNC*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\PNCHamp.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Seter*" Then
+'sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\LBPS.pdf"
+
+If Forms![NOI Information Screen]!NOITabs.Form!Occupied = 3 Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\IBM-L792-Other.pdf"
+Else
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\IBM-L762-OO.pdf"
+End If
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OcwenHamp.pdf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ditec*" Then
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FHA_VA.pdf"
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "FHLMC*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FNMA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "USDA*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FNMA_FHLMC_USDA.pdf"
+Else
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_CONV.pdf"
+
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "PennyM*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\PennyMacHamp.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "AURORA*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\AURORAHamp.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Residential Credit*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\RSCHamp.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Bayview*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\BAYVIEWHamp.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Selene*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\SeleneHAMP-NONHAMP.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust M*" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Suntrust.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust *" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Suntrust-FHA.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "GMAC*" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\GMACHAMP-FHA.pdf"
+Else
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\GMACHamp.pdf"
+End If
+ElseIf Forms![foreclosure database screen]!Client Like "Homeward*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\AHMSIHamp.pdf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "OneWest*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBGSE.pdf"
+Else
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\OWBNONGSE.pdf"
+
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Specialized*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Specialized.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "HSBC*" And _
+(Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]!TypeOfLoan = "FHLMC") Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\HSBCHampFNMAFHLMC.pdf"
+ElseIf Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank, National Association" Or _
+Forms![foreclosure database screen]!Client = "JPMorgan Chase Bank NA c/o Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "Chase Home Finance LLC" Or _
+Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Or _
+Forms![foreclosure database screen]!Client = "Washington Mutual Bank" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\Chase.pdf"
+Else
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\HAMP.pdf"
+End If
+
+txtname = dumpname & "_HAMP.pdf"
+
+Else
+
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\BAC.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EverbanknonHamp.pdf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Carringt*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\CarringtonHAMP-NonHAMP.pdf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\OcwenNonHAMP.pdf"
+ElseIf Client Like "MBan*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\TimberlineNonHamp.pdf"
+ElseIf Client Like "Quan*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\QuantumNonHamp.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Nationstar*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\HAMP\NationstarNonHampPkg.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Nations Def*" And _
+Forms![foreclosure database screen]!longsecured = "Planet Home Lending" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GreenPlanetNonHAMP.pdf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust *" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Suntrust-FHA.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust B*" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\SuntrustLMA.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust M*" And _
+Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\SunTrustMortgageNonHAMP.pdf"
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Consumer and Mortgage Lending Inc." And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-CML.pdf"
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Corporation  - NY" And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FHA" And Forms![foreclosure database screen]!TypeOfLoan <> "VA" And Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MC.pdf"
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Corporation  - NY" And _
+(Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Or Forms![foreclosure database screen]!TypeOfLoan = "VA") Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MC-FHA-VA.pdf"
+ElseIf Forms![foreclosure database screen]!Client = "HSBC Mortgage Services Inc." And _
+(Forms![foreclosure database screen]!TypeOfLoan <> "FNMA" And Forms![foreclosure database screen]!TypeOfLoan <> "FHLMC") Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\HSBC-MS.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Wells*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Wells.pdf"
+ElseIf Client Like "Statebrid*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\StatebridgeNonHamp.pdf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ditec*" Then
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FHA_VA.pdf"
+ElseIf Forms![foreclosure database screen]!TypeOfLoan Like "FHLMC*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FNMA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "USDA*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_FNMA_FHLMC_USDA.pdf"
+Else
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\Ditech_Application_CONV.pdf"
+
+End If
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "GMAC*" Then
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GMAC-FHA.pdf"
+Else
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GMACLMA.pdf"
+End If
+
+ElseIf Forms![foreclosure database screen]!Client = "EMC Mortgage Corporation" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCCover.pdf"
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\EMCLMA.pdf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 2 Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeCover.pdf"
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChaseNonPrimeLMA.pdf"
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Chase Home*" And _
+Forms![foreclosure database screen]!prime_nonprime = 1 Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeCover.pdf"
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\ChasePrimeLMA.pdf"
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Specialized*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\Specialized.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Morequ*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\MorequityNonHamp.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Assets Rec*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\AssetsRecoveryNonHamp.pdf"
+sourcefile2 = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LossMitApp.pdf"
+Else
+sourcefile = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\LossMitApp.pdf"
+End If
+
+txtname = dumpname & "_LossMitApp.pdf"
+
+'If Forms![foreclosure database screen]!Client Like "Ditech*" Then
+'sourcefile2 = "\\rvdv-fs01\datatransfer\NOI_Application\LossMitigation\GreentreeLMA-Options3and4.PDF"
+'txtname2 = dumpname & "_LMAOptions34.pdf"
+'destinationfile = DTLocation & "\WALZ\ToWalz\" & txtname2
+'FileCopy sourcefile2, destinationfile
+'End If
+
+End If
+
+
+destinationfile = DTLocation & "\WALZ\ToWalz\" & txtname
+FileCopy sourcefile, destinationfile
+
+
+'NOI_Attachments = txtname
+
+'If VHamp = -1 Or VHamp = 1 Then
+'NOI_Attachments = NOI_Attachments & ";" & txtname
+'Else
+NOI_Attachments = txtname
+'End If
+
+End Function
+Public Function NOIAmtTotal()
+
+Set rsamt = CurrentDb.OpenRecordset("WalzTotals", dbOpenSnapshot)
+Set rs = CurrentDb.OpenRecordset("NOISpreadsheet-Bills", dbOpenDynaset, dbSeeChanges)
+
+rs.MoveFirst
+
+Do While Not rs.EOF
+rsamt.MoveFirst
+
+Do While Not rsamt.EOF
+If rsamt!filenum = rs![Loan Number] Then
+With rs
+.Edit
+!amount_walz = !amount_walz + rsamt!TOTAL
+.Update
+End With
+End If
+
+
+rsamt.MoveNext
+Loop
+
+rs.MoveNext
+Loop
+
+
+
+End Function
+Public Function IndyDocs()
+
+If DCount("DocName", "IndyDocs", "LoanNo=" & Forms![noi-bulk]!LoanNo) > 0 Then
+    DoCmd.OpenForm "IndyList", , , "loanNo=" & Forms![noi-bulk]!LoanNo
+Else
+    MsgBox "No documents for Loan # " & Forms![noi-bulk]!LoanNo, vbExclamation
+End If
+
+End Function
+Public Function CreateTablefromIndyMacNOIs()
+
+Dim VFolder, f, fs, fldr, f1, fc, vFile, Vfilename
+Dim VFileTimeDownload, vfiletime As Date
+Dim vtime As String
+Dim rs As RecordSet
+Dim tempName As Variant
+Dim C
+
+VFolder = "\\rvdv-fs01\DataTransfer\IndyMacNOIs"
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set fldr = fs.GetFolder(VFolder)
+Set rs = CurrentDb.OpenRecordset("IndyDocs", dbOpenDynaset, dbSeeChanges)
+f = FreeFile(1)
+
+For Each f1 In fldr.Files
+
+        vFile = f1.name
+      On Error Resume Next
+       
+        With rs
+        .AddNew
+        !DocName = vFile
+        tempName = Split(!DocName, "_")
+        C = Split(!DocName, "_")
+        If UBound(tempName) >= 0 Then
+        !LoanNo = StrConv(C(0), vbProperCase)
+         End If
+        .Update
+        End With
+        
+        vFile = ""
+        Next
+
+  
+End Function
+Public Function CreateTablefromIndyMacWalzImages()
+
+Dim VFolder, f, fs, fldr, f1, fc, vFile, Vfilename
+Dim VFileTimeDownload, vfiletime As Date
+Dim vtime As String
+Dim rs As RecordSet
+Dim tempName As Variant
+Dim C
+
+VFolder = "\\rvdv-fs01\DataTransfer\Walz\Special_Project"
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set fldr = fs.GetFolder(VFolder)
+Set rs = CurrentDb.OpenRecordset("IndyDocsfromWalz", dbOpenDynaset, dbSeeChanges)
+f = FreeFile(1)
+
+For Each f1 In fldr.Files
+
+        vFile = f1.name
+      On Error Resume Next
+       
+        With rs
+        .AddNew
+        !DocName = vFile
+        tempName = Split(!DocName, "_")
+        C = Split(!DocName, "_")
+        If UBound(tempName) >= 0 Then
+        !LoanNo = StrConv(C(0), vbProperCase)
+         End If
+        .Update
+        End With
+        
+        vFile = ""
+        Next
+
+End Function
+
+Public Function NOIBillNewTabs()
+
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmpID As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VType
+Dim VNOICost
+
+VEmpID = ""
+VMailNotes = ""
+VNOICost = 0
+
+If (Forms![foreclosure database screen]!Client Like "Suntrust*" And Forms![foreclosure database screen]!ClientRefNumber Like "068*") Then
+'Or Client() Like "HSBC*" Then
+Else
+
+If NIFile() = "YES" Then
+VEmp = InputBox("Enter Initials for New Invoice Dumping")
+strPL = "Select * from employees where employeeid = " & """" & VEmp & """" & ";"
+Set rsPL = CurrentDb.OpenRecordset(strPL, dbOpenSnapshot)
+If rsPL.EOF Then
+MsgBox ("Incorrect Initials Input, WILL NOT BATCH")
+Exit Function
+Else
+
+If IsNull(rsPL!NewInvoice) Then
+MsgBox ("No New Invoice coding in Employee Screen for initials input, bill WILL NOT BATCH")
+Exit Function
+Else
+VEmpID = rsPL!NewInvoice
+End If
+End If
+
+'VType = 29
+ElseIf IClearFile = "YES" Then
+'VType = "11121"
+End If
+
+End If
+
+
+strsqlCheck = "select * from billing where filenum = " & _
+Forms![foreclosure database screen]!filenum & " and feeothertext = " & """" & "Preparation of MD NOI" & """" & _
+" or l_prepabstract > " & 0 & ";"
+
+Set rsBillCheck = CurrentDb.OpenRecordset(strsqlCheck, dbOpenSnapshot)
+
+VSel = MsgBox("Create new NOI Bill?", vbYesNo)
+If VSel = vbYes Then
+
+VINv = GetAutoNumber("NextBillNum")
+'MsgBox (VInv)
+
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+With rsbill
+.AddNew
+!CustomerID = VINv
+!filenum = Forms![foreclosure database screen]![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+'!feeothertext = "Preparation of MD NOI"
+
+
+VNOICost = 0#
+VNOICost = InputBox("Enter NOI Cost:")
+!l_prepabstract = VNOICost
+
+!prop_reg = 0#
+!estate_cost = 0#
+!estate_adm = 0#
+!dod_search = 0#
+!post_mail_lma = 0#
+!process_service = 0#
+!skip_trace = 0#
+!water = 0#
+!lien_citation_violation = 0#
+
+If Forms![foreclosure database screen]!Client Like "Select*" Then
+!d_servbymail = 0#
+VMail = 0#
+!mailingnotes = "No Mailing Costs"
+
+Else
+Dim VMailLetters
+Dim VMailCert
+Dim VMailFirst
+Dim VMailLetters2
+Dim VMailCert2
+Dim VMailFirst2
+
+VMail = 0#
+VMail = InputBox("Enter Mail Costs:")
+
+!d_servbymail = VMail
+
+If ChaseFile = 1 Then
+
+VMailFirst = InputBox("Cost of First Class Letters:")
+VMailCert = InputBox("Cost of Certified Letters Sent:")
+VMailLetters = InputBox("Number of First Class/Certified Packages Sent:")
+VMailNotes = VMailLetters & " sent First Class Mail at cost of " & Format(VMailFirst, "$###,##0.00") & " per letter.  " & VMailLetters & " letters sent Certified Mail at the cost of " & Format(VMailCert, "$###,##0.00") & " per letter."
+
+Dim VMultiple
+VMultiple = MsgBox("Is there multiple pricing for this letter?", vbYesNo)
+If VMultiple = vbYes Then
+VMailFirst2 = InputBox("2nd Batch: Cost of First Class Letters:")
+VMailCert2 = InputBox("2nd Batch: Cost of Certified Letters Sent:")
+VMailLetters2 = InputBox("2nd Batch: Number of First Class/Certified Packages Sent:")
+VMailNotes = VMailNotes + " and " + VMailLetters2 & " sent First Class Mail at cost of " & Format(VMailFirst2, "$###,##0.00") & " per letter.  " & VMailLetters2 & " letters sent Certified Mail at the cost of " & Format(VMailCert2, "$###,##0.00") & " per letter."
+End If
+
+
+
+!mailingnotes = VMailNotes
+End If
+
+End If
+
+
+'!bill_uploaded = Date
+!created_vdruser_id = VEmpID
+!initials = VEmp
+'!invoice_type_id = VType
+'If NIFile() = "YES" Or IClearFile() = "YES" Then
+'![bill_uploaded] = Date
+'Else
+![printed and sent] = Date
+
+If IClearFile() = "YES" Then
+!IClear_Misc1 = "11121"
+End If
+.Update
+.Close
+End With
+
+Else
+Exit Function
+
+End If
+
+Dim rsNOI As RecordSet
+Dim strsql As String
+
+strsql = "select * from NOI where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rsNOI = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rsNOI.EOF Then
+With rsNOI
+.Edit
+!InvNo = VINv
+
+If Forms![foreclosure database screen]!Client Like "Select P*" Then
+![balance due] = 185
+ElseIf Forms![foreclosure database screen]!Client Like "Financial*" Then
+![balance due] = VMail + 150
+Else
+![balance due] = VMail + 200
+End If
+
+!created_vdruser_id = VEmpID
+.Update
+.Close
+End With
+End If
+
+
+DocName = "bill-email-NOI"
+
+
+VConvRpt = "bill-email-NOI"
+Call ConvertPDFALL
+
+
+If Forms![foreclosure database screen]!Client Like "Suntrust*" And Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+varmailto = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Avelo*" Then
+varmailto = "mary.birdseye@avelomortgage.com; invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+ElseIf Forms![foreclosure database screen]!Client Like "Nations Def*" Then
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+ElseIf Forms![foreclosure database screen]!Client Like "Quantum*" Then
+varmailto = "CSahyer@quantum-servicing.com; invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+Forms![BillingMainEdit]![Sent] = Date
+Else
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+End If
+
+emailsubject = "FC Bill (Preparation of NOI): " & Forms![foreclosure database screen]!Client & "/" & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / Inv#: " & VINv
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.CC = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\bill-email-NOI.PDF"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+If (Forms![foreclosure database screen]!Client Like "Suntrust*" And Forms![foreclosure database screen]!ClientRefNumber Like "068*") _
+Or Client() Like "HSBC*" Then
+Else
+If NIFile() = "YES" Then
+Call ExportNINOI
+ElseIf IClearFile() = "YES" Then
+Call IClearNOI
+End If
+End If
+
+
+'VAddBill = MsgBox("Print Out Bill?")
+
+End Function
+Public Function NOIBill()
+
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmp As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VINv As Long
+Dim VType
+
+If (Forms![foreclosure database screen]!Client Like "Suntrust*" And Forms![foreclosure database screen]!ClientRefNumber Like "068*") Then
+'Or Client() Like "HSBC*" Then
+Else
+If NIFile() = "YES" Then
+VEmp = InputBox("Enter Initials for New Invoice Dumping")
+strPL = "Select * from employees where employeeid = " & """" & VEmp & """" & ";"
+Set rsPL = CurrentDb.OpenRecordset(strPL, dbOpenSnapshot)
+If rsPL.EOF Then
+MsgBox ("Incorrect Initials Input, WILL NOT BATCH")
+Exit Function
+Else
+If IsNull(rsPL!NewInvoice) Then
+MsgBox ("No New Invoice coding in Employee Screen for initials input, bill WILL NOT BATCH")
+Exit Function
+Else
+VEmpID = rsPL!NewInvoice
+End If
+End If
+'VType = 29
+ElseIf IClearFile = "YES" Then
+'VType = "11121"
+End If
+
+End If
+
+
+strsqlCheck = "select * from billing where filenum = " & _
+Forms![foreclosure database screen]!filenum & " and feeothertext = " & """" & "Preparation of MD NOI" & """" & _
+" or l_prepabstract > " & 0 & ";"
+Set rsBillCheck = CurrentDb.OpenRecordset(strsqlCheck, dbOpenSnapshot)
+
+VSel = MsgBox("Create new NOI Bill?", vbYesNo)
+If VSel = vbYes Then
+
+VINv = GetAutoNumber("NextBillNum")
+'MsgBox (VInv)
+
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+With rsbill
+.AddNew
+!CustomerID = VINv
+!filenum = Forms![foreclosure database screen]![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+'!feeothertext = "Preparation of MD NOI"
+If Forms![foreclosure database screen]!Client Like "Select P*" Then
+!l_prepabstract = 185#
+Else
+!l_prepabstract = 200#
+End If
+If Forms![foreclosure database screen]!Client Like "Select*" Then
+!d_servbymail = 0#
+!mailingnotes = "No Mailing Costs"
+Else
+!d_servbymail = CountNoticeTable()
+!mailingnotes = CountTableNotes()
+End If
+'!bill_uploaded = Date
+!created_vdruser_id = VEmpID
+!initials = VEmp
+'!invoice_type_id = VType
+If NIFile() = "YES" Or IClearFile() = "YES" Then
+'![bill_uploaded] = Date
+'Else
+![printed and sent] = Date
+End If
+If IClearFile() = "YES" Then
+!IClear_Misc1 = "11121"
+End If
+
+'Zero Out Billing Monies
+!water = 0#
+!lien_citation_violation = 0#
+!process_service = 0#
+!post_mail_lma = 0#
+!prop_reg = 0#
+!estate_cost = 0#
+!estate_adm = 0#
+!dod_search = 0#
+!skip_trace = 0#
+!d_titlesearch = 0#
+![Attorney Fee] = 0#
+!fee_prepassignment = 0#
+![fee_recassignment] = 0#
+!d_recording = 0#
+!lien_citation_violation = 0#
+!cert_cpy_dot = 0#
+!lit_money1 = 0#
+!skip_trace = 0#
+!auct_NC = 0#
+!forbearance = 0#
+!motion_accept = 0#
+!l_att341 = 0#
+!d_process = 0#
+!re_recording = 0#
+!d_realestatetaxes = 0#
+!d_transfee = 0#
+!water = 0#
+!otherm1 = 0#
+!d_titleins = 0#
+!d_adv = 0#
+!d_auctfee = 0#
+!lit_money1 = 0#
+!d_bondprem = 0#
+!d_liencert = 0#
+!d_filing = 0#
+!l_initial = 0#
+!l_preptitle = 0#
+!d_audfee = 0#
+!d_advnisi = 0#
+!add_court_costs = 0#
+!ps_liencert = 0#
+!otherm2 = 0#
+!otherm10 = 0#
+!fee_dismcase = 0#
+![fee_recpoweratt] = 0#
+!d_reqjud = 0#
+!l_dil = 0#
+!l_appearance = 0#
+!d_titlesearch = 0#
+!l_preppoc = 0#
+!add_court_costs = 0#
+!auct_NC = 0#
+![sheriff_fee] = 0#
+!writ_fee = 0#
+!evicdc_spnq = 0#
+!evicdc_comp = 0#
+!evicdc_usmf = 0#
+!evicmd_mjap = 0#
+!evicmd_pshco = 0#
+!evicdc_sps = 0#
+!evicva_UD = 0#
+!costs1 = 0#
+!costs2 = 0#
+!fees1 = 0#
+.Update
+.Close
+End With
+
+Else
+Exit Function
+
+End If
+
+'Else
+'VInv = rsBillCheck!CustomerID
+'End If
+
+Forms!noi!InvNo = VINv
+If Forms![foreclosure database screen]!Client Like "Select*" Then
+Forms!noi![balance due] = 150
+Else
+Forms!noi![balance due] = CountNoticeTable() + 150
+End If
+
+Forms!noi!created_vdruser_id = VEmpID
+
+'Forms!noi!InvNo.Refresh
+DocName = "bill-email-NOI"
+DoCmd.OpenReport DocName, acViewNormal
+
+
+VConvRpt = "bill-email-NOI"
+Call ConvertPDFALL
+
+
+If Forms![foreclosure database screen]!Client Like "Suntrust*" And Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+varmailto = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Avelo*" Then
+varmailto = "mary.birdseye@avelomortgage.com; invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+ElseIf Forms![foreclosure database screen]!Client Like "Nations Def*" Then
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+ElseIf Forms![foreclosure database screen]!Client Like "Quantum*" Then
+varmailto = "CSahyer@quantum-servicing.com; invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+Forms![BillingMainEdit]![Sent] = Date
+Else
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+End If
+
+emailsubject = "FC Bill (Preparation of NOI): " & Forms![foreclosure database screen]!Client & "/" & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / Inv#: " & VINv
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.CC = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\bill-email-NOI.PDF"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+If (Forms![foreclosure database screen]!Client Like "Suntrust*" And Forms![foreclosure database screen]!ClientRefNumber Like "068*") _
+Or Client() Like "HSBC*" Then
+Else
+If NIFile() = "YES" Then
+Call ExportNINOI
+ElseIf IClearFile() = "YES" Then
+Call IClearNOI
+End If
+End If
+
+
+'VAddBill = MsgBox("Print Out Bill?")
+
+End Function
+Public Function NOIBillWalz()
+
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmp As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VINv As Long
+Dim VType
+
+If (Forms![foreclosure database screen]!Client Like "Suntrust*" And _
+Forms![foreclosure database screen]!ClientRefNumber Like "068*") _
+Or Client() Like "HSBC*" Then
+Else
+
+If NIFile() = "YES" Then
+VEmp = InputBox("Enter Initials for New Invoice Dumping")
+strPL = "Select * from employees where employeeid = " & """" & VEmp & """" & ";"
+Set rsPL = CurrentDb.OpenRecordset(strPL, dbOpenSnapshot)
+If rsPL.EOF Then
+MsgBox ("Incorrect Initials Input, WILL NOT BATCH")
+
+Exit Function
+Else
+
+If IsNull(rsPL!NewInvoice) Then
+MsgBox ("No New Invoice coding in Employee Screen for initials input, bill WILL NOT BATCH")
+Exit Function
+Else
+VEmpID = rsPL!NewInvoice
+End If
+End If
+'VType = 29
+ElseIf IClearFile = "YES" Then
+'VType = "11121"
+End If
+
+End If
+
+
+strsqlCheck = "select * from billing where filenum = " & _
+Forms![noi]!SubFileNum & " and feeothertext = " & """" & "Preparation of MD NOI" & """" & _
+" or l_prepabstract > " & 0 & ";"
+Set rsBillCheck = CurrentDb.OpenRecordset(strsqlCheck, dbOpenSnapshot)
+
+VSel = MsgBox("Create new NOI Bill?", vbYesNo)
+If VSel = vbYes Then
+
+VINv = GetAutoNumber("NextBillNum")
+'MsgBox (VInv)
+
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+With rsbill
+.AddNew
+!CustomerID = VINv
+!filenum = Forms![noi]![SubFileNum]
+!billingdate = Date
+!Category = "Foreclosure"
+'!feeothertext = "Preparation of MD NOI"
+If Forms![foreclosure database screen]!Client Like "Select P*" Then
+!l_prepabstract = 185#
+Else
+!l_prepabstract = 200#
+End If
+!process_service = 0#
+!skip_trace = 0#
+!water = 0#
+!lien_citation_violation = 0#
+
+If Forms![foreclosure database screen]!Client Like "Select*" Then
+!d_servbymail = 0#
+Else
+!d_servbymail = CountNoticeTableWALZ()
+!mailingnotes = CountTablenotesWalz()
+End If
+
+'!bill_uploaded = Date
+!created_vdruser_id = VEmpID
+!initials = VEmp
+'!invoice_type_id = VType
+If NIFile() = "YES" Or IClearFile() = "YES" Then
+![Bill_Uploaded] = Date
+Else
+![printed and sent] = Date
+End If
+If IClearFile() = "YES" Then
+!IClear_Misc1 = "11121"
+End If
+.Update
+.Close
+End With
+
+Else
+Exit Function
+
+End If
+
+'Else
+'VInv = rsBillCheck!CustomerID
+'End If
+
+Forms!noi!InvNo = VINv
+Forms!noi![balance due] = CountNoticeTableWALZ() + 200
+Forms!noi!invoice_type_id = VType
+Forms!noi!created_vdruser_id = VEmpID
+
+'Forms!noi!InvNo.Refresh
+DocName = "bill-email-NOI"
+DoCmd.OpenReport DocName, acViewNormal
+
+'DoCmd.OutputTo acOutputReport, DocName, acFormatRTF, pathuser() & "\FCBill.rtf"
+
+VConvRpt = "bill-email-NOI"
+Call ConvertPDFALL
+
+If Forms![foreclosure database screen]!Client Like "Suntrust*" And Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+varmailto = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Avelo*" Then
+varmailto = "mary.birdseye@avelomortgage.com; invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+ElseIf Forms![foreclosure database screen]!Client Like "Nations Def*" Then
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+Else
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+End If
+
+emailsubject = "FC Bill (Preparation of NOI): " & Forms![foreclosure database screen]!Client & "/" & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / Inv#: " & VINv
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.CC = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\bill-email-NOI.pdf"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+If (Forms![foreclosure database screen]!Client Like "Suntrust*" And Forms![foreclosure database screen]!ClientRefNumber Like "068*") _
+Or Client() Like "HSBC*" Then
+Else
+If NIFile() = "YES" Then
+Call ExportNINOI
+ElseIf IClearFile() = "YES" Then
+Call IClearNOI
+End If
+End If
+
+
+'VAddBill = MsgBox("Print Out Bill?")
+
+End Function
+
+Public Function NOIBillWalzNewTabs()
+
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmp As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VINv As Long
+Dim VType
+
+If (Forms![foreclosure database screen]!Client Like "Suntrust*" And _
+Forms![foreclosure database screen]!ClientRefNumber Like "068*") _
+Or Client() Like "HSBC*" Then
+Else
+
+If NIFile() = "YES" Then
+VEmp = InputBox("Enter Initials for New Invoice Dumping")
+strPL = "Select * from employees where employeeid = " & """" & VEmp & """" & ";"
+Set rsPL = CurrentDb.OpenRecordset(strPL, dbOpenSnapshot)
+If rsPL.EOF Then
+MsgBox ("Incorrect Initials Input, WILL NOT BATCH")
+
+Exit Function
+Else
+
+If IsNull(rsPL!NewInvoice) Then
+MsgBox ("No New Invoice coding in Employee Screen for initials input, bill WILL NOT BATCH")
+Exit Function
+Else
+VEmpID = rsPL!NewInvoice
+End If
+End If
+'VType = 29
+ElseIf IClearFile = "YES" Then
+'VType = "11121"
+End If
+
+End If
+
+
+strsqlCheck = "select * from billing where filenum = " & _
+Forms![NOI Information Screen]!NOITabs.Form!filenum & " and feeothertext = " & """" & "Preparation of MD NOI" & """" & " or l_prepabstract > " & 0 & ";"
+Set rsBillCheck = CurrentDb.OpenRecordset(strsqlCheck, dbOpenSnapshot)
+
+VSel = MsgBox("Create new NOI Bill?", vbYesNo)
+If VSel = vbYes Then
+
+VINv = GetAutoNumber("NextBillNum")
+
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+With rsbill
+.AddNew
+!CustomerID = VINv
+!filenum = Forms![NOI Information Screen]!NOITabs.Form![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+If Forms![foreclosure database screen]!Client Like "Select*" Then
+!l_prepabstract = 185#
+Else
+!l_prepabstract = 200#
+End If
+!process_service = 0#
+!skip_trace = 0#
+!water = 0#
+!lien_citation_violation = 0#
+
+If Forms![foreclosure database screen]!Client Like "Select*" Then
+!d_servbymail = 0#
+Else
+!d_servbymail = CountNoticeTableWALZ()
+!mailingnotes = CountTablenotesWalz()
+End If
+
+'!bill_uploaded = Date
+!created_vdruser_id = VEmpID
+!initials = VEmp
+'!invoice_type_id = VType
+If NIFile() = "YES" Or IClearFile() = "YES" Then
+'![bill_uploaded] = Date
+'Else
+![printed and sent] = Date
+End If
+If IClearFile() = "YES" Then
+!IClear_Misc1 = "11121"
+End If
+.Update
+.Close
+End With
+
+Else
+Exit Function
+
+End If
+
+Dim rsNOI As RecordSet
+Dim strsql As String
+
+strsql = "select * from NOI where subfilenum = " & Forms![NOI Information Screen]!NOITabs.Form!filenum & ";"
+Set rsNOI = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rsNOI.EOF Then
+With rsNOI
+.Edit
+!InvNo = VINv
+![balance due] = CountNoticeTableWALZ() + 200
+!invoice_type_id = VType
+!created_vdruser_id = VEmpID
+.Update
+.Close
+End With
+End If
+
+DocName = "bill-email-NOI"
+DoCmd.OpenReport DocName, acViewNormal
+
+VConvRpt = "bill-email-NOI"
+Call ConvertPDFALL
+
+If Forms![foreclosure database screen]!Client Like "Suntrust*" And Forms![foreclosure database screen]!ClientRefNumber Like "068*" Then
+varmailto = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Avelo*" Then
+varmailto = "mary.birdseye@avelomortgage.com; invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+Else
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+End If
+
+emailsubject = "FC Bill (Preparation of NOI): " & Forms![foreclosure database screen]!Client & "/" & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / Inv#: " & VINv
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.CC = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\bill-email-NOI.pdf"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+If (Forms![foreclosure database screen]!Client Like "Suntrust*" And Forms![foreclosure database screen]!ClientRefNumber Like "068*") _
+Or Client() Like "HSBC*" Then
+Else
+If NIFile() = "YES" Then
+Call ExportNINOI
+ElseIf IClearFile() = "YES" Then
+Call IClearNOI
+End If
+End If
+
+End Function
+
+Public Function ExportNOIMailing()
+
+Dim rs As RecordSet
+Dim rsnotice As RecordSet
+
+Dim strsql As String
+
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+
+Call DebtorsMailingOnly
+
+Set rsnotice = CurrentDb.OpenRecordset("Notices", dbOpenDynaset, dbSeeChanges)
+
+
+Dim rsLienHolders As RecordSet
+Dim strsqlLIEN As String
+strsqlLIEN = "select * from creditors where (noi = " & -1 & " or noi = " & 1 & ") and borrower_owner_add = " & """" & "Borrower" & """" & " and filenum = " & Forms![foreclosure database screen]!filenum
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+
+rsLienHolders.MoveNext
+Loop
+
+End If
+
+rsnotice.Close
+End Function
+
+
+Public Function ExportNOILabels()
+
+Dim VSaleHeld, VNewspaper, VNew1, VNew2 As String
+
+Dim rs, rsnotice, rspropertycounty, rsClient, rsletter As RecordSet
+Dim strsql, sqlpropertycounty, sqlclient, sqlLetter As String
+Dim rsCLT As RecordSet
+Dim strsqlclt As String
+
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsql = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & ";"
+Set rspropertycounty = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsnotice = CurrentDb.OpenRecordset("Notices", dbOpenDynaset, dbSeeChanges)
+
+Call DebtorsPropOnly
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+
+'2nd label
+Call DebtorsPropOnly
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+
+rsnotice.Close
+
+Dim rsnotices As RecordSet
+Dim CntNotices
+CntNotices = 0
+
+Set rsnotices = CurrentDb.OpenRecordset("notices", dbOpenSnapshot)
+Do While Not rsnotices.EOF
+CntNotices = CntNotices + 1
+rsnotices.MoveNext
+Loop
+
+CntNotices = CntNotices / 2
+
+rsnotices.Close
+Set rsnotice = CurrentDb.OpenRecordset("Notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlclt = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsCLT = CurrentDb.OpenRecordset(strsqlclt, dbOpenSnapshot)
+
+If Not rsCLT.EOF Then
+
+    If IsNull(rsCLT!NOIMailing) And IsNull(rsCLT!NOIMailingAddress1) Then
+    MsgBox ("No NOI Mailing address input for " & Forms![foreclosure database screen]!Client)
+    rsCLT.Close
+
+    Else
+
+Dim strsqlfc
+Dim rsfct
+Dim VNoticeToContact
+strsqlfc = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsfct = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+If Not IsNull(rsfct!Noi_Cover_Contact) Then
+VNoticeToContact = "Attn: " & rsfct!Noi_Cover_Contact
+End If
+rsfct.Close
+
+'CntNotices = CntNotices - 1
+
+
+Do While CntNotices > 0
+
+    With rsnotice
+    .AddNew
+    
+    !filenum = Forms![foreclosure database screen]!filenum
+
+    If IsNull(rsCLT!NOIMailing) Then
+    !NoticeTo = VNoticeToContact
+    Else
+    !NoticeTo = rsCLT!NOIMailing
+    End If
+
+    
+    If Not IsNull(rsCLT!NOIMailing) And Not IsNull(VNoticeToContact) Then
+    !NoticeAdd = VNoticeToContact
+    If Not IsNull(rsCLT!NOIMailingAddress2) Then
+    !NoticeAdd2 = rsCLT!NOIMailingAddress1 & ", " & rsCLT!NOIMailingAddress2
+    Else
+    !NoticeAdd2 = rsCLT!NOIMailingAddress1
+    End If
+    End If
+    
+    If Not IsNull(rsCLT!NOIMailingAddress2) And IsNull(VNoticeToContact) Then
+    !NoticeAdd2 = rsCLT!NOIMailingAddress2
+    End If
+    
+    !NoticeCSZ = rsCLT![NOICity] & ", " & rsCLT![NOIState] & "  " & rsCLT![NOIZip]
+    !extra = "LMC"
+    .Update
+    End With
+    
+      With rsnotice
+    .AddNew
+    If IsNull(rsCLT!NOIMailing) Then
+    !NoticeTo = VNoticeToContact
+    Else
+    !NoticeTo = rsCLT!NOIMailing
+    End If
+    
+    !filenum = Forms![foreclosure database screen]!filenum
+    If IsNull(rsCLT!NOIMailing) Then
+    !NoticeTo = VNoticeToContact
+    Else
+    !NoticeTo = rsCLT!NOIMailing
+    End If
+
+    
+    If Not IsNull(rsCLT!NOIMailing) And Not IsNull(VNoticeToContact) Then
+    !NoticeAdd = VNoticeToContact
+    If Not IsNull(rsCLT!NOIMailingAddress2) Then
+    !NoticeAdd2 = rsCLT!NOIMailingAddress1 & ", " & rsCLT!NOIMailingAddress2
+    Else
+    !NoticeAdd2 = rsCLT!NOIMailingAddress1
+    End If
+    End If
+    
+    If Not IsNull(rsCLT!NOIMailingAddress2) And IsNull(VNoticeToContact) Then
+    !NoticeAdd2 = rsCLT!NOIMailingAddress2
+    End If
+    
+    !NoticeCSZ = rsCLT![NOICity] & ", " & rsCLT![NOIState] & "  " & rsCLT![NOIZip]
+    !extra = "LMC"
+    .Update
+    End With
+CntNotices = CntNotices - 1
+Loop
+
+End If
+
+End If
+
+
+Dim rsLienHolders As RecordSet
+Dim strsqlLIEN As String
+strsqlLIEN = "select * from creditors where (noi = " & -1 & " or noi = " & 1 & ") and filenum = " & Forms![foreclosure database screen]!filenum
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or _
+Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+.Update
+End With
+
+rsLienHolders.MoveNext
+Loop
+
+End If
+
+
+
+rsnotice.Close
+End Function
+
+Public Function ExportNOI()
+
+Dim VSaleHeld, VNewspaper, VNew1, VNew2 As String
+
+Dim rs, rsnotice, rspropertycounty, rsClient, rsletter As RecordSet
+Dim strsql, sqlpropertycounty, sqlclient, sqlLetter As String
+Dim rsCLT As RecordSet
+Dim strsqlclt As String
+
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsql = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & ";"
+Set rspropertycounty = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsnotice = CurrentDb.OpenRecordset("Notices", dbOpenDynaset, dbSeeChanges)
+
+Call DebtorsPropOnly
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+
+rsnotice.Close
+
+Dim rsnotices As RecordSet
+Dim CntNotices
+CntNotices = 0
+
+Set rsnotices = CurrentDb.OpenRecordset("notices", dbOpenSnapshot)
+Do While Not rsnotices.EOF
+CntNotices = CntNotices + 1
+rsnotices.MoveNext
+Loop
+
+rsnotices.Close
+Set rsnotice = CurrentDb.OpenRecordset("Notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlclt = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsCLT = CurrentDb.OpenRecordset(strsqlclt, dbOpenSnapshot)
+
+If Not rsCLT.EOF Then
+
+    If IsNull(rsCLT!NOIMailing) And IsNull(rsCLT!NOIMailingAddress1) Then
+    MsgBox ("No NOI Mailing address input for " & Forms![foreclosure database screen]!Client)
+    rsCLT.Close
+
+    Else
+
+Dim strsqlfc
+Dim rsfct
+Dim VClient1, VClient2, VCLient3
+
+strsqlfc = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsfct = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+If Not IsNull(rsfct!noi_env_address) Then
+VClient1 = rsfct!noi_env_address
+VCLient3 = rsfct!noi_env_csz
+End If
+If Not IsNull(rsfct!noi_env_address2) Then
+VClient2 = rsfct!noi_env_address2
+Else
+VClient2 = ""
+End If
+
+rsfct.Close
+
+'CntNotices = CntNotices - 1
+
+
+Do While CntNotices > 0
+
+    With rsnotice
+    .AddNew
+    
+    !NoticeTo = rsCLT!NOIMailing
+    !filenum = Forms![foreclosure database screen]!filenum
+    
+    If VClient1 = "" Or IsNull(VClient1) Then
+    !NoticeAdd = rsCLT!NOIMailingAddress1
+    
+    If rsCLT!NOIMailingAddress2 <> "" Then
+    !NoticeAdd2 = rsCLT!NOIMailingAddress2
+    End If
+    !NoticeCSZ = rsCLT![NOICity] & ", " & rsCLT![NOIState] & "  " & rsCLT![NOIZip]
+    
+    
+    Else
+    !NoticeAdd = VClient1
+    !NoticeAdd2 = VClient2
+    !NoticeCSZ = VCLient3
+    
+    End If
+    
+    !extra = "LMC"
+    .Update
+    End With
+    
+      With rsnotice
+    .AddNew
+    
+    !NoticeTo = rsCLT!NOIMailing
+    !filenum = Forms![foreclosure database screen]!filenum
+    
+    If VClient1 = "" Or IsNull(VClient1) Then
+    !NoticeAdd = rsCLT!NOIMailingAddress1
+    
+    If rsCLT!NOIMailingAddress2 <> "" Then
+    !NoticeAdd2 = rsCLT!NOIMailingAddress2
+    End If
+    !NoticeCSZ = rsCLT![NOICity] & ", " & rsCLT![NOIState] & "  " & rsCLT![NOIZip]
+    
+    
+    Else
+    !NoticeAdd = VClient1
+    !NoticeAdd2 = VClient2
+    !NoticeCSZ = VCLient3
+    
+    End If
+    
+    !extra = "LMC"
+    .Update
+    End With
+    
+CntNotices = CntNotices - 1
+Loop
+
+End If
+
+End If
+
+
+Dim rsLienHolders As RecordSet
+Dim strsqlLIEN As String
+strsqlLIEN = "select * from creditors where (noi = " & -1 & " or noi = " & 1 & ") and filenum = " & Forms![foreclosure database screen]!filenum
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or _
+Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+.Update
+End With
+
+rsLienHolders.MoveNext
+Loop
+
+End If
+
+
+
+rsnotice.Close
+End Function
+Public Function NOIBulkMailings()
+ 
+Dim rs As RecordSet
+
+strsql = "select * from [NOI-BULK] where processed is null or processed = " & 0 & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+MsgBox ("All files have been processed for NOI Bulk Letters.")
+
+Exit Function
+End If
+
+
+MsgBox ("Data Tables will be created. Make sure the Mailing field is checked if billing address does not match property address.  Put a number 1 in mailing field to determine for queries.")
+DoCmd.RunMacro ("NOIBulkQRY")
+VPrt = InputBox("PREVIEW NOI Letters or PRINT NOI Letters directly to Printer (Canon7105-Gemini)." & vbCr & "Type in PRINT or PREVIEW to continue")
+
+If VPrt = "PREVIEW" Then
+DoCmd.RunMacro ("NOIBulkBorrowers-PREVIEW")
+ElseIf VPrt = "PRINT" Then
+DoCmd.RunMacro ("NOIBulkBorrowers-PRINT")
+Else
+MsgBox ("Must type entire work: PREVIEW or PRINT")
+End If
+
+VComm = MsgBox("Continue on to print out Commissioner Letters?", vbYesNo)
+If VComm = vbYes Then
+VPrt = InputBox("PREVIEW Commissioner Letters or PRINT Commissioner Letters directly to Printer (Canon7105-Gemini)." & vbCr & "Type in PRINT or PREVIEW to continue")
+If VPrt = "PREVIEW" Then
+DoCmd.RunMacro ("NOIBulkComm-PREVIEW")
+ElseIf VPrt = "PRINT" Then
+DoCmd.RunCommand ("NOIBulkCOmm-PRINT")
+Else
+MsgBox ("Must type entire work: PREVIEW or PRINT")
+End If
+End If
+
+Call NOIBulkMarkComplete
+
+
+'Docmd SetWarnings True
+End Function
+Public Function NOIBulkMarkComplete()
+VComplete = InputBox("Mark all Letters as COMPLETE in NOI Bulk Table? TYPE in YES or NO")
+If VComplete = "YES" Then
+DoCmd.OpenQuery ("NOIBulkPROCESSED")
+End If
+End Function
+Public Function ExportNINOIBULK()
+Dim VMail
+Dim VMailCert
+Dim VBillMail
+Dim VMailTotal
+Dim VINv
+Dim Vcnt As Double
+Dim rs As RecordSet
+Dim rsni As RecordSet
+Dim rsLI As RecordSet
+VDump = InputBox("Send all Unprocessed Letters to New Invoice and Bill?  Type in YES or NO")
+If VDump = "YES" Then
+
+Set rsni = CurrentDb.OpenRecordset("NewInvoice Table", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+Set rs = CurrentDb.OpenRecordset("NOI-BulkNotProcessed", dbOpenDynaset, dbSeeChanges)
+Set rsbill = CurrentDb.OpenRecordset("BillingNOIBulk", dbOpenDynaset, dbSeeChanges)
+Dim VMailComm
+
+VMailTotal = 0
+VMailCert = 0
+VMail = 0
+VMailComm = 0
+
+Do While Not rs.EOF
+
+Vcnt = 1
+If rs!mailing = 1 Or rs!mailing = -1 Then
+Vcnt = Vcnt + 1
+End If
+
+If rs!secondDebtor <> "" Then
+If rs!mailing = 1 Or rs!mailing = -1 Then
+Vcnt = Vcnt + 2
+Else
+Vcnt = Vcnt + 1
+End If
+End If
+
+If rs!thirddebtor <> "" Then
+If rs!mailing = 1 Or rs!mailing = -1 Then
+Vcnt = Vcnt + 2
+Else
+Vcnt = Vcnt + 1
+End If
+End If
+
+VMail = ((Vcnt) * 3.54) + ((Vcnt) * 0.44)
+VMailCert = VMailCert + ((Vcnt) * 3.54)
+VMailTotal = VMailTotal + VMail
+VMailComm = VMailComm + ((Vcnt) * 0.44)
+
+VINv = rs!ID + 3000000
+
+With rsni
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![Vendor ID] = "BIERMAN"
+![Invoice Number] = VINv
+![Invoice Date] = Date
+![Invoice Type] = "14"
+![Invoice Amount] = VMail + 200
+![Servicer ID] = "668"
+![Loan Number] = rs!LoanNo
+![Created by Vendor User ID] = "Cward"
+![Department ID] = "FC"
+![BK State] = "MD"
+![Judicial Indicator] = "N"
+![Invoice Level Comment] = "Preparation of MD NOI"
+![Borrower Name] = UCase(rs![firstdebtor])
+![Property Address 1] = rs![PropAddress]
+![Property City] = rs!PropertyCity
+![Property County] = rs!Propertycounty
+![Property State] = rs!PropertyState
+![Property Zipcode] = rs!propzip
+![Property Zipcode Suffix] = ""
+![Referral Date] = rs![noi_prepared]
+![BK Chapter] = ""
+![BK Case Number] = ""
+![BK Filed After Sale] = ""
+![BK Loan Current When Filed] = ""
+![BK Collateral Investment Property] = ""
+![BK Services Post-Confirmation] = ""
+![FC Sale Date] = Vsale
+![FC Sale Held Reason] = "X"
+![FC Sale Held Indicator] = ""
+![Legal Action Date] = Date
+![Vendor Reference Number] = rs!ID
+![BK Services Pre-Confirmation] = ""
+![MFR Filed Date] = ""
+![BK Disposition] = ""
+![Date BK Filed] = ""
+![Writ Issued Date] = ""
+![Writ Issued Date] = ""
+!endofrecord = "X"
+.Update
+End With
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![INVOICE #] = VINv
+If rsClient!OrganizationName Like "PNC*" Then
+![Line Item] = "7.59"
+Else
+![Line Item] = 4.7
+End If
+![Line Item Date] = Date
+![Qty] = 1
+!Note = ""
+!Price = VMail
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = VINv
+If rsClient!OrganizationName Like "PNC*" Then
+![Line Item] = "23.66"
+ElseIf rsClient!OrganizationName Like "Seter*" Then
+![Line Item] = "1.126"
+Else
+![Line Item] = "1.65"
+End If
+![Line Item Date] = Date
+![Qty] = 1
+!Note = "Preparation of MD NOI"
+!Price = 200#
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+
+'Billing Add
+
+With rsbill
+.AddNew
+!CustomerID = VINv
+!filenum = rs![ID]
+!billingdate = Date
+!Category = "Foreclosure"
+!l_prepabstract = 200#
+!d_servbymail = VMail
+'!bill_uploaded = Date
+!created_vdruser_id = "Cward"
+!initials = "cmw"
+.Update
+End With
+
+rs.MoveNext
+Loop
+
+Call NOIBulkBillUpdate
+
+MsgBox ("Total amount to Billing: " & Format(VMailTotal, "$###,##0.00") & _
+vbCr & "Total Amount Certs/1st: " & Format(VMailCert, "$###,##0.00") & _
+vbCr & "Total Amount Comm Ltr: " & Format(VMailComm, "$###,##0.00"))
+
+End If
+
+End Function
+Public Function NOITotalCHECK()
+Dim VMail
+Dim VMailCert
+Dim VBillMail
+Dim VMailTotal
+Dim VINv
+Dim Vcnt As Double
+Dim rs As RecordSet
+Dim rsni As RecordSet
+Dim rsLI As RecordSet
+
+Set rsni = CurrentDb.OpenRecordset("NewInvoice Table", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+Set rs = CurrentDb.OpenRecordset("NOI-BulkNotProcessed", dbOpenDynaset, dbSeeChanges)
+Set rsbill = CurrentDb.OpenRecordset("BillingNOIBulk", dbOpenDynaset, dbSeeChanges)
+Dim VMailComm
+
+VMailTotal = 0
+VMailCert = 0
+VMail = 0
+VMailComm = 0
+
+Do While Not rs.EOF
+
+Vcnt = 1
+If rs!mailing = 1 Or rs!mailing = -1 Then
+Vcnt = Vcnt + 1
+End If
+
+If rs!secondDebtor <> "" Then
+If rs!mailing = 1 Or rs!mailing = -1 Then
+Vcnt = Vcnt + 2
+Else
+Vcnt = Vcnt + 1
+End If
+End If
+
+If rs!thirddebtor <> "" Then
+If rs!mailing = 1 Or rs!mailing = -1 Then
+Vcnt = Vcnt + 2
+Else
+Vcnt = Vcnt + 1
+End If
+End If
+
+VMail = ((Vcnt) * 3.54) + ((Vcnt) * 0.44)
+VMailCert = VMailCert + ((Vcnt) * 3.54)
+VMailTotal = VMailTotal + VMail
+VMailComm = VMailComm + ((Vcnt) * 0.44)
+rs.MoveNext
+Loop
+
+Dim VCntLtrs
+
+VCntLtrs = NOIBulkCountLtrs()
+
+
+MsgBox ("Total amount to Billing: " & Format(VMailTotal, "$###,##0.00") & _
+vbCr & "Total Amount Certs/1st: " & Format(VMailCert, "$###,##0.00") & _
+vbCr & "Total Amount Comm Ltr: " & Format(VMailComm, "$###,##0.00") & _
+vbCr & "Total Ltrs x Cert/1st Class: " & VCntLtrs & " x 3.54 = " & VCntLtrs * 3.54 & _
+vbCr & "Total Comm Ltrs x 1st Class: " & VCntLtrs & " x .44 = " & VCntLtrs * 0.44 & _
+vbCr & "1st Line Should Match: " & (VCntLtrs * 3.54) + (VCntLtrs * 0.44))
+
+End Function
+Public Function NOIBulkBillUpdate()
+VUp = InputBox("Update Billing information on Letters dumped to Walz?  Type in YES or NO")
+If VUp = "YES" Then
+DoCmd.OpenQuery ("NOIBulkBillUpdate")
+End If
+
+
+End Function
+Public Function NOIBulkCountLtrs()
+Dim VCt
+Dim rs As RecordSet
+VCt = DCount("[id]", "noi-bulkQUERY")
+VCt = VCt + DCount("[id]", "noibulkmailing")
+VCt = VCt + DCount("[id]", "noibulk2nd")
+VCt = VCt + DCount("[id]", "noibulkmailing2ndmailing")
+VCt = VCt + DCount("[id]", "noibulk3rd")
+VCt = VCt + DCount("[id]", "noibulkmailing3rdmailing")
+
+NOIBulkCountLtrs = VCt
+MsgBox (NOIBulkCountLtrs & " Letters")
+
+End Function
+Public Function NOIBulkUpdateReferral()
+'Update Debtor/Owner Names into first and last
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("NOI-Indy-New", dbOpenDynaset, dbSeeChanges)
+Dim tempName As Variant
+Dim C
+
+Do While Not rs.EOF
+If Not IsNull(rs!secondDebtor) Then
+With rs
+.Edit
+tempName = Split(rs!secondDebtor, " ")
+C = Split(rs!secondDebtor, " ")
+If UBound(tempName) = 2 Then
+!Second_first = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase)
+!second_last = StrConv(C(2), vbProperCase)
+ElseIf UBound(tempName) = 1 Then
+!Second_first = StrConv(C(0), vbProperCase)
+!second_last = StrConv(C(1), vbProperCase)
+End If
+.Update
+End With
+End If
+
+If Not IsNull(rs!thirddebtor) Then
+With rs
+.Edit
+tempName = Split(rs!thirddebtor, " ")
+C = Split(rs!thirddebtor, " ")
+If UBound(tempName) = 2 Then
+!third_first = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase)
+!third_last = StrConv(C(2), vbProperCase)
+ElseIf UBound(tempName) = 1 Then
+!third_first = StrConv(C(0), vbProperCase)
+!third_last = StrConv(C(1), vbProperCase)
+End If
+.Update
+End With
+End If
+
+If Not IsNull(rs!owner1) Then
+With rs
+.Edit
+tempName = Split(rs!owner1, " ")
+C = Split(rs!owner1, " ")
+If UBound(tempName) = 2 Then
+!owner1_first = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase)
+!owner1_last = StrConv(C(2), vbProperCase)
+ElseIf UBound(tempName) = 1 Then
+!owner1_first = StrConv(C(0), vbProperCase)
+!owner1_last = StrConv(C(1), vbProperCase)
+End If
+.Update
+End With
+End If
+
+
+If Not IsNull(rs!owner2) Then
+With rs
+.Edit
+tempName = Split(rs!owner2, " ")
+C = Split(rs!owner2, " ")
+If UBound(tempName) = 2 Then
+!owner2_first = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase)
+!owner2_last = StrConv(C(2), vbProperCase)
+ElseIf UBound(tempName) = 1 Then
+!owner2_first = StrConv(C(0), vbProperCase)
+!owner2_last = StrConv(C(1), vbProperCase)
+End If
+.Update
+End With
+End If
+
+rs.MoveNext
+Loop
+rs.Close
+
+
+'Updates Mailing/SDAT/Secured Party/OrgLender/OrgLender Lic/NOI Sent
+DoCmd.RunMacro ("IM-Update")
+
+
+End Function
+
+Public Function NOIBulkNameChange()
+'Update IndyMac Client Name
+DoCmd.OpenQuery ("NOIBulkUPDATEServicer")
+
+'Update Debtor Names when LAST First Middle (still need to check out if there are any with 4 or 5 names)
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("NOI-BulkALL", dbOpenDynaset, dbSeeChanges)
+Do While Not rs.EOF
+With rs
+.Edit
+Dim tempName As Variant
+Dim C
+tempName = Split(rs!firstdebtor, " ")
+C = Split(rs!firstdebtor, " ")
+If UBound(tempName) = 2 Then
+!firstdebtor = StrConv(C(1), vbProperCase) & " " & StrConv(C(2), vbProperCase) & " " & StrConv(C(0), vbProperCase)
+ElseIf UBound(tempName) = 1 Then
+!firstdebtor = StrConv(C(1), vbProperCase) & " " & StrConv(C(0), vbProperCase)
+End If
+.Update
+End With
+rs.MoveNext
+Loop
+rs.Close
+
+End Function
+Public Function NOIBulkAddressChange()
+'Update Addresses when one line
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("NOI-BulkALL", dbOpenDynaset, dbSeeChanges)
+Do While Not rs.EOF
+With rs
+.Edit
+Dim tempCtySt As Variant
+Dim C
+tempCtySt = Split(rs!PropAddress, " ")
+C = Split(rs!PropAddress, " ")
+If UBound(tempCtySt) = 4 Then
+!PropertyCity = StrConv(C(2), vbProperCase)
+!propzip = StrConv(C(4), vbProperCase)
+!PropAddress = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase)
+
+ElseIf UBound(tempCtySt) = 5 Then
+!PropertyCity = StrConv(C(3), vbProperCase)
+!propzip = StrConv(C(5), vbProperCase)
+!PropAddress = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase) & " " & StrConv(C(2), vbProperCase)
+
+ElseIf UBound(tempCtySt) = 6 Then
+!PropertyCity = StrConv(C(4), vbProperCase)
+!propzip = StrConv(C(6), vbProperCase)
+!PropAddress = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase) & " " & StrConv(C(2), vbProperCase) & " " & StrConv(C(3), vbProperCase)
+
+ElseIf UBound(tempCtySt) = 7 Then
+!PropertyCity = StrConv(C(4), vbProperCase) & " " & StrConv(C(5), vbProperCase)
+!propzip = StrConv(C(7), vbProperCase)
+!PropAddress = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase) & " " & StrConv(C(2), vbProperCase) & " " & StrConv(C(3), vbProperCase)
+
+End If
+
+.Update
+End With
+rs.MoveNext
+Loop
+rs.Close
+
+End Function
+Public Function NOIBulkAddressChangeMAILING()
+'Update Addresses when one line
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("NOI-BulkALL", dbOpenDynaset, dbSeeChanges)
+Do While Not rs.EOF
+If rs!mailing = 1 Or rs!mailing = -1 Then
+With rs
+.Edit
+Dim tempCtySt As Variant
+Dim C
+tempCtySt = Split(rs![Billing Address], " ")
+C = Split(rs![Billing Address], " ")
+If UBound(tempCtySt) = 4 Then
+![Billing City] = StrConv(C(2), vbProperCase)
+![Billing Zip] = StrConv(C(4), vbProperCase)
+![BILLING STATE] = StrConv(C(3), vbProperCase)
+![Billing Address] = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase)
+
+ElseIf UBound(tempCtySt) = 5 Then
+![Billing City] = StrConv(C(3), vbProperCase)
+![Billing Zip] = StrConv(C(5), vbProperCase)
+![BILLING STATE] = StrConv(C(4), vbProperCase)
+![Billing Address] = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase) & " " & StrConv(C(2), vbProperCase)
+
+ElseIf UBound(tempCtySt) = 6 Then
+![Billing City] = StrConv(C(4), vbProperCase)
+![BILLING STATE] = StrConv(C(5), vbProperCase)
+![Billing Zip] = StrConv(C(6), vbProperCase)
+![Billing Address] = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase) & " " & StrConv(C(2), vbProperCase) & " " & StrConv(C(3), vbProperCase)
+
+ElseIf UBound(tempCtySt) = 7 Then
+![Billing City] = StrConv(C(4), vbProperCase) & " " & StrConv(C(5), vbProperCase)
+![BILLING STATE] = StrConv(C(6), vbProperCase)
+![Billing Zip] = StrConv(C(7), vbProperCase)
+![Billing Address] = StrConv(C(0), vbProperCase) & " " & StrConv(C(1), vbProperCase) & " " & StrConv(C(2), vbProperCase) & " " & StrConv(C(3), vbProperCase)
+
+End If
+
+.Update
+End With
+
+End If
+
+rs.MoveNext
+Loop
+rs.Close
+
+End Function
+
+
+

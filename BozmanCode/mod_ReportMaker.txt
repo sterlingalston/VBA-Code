@@ -1,0 +1,280 @@
+Attribute VB_Name = "ReportMaker"
+Option Compare Database
+
+'populates table for all fields in every form
+Sub ReportFormPopulate()
+
+Dim i As Integer
+Dim ctrl As Integer
+Dim ctrlct As Integer
+
+Call WarningsNowFalse
+CurrentDb.Execute ("delete from ReportMakertbl")
+
+For i = 0 To CurrentProject.AllForms.Count - 1
+   
+    DoCmd.OpenForm CurrentProject.AllForms(i).name, acDesign
+        
+        Call FormReportAuditwoData(Forms(CurrentProject.AllForms(i).name))
+    
+    DoCmd.Close acForm, CurrentProject.AllForms(i).name
+
+Next i
+
+End Sub
+
+Sub FormReportAuditwoData(currentForm As Form)
+
+Dim i As Integer
+Dim ctrl As Integer
+Dim ctrlct As Integer
+ 
+' Set currentForm = Screen.ActiveForm.Controls("ForeclosureSubForm").Form
+    
+
+    ctrlct = currentForm.Controls.Count - 1
+    
+    For ctrl = 0 To ctrlct
+    If (currentForm.Controls(ctrl).ControlType = acCheckBox _
+    Or currentForm.Controls(ctrl).ControlType = acComboBox _
+    Or currentForm.Controls(ctrl).ControlType = acTextBox _
+    Or currentForm.Controls(ctrl).ControlType = acOptionButton _
+    Or currentForm.Controls(ctrl).ControlType = acOptionGroup _
+    Or currentForm.Controls(ctrl).ControlType = acToggleButton _
+    Or currentForm.Controls(ctrl).ControlType = acListBox _
+    ) _
+    And currentForm.Controls(ctrl).Visible Then
+    'acCheckBox* or acComboBox* or acOptionButton* or acOptionGroup* or acTextBox* or acToggleButton* or acListBox
+   On Error Resume Next
+
+                 CurrentDb.Execute ("insert Into ReportMakertbl (formname,recordsource,controlname,controllabel,controlsource) values(" & """" & _
+                    Trim(currentForm.name) & """" & "," & _
+                    """" & Trim(currentForm.recordsource) & """" & "," & _
+                    """" & Trim(currentForm.Controls(ctrl).name) & """" & "," & _
+                    """" & Replace(Trim(GetCtrlLabel(currentForm.Controls(ctrl))), """", "") & """" & "," & _
+                    """" & Replace(Trim(currentForm.Controls(ctrl).ControlSource), """", "") & """" & _
+                    ")")
+            End If
+        'gets access to controls in subform
+        If currentForm.Controls(ctrl).ControlType = acSubform And currentForm.Controls(ctrl).Visible Then FormReportAudit (currentForm.Controls(ctrl).Form)
+    Next ctrl
+    
+
+End Sub
+
+Public Function getdatasourcetype(dsource As String)
+
+On Error GoTo handler
+
+If dIsQuery(dsource) Then
+    getdatasourcetype = "Query"
+    Exit Function
+ElseIf dIsTable(dsource) Then
+    getdatasourcetype = "Table"
+    Exit Function
+End If
+
+Exit Function
+
+handler:
+
+getdatasourcetype = Null
+
+End Function
+
+Public Function dIsQuery(dsource As String) As Boolean
+
+On Error GoTo handler
+
+If CurrentDb.QueryDefs(dsource).name = dsource Then dIsQuery = True
+
+Exit Function
+
+handler:
+
+dIsQuery = False
+
+End Function
+
+Public Function dIsTable(dsource As String) As Boolean
+
+On Error GoTo handler
+
+If CurrentDb.TableDefs(dsource).name = dsource Then dIsTable = True
+
+Exit Function
+
+handler:
+
+dIsTable = False
+
+End Function
+
+'generates the sql to make a report
+Sub ReportSQLGen()
+
+Dim rs, rsDSources As RecordSet
+Set rs = CurrentDb.OpenRecordset("select * from CustomReportQry", dbOpenSnapshot)
+Dim selectionstr As String
+Dim dsourcecnt As Integer
+Dim needsJOIN As Boolean
+Dim priority As Integer
+ReDim priorities(0) As Integer
+Dim maxpriority As Integer
+Dim i As Integer
+Dim tbltoLEFTJOIN As String
+Dim fieldtoLEFTJOIN As String
+Dim joinstr As String
+Dim reportqry As String
+Dim criteriastr As String
+selectionstr = "select "
+
+'gets fields to select
+
+Do While Not rs.EOF
+
+    selectionstr = selectionstr & "[" & rs.Fields("recordsource").Value & "]." & "[" & rs.Fields("fieldname").Value & "] as " & "[" & rs.Fields("controllabel") & "]" & ", "
+    rs.MoveNext
+
+Loop
+
+rs.Close
+Set rs = Nothing
+selectionstr = Left$(selectionstr, Len(selectionstr) - 2)
+
+
+'getting the record source
+
+selectionstr = selectionstr & " from "
+
+'MsgBox selectionstr
+
+Set rs = CurrentDb.OpenRecordset("select distinct RecordSource from CustomReportQry", dbOpenSnapshot)
+'Set rsDSources = CurrentDb.OpenRecordset("select * RecordSource from CustomReportQry", dbopensnapshot)
+dsourcecnt = rs.RecordCount
+
+'if needs a join
+If dsourcecnt > 1 Then needsJOIN = True
+
+'gets the main dataset for a LEFT JOIN
+If needsJOIN Then
+Do While Not rs.EOF
+
+    priority = DLookup("priority", "reportmakertablespkeys", "tablename = " & """" & rs.Fields("recordsource").Value & """")
+    ReDim Preserve priorities(i)
+    priorities(i) = priority
+    i = i + 1
+    rs.MoveNext
+Loop
+
+maxpriority = priorities(0)
+
+For i = 0 To UBound(priorities)
+    If priorities(i) < maxpriority Then maxpriority = priorities(i)
+Next i
+
+tbltoLEFTJOIN = "[" & DLookup("tablename", "reportmakertablespkeys", "priority = " & maxpriority) & "]"
+fieldtoLEFTJOIN = "[" & DLookup("pkeyoftable", "reportmakertablespkeys", "priority = " & maxpriority) & "]"
+    
+
+
+joinstr = tbltoLEFTJOIN & " inner join " '& tbltoLEFTJOIN & "." & fieldtoLEFTJOIN
+    
+rs.MoveFirst
+i = 0
+Do While Not rs.EOF
+i = i + 1
+
+'If rs.Fields("recordsource").Value <> Trim$(Replace(Replace(tbltoLEFTJOIN, "[", ""), "]", "")) Then
+If i = 1 Then
+joinstr = "" & joinstr & " " & "[" & rs.Fields("recordsource").Value & "] on " & tbltoLEFTJOIN & "." & fieldtoLEFTJOIN & _
+    " = " & "[" & rs.Fields("recordsource").Value & "]" & _
+     "." & "[" & DLookup("pkeyoftable", "reportmakertablespkeys", "tablename = " & """" & rs.Fields("recordsource").Value & """") & "]" & ""
+Else
+'changed to left join 2/4/15 - M.A.
+    joinstr = "(" & joinstr & ") left join " & rs.Fields("recordsource").Value & " on " & tbltoLEFTJOIN & "." & _
+        fieldtoLEFTJOIN & " = " & _
+         "[" & rs.Fields("recordsource").Value & "]" & _
+        "." & "[" & DLookup("pkeyoftable", "reportmakertablespkeys", "tablename = " & """" & rs.Fields("recordsource").Value & """") & "]"
+End If
+
+'End If
+
+rs.MoveNext
+
+Loop
+
+
+joinstr = Replace(joinstr, "(" & tbltoLEFTJOIN & " inner join  " & tbltoLEFTJOIN & " on " & _
+    tbltoLEFTJOIN & "." & fieldtoLEFTJOIN & " = " & tbltoLEFTJOIN & "." & fieldtoLEFTJOIN & ")", tbltoLEFTJOIN)
+Else
+
+
+joinstr = rs.Fields("recordsource").Value
+
+End If
+
+reportqry = selectionstr & joinstr
+
+rs.Close
+Set rs = Nothing
+'adding criteria
+
+'getting text parameters
+Set rs = CurrentDb.OpenRecordset("select textparameters from customreportqry where textparameters is not null", dbOpenSnapshot)
+
+Do While Not rs.EOF
+    criteriastr = criteriastr & "(" & rs.Fields("textparameters").Value & ") AND "
+    rs.MoveNext
+Loop
+
+rs.Close
+Set rs = Nothing
+
+'getting date parameters
+Set rs = CurrentDb.OpenRecordset("select dateparameters from customreportqry where dateparameters is not null", dbOpenSnapshot)
+
+Do While Not rs.EOF
+    criteriastr = criteriastr & "(" & rs.Fields("dateparameters").Value & ") AND "
+    rs.MoveNext
+Loop
+
+rs.Close
+Set rs = Nothing
+
+'getting number parameters
+Set rs = CurrentDb.OpenRecordset("select numberparameters from customreportqry where numberparameters is not null", dbOpenSnapshot)
+
+Do While Not rs.EOF
+    criteriastr = criteriastr & "(" & rs.Fields("numberparameters").Value & ") AND "
+    rs.MoveNext
+Loop
+
+rs.Close
+Set rs = Nothing
+
+'getting null parameters
+Set rs = CurrentDb.OpenRecordset("select NullParameters from customreportqry where NullParameters is not null", dbOpenSnapshot)
+
+Do While Not rs.EOF
+    criteriastr = criteriastr & "(" & rs.Fields("NullParameters").Value & ") AND "
+    rs.MoveNext
+Loop
+
+rs.Close
+Set rs = Nothing
+
+
+If Len(criteriastr) > 5 And IsNull(criteriastr) = False And criteriastr <> "" Then
+    criteriastr = Trim(Left(criteriastr, Len(criteriastr) - 5))
+    reportqry = reportqry & " where " & criteriastr
+End If
+'Debug.Print reportqry
+CurrentDb.QueryDefs("CustomReportFinalQry").sql = reportqry
+
+'export query
+ExcelSaveAsQRY ("CustomReportFinalQry")
+
+End Sub
+
+

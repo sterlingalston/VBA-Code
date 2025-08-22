@@ -1,0 +1,309 @@
+Attribute VB_Name = "AffsAnnDocs"
+Option Compare Database
+Public Function DocsTempUPDATEAffs()
+
+
+Dim rs As RecordSet
+Dim affspendingBULK
+
+
+Set rs = CurrentDb.OpenRecordset("DocsTemp", dbOpenDynaset, dbSeeChanges)
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+If Not IsNull(rs!pre_docket_court) Or Not IsNull(rs!final_docket_court) Then
+
+    affspendingBULK = affspendingBULK & " " & IIf(Not IsNull(rs![pre_docket_court]) And IsNull(rs!final_docket_court), "Prelim Docket Filed,", "")
+    affspendingBULK = affspendingBULK & " " & IIf(Not IsNull(rs![final_docket_court]), "Final Docket Filed,", "")
+    affspendingBULK = affspendingBULK & " " & IIf(Not IsNull(rs![pre_docket_court]) And Not IsNull(rs!final_LMA_Court) And IsNull(rs!FAff_Retd), "Pending Final FLMA,", "")
+
+
+ElseIf IsNull(rs![noi_sent]) Then
+affspendingBULK = "NOI-Pending"
+Else
+   'If SOT sent to Client = null, then return "SOT not sent"
+    affspendingBULK = affspendingBULK & " " & IIf(IsNull(rs![DocsSentClient]), "SOT-NS,", "")
+    affspendingBULK = affspendingBULK & " " & IIf(IsNull(rs![DocsRecClient]), "SOT-NR,", "")
+    
+    'If Aff of Default sent to Client = null, then return "Aff of Default not sent"
+    affspendingBULK = affspendingBULK & " " & IIf(IsNull(rs![Aff_to_Client]), "AffDef-NS,", "")
+    affspendingBULK = affspendingBULK & " " & IIf(IsNull(rs![Aff_Recd_Client]), "AffDef-NR,", "")
+    
+   
+    affspendingBULK = affspendingBULK & " " & IIf(IsNull(rs![PAff_Retd]) And IsNull(rs!FAff_Retd), "LMA-NR,", "")
+    
+    'If Aff of Ownership sent to Client = null, then return "ACO not sent" affcert_to_client
+    affspendingBULK = affspendingBULK & " " & IIf(IsNull(rs![affcert_to_client]), "ACO-NS,", "")
+    affspendingBULK = affspendingBULK & " " & IIf(IsNull(rs![affcert_recd_client]), "ACO-NR,", "")
+    
+    'If Aff of Debt sent to Client = null, then return "AOD not sent"
+    affspendingBULK = affspendingBULK & " " & IIf(IsNull(rs![affdebt_to_client]), "AOD-NS,", "")
+    affspendingBULK = affspendingBULK & " " & IIf(IsNull(rs![affdebt_from_client]), "AOD-NR,", "")
+    
+    'Remove Ocwen Code If Military Aff sent to Client = null, then return "Military Aff not sent"
+    affspendingBULK = affspendingBULK & " " & IIf(IsNull(rs![MilAff_To_Client]) And rs!Client Like "*ocwen*", "MilAff-NS,", "")
+    affspendingBULK = affspendingBULK & " " & IIf(IsNull(rs![MilAff_From_Client]) And rs!Client Like "*ocwen*", "MilAff-NR,", "")
+
+affspendingBULK = Trim(Left$(affspendingBULK, Len(affspendingBULK) - 1))
+End If
+
+
+With rs
+.Edit
+!Aff_docs = affspendingBULK
+.Update
+End With
+rs.MoveNext
+affspendingBULK = ""
+Loop
+
+rs.Close
+
+End Function
+Public Function DocsTempUpdateAnc()
+Dim rs As RecordSet
+Dim ancillarydocsBulk
+Dim ancillarydocsBulk1
+
+Set rs = CurrentDb.OpenRecordset("DocsTemp", dbOpenDynaset, dbSeeChanges)
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![AOM_Internal_Req]), "Assignment,", "")
+
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Indorsed_Note]), "Indorsed Note,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Occ_Status]), "Occ Status,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Deferred_PB]), "Deferred PB,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Shared_Waiver]), "Shared Waiver,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Prior_Servicer_BD]), "Prior Servicer BD,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Payment_History]), "Payment History,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Prior_Servicer_Pay]), "Prior Servicer Pay Hist,", "")
+
+If rs!unable_docket = -1 Then
+
+If IsNull(rs![Indorsed_Note]) And IsNull(rs![Occ_Status]) And IsNull(rs![Deferred_PB]) And IsNull(rs![Shared_Waiver]) _
+    And IsNull(rs![Prior_Servicer_BD]) And IsNull(rs![Payment_History]) And IsNull(rs![Prior_Servicer_Pay]) Then
+    
+ancillarydocsBulk1 = ancillarydocsBulk1 & IIf(rs![UD_Occ] = -1, "Occ Status,", "")
+ancillarydocsBulk1 = ancillarydocsBulk1 & IIf(rs![ud_note] = -1, "Note,", "")
+ancillarydocsBulk1 = ancillarydocsBulk1 & IIf(rs![ud_ass] = -1, "Assignment,", "")
+ancillarydocsBulk1 = ancillarydocsBulk1 & IIf(rs![UD_LoamMod] = -1, "Loan Mod,", "")
+ancillarydocsBulk1 = ancillarydocsBulk1 & IIf(rs![ud_poa] = -1, "POA,", "")
+'ancillarydocsBulk1 = Trim(Left$(Trim(ancillarydocsBulk1), Len(Trim(ancillarydocsBulk1)) - 1))
+'ancillarydocsBulk1 = ancillarydocsBulk1 & ""
+End If
+
+Else
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![AffsSent]), "Affs Sent,", "")
+End If
+
+ancillarydocsBulk = Trim(Left$(ancillarydocsBulk, Len(ancillarydocsBulk) - 1) & ancillarydocsBulk1)
+
+With rs
+.Edit
+!Acc_docs = ancillarydocsBulk
+.Update
+End With
+rs.MoveNext
+ancillarydocsBulk = ""
+ancillarydocsBulk1 = ""
+Loop
+
+rs.Close
+
+End Function
+Public Function ancillarydocsBulk()
+
+If Forms![foreclosure database screen]!Status = "Foreclosure" And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+
+Dim db As Database
+Dim rs As RecordSet
+Dim strsql, ancillarydocsBulk1 As String
+
+strsql = strsql & "SELECT FCTracking.FileNum, fctracking.aom_internal_req, OcwenChecklist.Indorsed_Note, OcwenChecklist.Occ_Status, OcwenChecklist.Deferred_PB, OcwenChecklist.Shared_Waiver, OcwenChecklist.Prior_Servicer_BD, OcwenChecklist.Payment_History, OcwenChecklist.Prior_Servicer_Pay, OcwenChecklist.AffsSent, FCTracking.UD_Occ, FCTracking.UD_Note, FCTracking.UD_Ass, FCTracking.UD_LoamMod, FCTracking.UD_POA, Foreclosure.DocsRecClient, FCTracking.affcert_recd_client, FCTracking.affdebt_from_client, FCTracking.MilAff_From_Client, FCTracking.aff_recd_client, fctracking.unable_docket, Cases.Client "
+strsql = strsql & "FROM (Foreclosure INNER JOIN (OcwenChecklist RIGHT JOIN FCTracking ON OcwenChecklist.FileNum = FCTracking.FileNum) ON Foreclosure.SubFileNum = FCTracking.FileNum) LEFT JOIN Cases ON OcwenChecklist.FileNum = Cases.FileNum "
+strsql = strsql & "WHERE (((FCTracking.FileNum)= " & rsOcwen![filenum] & "));"
+
+Set db = CurrentDb()
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+'Set rs = CurrentDb.OpenRecordset("ancillarydocsBulkQry", dbopensnapshot)
+
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![AOM_Internal_Req]), "Assignment,", "")
+
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Indorsed_Note]), "Indorsed Note,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Occ_Status]), "Occ Status,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Deferred_PB]), "Deferred PB,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Shared_Waiver]), "Shared Waiver,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Prior_Servicer_BD]), "Prior Servicer BD,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Payment_History]), "Payment History,", "")
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![Prior_Servicer_Pay]), "Prior Servicer Pay Hist,", "")
+
+If rs!unable_docket = -1 Then
+
+If IsNull(rs![Indorsed_Note]) And IsNull(rs![Occ_Status]) And IsNull(rs![Deferred_PB]) And IsNull(rs![Shared_Waiver]) _
+    And IsNull(rs![Prior_Servicer_BD]) And IsNull(rs![Payment_History]) And IsNull(rs![Prior_Servicer_Pay]) Then
+    
+'ancillarydocsBulk1 = ", Unable to Docket("
+ancillarydocsBulk1 = ancillarydocsBulk1 & IIf(rs![UD_Occ] = -1, "Occ Status,", "")
+ancillarydocsBulk1 = ancillarydocsBulk1 & IIf(rs![ud_note] = -1, "Note,", "")
+ancillarydocsBulk1 = ancillarydocsBulk1 & IIf(rs![ud_ass] = -1, "Assignment,", "")
+ancillarydocsBulk1 = ancillarydocsBulk1 & IIf(rs![UD_LoamMod] = -1, "Loan Mod,", "")
+ancillarydocsBulk1 = ancillarydocsBulk1 & IIf(rs![ud_poa] = -1, "POA,", "")
+ancillarydocsBulk1 = Trim(Left$(Trim(ancillarydocsBulk1), Len(Trim(ancillarydocsBulk1)) - 1))
+ancillarydocsBulk1 = ancillarydocsBulk1 & ""
+End If
+Else
+ancillarydocsBulk = ancillarydocsBulk & " " & IIf(Not IsNull(rs![AffsSent]), "Affs Sent,", "")
+
+End If
+
+rs.Close
+
+'ancillarydocsBulk = Trim$(ancillarydocsBulk)
+ancillarydocsBulk = Trim(Left$(ancillarydocsBulk, Len(ancillarydocsBulk) - 1) & ancillarydocsBulk1)
+
+'MsgBox ancillarydocsBulk
+
+
+End If
+End Function
+
+Public Function affspending()
+
+If Forms![foreclosure database screen]!Status = "Foreclosure" And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+Dim db As Database
+Dim rs As RecordSet
+Dim strsql
+
+
+strsql = strsql & "SELECT FCTracking.FileNum, FCTracking.Faff_sent, FCTracking.Paff_sent, FCTracking.Faff_Retd, FCTracking.PAff_Retd, OcwenChecklist.Indorsed_Note, OcwenChecklist.Occ_Status, OcwenChecklist.Deferred_PB, OcwenChecklist.Shared_Waiver, OcwenChecklist.Prior_Servicer_BD, OcwenChecklist.Payment_History, OcwenChecklist.Prior_Servicer_Pay, OcwenChecklist.AffsSent, FCTracking.UD_Occ, FCTracking.UD_Note, FCTracking.UD_Ass, FCTracking.UD_LoamMod, FCTracking.UD_POA, Foreclosure.DocsRecClient, foreclosure.docssentclient, FCTracking.affcert_to_client, FCTracking.affcert_recd_client, FCTracking.affdebt_to_client, FCTracking.affdebt_from_client, FCTracking.MilAff_To_Client, FCTracking.MilAff_From_Client, FCTracking.aff_to_client, FCTracking.aff_recd_client, fctracking.unable_docket, foreclosure.noi_sent, fctracking.final_lma_court, fctracking.pre_docket_court, fctracking.final_docket_court, Cases.Client "
+strsql = strsql & "FROM (Foreclosure INNER JOIN (OcwenChecklist RIGHT JOIN FCTracking ON OcwenChecklist.FileNum = FCTracking.FileNum) ON Foreclosure.SubFileNum = FCTracking.FileNum) LEFT JOIN Cases ON OcwenChecklist.FileNum = Cases.FileNum "
+strsql = strsql & "WHERE (((FCTracking.FileNum)= " & [Forms]![foreclosure database screen]![filenum] & "));"
+
+Set db = CurrentDb()
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+'prelim Docket Sent to Court = not null, AND Final Loss Mit Aff Sent to Court = null,
+'then return ?Prelim Docket Filed?
+'OR
+'Prelim Docket Sent to Court = not null, AND Final LMA Sent to Client = not null AND Final Aff Rec?d From Client = null,
+'THEN return ?Prelim Docket Filed ? Pending FLMA?
+'OR
+'Final Docket Sent to Court = not null, then return ?Final Docket Filed?
+ 
+ 
+
+If IsNull(rs![noi_sent]) Then
+    affspending = affspending & " " & "NOI-Pending,"
+Else
+
+    'If Pre/Final Docket Court"
+    affspending = affspending & " " & IIf(Not IsNull(rs![pre_docket_court]) And IsNull(rs!final_docket_court), "Prelim Docket Filed,", "")
+    affspending = affspending & " " & IIf(Not IsNull(rs![final_docket_court]), "Final Docket Filed,", "")
+    affspending = affspending & " " & IIf(Not IsNull(rs![pre_docket_court]) And Not IsNull(rs!final_LMA_Court) And IsNull(rs!FAff_Retd), "Pending Final FLMA,", "")
+
+    'If SOT sent to Client = null, then return "SOT not sent"
+    affspending = affspending & " " & IIf(IsNull(rs![DocsSentClient]), "SOT-NS,", "")
+    affspending = affspending & " " & IIf(IsNull(rs![DocsRecClient]), "SOT-NR,", "")
+    
+    'If Aff of Default sent to Client = null, then return "Aff of Default not sent"
+    affspending = affspending & " " & IIf(IsNull(rs![Aff_to_Client]), "AffDef-NS,", "")
+    affspending = affspending & " " & IIf(IsNull(rs![Aff_Recd_Client]), "AffDef-NR,", "")
+    
+    'If Prelim/Final Aff Rec from Client = null, then return "Aff of Default not sent"
+    affspending = affspending & " " & IIf(IsNull(rs![PAff_Retd]) And IsNull(rs!FAff_Retd), "LMA-NR,", "")
+    affspending = affspending & " " & IIf(IsNull(rs![PAff_Sent]) And IsNull(rs!FAff_Sent), "LMA-NS,", "")
+    
+    'If Aff of Ownership sent to Client = null, then return "ACO not sent" affcert_to_client
+    affspending = affspending & " " & IIf(IsNull(rs![affcert_to_client]), "ACO-NS,", "")
+    affspending = affspending & " " & IIf(IsNull(rs![affcert_recd_client]), "ACO-NR,", "")
+    
+    'If Aff of Debt sent to Client = null, then return "AOD not sent"
+    affspending = affspending & " " & IIf(IsNull(rs![affdebt_to_client]), "AOD-NS,", "")
+    affspending = affspending & " " & IIf(IsNull(rs![affdebt_from_client]), "AOD-NR,", "")
+    
+    'REMOVE Ocwen Code If Military Aff sent to Client = null, then return "Military Aff not sent"
+    affspending = affspending & " " & IIf(IsNull(rs![MilAff_To_Client]) And rs!Client Like "*ocwen*", "MilAff-NS,", "")
+    affspending = affspending & " " & IIf(IsNull(rs![MilAff_From_Client]) And rs!Client Like "*ocwen*", "MilAff-NR,", "")
+End If
+
+rs.Close
+'affspending = Trim$(affspending)
+affspending = Trim(Left$(affspending, Len(affspending) - 1))
+
+'MsgBox affspending
+End If
+
+End Function
+Public Function ancillarydocs()
+
+If Forms![foreclosure database screen]!Status = "Foreclosure" And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+
+Dim db As Database
+Dim rs As RecordSet
+Dim strsql, ancillarydocs1 As String
+strsql = ""
+
+strsql = strsql & "SELECT FCTracking.FileNum, OcwenChecklist.assignment_req_internal, OcwenChecklist.Indorsed_Note, OcwenChecklist.Occ_Status, OcwenChecklist.Deferred_PB, OcwenChecklist.Shared_Waiver, OcwenChecklist.Prior_Servicer_BD, OcwenChecklist.Payment_History, OcwenChecklist.Prior_Servicer_Pay, OcwenChecklist.AffsSent, FCTracking.UD_Occ, FCTracking.UD_Note, FCTracking.UD_Ass, FCTracking.UD_LoamMod, FCTracking.UD_POA, Foreclosure.DocsRecClient, FCTracking.affcert_recd_client, FCTracking.affdebt_from_client, FCTracking.MilAff_From_Client, FCTracking.aff_recd_client, fctracking.unable_docket, Cases.Client "
+strsql = strsql & "FROM (Foreclosure INNER JOIN (OcwenChecklist RIGHT JOIN FCTracking ON OcwenChecklist.FileNum = FCTracking.FileNum) ON Foreclosure.SubFileNum = FCTracking.FileNum) LEFT JOIN Cases ON OcwenChecklist.FileNum = Cases.FileNum "
+strsql = strsql & "WHERE (((FCTracking.FileNum)= " & [Forms]![foreclosure database screen]![filenum] & "));"
+
+'MsgBox (strsql)
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+'Set rs = CurrentDb.OpenRecordset("AncillaryDocsQry", dbopensnapshot)
+
+ancillarydocs = ancillarydocs & " " & IIf(Not IsNull(rs![assignment_req_internal]), "Assignment,", "")
+ancillarydocs = ancillarydocs & " " & IIf(Not IsNull(rs![Indorsed_Note]), "Indorsed Note,", "")
+ancillarydocs = ancillarydocs & " " & IIf(Not IsNull(rs![Occ_Status]), "Occ Status,", "")
+ancillarydocs = ancillarydocs & " " & IIf(Not IsNull(rs![Deferred_PB]), "Deferred PB,", "")
+ancillarydocs = ancillarydocs & " " & IIf(Not IsNull(rs![Shared_Waiver]), "Shared Waiver,", "")
+ancillarydocs = ancillarydocs & " " & IIf(Not IsNull(rs![Prior_Servicer_BD]), "Prior Servicer BD,", "")
+ancillarydocs = ancillarydocs & " " & IIf(Not IsNull(rs![Payment_History]), "Payment History,", "")
+ancillarydocs = ancillarydocs & " " & IIf(Not IsNull(rs![Prior_Servicer_Pay]), "Prior Servicer Pay Hist,", "")
+
+If rs!unable_docket = -1 Then
+
+If IsNull(rs![Indorsed_Note]) And IsNull(rs![Occ_Status]) And IsNull(rs![Deferred_PB]) And IsNull(rs![Shared_Waiver]) _
+    And IsNull(rs![Prior_Servicer_BD]) And IsNull(rs![Payment_History]) And IsNull(rs![Prior_Servicer_Pay]) Then
+    
+'ancillarydocs1 = ", Unable to Docket("
+ancillarydocs1 = ancillarydocs1 & IIf(rs![UD_Occ] = -1, "Occ Status,", "")
+ancillarydocs1 = ancillarydocs1 & IIf(rs![ud_note] = -1, "Note,", "")
+ancillarydocs1 = ancillarydocs1 & IIf(rs![ud_ass] = -1, "Assignment,", "")
+ancillarydocs1 = ancillarydocs1 & IIf(rs![UD_LoamMod] = -1, "Loan Mod,", "")
+ancillarydocs1 = ancillarydocs1 & IIf(rs![ud_poa] = -1, "POA,", "")
+'ancillarydocs1 = Trim(Left$(Trim(ancillarydocs1), Len(Trim(ancillarydocs1)) - 1))
+ancillarydocs1 = ancillarydocs1 & ""
+End If
+Else
+ancillarydocs = ancillarydocs & " " & IIf(Not IsNull(rs![AffsSent]), "Affs Sent,", "")
+
+End If
+
+rs.Close
+
+'ancillarydocs = Trim$(ancillarydocs)
+ancillarydocs = Trim(Left$(ancillarydocs, Len(ancillarydocs) - 1) & ancillarydocs1)
+
+'MsgBox ancillarydocs
+
+
+End If
+
+
+
+End Function
+
+
+
+
+

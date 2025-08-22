@@ -1,0 +1,123 @@
+Attribute VB_Name = "LettersMenu"
+Option Compare Database
+Public Function SCRALetter()
+
+If Client() Like "Bank of A*" Then
+DoCmd.OpenReport "EvictionSCRALetter-BOA", acViewPreview
+Else
+DoCmd.OpenReport "EvictionSCRALetter", acViewPreview
+
+End If
+
+Dim VMsg As String
+VMsg = InputBox("Send via Walz? (type in yes to proceed)")
+If VMsg = "yes" Then
+Call SCRAEvicWalz
+End If
+
+End Function
+Public Function PRSLDocs()
+
+If Forms![foreclosure database screen]!Client Like "Homew*" Then
+'FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\HomewardPRSL.PDF")
+
+sourcefile = "\\rvdv-fs01\datatransfer\Attachments\HomewardPRSL.PDF"
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" And Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+'FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\BOAPRSL.PDF")
+sourcefile = "\\rvdv-fs01\datatransfer\Attachments\BOAPRSL.PDF"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust*" Then
+'FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\SuntrustPRSL.PDF")
+sourcefile = "\\rvdv-fs01\datatransfer\Attachments\SuntrustPRSL.PDF"
+
+ElseIf Forms![foreclosure database screen]!Client Like "JPM*" Then
+'FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\ChasePRSL.PDF")
+
+sourcefile = "\\rvdv-fs01\datatransfer\Attachments\ChasePRSL.PDF"
+
+End If
+
+docsfldr = AutoIndexPath & VarSubFldr & "\"
+destinationfile = docsfldr & Forms![foreclosure database screen]!filenum & "_PRSL.PDF"
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+End Function
+Public Function ChasePRSL()
+
+If Forms![foreclosure database screen]!Client Like "Homew*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\HomewardPRSL.PDF")
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" And Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\BOAPRSL.PDF")
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\SuntrustPRSL.PDF")
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "JPM*" Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\ChasePRSL.PDF")
+
+
+'Else
+'MsgBox ("No PRSL for this client")
+
+End If
+
+
+End Function
+Public Function testImaged()
+CopyDocToBGWWDocs "PRSL Letter", "PSRL", "_PRSLLtr.PDF"
+
+End Function
+
+Public Function PRSL()
+
+
+strsql = "Select * from litigation where subfilenum = " & GblFilenum
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not IsNull(rs!fdcpa_recd) And (IsNull(rs!fdcpa_sent) And IsNull(rs!NoDebtReq)) Then
+MsgBox ("This task cannot be completed at this time because there is an outstanding FDCPA dispute of the debt. Please contact the assigned attorney on the litigation screen?s QWR/FDCPA tab to check the status of the response.")
+rs.Close
+Set rs = Nothing
+Exit Function
+
+
+Else
+rs.Close
+Set rs = Nothing
+
+Call ExportLNLLetters
+
+Dim VSel
+VSel = InputBox("Send PRSL Letters via Walz? (type in YES to send)")
+If VSel = "YES" Then
+Call PRSLWalz
+VSel2 = MsgBox("Send to Image Docs?", vbYesNo)
+If VSel2 = vbYes Then
+CopyDocToBGWWDocs "PRSL Letter", "PSRL", "_PRSLLtr.PDF"
+End If
+
+Else
+
+
+DoCmd.OpenReport "PRSL Letter", acViewPreview
+VSel2 = MsgBox("Send to Image Docs?", vbYesNo)
+If VSel2 = vbYes Then
+CopyDocToBGWWDocs "PRSL Letter", "PSRL", "_PRSLLtr.PDF"
+End If
+'Call ChasePRSL
+
+
+MsgBox ("Envelopes addressed to Borrowers will now preview")
+
+DoCmd.OpenReport "EnvelopeBorrowers", acViewPreview
+End If
+
+End If
+
+End Function

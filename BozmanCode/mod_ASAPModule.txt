@@ -1,0 +1,159 @@
+Attribute VB_Name = "ASAPModule"
+Option Compare Database
+
+Public Function EmailPrintADVAASAP()
+
+Dim Email As String
+Dim emailsubject As String
+Dim emailmessage As String
+Dim EM1 As String
+Dim EM2 As String
+Dim EM3 As String
+
+Dim pub1 As String
+Dim pub2 As String
+Dim pub3 As String
+Dim pub4 As String
+Dim pub5 As String
+Dim Pub As String
+
+If IsNull(Forms![foreclosure database screen]![ForeclosureSubForm].Form![1st_ad]) Then
+pub1 = "0"
+Else
+pub1 = Forms![foreclosure database screen]![ForeclosureSubForm].Form![1st_ad]
+End If
+
+If IsNull(Forms![foreclosure database screen]![ForeclosureSubForm].Form![pub2]) Then
+pub2 = "0"
+Else
+pub2 = Forms![foreclosure database screen]![ForeclosureSubForm].Form![pub2]
+End If
+
+If IsNull(Forms![foreclosure database screen]![ForeclosureSubForm].Form![pub3]) Then
+pub3 = "0"
+Else
+pub3 = Forms![foreclosure database screen]![ForeclosureSubForm].Form![pub3]
+End If
+
+If IsNull(Forms![foreclosure database screen]![ForeclosureSubForm].Form![pub4]) Then
+pub4 = "0"
+Else
+pub4 = Forms![foreclosure database screen]![ForeclosureSubForm].Form![pub4]
+End If
+
+If IsNull(Forms![foreclosure database screen]![ForeclosureSubForm].Form![pub5]) Then
+pub5 = "0"
+Else
+pub5 = Forms![foreclosure database screen]![ForeclosureSubForm].Form![pub5]
+End If
+
+If pub2 = "0" Then
+Pub = pub1
+ElseIf pub3 = "0" Then
+Pub = pub1 & " and " & pub2
+ElseIf pub4 = "0" Then
+Pub = pub1 & ", " & pub2 & " and " & pub3
+ElseIf pub5 = "0" Then
+Pub = pub1 & ", " & pub2 & ", " & pub3 & " and " & pub4
+ElseIf pub5 <> "0" Then
+Pub = pub1 & ", " & pub2 & ", " & pub3 & ", " & pub4 & " and " & pub5
+End If
+
+If Forms![foreclosure database screen]!Client Like "Ocwe*" Then
+Email = MsgBox("Email being sent ASAP?", vbYesNo)
+Else
+Email = MsgBox("Email being sent to Newspaper?", vbYesNo)
+End If
+
+
+If Email = vbYes Then
+
+Dim strsqlCty, vCounty, VLienCert, VNews, VTo As String
+Dim rsCty As RecordSet
+Dim from, varemailto, varsendemail As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+vCounty = Forms![foreclosure database screen]!Propertycounty
+strsqlCty = "select newspaper, newspaper2, newspaper2_email, newpaper_email from jurisdiction where County = " & """" & vCounty & """" & " and state = " & """" & "VA" & """" & ";"
+Set rsCty = CurrentDb.OpenRecordset(strsqlCty, dbOpenSnapshot)
+
+If (Forms![foreclosure database screen]!ForeclosureSubForm.Form!newspaper1 = -1 Or _
+(Forms![foreclosure database screen]!ForeclosureSubForm.Form!newspaper1 = 0 And _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!newspaper2 = 0)) Then
+If IsNull(rsCty!Newspaper) Or rsCty!Newspaper = "" Then
+VNews = ""
+VTo = ""
+Else
+VNews = rsCty!Newspaper
+VTo = rsCty!newpaper_email
+End If
+
+Else
+VNews = rsCty!newspaper2
+VTo = rsCty!newspaper2_email
+End If
+
+rsCty.Close
+
+vCounty = Forms![foreclosure database screen]!Propertycounty
+
+
+EM1 = "Please publish the attached ad on the following dates: " & Pub & " in " & VNews & "" _
+& ", recognized newspaper of general circulation in " & County() & "" _
+& " for legal notices and publications per Circuit Court for " & County() & "." & vbCr & vbCr
+EM2 = "Please send a Certificate of Publication. Please send confirmation, ad proof and ad costs to VAAdProofs@bww-law.com." & vbCr & vbCr & "BWW requires that an invoice be returned with the Ad Proof.  An email stating the publication cost is no longer acceptable line item backup for our clients; accordingly, we require that the newspaper provide our office with an invoice at the time of publication. This will help our office expedite payment to the newspaper.  We appreciate your cooperation."
+
+'End If
+
+emailsubject = Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / 1st Ad: " & pub1
+emailmessage = EM1 + EM2
+
+
+
+Dim VSend
+VSend = InputBox("Send Ad to Imaged Docs? type YES to send")
+If VSend = "YES" Then
+CopyDocToBGWWDocs "adv-va", "AdClntCpy", "_AdClntCpy.PDF"
+
+End If
+
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.CC = "VAAdProofs@bww-law.com"
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage + SigEmail()
+
+Dim VSelection
+VSelection = InputBox("Create Ad in" & vbCr & vbCr & "1. Word Merge" & vbCr & "2. RTF Format" & vbCr & "select 1 or 2")
+If VSelection = 1 Then
+Call ADVaMerge
+MyMail.Attachments.ADD "\\rvdv-fs01\datatransfer\MergeDocs\" & dumpname
+Else
+DoCmd.OutputTo acOutputReport, "adv-va", acFormatRTF, pathuser() & "\ADV-VA.rtf"
+MyMail.Attachments.ADD pathuser() & "\ADV-VA.rtf"
+End If
+
+
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!asap_ad_sent = Date
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!adproofvia = 2
+
+
+
+Else
+
+Exit Function
+
+End If
+
+
+
+
+End Function
+

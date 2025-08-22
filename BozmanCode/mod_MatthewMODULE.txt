@@ -1,0 +1,5920 @@
+Attribute VB_Name = "MatthewMODULE"
+Option Compare Database
+
+Public Function OpenMemoScreen()
+
+DoCmd.OpenForm "Case_Detail_Information", , , "FileNum=" & GblFilenum
+
+End Function
+
+Public Function DocketReferralsHowie()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "DocketReferralsHowie" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "DocketReferralsHowieQry"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BillingMonthlyQry", filepath & "BillingMonthly" & ".xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+'Call SaveAsXLSB(savepath)
+'savepath = Replace(savepath, ".xls", ".xlsb")
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function Eviction6_SpreadsheetsVA()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname1 As String
+Dim queryname2 As String
+Dim queryname3 As String
+Dim queryname4 As String
+Dim queryname5 As String
+Dim queryname6 As String
+
+
+Dim savepath As String
+
+spreadsht = "EvictionSpreadsheets_VA" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call getva_presummons_bww_eviction
+Call getva_presummons_nonbww_eviction
+Call getva_summons_eviction
+Call getva_ordertowrit_eviction
+Call getva_lockout_eviction
+Call getva_dil_lt_eviction
+
+ 
+queryname1 = "va_presummons_bww_evictionsqry"
+queryname2 = "va_presummons_nonbww_evictionsqry"
+queryname3 = "va_summons_evictionsqry"
+queryname4 = "va_ordertowrit_evictionsqry"
+queryname5 = "va_lockout_evictionsqry"
+queryname6 = "va_dil_lt_evictionsqry"
+
+
+Call RemoveSheetsExcelSUPER(filepath, spreadsht, "Report")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath ' Copy source to target.
+
+On Error Resume Next
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname1, savepath, True, Replace(queryname1, "qry", "")
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname2, savepath, True, Replace(queryname2, "qry", "")
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname3, savepath, True, Replace(queryname3, "qry", "")
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname4, savepath, True, Replace(queryname4, "qry", "")
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname5, savepath, True, Replace(queryname5, "qry", "")
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname6, savepath, True, Replace(queryname6, "qry", "")
+
+On Error GoTo handler
+    
+Call CleanTables
+Call SaveAsXLSB(savepath)
+savepath = Replace(savepath, ".xls", ".xlsb")
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+Call CleanTables
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function QC3SpreadsheetExport()
+
+Dim QC2CompletedSpreadsheet As QueryDef
+Dim q As QueryDef
+'Dim brevcompleted As Date: brevcompleted = DateValue(InputBox("Begin review completed date", "Enter Date")): If Len(brevcompleted) = 0 Then Exit Function
+'Dim erevcompleted As Date: erevcompleted = DateValue(InputBox("End review completed date", "Enter Date")): If Len(erevcompleted) = 0 Then Exit Function
+Dim filepath As String: filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+'Dim Client As String: Client = InputBox("Enter client", "Enter Client")
+'Dim RefSpec As String: Client = InputBox("Enter referral specialist", "Enter Referral Specialist")
+Dim templatepath As String: templatepath = filepath & "QC3CompletedSpreadsheet.xlsx"
+Dim savepath As String
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xlsx"
+
+
+On Error Resume Next
+    DoCmd.RunSQL "delete from [QC3CompletedSpreadsheetTbl]"
+    DoCmd.RunSQL "delete from [QC3CompletedSpreadsheetdbTbl]"
+On Error GoTo 0
+
+For Each q In CurrentDb.QueryDefs
+
+If q.name Like "QC3CompletedReportExcelQry_" & "*" Then
+    
+With q
+    DoCmd.RunSQL "insert into [QC3CompletedSpreadsheetTbl] select * from " & q.name
+End With
+    
+End If
+
+Next q
+
+
+CurrentDb.Execute "insert into [QC3CompletedSpreadsheetdbTbl] select * from [QC3CompletedSpreadsheetTbl]"
+'DoCmd.TransferText acExportDelim, , "QC2CompletedSpreadsheetTBL", filepath & "QC2CompletedSpreadsheetTBL.txt", True
+
+FileCopy templatepath, savepath
+ShellExecuteFileOpen (savepath)
+
+MsgBox "Report Exported."
+
+End Function
+
+
+Public Function getQCedits(filenum As Double) As Variant
+
+On Error GoTo handler
+
+'code will only work for a file in qc3(?)
+Dim rs As RecordSet
+Dim f As Variant
+Dim editsdesc As String
+
+Set rs = CurrentDb.OpenRecordset("select  * from qc_edits where filenum = " & filenum, dbOpenSnapshot)
+
+If rs.EOF Then GoTo handler
+
+For Each f In rs.Fields
+     If f.Value = 1 Or f.Value = -1 Then
+    ' Debug.Print Nz(DLookup("description", "qc_edit_descriptions", "tbleditname=" & """" & _
+            f.Name & """"))
+        editsdesc = editsdesc & Nz(DLookup("description", "qc_edit_descriptions", "tbleditname=" & """" & _
+            f.name & """")) & ", "
+    End If
+        
+Next f
+editsdesc = Trim(Replace(Left$(editsdesc, Len(editsdesc) - 2), ", ,", ""))
+
+If editsdesc = "," Then GoTo handler
+getQCedits = editsdesc
+
+Exit Function
+
+handler:
+
+getQCedits = Null
+
+End Function
+
+
+Public Function BillingMonthlyFeesExport()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "BillingMonthlyFees" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "BillingMonthlyFeesQry"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call BillingMonthlyFeesCreateTable
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BillingMonthlyQry", filepath & "BillingMonthly" & ".xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+'Call SaveAsXLSB(savepath)
+'savepath = Replace(savepath, ".xls", ".xlsb")
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function VAFCPipelineMainQry_NEW()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "VAFCPipelineMain" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "vwVAFCPipelineMainQry_UNION"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call getvwVAFCPipelineMainQry_UNION
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "EvictionReport_VA_Pipeline", filepath & "EvictionReport_VA_Pipeline" & ".xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+'Call SaveAsXLSB(savepath)
+'savepath = Replace(savepath, ".xls", ".xlsb")
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function Eviction6_Spreadsheets()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname1 As String
+Dim queryname2 As String
+Dim queryname3 As String
+Dim queryname4 As String
+Dim queryname5 As String
+Dim queryname6 As String
+Dim queryname7 As String
+
+Dim savepath As String
+
+spreadsht = "EvictionSpreadsheets_MD" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+'queryname1 = "EvictionReport_VA_Pipeline"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call getmd_premfp_bww_evictions
+Call getmd_premfp_nonbww_evictions
+Call getmd_mfp_evictions
+Call getmd_orderwrit_evictions
+Call getmd_lockout_evictions
+Call getmd_dl_lt_evictions
+Call getmd_main_evictions
+ 
+queryname1 = "md_premfp_bww_evictionsqry"
+queryname2 = "md_premfp_nonbww_evictionsqry"
+queryname3 = "md_mfp_evictionsqry"
+queryname4 = "md_orderwrit_evictionsqry"
+queryname5 = "md_lockout_evictionsqry"
+queryname6 = "md_dl_lt_evictionsqry"
+queryname7 = "md_main_evictionsqry"
+
+Call RemoveSheetsExcelSUPER(filepath, spreadsht, "Pipeline")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "EvictionReport_VA_Pipeline", filepath & "EvictionReport_VA_Pipeline" & ".xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname7, savepath, True, "EvicMD Files"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname1, savepath, True, Replace(queryname1, "qry", "")
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname2, savepath, True, Replace(queryname2, "qry", "")
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname3, savepath, True, Replace(queryname3, "qry", "")
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname4, savepath, True, Replace(queryname4, "qry", "")
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname5, savepath, True, Replace(queryname5, "qry", "")
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname6, savepath, True, Replace(queryname6, "qry", "")
+Call CleanTables
+Call SaveAsXLSB(savepath)
+savepath = Replace(savepath, ".xls", ".xlsb")
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+Call CleanTables
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function EvictionReport_VA_PipelineExport()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "EvictionReport_VA_Pipeline" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "EvictionReport_VA_Pipeline"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call EvictionReport_VA_Pipeline
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "EvictionReport_VA_Pipeline", filepath & "EvictionReport_VA_Pipeline" & ".xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+'Call SaveAsXLSB(savepath)
+'savepath = Replace(savepath, ".xls", ".xlsb")
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function EvicMDRpt_PipelineExport()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "EvicMDRpt_Pipeline" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "EvicMDRpt_Pipeline"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call EvicMDRpt_Pipeline
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "EvicMDRpt_Pipeline", filepath & "EvicMDRpt_Pipeline" & ".xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+'Call SaveAsXLSB(savepath)
+'savepath = Replace(savepath, ".xls", ".xlsb")
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function BillingMonthlyExport()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "BillingMonthly" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "BillingMonthlyQry"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call BillingMonthlyCreateTable
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BillingMonthlyQry", filepath & "BillingMonthly" & ".xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+'Call SaveAsXLSB(savepath)
+'savepath = Replace(savepath, ".xls", ".xlsb")
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function ChangeStatusEstateExportNEW()
+
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Dim changestatus_template As String
+Dim savepath As String
+Dim BegDate As String
+Dim EndDate As String
+
+BegDate = InputBox("Enter beginning Change Status date", "Enter Date")
+EndDate = InputBox("Enter ending Change Status date", "Enter Date")
+
+If Len(BegDate) = 0 Or Len(EndDate) = 0 Then Exit Function
+
+Call WarningsNowFalse
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+changestatus_template = "ChangeStatusEstateRptNEW.xls"
+
+Set xl = CreateObject("Excel.Application")
+
+On Error GoTo handler
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+changestatus_template = filepath & changestatus_template
+
+xl.DisplayAlerts = False
+Set xlBook = xl.Workbooks.Open(changestatus_template, 0, True)
+xl.Range("begdate").Value = BegDate
+xl.Range("enddate").Value = EndDate
+xl.Run "ChangeStatus"
+xl.Run "ChangeStatusCurrent"
+xlBook.SaveAs Replace(savepath, ".xls", ""), 50
+xlBook.Close
+xl.Quit
+
+Set xlSheet = Nothing
+Set xlBook = Nothing
+Set xl = Nothing
+
+savepath = Replace(savepath, ".xls", ".xlsb")
+
+ShellExecuteFileOpen (savepath)
+MsgBox "Exported to: " & savepath
+
+Exit Function
+
+handler:
+
+xl.Quit
+
+End Function
+
+
+Public Function ClientReferralPipelineMDRefTeam()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "MDPresalePipelineClientReport_MDRefTeam" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+'queryname = "ClientReferalsReportUnion_MDRefTeam"
+queryname = "ClientReferalsReportUnion_MDRefTeamMAIN"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+'DoCmd.OpenQuery ("ClientReferralMAINDSETNew_MDRefTeam")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "ClientReferalsReportUnion", filepath & "MDPresalePipelineClientReport_BKChase.xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+Call SaveAsXLSB(savepath)
+savepath = Replace(savepath, ".xls", ".xlsb")
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+
+Public Function QC2SpreadsheetExport()
+
+Dim QC2CompletedSpreadsheet As QueryDef
+Dim q As QueryDef
+'Dim brevcompleted As Date: brevcompleted = DateValue(InputBox("Begin review completed date", "Enter Date")): If Len(brevcompleted) = 0 Then Exit Function
+'Dim erevcompleted As Date: erevcompleted = DateValue(InputBox("End review completed date", "Enter Date")): If Len(erevcompleted) = 0 Then Exit Function
+Dim filepath As String: filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+'Dim Client As String: Client = InputBox("Enter client", "Enter Client")
+'Dim RefSpec As String: Client = InputBox("Enter referral specialist", "Enter Referral Specialist")
+Dim templatepath As String: templatepath = filepath & "QC2CompletedSpreadsheet.xlsx"
+Dim savepath As String
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xlsx"
+
+
+On Error Resume Next
+    CurrentDb.Execute "drop table [QC2CompletedSpreadsheetTBL]"
+    CurrentDb.Execute "drop table [QC2CompletedtblSpreadsheetTBL]"
+    CurrentDb.Execute "delete from [QC2CompletedSpreadsheetdbTBL]"
+    CurrentDb.Execute "drop table [qc2completedtbl]"
+On Error GoTo 0
+
+DoCmd.RunSQL "select * into [qc2completedtbl] from QC2Completed"
+Set qc2completedqry = CurrentDb.QueryDefs("QC2CompletedSpreadsheetQry")
+
+With qc2completedqry
+   ' .Parameters("Begin review completed date") = brevcompleted
+   ' .Parameters("End review completed date") = erevcompleted
+   ' .Parameters("Enter client") = Client
+   ' .Parameters("Enter referral specialist") = RefSpec
+    .Execute
+End With
+
+
+For Each q In CurrentDb.QueryDefs
+
+If q.name Like "QC2CompletedSpreadsheet_" & "*" Then
+    
+With q
+'    .Parameters("Begin review completed date") = brevcompleted
+'    .Parameters("End review completed date") = erevcompleted
+'    .Parameters("Enter client") = Client
+'    .Parameters("Enter referral specialist") = RefSpec
+    .Execute
+End With
+    
+End If
+
+Next q
+
+CurrentDb.Execute "alter table [QC2CompletedtblSpreadsheetTBL] alter column [NOI Notes] text"
+CurrentDb.Execute "insert into [QC2CompletedSpreadsheetdbTBL] select * from [QC2CompletedtblSpreadsheetTBL]"
+'DoCmd.TransferText acExportDelim, , "QC2CompletedSpreadsheetTBL", filepath & "QC2CompletedSpreadsheetTBL.txt", True
+
+FileCopy templatepath, savepath
+ShellExecuteFileOpen (savepath)
+
+On Error Resume Next
+    CurrentDb.Execute "drop table [QC2CompletedSpreadsheetTBL]"
+    CurrentDb.Execute "drop table [QC2CompletedtblSpreadsheetTBL]"
+    'currentdb.execute "delete from [QC2CompletedSpreadsheetdbTBL]"
+    CurrentDb.Execute "drop table [qc2completedtbl]"
+On Error GoTo 0
+
+MsgBox "Report Exported."
+
+End Function
+
+Public Function DCJudicialToBank()
+
+Dim rs As RecordSet
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+
+Set rs = CurrentDb.OpenRecordset("select complaint_filed from fctrackingdc where filenum = " & Forms![foreclosure database screen]!filenum, dbOpenSnapshot)
+
+If IsNull(rs("complaint_filed")) = False Then
+
+MyMail.To = "dcpre-saledepartment@bww-law.com"
+
+MyMail.Subject = "The defendant filed BK. Please file a suggestion of bankruptcy. BWW# " & Forms![foreclosure database screen]!filenum
+MyMail.body = "The defendant filed BK. Please file a suggestion of bankruptcy."
+MyMail.Display
+
+End If
+
+
+rs.Clone
+Set rs = Nothing
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+End Function
+
+Public Function ChangeStatusExportNEW()
+
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Dim changestatus_template As String
+Dim savepath As String
+Dim BegDate As String
+Dim EndDate As String
+
+BegDate = InputBox("Enter beginning Change Status date", "Enter Date")
+EndDate = InputBox("Enter ending Change Status date", "Enter Date")
+
+If Len(BegDate) = 0 Or Len(EndDate) = 0 Then Exit Function
+
+Call WarningsNowFalse
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+changestatus_template = "ChangeStatus.xls"
+
+Set xl = CreateObject("Excel.Application")
+
+On Error GoTo handler
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+changestatus_template = filepath & changestatus_template
+
+xl.DisplayAlerts = False
+Set xlBook = xl.Workbooks.Open(changestatus_template, 0, True)
+xl.Range("begdate").Value = BegDate
+xl.Range("enddate").Value = EndDate
+xl.Run "ChangeStatus"
+xlBook.SaveAs Replace(savepath, ".xls", ""), 50
+xlBook.Close
+xl.Quit
+
+Set xlSheet = Nothing
+Set xlBook = Nothing
+Set xl = Nothing
+
+savepath = Replace(savepath, ".xls", ".xlsb")
+
+ShellExecuteFileOpen (savepath)
+MsgBox "Exported to: " & savepath
+
+Exit Function
+
+handler:
+
+xl.Quit
+
+End Function
+
+Public Function MSWBHTransferReportsExport()
+
+Dim sel As Integer: sel = InputBox("Please select report: " & vbCrLf & vbCrLf & "1) MSW/B&H Citi Transfer" & _
+    vbCrLf & "2) MSW/B&H Ocwen Transfer" & vbCrLf & "3) MSW/B&H SPS Transfer", "Select Report")
+
+Select Case sel
+Case 1
+    Call ExcelSaveAsQRY("MSWBHCitiTransferQry")
+Case 2
+    Call ExcelSaveAsQRY("MSWBHOcwenTransferQry")
+Case 3
+    Call ExcelSaveAsQRY("MSWBHSPSTransferQry")
+Case Else
+    MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+    Exit Function
+End Select
+Exit Function
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+Exit Function
+
+End Function
+
+
+Public Function SCRAQueueALLNEW()
+
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Dim scra_template As String
+Dim savepath As String
+
+Call WarningsNowFalse
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+scra_template = "SCRABusinessTEMPLATE.xlsm"
+
+Set xl = CreateObject("Excel.Application")
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+scra_template = filepath & scra_template
+
+xl.DisplayAlerts = False
+Set xlBook = xl.Workbooks.Open(scra_template, 0, True)
+
+xl.Run "getReports"
+xlBook.SaveAs Replace(savepath, ".xls", ""), 50
+xlBook.Close
+xl.Quit
+
+Set xlSheet = Nothing
+Set xlBook = Nothing
+Set xl = Nothing
+
+savepath = Replace(savepath, ".xls", ".xlsb")
+
+ShellExecuteFileOpen (savepath)
+MsgBox "Report Complete", vbInformation, "Report Complete"
+
+Exit Function
+
+handler:
+
+xl.Quit
+
+End Function
+
+Public Function DCReferralsJNPPipeline()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "DCReferralsJNPPipeline" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "DCReferralsJNPPipelineQry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "DCReferralsJNPPipelineQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "DCReferralsJNPPipeline" & ".xls" , True, "MainData"
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function SCRAQueueALL()
+
+Dim savepath As String
+Dim queryname As String
+Dim queryname2 As String
+Dim queryname3 As String
+    
+queryname = "SCRAQueueALL-MDBusinessQry"
+queryname2 = "SCRAQueueALL-VABusinessQry"
+queryname3 = "SCRAQueueALL-DCBusinessQry"
+    
+On Error GoTo handler
+
+Call WarningsNowFalse
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MD_SCRA"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname2, savepath, True, "VA_SCRA"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname3, savepath, True, "DC_SCRA"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function ResolutionPipeline()
+
+Dim savepath As String
+Dim queryname As String
+Dim queryname2 As String
+    
+queryname = "ResolutionPipelineQry"
+queryname2 = "ResolutionPipelineNODQry"
+    
+On Error GoTo handler
+
+Call WarningsNowFalse
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "ResolutionHearings"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname2, savepath, True, "NODFiles"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+    
+'    ExcelSaveAsQRY ("ResolutionPipelineQry")
+End Function
+
+
+Public Function OcwenUpdateImport()
+
+Dim filepath As String
+Dim intChoice As Double
+Dim rs As RecordSet
+
+ Dim rsCases As RecordSet
+Dim fld As Object
+
+Call WarningsNowFalse
+
+MsgBox "Please select the file you would like to Import." & vbCrLf & _
+    "Loan numbers must be in column labeled " & """" & "LoanNo" & """" _
+    , , "Select File to Import"
+intChoice = Application.FileDialog(1).Show
+
+If intChoice = 0 Then Exit Function
+
+On Error Resume Next
+    CurrentDb.Execute "drop table [OcwenUpdateImporttbl]"
+    CurrentDb.Execute "delete from [OcwenUpdateImportAltTbl]"
+On Error GoTo 0
+
+    filepath = Application.FileDialog(msoFileDialogOpen).SelectedItems(1)
+    DoCmd.TransferSpreadsheet acImport, , "OcwenUpdateImporttbl", filepath, 1
+
+Set rs = CurrentDb.OpenRecordset("OcwenUpdateImporttbl", , dbOpenSnapshot)
+
+intChoice = 0
+
+For Each fld In rs.Fields
+    If fld.name = "LoanNo" Then intChoice = intChoice + 1
+Next fld
+
+rs.Close
+Set rs = Nothing
+CurrentDb.Execute "alter table [OcwenUpdateImporttbl] alter column [LoanNo] text"
+
+If intChoice = 0 Then
+    MsgBox "Please import file with " & """" & "LoanNo" & """" & " column", vbCritical, "No LoanNo Column."
+    Exit Function
+End If
+
+CurrentDb.Execute ("delete from [OcwenUpdateImporttbl] where [LoanNo] is null")
+DoCmd.OpenQuery "OcwenImportMkTblQry"
+Set rs = CurrentDb.OpenRecordset("select [LoanNo] from OcwenImportMissingLoansQry", , dbOpenSnapshot)
+
+Do While Not rs.EOF
+
+Set rsCases = CurrentDb.OpenRecordset("select clientrefnumber from cases where clientrefnumber like " & """" & "*" & rs("LoanNo") & "*" & """", , dbOpenSnapshot)
+
+Do While Not rsCases.EOF
+ CurrentDb.Execute "insert into OcwenUpdateImportAltTbl values (" & """" & rs("LoanNo").Value & """" & ", " & """" & rsCases("clientrefnumber").Value & """" & ")"
+ rsCases.MoveNext
+Loop
+rsCases.Close
+Set rsCases = Nothing
+rs.MoveNext
+Loop
+
+rs.Close
+Set rs = Nothing
+
+Call ExcelSaveAsQRY("OcwenUpdateExportQry")
+
+On Error Resume Next
+    CurrentDb.Execute "drop table [OcwenUpdateImporttbl]"
+    CurrentDb.Execute "delete from [OcwenUpdateImportAltTbl]"
+On Error GoTo 0
+
+
+End Function
+
+
+Public Function RatificationPipelineMD()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim queryname2 As String
+Dim queryname3 As String
+Dim queryname4 As String
+Dim queryname5 As String
+Dim queryname6 As String
+Dim savepath As String
+
+spreadsht = "RatificationPipelineMD" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+queryname = "RatPostsaleSaleNotYetFiledQry"
+queryname2 = "RatPostsaleSaleFiledNISINotYetIssuedQry"
+queryname3 = "RatPostSaleNISIIssuedQry"
+queryname4 = "RatPostSaleNISIExpiredQry"
+queryname5 = "RatPostsaleSaleNotYetFiledQry_RANKINGS"
+'queryname5 = "RatPostSaleSalesRatifiedQry"
+'queryname6 = "RatPostSaleRatDateUpdatedQry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcelSUPER(filepath, spreadsht, "Report")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname5, savepath, True, "RatPostsaleTop10"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "RatPostsaleSaleNotYetFiled"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname2, savepath, True, "RatPSFiledNISINotYetIssued"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname3, savepath, True, "RatPostSaleNISIIssued"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname4, savepath, True, "RatPostSaleNISIExpired"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    queryname5, savepath, True, "RatPostSaleSalesRatified"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    queryname6, savepath, True, "RatPostSaleRatDateUpdated"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "RatPostsaleSaleNotYetFiledQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "RatificationPipelineMD" & ".xls", True, "RatPostsaleSaleNotYetFiled"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "RatPostsaleSaleFiledNISINotYetIssuedQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "RatificationPipelineMD" & ".xls", True, "RatPSFiledNISINotYetIssued"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "RatPostSaleNISIIssuedQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "RatificationPipelineMD" & ".xls", True, "RatPostSaleNISIIssued"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "RatPostSaleNISIExpiredQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "RatificationPipelineMD" & ".xls", True, "RatPostSaleNISIExpired"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "RatPostSaleSalesRatifiedQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "RatificationPipelineMD" & ".xls", True, "RatPostSaleSalesRatified"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "RatPostSaleRatDateUpdatedQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "RatificationPipelineMD" & ".xls", True, "RatPostSaleRatDateUpdated"
+
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function FilesNoBillsAfterSaleCancelled()
+
+Call ExcelSaveAsTBL("vwFiles_NoBills_After_Sale_Cancelled")
+
+End Function
+
+
+
+Public Function BondInfoSaleCancelledEmail()
+
+Dim db As DAO.Database
+Dim MailList As DAO.RecordSet
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim Subjectline As String
+Dim BodyFile As String
+Dim MyBody As TextStream
+Dim MyBodyText As String
+Dim strsql, vARDate, VarClient, varborrower, VarLoan As String
+Dim SEmail, vtitle, emailsubject, emailmessage, E1, E2, E3, e4, e5, e6, e7, e8, e9, e10 As String
+Dim rs As RecordSet
+Dim VarParaLegal, strPL  As String
+Dim rsPL As RecordSet
+Dim varsendemail As String
+Dim varEmailPrt
+Dim varsending As String
+Dim vNot As String
+Dim resumes_bond_number As String
+Dim resumes_saledate As String
+Dim resumes_sale_cancelled As String
+Dim resumes_sale_cancelreason As String
+ 
+If Forms![foreclosure database screen]![PropertyState] = "MD" Then
+
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!salecancel_reason) Then
+varreason = InputBox("Reason for Cancellation")
+Else
+varreason = Forms![foreclosure database screen]!ForeclosureSubForm.Form!salecancel_reason
+End If
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!sale_cancelled <> Date Then
+vNot = "The sale cancelled date input is NOT for " & Date & ".  This file will not be on the Cooper Kills spreadsheet sent in the automatic emails tomorrow a.m."
+End If
+
+
+If DLookup("bond_number", "postsale", "subfilenum = " & Forms![foreclosure database screen]!filenum) > 0 Then
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then MsgBox ("No Sale Date in sale date field!")
+vFldEmail = "VShinsky@lexingtonnational.com"
+emailsubject = "RE: SALE CANCELLATION FOR BOND # " & DLookup("bond_number", "postsale", "subfilenum = " & Forms![foreclosure database screen]!filenum)
+    E2 = "BWW#: " & Forms![foreclosure database screen]!filenum & vbCr & "SALE DATE/TIME: " & Forms![foreclosure database screen]![ForeclosureSubForm].Form!SaleDate & " / " & Forms![foreclosure database screen]![ForeclosureSubForm].Form!SaleTime & vbCr
+    E3 = "PROPERTY ADDRESS: " & Forms![foreclosure database screen]![PropAddress] & IIf(IsNull(Forms![foreclosure database screen]![propaddress2]), "", ", " & Forms![foreclosure database screen]![propaddress2]) & _
+        IIf(IsNull(Forms![foreclosure database screen]![unit_no]), "", ", " & Forms![foreclosure database screen]![unit_no]) & ", " & Forms![foreclosure database screen]![PropertyCity] & ", " & Forms![foreclosure database screen]![PropertyState] & " " & Forms![foreclosure database screen]![propzip] & vbCr
+    e4 = "COUNTY: " & Forms![foreclosure database screen]!Propertycounty & vbCr & "BOND #: " & DLookup("bond_number", "postsale", "subfilenum = " & Forms![foreclosure database screen]!filenum) & vbCr & "BOND DATE: " & Forms![foreclosure database screen]!PostsaleSubForm.Form!bond_sent & vbCr
+    e5 = "CIRCUIT COURT CASE #: " & DLookup("caseno", "postsale", "subfilenum = " & Forms![foreclosure database screen]!filenum) & vbCr
+    e6 = "BORROWER LAST NAME: " & Forms![foreclosure database screen]![LastNameDebtor1] & vbCr
+    e7 = "REASON FOR CANCELLATION: " & varreason
+    
+    emailmessage = E1 + E2 + E3 + e4 + e5 + e6 + e7
+
+    Set MyOutlook = New Outlook.Application
+    Set MyMail = MyOutlook.CreateItem(olMailItem)
+        
+MyMail.To = vFldEmail
+MyMail.CC = "robert.johnson@bww-law.com;howie.bierman@bww-law.com"
+MyMail.Subject = emailsubject
+emailmessage = emailmessage & vbCr & vNot
+MyMail.body = emailmessage
+MyMail.Display
+
+'coding for bond info from prev sales screen
+Else
+
+'additional bond information from the resumes table
+
+Set rs = CurrentDb.OpenRecordset("select bond_number,bond_sent,bond_amt, sale_cancelled,saledate, saletime,sale_cancelreason from resumes where filenum = " & Forms![foreclosure database screen]!filenum & " order by bond_sent desc", dbOpenSnapshot)
+
+Do While Not rs.EOF
+
+If rs.Fields("bond_amt").Value > 0 Or _
+ rs.Fields("bond_number").Value > 0 Or _
+ IsNull(rs.Fields("bond_sent").Value) = False Then
+    'go back here
+ 
+ resumes_bond_number = IIf(IsNull(rs.Fields("bond_number").Value), "", rs.Fields("bond_number").Value)
+ resumes_saledate = IIf(IsNull(rs.Fields("saledate").Value), "", rs.Fields("saledate").Value)
+  resumes_saletime = IIf(IsNull(rs.Fields("saletime").Value), "", rs.Fields("saletime").Value)
+ resumes_sale_cancelled = IIf(IsNull(rs.Fields("sale_cancelled").Value), "", rs.Fields("sale_cancelled").Value)
+ resumes_sale_cancelreason = IIf(IsNull(rs.Fields("sale_cancelreason").Value), "", rs.Fields("sale_cancelreason").Value)
+ 
+ 
+ Exit Do
+ End If
+ rs.MoveNext
+Loop
+
+rs.Close
+Set rs = Nothing
+
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then MsgBox ("No Sale Date in sale date field!")
+vFldEmail = "VShinsky@lexingtonnational.com"
+emailsubject = "RE: SALE CANCELLATION FOR BOND # " & resumes_bond_number
+
+    E1 = "BWW#: " & Forms![foreclosure database screen]!filenum
+    E2 = "SALE DATE/TIME: " & resumes_saledate & vbCr & "/" & resumes_saletime & vbCr
+    E3 = "PROPERTY ADDRESS: " & Forms![foreclosure database screen]![PropAddress] & IIf(IsNull(Forms![foreclosure database screen]![propaddress2]), "", ", " & Forms![foreclosure database screen]![propaddress2]) & _
+        IIf(IsNull(Forms![foreclosure database screen]![unit_no]), "", ", " & Forms![foreclosure database screen]![unit_no]) & ", " & Forms![foreclosure database screen]![PropertyCity] & ", " & Forms![foreclosure database screen]![PropertyState] & " " & Forms![foreclosure database screen]![propzip] & vbCr
+    e4 = "BOND #: " & resumes_bond_number & vbCr
+    e5 = "CIRCUIT COURT CASE #: " & DLookup("caseno", "postsale", "subfilenum = " & Forms![foreclosure database screen]!filenum) & vbCr
+    e6 = "BORROWER LAST NAME: " & Forms![foreclosure database screen]![LastNameDebtor1] & vbCr
+    e7 = "REASON FOR CANCELLATION: " & resumes_sale_cancelreason
+    
+    emailmessage = E1 + E2 + E3 + e4 + e5 + e6 + e7
+
+    Set MyOutlook = New Outlook.Application
+    Set MyMail = MyOutlook.CreateItem(olMailItem)
+        
+MyMail.To = vFldEmail
+MyMail.CC = "robert.johnson@bww-law.com;howie.bierman@bww-law.com"
+MyMail.Subject = emailsubject
+emailmessage = emailmessage & vbCr & vNot
+MyMail.body = emailmessage
+MyMail.Display
+
+End If
+
+
+End If
+
+
+End Function
+
+Public Function ReferralCompletedClient()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "ReferralCompletedClient" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "ReferralCompletedClientQry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "ReferralCompletedClientQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "ReferralCompletedClient" & ".xls" , True, "MainData"
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function RescissionFormOpen()
+
+If Forms![foreclosure database screen]!PropertyState <> "va" Then
+    MsgBox "Rescission Screen only for Virginia files", vbCritical, "Virginia Files Only"
+    Exit Function
+End If
+
+Dim stDocName As String: Dim stLinkCriteria As String
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("select [filenum] from rescissiontbl where [filenum]=" & Forms![foreclosure database screen]!filenum)
+If rs.EOF Then
+    With rs
+        .AddNew
+        !filenum = Forms![foreclosure database screen]!filenum
+        .Update
+    End With
+End If
+
+rs.Close
+Set rs = Nothing
+
+stDocName = "RecissionFrmVA"
+stLinkCriteria = "[FileNum]=" & Forms![foreclosure database screen]!filenum
+
+DoCmd.OpenForm stDocName, , , stLinkCriteria
+
+
+End Function
+
+Sub EvictionTablesExport(query As String, monther As Date)
+
+Dim evicquery As QueryDef
+Set evicquery = CurrentDb.QueryDefs("evictionpipelinemktblqry")
+Dim frmsql As String
+
+On Error Resume Next
+    CurrentDb.Execute ("drop table EvictionPipelinetbl")
+On Error GoTo 0
+
+frmsql = evicquery.sql
+evicquery.sql = Replace(evicquery.sql, "entertablehere", query)
+
+With evicquery
+    .Parameters("Enter reporting month") = monther
+    .Execute
+End With
+
+evicquery.sql = frmsql
+
+End Sub
+
+Public Function EvictionPipelineTables()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+Dim reportmonth As Date
+
+spreadsht = "EvictionPipelineTables" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+ 
+On Error Resume Next
+    CurrentDb.Execute ("drop table [EvicMDRpt]")
+    CurrentDb.Execute ("delete from [EvictionReport]")
+On Error GoTo 0
+ 
+'On Error GoTo handler
+Call WarningsNowFalse
+Call RemoveSheetsExcelSUPER(filepath, spreadsht, "Report", "ClientReferralCountsMD", "ClientReferralCountsVA")
+
+'DoCmd.OpenQuery "Eviction Query Table"
+With CurrentDb.QueryDefs("Eviction Query Table")
+    .Parameters("Which Client Report Do You Wish To See?") = ""
+    .Parameters("Enter Type of Loan or Return for all") = ""
+    .Execute
+End With
+
+'DoCmd.OpenQuery "EvicMDTblCase"
+
+With CurrentDb.QueryDefs("Eviction Query VA")
+    .Parameters("Which Client Report Do You Wish To See?") = ""
+    .Parameters("Enter County") = ""
+    .Parameters("Enter Client Contact") = ""
+    .Execute
+End With
+
+ reportmonth = DateValue(InputBox("Enter reporting month", "Enter month"))
+
+If Len(reportmonth) = 0 Then Exit Function
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineBaseQry", savepath, True, "Base"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineNTVNotYetSentQry", savepath, True, "NTVNotYetSent"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineMFPNotYetSentQry", savepath, True, "MFPNotYetSent"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineOrderPossNotYetSentQry", savepath, True, "OrderPossNotYetSent"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineWritPossNotYetSentQry", savepath, True, "WritPossNotYetSent"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineFCDocsNotYetRecdQry", savepath, True, "FCDocsNotYetRecd"
+
+Call EvictionTablesExport("EvictionPipelineNewEvictionRefsQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "NewEvictionRefs"
+
+Call EvictionTablesExport("EvictionPipelineDateMotionSentCourtQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "DateMotionSentCourt"
+
+Call EvictionTablesExport("EvictionPipelineWritPossMailedCourtQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "WritPossMailedCourt"
+
+Call EvictionTablesExport("EvictionPipelineHearingMDQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "HearingMD"
+
+Call EvictionTablesExport("EvictionPipelineAffOccReqQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "AffOccReq"
+
+Call EvictionTablesExport("EvictionPipelineAffOccRecdQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "AffOccRecd"
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineMissingDeedsQry", savepath, True, "MissingDeeds"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineMissingAffOccQry", savepath, True, "MissingAffOcc"
+
+Call EvictionTablesExport("EvictionPipelineLockoutsQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "Lockouts"
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineMissingLockoutsQry", savepath, True, "MissingLockouts"
+
+'---Virginia Files--------------
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineBaseVAQry", savepath, True, "BaseVA"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineNTQNotSentVAQry", savepath, True, "NTQNotYetSentVA"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineUnlawDetNotSentVAQry", savepath, True, "UnlawDetNotSentVA"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineWritPossNotYetSentVAQry", savepath, True, "WritPossNotYetSentVA"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineFCDocsNotYetRecdVAQry", savepath, True, "FCDocsNotYetRecdVA"
+
+Call EvictionTablesExport("EvictionPipelineNewEvictionRefsVAQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "NewEvictionRefsVA"
+
+Call EvictionTablesExport("EvictionPipelineUDSummonsVAQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "UDSummonsVA"
+
+Call EvictionTablesExport("EvictionPipelineWritPossMailedCourtVAQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "WritPossMailedCourtVA"
+
+Call EvictionTablesExport("EvictionPipelineHearingVAQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "HearingVA"
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineMissingDeedsVAQry", savepath, True, "MissingDeedsVA"
+
+Call EvictionTablesExport("EvictionPipelineLockoutsVAQry", reportmonth)
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelinetbl", savepath, True, "LockoutsVA"
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "EvictionPipelineMissingLockoutsVAQry", savepath, True, "MissingLockoutsva"
+
+Call SaveAsXLSB(savepath)
+savepath = Replace(savepath, ".xls", ".xlsb")
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function ClientReferralPipelineOCWEN()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "MDPresalePipelineClientReportOCWEN" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "ClientReferalsReportUnionOCWEN"
+
+On Error GoTo handler
+ 
+Call WarningsNowFalse
+ 
+ On Error Resume Next
+    CurrentDb.Execute ("drop table ClientReferralMainDSETtbl")
+On Error GoTo 0
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+With CurrentDb.QueryDefs("ClientReferralMAINDSETNew")
+    .Parameters("Enter client name") = "ocwen"
+    .Parameters("Type of loan") = "*"
+    .Execute
+End With
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "ClientReferalsReportUnionOCWEN", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "MDPresalePipelineClientReportOCWEN" & ".xls" , True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function DeedPipeline_VALoanType()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "DeedPipelineVALoanType" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "DeedPipeline_VALoanTypeQry"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "FHASpreadsheetVAQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "FHASpreadsheetVA" & ".xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function MDOcwenClientReferralPipeline()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+Dim TypeOfLoan As String: TypeOfLoan = InputBox("Type of Loan", "Type of Loan")
+spreadsht = "MDOcwenPresalePipelineClientReport" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "ClientReferalsReportUnion"
+
+On Error Resume Next
+    CurrentDb.Execute ("drop table ClientReferralMainDSETtbl")
+On Error GoTo 0
+
+'On Error GoTo handler
+ 
+Call WarningsNowFalse
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+
+With CurrentDb.QueryDefs("ClientReferralMAINDSETNew")
+    .Parameters("Enter client name") = "ocwen"
+    .Parameters("Type of loan") = IIf(TypeOfLoan = "", "*", TypeOfLoan)
+    .Execute
+End With
+
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+    
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "ClientReferalsReportUnion", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "MDOcwenPresalePipelineClientReport" & ".xls" _
+    , True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function VAForeclosureRefReport()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim queryname2 As String
+Dim savepath As String
+
+spreadsht = "VAForeclosureRpt" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "VARefsPipelineFilesOpenedQry"
+queryname2 = "VARestartsCompletedPipelineQry"
+
+Call WarningsNowFalse
+
+On Error Resume Next
+    CurrentDb.Execute ("drop table BKtoFCFilestbl")
+    CurrentDb.Execute ("delete from VARefsPipelineFilesOpenedtbl")
+    CurrentDb.Execute ("drop table BKtoFCFilestblMAX")
+On Error GoTo 0
+
+On Error GoTo handler
+
+
+Call RemoveSheetsExcel(filepath, spreadsht, "FilesOpened", "RestartsCompleted")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "VARefsPipelineFilesOpenedQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "VAForeclosureRpt" & ".xls", True, "FilesOpened"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "VARestartsCompletedPipelineQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "VAForeclosureRpt" & ".xls", True, "RestartsCompleted"
+Call FilesOpenedReport
+
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "FilesOpened"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname2, savepath, True, "RestartsCompleted"
+    
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function FHASpreadsheetVAReport()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "FHASpreadsheetVA" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "FHASpreadsheetVAQry"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "FHASpreadsheetVAQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "FHASpreadsheetVA" & ".xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function ReferralCompletedJNP()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "ReferralCompletedJNP" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "ReferralCompletedJNPQry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "ReferralCompletedJNPQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "ReferralCompletedJNP" & ".xls" , True, "MainData"
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function SalesCancelledPipeline()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "SalesCancelledPipeline" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "SalesCancelledPipelineQry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "SalesCancelledPipelineQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "SalesCancelledPipeline" & ".xls" , True, "MainData"
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function SaleReportingPipeline()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "SaleReportingPipeline" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "SaleReportingPipelineFINALQry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+DoCmd.OpenQuery "SaleReportingPipelineQry"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "SaleReportingPipelineFINALQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "SaleReportingPipeline" & ".xls" , True, "MainData"
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DeedPerformancePipelineVA()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "DeedPerformancePipelineVA" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "deedperformancepipeline_vaqry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "deedperformancepipeline_vaqry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "DeedPerformancePipelineVA" & ".xls" , True, "MainData"
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function VAPostsaleBillingPipeline()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "VAPostsaleBillingPipeline" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "vapostsalebillingpipelineqry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "vapostsalebillingpipelineqry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "VAPostsaleBillingPipeline" & ".xls" , True, "MainData"
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+Public Function HUDVAFinalPipelineClient()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "HUDVAFinalPipelineClient" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "hudvafinalpipeline_clientqry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "hudvafinalpipeline_clientqry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "HUDVAFinalPipelineClient" & ".xls" , True, "MainData"
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function HUDVAFinalPipelineBWW()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "HUDVAFinalPipelineBWW" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "hudvafinalpipeline_bwwqry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "hudvafinalpipeline_bwwqry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "HUDVAFinalPipelineBWW" & ".xls" , True, "MainData"
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function FHAPipelineReport()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "FHAPipelineReport" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "FHASpreadsheetQry"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "FHASpreadsheetQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "FHAPipelineReport" & ".xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function getUnresolvedTitleClaims()
+
+Dim tdfNew As TableDef
+Dim rs, rsP As RecordSet
+Dim sqlstr As String
+Dim rfc As RecordSet
+Dim FTable, PTable As String
+Dim VAssigned As String
+
+
+PTable = "Select cases.filenum, Postsale.buyer " _
+& " FROM ((Cases INNER JOIN Foreclosure ON " _
+& " Cases.FileNum = Foreclosure.subfilenum) " _
+& " INNER JOIN Postsale ON Cases.Filenum = Postsale.Subfilenum) " _
+& " Where foreclosure.[titleclaimsent] is not null and foreclosure.titleclaimresolved is null;"
+
+FTable = "Select cases.filenum, Cases.Client, Cases.LastNameDebtor1, Cases.ClientRefNumber, cases.typeofloan, " _
+& " Cases.propertycounty, cases.fidelity, cases.propertystate, title.[policy no], cases.[date recieved], cases.lastnamedebtor2, foreclosure.saledate, " _
+& " Foreclosure.[titleclaimsent],  foreclosure.assigned, foreclosure.referred_oc, foreclosure.titleclaimresolved, cases.status, foreclosure.info,  " _
+& " title.agent, " _
+& " foreclosure.[Title claim date acknowledged], title.controlno, foreclosure.titleissue_denied, cases.propaddress, foreclosure.[title company]" _
+& " FROM ((Cases INNER JOIN Foreclosure ON " _
+& " Cases.FileNum = Foreclosure.subfilenum) " _
+& " INNER JOIN Title ON Cases.Filenum = Title.filenum) " _
+& " Where foreclosure.[titleclaimsent] is not null " _
+& " and foreclosure.titleclaimresolved is null and foreclosure.titleissue_denied = 0;"
+
+Set rs = CurrentDb.OpenRecordset(FTable)
+Set rsP = CurrentDb.OpenRecordset(PTable)
+
+CurrentDb.Execute "Delete * from Unclaimed;", dbFailOnError
+
+Set rfc = CurrentDb.OpenRecordset("Unclaimed")
+
+While Not rs.EOF
+
+With rfc
+.AddNew
+!filenum = rs!filenum
+!Fidelity = rs!Fidelity
+!Client = rs!Client
+!ClientRefNumber = rs!ClientRefNumber
+!LastNameDebtor1 = rs!LastNameDebtor1
+!Status = rs![Status]
+!PropertyState = rs!PropertyState
+!Propertycounty = rs!Propertycounty
+![Date Recieved] = rs![Date Recieved]
+!TypeOfLoan = rs!TypeOfLoan
+!TitleClaimSent = rs!TitleClaimSent
+!controlno = rs!controlno
+!policy = rs![assigned]
+!Agent = rs!Agent
+!agent2 = ""
+!AgentPhone = ""
+!agent_phone2 = ""
+!PropAddress = rs!PropAddress
+!Referred_OC = rs!Referred_OC
+If IsNull(rs!SaleDate) Then
+!SaleDate = Null
+Else
+!SaleDate = rs!SaleDate
+End If
+If IsNull(rs!LastNameDebtor2) Or rs!LastNameDebtor2 = "" Then
+!LastNameDebtor2 = Null
+Else
+!LastNameDebtor2 = rs!LastNameDebtor2
+End If
+If IsNull(rs![Info]) Then
+!Info = Null
+Else
+!Info = rs!Info
+End If
+If IsNull(rs![Title claim date acknowledged]) Then
+![Title claim date acknowledged] = Null
+Else
+![Title claim date acknowledged] = rs![Title claim date acknowledged]
+End If
+If IsNull(rs![Title Company]) Then
+![Title Company] = Null
+Else
+![Title Company] = rs![Title Company]
+End If
+.Update
+End With
+
+rs.MoveNext
+Wend
+
+If IsNull(rsP) Then
+
+While Not rsP.EOF
+With rfc
+.Edit
+!filenum = rs!filenum
+
+.Update
+End With
+rsP.MoveNext
+Wend
+End If
+
+DoCmd.OpenQuery ("claimresolved1")
+
+End Function
+
+Public Function SOTXMLCoverSheetExport()
+
+Dim xmlstr As String
+Dim qdf As DAO.QueryDef
+Dim rs As DAO.RecordSet
+Dim savepath As String
+
+If Forms![foreclosure database screen]!PropertyState <> "VA" Then
+    MsgBox "This is for Virginia files only.", vbCritical, "Not Virginia"
+    Exit Function
+End If
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubFormVA!taxidform!Number_Parcels) Then
+    MsgBox "You must enter the number of parcels before proceeding.", vbCritical, "Number of Parcels"
+    Exit Function
+End If
+
+Dim nopages As Double: nopages = InputBox("Please enter the number of pages in the instrument." & vbCrLf & _
+    "Do not count cover sheet pages", "Number of Pages")
+Dim countyname As String
+Dim dbcountyname As String
+Dim cityorcounty As Variant ': cityorcounty = InputBox("Enter 1) if City or 2) if County", "City of County")
+
+    dbcountyname = Forms![foreclosure database screen]!Propertycounty 'InputBox("Enter COUNTY NAME as appears on website", "County Name")
+    countyname = DLookup("[CountyNameOnWebsite]", "[SOTXMLCountiestbl]", "[County]=" & """" & dbcountyname & """")
+
+cityorcounty = DLookup("[CityORCounty]", "[SOTXMLCountiestbl]", "[County]=" & """" & dbcountyname & """")
+
+Set qdf = CurrentDb.QueryDefs("SOTXMLCoverShtQry")
+qdf.Parameters("forms![foreclosure database screen]!filenum") = Forms![foreclosure database screen]!filenum
+qdf.Parameters("forms![foreclosure database screen]!client") = Forms![foreclosure database screen]!Client
+qdf.Parameters("forms![foreclosure database screen]!aitno_servicer") = Forms![foreclosure database screen]!aitno_servicer
+qdf.Parameters("forms![foreclosure database screen]!aitno_client") = Forms![foreclosure database screen]!aitno_client
+qdf.Parameters("Enter number of parcels") = Forms![foreclosure database screen]!ForeclosureSubFormVA!taxidform!Number_Parcels
+qdf.Parameters("Enter number of pages") = nopages
+qdf.Parameters("Enter COUNTY NAME as appears on website") = UCase(countyname)
+qdf.Parameters("City or County") = cityorcounty
+Set rs = qdf.OpenRecordset
+
+Do While Not rs.EOF
+
+xmlstr = xmlstr & rs("xmlline").Value
+rs.MoveNext
+
+Loop
+
+rs.Close
+Set rs = Nothing
+Set qdf = Nothing
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xml", "") & ".xml"
+Call WriteStringToFile(savepath, xmlstr)
+
+MsgBox "XML File exported to: " & vbCrLf & savepath
+
+End Function
+
+
+Public Function openqc2dcformTEST()
+
+        GblFilenum = Forms![foreclosure database screen]![filenum]
+      Call CloseFormsQC
+        LockFile (GblFilenum)
+        DoCmd.OpenForm "QCScreenQC2DC", , , "[subFileNum]=" & GblFilenum
+          
+End Function
+
+Public Function ThreePPPurchaserPipeline()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "3PPPurchaserPipeline" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "3PPPurchaserPipelineUNIONQry"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "3PPPurchaserPipelineUNIONQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "3PPPurchaserPipeline" & ".xls", True, "MainData"
+
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DeedPipelineRSBwUpcomingStatus()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "DeedPipelineRSB" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "DeedPipeline_RSBwUpcomingStatusQry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "DeedPipeline_RSBQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "DeedPipelineRSB" & ".xls" , True, "MainData"
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function ThreePPPipelineReport()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "3rdPartyPipelineReport" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "3PPPipelineQry"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function TitleResolutionSpreadsheets()
+
+Dim i As Variant
+Dim optionsstr As String
+
+optionsstr = "1.     Title Claim" & vbCrLf
+optionsstr = optionsstr & "2.     Outside Counsel" & vbCrLf
+optionsstr = optionsstr & "3.     Manual Curative" & vbCrLf
+optionsstr = optionsstr & "4.     In House Litigation"
+
+i = InputBox("Please select report:" & vbCrLf & optionsstr, "Title Resolution Reports")
+
+Select Case i
+
+Case 1
+    ExcelSaveAsQRY ("TitleResolution_TitleClaimQry")
+Case 2
+    
+    Call getUnresolvedTitleClaims
+    ExcelSaveAsQRY ("TitleResolution_OutsideCounselQry")
+Case 3
+    ExcelSaveAsQRY ("TitleResolution_ManualCurativeQry")
+Case 4
+    ExcelSaveAsQRY ("TitleResolution_InHouseLitigationQry")
+Case Else
+    Exit Function
+End Select
+
+End Function
+Public Function HoCoLienCerTEST()
+
+DoCmd.OpenReport ("LienCert-HowardNEW"), acViewPreview
+
+End Function
+Public Function ExportHowardCountyLienCert()
+Dim oapp As Word.Application
+Dim oDoc As Word.document
+Dim oMMDoc As Word.document
+Set oapp = CreateObject("word.application")
+DoCmd.OpenQuery ("LienCert-HowardExportQry")
+DoCmd.TransferText acExportDelim, , "LienCert-HowardExporttbl", pathuser() & "hocoliencert.txt", True
+
+Set oDoc = oapp.Documents.ADD("\\rvdv-fs01\DataTransfer\Templates\FC\Howard County Lien Certificate Application.doc", , , True)
+
+With oDoc.MailMerge
+.MainDocumentType = wdFormLetters
+.OpenDataSource name:=pathuser() & "hocoliencert.txt"
+End With
+
+With oDoc.MailMerge
+.destination = wdSendToNewDocument '; wdSendToFax; wdSendToEmail wdSendToPrinter
+.Execute Pause:=False
+oDoc.Close False
+oapp.Visible = True
+End With
+
+
+'With oDoc.MailMerge
+'.Destination = wdSendToNewDocument '; wdSendToFax; wdSendToEmail wdSendToPrinter
+'.Execute Pause:=False
+'oDoc.Close False
+'oapp.Visible = False
+'End With
+'Call WordMerge2PDF(oapp)
+
+'Set oapp = Nothing
+
+End Function
+
+Public Function PhoneLogEntriesReport()
+
+    ExcelSaveAsQRY ("PhoneLogEntriesQry")
+
+End Function
+Public Function AccountingAP()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "AccountingAP" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "BillsAgedPayabaleqryUNION"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function OpenCitiLivingFileReqMetFrm()
+On Error GoTo handler
+
+If Forms![foreclosure database screen]!Client Like "Citi*" Then
+
+
+
+If IsNull(DLookup("filenum", "tblCitiLivingFileReqMet", "filenum = " & GblFilenum)) Then
+    CurrentDb.Execute "insert into tblCitiLivingFileReqMet (filenum) values (" & GblFilenum & ")", dbFailOnError
+End If
+
+DoCmd.OpenForm "CitiLivingFileReqMetFrm2"
+Else
+MsgBox "Case is not a Citi file.  Form cannot be completed.", vbCritical, "Citi Living Requirements Met"
+
+End If
+
+       Exit Function
+handler:
+    Exit Function
+
+End Function
+
+Public Function BKAttorneyVolReport()
+
+On Error GoTo handler
+
+Dim sel As Variant: sel = InputBox("Please select from the following reports: " & vbCrLf & vbCrLf & _
+    "     1. MFR Validation Report" & vbCrLf & _
+    "     2. POC Validation Report" & vbCrLf & _
+        "     3. Plan Review Report" & vbCrLf & _
+                "     4. PPFN Validation Report" & vbCrLf & _
+                "     5. PCN Validation Report" & vbCrLf & _
+                "     6. NOFC Response Validation Report" & vbCrLf & _
+"     7. APOC Validation Report", "Select Report")
+
+Select Case sel
+Case 1
+ExcelSaveAsQRY ("BKMFRValidationReportQry")
+Case 2
+ExcelSaveAsQRY ("BKPOCValidationReportQry")
+Case 3
+ExcelSaveAsQRY ("BKPlanReviewReport")
+Case 4
+ExcelSaveAsQRY ("PPFNValidationReportQry")
+Case 5
+ExcelSaveAsQRY ("PCNValidationReportQry")
+Case 6
+ExcelSaveAsQRY ("NOFCResponseValidationReportQry")
+Case 7
+ExcelSaveAsQRY ("APOCValidationReportQry")
+Case Else
+
+GoTo handler
+
+End Select
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function BKStaffVolReport()
+
+On Error GoTo handler
+Dim sel As Variant: sel = InputBox("Please select from the following reports: " & vbCrLf & vbCrLf & _
+    "     1. Staff MFR Validation Report" & vbCrLf & _
+    "     2. Staff POC Validation Report" & vbCrLf & _
+"     3. Staff Plan Review Report", "Select Report")
+Select Case sel
+Case 1
+ExcelSaveAsQRY ("BKStaffMFRValidationReportQry")
+Case 2
+ExcelSaveAsQRY ("BKStaffPOCValidationReportQry")
+Case 3
+ExcelSaveAsQRY ("BKStaffPlanReviewReportQry")
+Case Else
+
+GoTo handler
+
+End Select
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function TitleReviewedUpdatedBySpreadsheet()
+
+ExcelSaveAsQRY ("TitleReviewedUpdatedBySpreadsheetQry")
+
+End Function
+
+Public Function NoticesofSaleDC_Reese()
+
+DoCmd.OpenReport ("Notice of Sale - CountyDC"), acViewPreview
+DoCmd.OpenReport ("AdDC"), acViewPreview
+DoCmd.OpenReport ("Notice of Sale"), acViewPreview
+
+End Function
+
+Public Function DuplicateInvoicesExport()
+
+Dim ans As Integer: ans = MsgBox("WARNING! THIS REPORT MAY TAKE 5 MINUTES TO RUN!" & vbCrLf & "Are you sure you want to continue?", vbYesNo + vbExclamation, "WARNING")
+If ans = vbNo Then Exit Function
+
+Call MakeDuplicateInvoiceTable
+Dim rs As RecordSet
+On Error Resume Next
+Set rs = CurrentDb.OpenRecordset("DuplicateBillsCreatedQry")
+If Not rs.EOF Then
+    ExcelSaveAsQRY ("DuplicateBillsCreatedQry")
+Else
+    MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+End If
+
+rs.Close
+Set rs = Nothing
+
+End Function
+
+Sub MakeDuplicateInvoiceTable()
+
+Dim begbilldate As Variant: begbilldate = InputBox("Enter Beginning Billing Date", "Enter Date")
+Dim endbilldate As Variant: endbilldate = InputBox("Enter Ending Billing Date", "Enter Date")
+Dim i As Integer
+
+Call WarningsNowFalse
+
+On Error Resume Next
+    CurrentDb.Execute ("drop table DuplicateBillsCreatedCountstbl")
+
+On Error GoTo 0
+
+If Len(begbilldate) = 0 Or Len(endbilldate) = 0 Then GoTo handler
+For i = 1 To 41
+
+With CurrentDb.QueryDefs("DuplicateBillsCreated" & i & "Qry")
+    .Parameters("Enter Beginning Billing Date") = DateValue(begbilldate)
+    .Parameters("Enter Ending Billing Date") = DateValue(endbilldate)
+    .Execute
+End With
+
+Next i
+Exit Sub
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Sub
+
+Public Function DILReportExport()
+
+Dim VSelectOC, VSelectQry
+
+VSelectOC = InputBox("1. Active Files" & vbCr & "2. Closed Files" & vbCr & "3. All Files" & vbCr & vbCr & "input 1, 2 or 3")
+
+VSelectQry = InputBox("1. Enter Referral Date Criteria" & vbCr & "2. Do Not Enter Referral Date Criteria" & vbCr & vbCr & "input 1 or 2")
+
+
+If VSelectOC = 1 And VSelectQry = 1 Then
+ExcelSaveAsQRY "DILRptQry-DatesActiveSpreadsheetQry"
+ElseIf VSelectOC = 1 And VSelectQry = 2 Then
+ExcelSaveAsQRY "DILRptQry-ActiveSpreadsheetQry"
+ElseIf VSelectOC = 2 And VSelectQry = 1 Then
+ExcelSaveAsQRY "DILRptQRY-DatesClosedSpreadsheetQry"
+ElseIf VSelectOC = 2 And VSelectQry = 2 Then
+ExcelSaveAsQRY "DILRptQry-ClosedSpreadsheetQry"
+ElseIf VSelectOC = 3 And VSelectQry = 1 Then
+ExcelSaveAsQRY "DILRptQry-datesallSpreadsheetQry"
+ElseIf VSelectOC = 3 And VSelectQry = 2 Then
+ExcelSaveAsQRY "DILRptQry-AllSpreadsheetQry"
+End If
+
+End Function
+
+Public Function BillEmailedNotUploadedNotPaid()
+ 
+ExcelSaveAsQRY ("BillEmailedNotUploadedNotPaidQry")
+
+End Function
+
+Public Function BillCompletedNotEmailedNotPaid()
+ 
+ExcelSaveAsQRY ("BillCompletedNotEmailedNotPaidQry")
+
+End Function
+
+
+Public Function OpenSOTReviewScreen()
+'On Error GoTo handler
+'Call SetApptype(Me.Name)
+If IsNull(DLookup("filenum", "tblsotreviewed", "filenum = " & GblFilenum)) Then
+    CurrentDb.Execute ("insert into tblSOTReviewed (filenum) values (" & GblFilenum & ")")
+End If
+
+Forms![foreclosure database screen].Refresh
+
+DoCmd.OpenForm "sotreviewva", , , "[Filenum] = " & Forms![foreclosure database screen]!filenum
+DoCmd.Close acForm, "Foreclosure Database Screen"
+       Exit Function
+handler:
+    Exit Function
+
+
+
+End Function
+
+
+Public Function ClientReferralPipelineBKChase()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "MDPresalePipelineClientReport_BKChase" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "ClientReferalsReportUnion_BKChase"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+DoCmd.OpenQuery ("ClientReferralMAINDSETNew_BKChase")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "ClientReferalsReportUnion", filepath & "MDPresalePipelineClientReport_BKChase.xls", True, "MainData"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function BillingUnpaidPivot()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+
+spreadsht = "BillsUnpaidClientTotals" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "BillsDueTotalsSpreadsheetQry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DeedPerformanceTrackingQry()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname1, queryname2 As String
+Dim savepath As String
+
+spreadsht = "DeedPerformanceTrackingwConnect" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname1 = "DeedPerformanceTrackingCasesInvoicedQry"
+queryname2 = "DeedPerformanceTrackingDeedSentRecordingQry"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+
+Call RemoveSheetsExcel(filepath, spreadsht, "CasesInvoiced", "DeedSentRecording")
+
+DoCmd.OpenQuery ("DeedPerformanceTrackingCasesInvoicedmktblQry")
+DoCmd.OpenQuery ("DeedPerformanceTrackingDeedSentRecordingmktblQry")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname1, savepath, True, "CasesInvoiced"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname2, savepath, True, "DeedSentRecording"
+
+
+CurrentDb.Execute ("drop table DeedPerformanceTrackingCasesInvoicedTbl")
+CurrentDb.Execute ("drop table DeedPerformanceTrackingDeedSentRecordingTbl")
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function NamedChaseRegistrations()
+
+On Error GoTo handler
+
+
+dumpname = "NamedChaseRegistrations.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\managers\" & dumpname
+DoCmd.OutputTo acOutputQuery, "NamedChaseRegistrationsQry", acFormatXLS, destinationfile
+  
+
+VTo = "cpc.property.registration@chase.com"
+'VFROM = DLookup("EmailName", "Employees", "login = " & """" & username & """")
+VCCTo = "robert.johnson@bww-law.com"
+
+emailsubject = "Chase Registrations"
+emailmessage = ""
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.CC = VCCTo
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD "\\rvdv-fs01\shared\SPREADSHEETS\managers\" & dumpname
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Email not generated", vbCritical, "Report Error"
+
+End Function
+
+Public Function TrusteeRevdPivot()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "TrusteeRevdPivot" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "TrusteeRevdPivotQry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+Public Function DCComplaintsNotFiledwRefInfo()
+
+On Error GoTo handler
+
+
+ExcelSaveAsQRY ("DCComplaintsNotFiledwRefInfoQry")
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+Public Function DCComplaintsNotFiled()
+
+On Error GoTo handler
+
+
+ExcelSaveAsQRY ("DCComplaintsNotFiledQry")
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DCJudicialTitle()
+
+On Error GoTo handler
+
+
+ExcelSaveAsQRY ("DCJudicialTitleQry")
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function DeedPipelineRSB_template()
+
+FollowHyperlink ("\\rvdv-fs01\DataTransfer\Templates\Excel\DeedPipeline_RSB.xlsx")
+
+
+End Function
+Public Function DeedPipelineRSB()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "DeedPipelineRSB" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "DeedPipeline_RSBQry"
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+'Editing---
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "DeedPipeline_RSBQry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "DeedPipelineRSB" & ".xls" , True, "MainData"
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function SuntrustBillingMilestones()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "SuntrustBillingMilestones" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "SuntrustBillingMilestonesALLQry"
+
+On Error GoTo handler
+
+DoCmd.SetWarnings False
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function AcctsReceivablesAudit()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "AcctsReceivable" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "AcctsReceivable30_60_90qry"
+
+On Error GoTo handler
+
+DoCmd.SetWarnings False
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function AcctsPayableAudit()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "AcctsPayableAudit" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "AcctsPayableAuditQry"
+
+On Error GoTo handler
+
+DoCmd.SetWarnings False
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+DoCmd.OpenQuery ("AcctsPayable30_60_90qry")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function VAFCPipelineComprehensive()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "VAFCPipelineComprehensive" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "VAFCPipelineMainQry"
+
+On Error GoTo handler
+
+DoCmd.SetWarnings False
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+DoCmd.OpenQuery ("VAFCPipelineMainFilesQry")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+Public Function MissingAccountingVA()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "MissingAcctVA" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "MissingAcctVAQRY"
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+ 
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+ 
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+Public Function DocketReadyPendingSentCourt()
+
+On Error GoTo handler
+
+
+ExcelSaveAsQRY ("DocketReadyPendingSentCourtQry")
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DocketReadyNOIPending()
+
+On Error GoTo handler
+
+ExcelSaveAsQRY ("DocketReadyNOIPendingQry")
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DocketNOIPendingExpAffsPending()
+
+On Error GoTo handler
+
+ExcelSaveAsQRY ("DocketNOIPendingExpAffsPendingQry")
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function DocketingPipelineExport()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "DocketingPipeline" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "DocketingPipelineMainQry"
+
+'On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+CurrentDb.Execute ("select [BWW#] into DocketNOIExpAffsPendingtbl from DocketNOIExpAffsPendingQry")
+CurrentDb.Execute ("select [BWW#] into DocketNOIPendingExpAffsPendingtbl from DocketNOIPendingExpAffsPendingQry")
+CurrentDb.Execute ("select FileNum into DocketReadytbl from DocketReadyQry")
+CurrentDb.Execute ("select FileNum into DocketReadyNOIPendingtbl from DocketReadyNOIPendingQry")
+CurrentDb.Execute ("select FileNum into DocketReadyPendingSentCourttbl from DocketReadyPendingSentCourtQry")
+CurrentDb.Execute ("select FileNum into DocketPreFiledtbl from DocketPreFiledQry")
+CurrentDb.Execute ("select FileNum into 1stLegalNoSaleDatetbl from 1stLegalNoSaleDateQry")
+CurrentDb.Execute ("select [BWW#] into UnableDocketAlltbl from UnableDocketAllQry")
+CurrentDb.Execute ("select filenum into DocketQC3ChangesNeededtbl from DocketQC3ChangesNeededQry")
+
+DoCmd.OpenQuery ("DocketPipelineFilesQry")
+
+CurrentDb.Execute ("drop table DocketNOIExpAffsPendingtbl")
+CurrentDb.Execute ("drop table DocketNOIPendingExpAffsPendingtbl")
+CurrentDb.Execute ("drop table DocketReadytbl")
+CurrentDb.Execute ("drop table DocketReadyNOIPendingtbl")
+CurrentDb.Execute ("drop table DocketReadyPendingSentCourttbl")
+CurrentDb.Execute ("drop table DocketPreFiledtbl")
+CurrentDb.Execute ("drop table 1stLegalNoSaleDatetbl")
+CurrentDb.Execute ("drop table UnableDocketAlltbl")
+CurrentDb.Execute ("drop table DocketQC3ChangesNeededtbl")
+
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DCForeclosurePipeline()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "DCForeclosurePipeline" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "DCForeclosurePipelineQry"
+
+On Error GoTo handler
+ 
+Call WarningsNowFalse
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "ClientReferalsReportUnion", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "MDPresalePipelineClientReport" & ".xls" , True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DeedRecordingPipelineVA()
+
+Dim filepath As String
+Dim selreport As String
+Dim BegDate As String
+Dim EndDate As String
+Dim savepath As String
+Dim sourcefile As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+sourcefile = filepath & "DeedRecordingPipelineVA.xls"
+On Error Resume Next
+
+CurrentDb.Execute "Delete * from tempps;", dbFailOnError
+CurrentDb.Execute ("drop table DeedRecordingPipelineVA")
+
+On Error GoTo 0
+'On Error GoTo handler
+
+Call RemoveSheetsExcel(filepath, "DeedRecordingPipelineVA.xls", "MainData")
+'DoCmd.OpenForm "DeedReportingPipelineVAForm", acNormal
+
+Call DeedstobeRecordedVAHoldingFunds
+
+With CurrentDb.QueryDefs("DeedRecordingPipelineHoldingFundsVA")
+    .Parameters("type of loan") = "*"
+    .Parameters("enter client") = "*"
+    .Execute
+End With
+
+selreport = Forms("deedreportingpipelinevaform").Controls("combodeedreportselect").Value
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+ 
+BegDate = InputBox("Enter Beginning Date", "Enter Date")
+EndDate = InputBox("Enter Ending Date", "Enter Date")
+
+Select Case selreport
+
+Case "ALL"
+
+Call DeedRecVa
+
+With CurrentDb.QueryDefs("DeedRecordingPipelineBillNotPaidNotSentNotRecorded")
+    .Parameters("enter client") = "*"
+    .Parameters("Enter beginning Invoice Date") = BegDate
+    .Parameters("Enter ending Invoice Date") = EndDate
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("DeedRecordingPipelineBillNotPaidSentNotRecorded")
+    .Parameters("enter client") = "*"
+    .Parameters("Enter beginning Invoice Date") = BegDate
+    .Parameters("Enter ending Invoice Date") = EndDate
+    .Execute
+End With
+
+'not for billing
+
+'With CurrentDb.QueryDefs("DeedReportingPipelineDeedsSentDeedsRecordedVA")
+'    .Parameters("enter client") = "*"
+'    .Parameters("Enter Beginning Date") = BegDate
+'    .Parameters("Enter Ending Date") = EndDate
+'    .Execute
+'End With
+
+    With CurrentDb.QueryDefs("DeedRecordingPipelineBillNotPaidFundsAdvancedQry")
+        .Parameters("enter client") = "*"
+        .Execute
+    End With
+
+Case "Holding Funds VA"
+
+Case "Bill Not Paid (Not Sent/Not Recorded)"
+   
+    CurrentDb.Execute "Delete * from DeedRecordingPipelineVA;", dbFailOnError
+    
+    Call DeedRecVa
+    BegDate = InputBox("Enter Beginning Date", "Enter Date")
+    EndDate = InputBox("Enter Ending Date", "Enter Date")
+    With CurrentDb.QueryDefs("DeedRecordingPipelineBillNotPaidNotSentNotRecorded")
+        .Parameters("enter client") = "*"
+        .Parameters("Enter beginning Invoice Date") = BegDate
+        .Parameters("Enter ending Invoice Date") = EndDate
+        .Execute
+    End With
+    
+Case "Bill Not Paid (Sent/Not Recorded)"
+   
+    CurrentDb.Execute "Delete * from DeedRecordingPipelineVA;", dbFailOnError
+    
+    Call DeedRecVa
+    BegDate = InputBox("Enter Beginning Date", "Enter Date")
+    EndDate = InputBox("Enter Ending Date", "Enter Date")
+    With CurrentDb.QueryDefs("DeedRecordingPipelineBillNotPaidSentNotRecorded")
+        .Parameters("enter client") = "*"
+        .Parameters("Enter beginning Invoice Date") = BegDate
+        .Parameters("Enter ending Invoice Date") = EndDate
+        .Execute
+    End With
+    
+Case "Bill Not Paid (Funds Adv)"
+   
+    CurrentDb.Execute "Delete * from DeedRecordingPipelineVA;", dbFailOnError
+    Call DeedRecVa
+    With CurrentDb.QueryDefs("DeedRecordingPipelineBillNotPaidFundsAdvancedQry")
+        .Parameters("enter client") = "*"
+        .Execute
+    End With
+
+End Select
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "DeedRecordingPipelineVA", filepath & "DeedRecordingPipelineVA.xls", True, "MainData"
+
+FileCopy sourcefile, savepath
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "DeedRecordingPipelineVA", savepath, True, "MainData"
+
+'dumpname = Format$(Now(), "yyyymmddhhnnss") & "_DeedRecordingPipelineVA.xls"
+
+'sourcefile = filepath & "DeedRecordingPipelineVA.xls"
+'destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+'FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: " & savepath
+ShellExecuteFileOpen (savepath)
+
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function BKPipelineSpreadsheet()
+
+Dim rs As RecordSet
+Dim BegDate As Variant
+Dim EndDate As Variant
+Dim filepath As String
+Dim savepath As String
+
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Set xl = CreateObject("Excel.Application")
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+'On Error GoTo handler
+
+BegDate = InputBox("Enter Beg Date", "Enter date range")
+    If IsNull(BegDate) Or Len(BegDate) = 0 Then Exit Function
+EndDate = InputBox("Enter End Date", "Enter date range")
+    If IsNull(EndDate) Or Len(EndDate) = 0 Then Exit Function
+
+Call RemoveSheetsExcel(filepath, "BankruptcyPipelineSpreadsheet.xls", "MFRsPipeline", "POCsPipeline", "POCsFiled", "PlanRevdRef", "MFRsFiled")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+spreadsht = "BankruptcyPipelineSpreadsheet" & ".xls"
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "MFRReferralDateNEWQry", savepath, True, "MFRsPipeline"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BK-POC-REFERRALS", savepath, True, "POCsPipeline"
+
+DoCmd.RunSQL ("select * into BankruptcyPipelineReporttbl from Bankruptcy3MonthMFRsFiledQry Where [MFRs Filed] between #" & BegDate & "# and #" & EndDate & "#")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BankruptcyPipelineReporttbl", savepath, True, "MFRsFiled"
+
+DoCmd.RunSQL ("select * into BankruptcyPipelineReporttbl from Bankruptcy3MonthPOCsFiledQry Where [POCs Filed] between #" & BegDate & "# and #" & EndDate & "#")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BankruptcyPipelineReporttbl", savepath, True, "POCsFiled"
+    
+DoCmd.RunSQL ("select * into BankruptcyPipelineReporttbl from Bankruptcy3MonthPlanReviewRefQry Where [Plan Revd Ref] between #" & BegDate & "# and #" & EndDate & "#")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BankruptcyPipelineReporttbl", savepath, True, "PlanRevdRef"
+
+CurrentDb.Execute ("drop table bankruptcypipelinereporttbl")
+
+Set xlBook = xl.Workbooks.Open(savepath)
+Set xlSheet = xlBook.Sheets("Report")
+
+xlSheet.Cells(2, 1).Value = "Prepared: " & Format(Now, "m/d/yyyy")
+
+xlBook.Save
+xlBook.Close
+xl.Quit
+
+Set xlSheet = Nothing
+Set xlBook = Nothing
+Set xl = Nothing
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function BillsTotalsClientByCategoryNEW()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+Dim BegDater As String
+Dim EndDate As String
+
+spreadsht = "BillsTotalsClientByCategory" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "BillsTotalsClientByCategory"
+
+On Error GoTo handler
+
+BegDater = InputBox("Enter beginning date.", "Enter dates")
+enddater = InputBox("Enter ending date.", "Enter dates")
+
+On Error Resume Next
+
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryLASTMONTHtbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryLASTMONTHAgaintbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryQ4tbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryQ3tbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryQ2tbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryQ1tbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryJustQ4tbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryJustQ3tbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryJustQ2tbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryJustQ1tbl")
+On Error GoTo 0
+
+On Error GoTo handler
+
+Call WarningsNowFalse
+
+Call RemoveSheetsExcel(filepath, spreadsht, "ClientandCat")
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryLASTMONTH")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryLASTMONTHAgain")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Beg Bill Date") = enddater
+    .Execute
+End With
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryQ1")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryQ2")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryQ3")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryQ4")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryJustQ1")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryJustQ2")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryJustQ3")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryJustQ4")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "ClientandCat"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function EvictionsExports()
+
+Dim selState As Integer
+Dim selreport As Integer
+
+On Error GoTo handler
+
+selState = InputBox("Select state" & vbCrLf & "1) MD" & vbCrLf & "2) VA", "Select State", 1)
+
+If selState = 2 Then
+selreport = InputBox("Select report" & vbCrLf & "1) Summons Sent to Court" & vbCrLf & "2) Writ of Possession", "Select Report")
+
+Select Case selreport
+
+Case 1
+
+ExcelSaveAsQRY ("claudia060414vaSummonsCourt")
+
+Case 2
+
+ExcelSaveAsQRY ("claudia060414vaWritPosses")
+
+End Select
+
+Else
+
+selreport = InputBox("Select report" & vbCrLf & "1) Date MFP Sent To Court" & vbCrLf & "2) Request for Writ Sent to Court" & _
+    vbCrLf & "3) Occupancy Aff Requested" & vbCrLf & "4) Occ Aff received", "Select Report")
+
+Select Case selreport
+
+Case 1
+
+ExcelSaveAsQRY ("claudia060414mdDateMFPSentCourt")
+
+Case 2
+
+ExcelSaveAsQRY ("claudia060414mdReqWritSentCourt")
+
+Case 3
+
+ExcelSaveAsQRY ("claudia060414mdOccAffReq")
+
+Case 4
+
+ExcelSaveAsQRY ("claudia060414OccAffRecd")
+
+End Select
+
+End If
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function ClientReferralPipeline()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "MDPresalePipelineClientReport" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "ClientReferalsReportUnion"
+
+On Error GoTo handler
+ 
+Call WarningsNowFalse
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+DoCmd.OpenQuery ("ClientReferralMAINDSETNew")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "ClientReferalsReportUnion", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "MDPresalePipelineClientReport" & ".xls" , True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function MDDeedReportingBilling()
+
+Dim filepath As String
+Dim savepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+sourcefile = filepath & "DeedReportingBilling.xls"
+
+On Error GoTo handler
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+ 
+Call RemoveSheetsExcel(filepath, "DeedReportingBilling.xls", "MainData")
+
+DoCmd.OpenQuery ("DeedReportingBillsFilesNEWQry")
+DoCmd.OpenQuery ("DeedReportingBillingInfoSUMNEWQry")
+DoCmd.OpenQuery ("DeedReportingBillsFilesPaidUnpaidQry")
+DoCmd.OpenQuery ("DeedReportingBillsFilesBilledQry")
+DoCmd.OpenQuery ("DeedReportingBillingFinalQry2Maketbl")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "DeedReportingBillingFinalQry", filepath & "DeedReportingBilling.xls", True, "MainData"
+    
+'dumpname = Format$(Now(), "yyyymmddhhnnss") & "_DeedReportingBilling.xls"
+'destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "DeedReportingBillingFinalQry", savepath, True, "MainData"
+
+MsgBox "Spreadsheet can be found: " & savepath
+ShellExecuteFileOpen (savepath)
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function WaterRealEstateTaxesPaidUnpaid()
+
+Dim filepath As String
+Dim rs As RecordSet
+Dim savepath As String
+
+'filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+'sourcefile =
+On Error GoTo handler
+
+ 
+DoCmd.OpenQuery ("WaterRealEstateTaxesFilesQry")
+DoCmd.OpenQuery ("WaterRealEstateTaxesFilesSUMBillPaid")
+
+'ExcelSaveAsQRY("MSWBHCitiTransferQry")
+'dumpname = Format$(Now(), "yyyymmddhhnnss") & "_WaterRealEstateTaxesPaidUnpaid.xls"
+'destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+ExcelSaveAsQRY ("WaterRealEstateTaxesPaidUnpaid")
+
+'MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function PostSaleWellSeptic()
+
+
+ 
+
+On Error GoTo handler
+
+'dumpname = Format$(Now(), "yyyymmddhhnnss") & "_PostSaleWellSeptic.xls"
+'destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\managers\" & dumpname
+'DoCmd.OutputTo acOutputQuery, "PostSaleWellSepticQry", acFormatXLS, destinationfile
+'
+'MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+ExcelSaveAsQRY ("PostSaleWellSepticQry")
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+Public Function unabledocketuncheck()
+
+ If (Forms![docketform]![UD_Occ] = 0 Or Nz(Forms![docketform]![UD_Occ], 0) = 0) And _
+ (Forms![docketform]![ud_skip] = 0 Or Nz(Forms![docketform]![ud_skip], 0) = 0) And _
+ (Forms![docketform]![ud_note] = 0 Or Nz(Forms![docketform]![ud_note], 0) = 0) And _
+ (Forms![docketform]![ud_ass] = 0 Or Nz(Forms![docketform]![ud_ass], 0) = 0) And _
+ (Forms![docketform]![ud_loanmod] = 0 Or Nz(Forms![docketform]![ud_loanmod], 0) = 0) And _
+ (Forms![docketform]![ud_poa] = 0 Or Nz(Forms![docketform]![ud_poa], 0) = 0) And _
+ (Forms![docketform]![ud_sot] = 0 Or Nz(Forms![docketform]![ud_sot], 0) = 0) And _
+ (Forms![docketform]![ud_affdef] = 0 Or Nz(Forms![docketform]![ud_affdef], 0) = 0) And _
+ (Forms![docketform]![ud_affdebt] = 0 Or Nz(Forms![docketform]![ud_affdebt], 0) = 0) And _
+ (Forms![docketform]![ud_ACO] = 0 Or Nz(Forms![docketform]![ud_ACO], 0) = 0) And _
+ (Forms![docketform]![ud_lma] = 0 Or Nz(Forms![docketform]![ud_lma], 0) = 0) And _
+ (Forms![docketform]![ud_affmail] = 0 Or Nz(Forms![docketform]![ud_affmail], 0) = 0) And _
+ (Forms![docketform]![ud_milaff] = 0 Or Nz(Forms![docketform]![ud_milaff], 0) = 0) _
+ Then
+ Forms![docketform]![Option1320] = 0
+ Else
+ Forms![docketform]![Option1320] = -1
+ End If
+
+If (Len(Nz(Forms![docketform]![ud_other], "")) > 0 And (Forms![docketform]![ud_otherbtn] = -1 Or Nz(Forms![docketform]![ud_otherbtn], 0) = -1)) _
+ Or (Len(Nz(Forms![docketform]![ud_other2], "")) > 0 And (Forms![docketform]![ud_otherbtn2] = -1 Or Nz(Forms![docketform]![ud_otherbtn2], 0) = -1)) _
+ Or (Len(Nz(Forms![docketform]![ud_other3], "")) > 0 And (Forms![docketform]![ud_otherbtn3] = -1 Or Nz(Forms![docketform]![ud_otherbtn3], 0) = -1)) _
+ Then Forms![docketform]![Option1320] = -1
+
+End Function
+Public Function BillsTotalsClientByCategoryNEW_old()
+
+Dim filepath As String
+Dim BegDater As String
+Dim EndDate As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+ 
+
+BegDater = InputBox("Enter beginning date.", "Enter dates")
+enddater = InputBox("Enter ending date.", "Enter dates")
+
+
+Call RemoveSheetsExcel(filepath, "BillsTotalsClientByCategory.xls", "ClientandCat")
+
+On Error Resume Next
+
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryLASTMONTHtbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryQ4tbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryQ3tbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryQ2tbl")
+CurrentDb.Execute ("drop table BillsTotalsClientByCategoryQ1tbl")
+On Error GoTo 0
+On Error GoTo handler
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryLASTMONTH")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryQ1")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryQ2")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryQ3")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("BillsTotalsClientByCategoryQ4")
+    .Parameters("Enter Beg Bill Date") = BegDater
+    .Parameters("Enter Ending Bill Date") = enddater
+    .Execute
+End With
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BillsTotalsClientByCategory", filepath & "BillsTotalsClientByCategory.xls", True, "ClientandCat"
+
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_BillsTotalsClientByCategory.xls"
+
+sourcefile = filepath & "BillsTotalsClientByCategory.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function ClientReferralPipelineDC()
+
+Dim filepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+
+ 
+Call RemoveSheetsExcel(filepath, "ClientReferralPipelineReportDC.xls", "MainData")
+
+DoCmd.OpenQuery ("ClientReferralsFilesDCQry")
+DoCmd.OpenQuery ("ClientReferralMAINDSETNewDC")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "ClientReferalsReportUnionDC", filepath & "ClientReferralPipelineReportDC.xls", True, "MainData"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_ClientReferralPipelineReportDC.xls"
+
+sourcefile = filepath & "ClientReferralPipelineReportDC.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DSAdCopy()
+
+
+ 
+On Error GoTo handler
+'dumpname = Format$(Now(), "yyyymmddhhnnss") & "_DSAdCopy.xls"
+'destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\managers\" & dumpname
+'DoCmd.OutputTo acOutputQuery, "DSAdCopyQry", acFormatXLS, destinationfile
+'
+'MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+ExcelSaveAsQRY ("DSAdCopyQry")
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function PostsaleVAComprehensiveExport()
+
+Dim filepath As String
+Dim rs As RecordSet
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+
+ 
+DoCmd.OpenQuery ("PostsaleVAComprehensiveFilesQry")
+DoCmd.OpenQuery ("PostsaleVAComprehensiveQry")
+CurrentDb.Execute ("alter table PostSaleVAComprehensivetbl alter column [Deed Money Recd] date;")
+CurrentDb.Execute ("alter table PostSaleVAComprehensivetbl alter column [fc_deed_client] date;")
+DoCmd.OpenQuery ("PostSaleVAComprehensiveBillsQry")
+DoCmd.OpenQuery ("PostsaleVAComprehensiveBillsMAXQry")
+DoCmd.OpenQuery ("PostSaleVAComprehensiveUpdateQry")
+
+ExcelSaveAsTBL ("PostSaleVAComprehensivetbl")
+CurrentDb.Execute "Delete * from PostSaleVAComprehensivetbl;", dbFailOnError
+CurrentDb.Execute "Delete * from PostsaleVAComprehensiveBillstbl;", dbFailOnError
+CurrentDb.Execute "Delete * from PostsaleVAComprehensiveBillsMAXtbl;", dbFailOnError
+CurrentDb.Execute "Delete * from PostsaleVAComprehensiveFilestbl;", dbFailOnError
+
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DeedsRecordedMDFilestobeClosed()
+
+Dim filepath As String
+Dim rs As RecordSet
+Dim savepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+
+ 
+
+DoCmd.OpenQuery ("DeedRecordedMDFilestobeClosedQry")
+DoCmd.OpenQuery ("DeedRecordedMDFilestobeClosedTransAmountsQry")
+DoCmd.OpenQuery ("DeedRecordedMDFilestobeClosedTransAmounts2")
+DoCmd.OpenQuery ("DeedsRecordedMDFilestobeClosedTransSumsQry")
+
+Set rs = CurrentDb.OpenRecordset("DeedRecordedMDFilestobeClosedExportQry")
+
+If Not rs.EOF Then
+
+'dumpname = Format$(Now(), "yyyymmddhhnnss") & "_DeedsRecordedMDFilestobeClosed.xls"
+'destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+'DoCmd.OutputTo acOutputQuery, "DeedRecordedMDFilestobeClosedExportQry", acFormatXLS, destinationfile
+ExcelSaveAsQRY ("DeedRecordedMDFilestobeClosedExportQry")
+Else
+    MsgBox "No records were found.", vbCritical, "No Records."
+    Exit Function
+End If
+
+CurrentDb.Execute "Delete * from DeedsRecordedMDFilestobeClosedTransSumstbl;", dbFailOnError
+CurrentDb.Execute "Delete * from DeedRecordedMDFilestobeClosedTransAmounts;", dbFailOnError
+CurrentDb.Execute "Delete * from DeedstobeRecordedMDFilestobeClosedtbl;", dbFailOnError
+CurrentDb.Execute "Delete * from DeedRecordedMDFilestobeClosedTransAmountswShortAcct;", dbFailOnError
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function MDForeclosureFDLQue()
+
+
+ 
+On Error GoTo handler
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_MDForeclosureFDLQue.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\managers\" & dumpname
+DoCmd.OutputTo acOutputQuery, "MDForeclosureFDLQue", acFormatXLS, destinationfile
+  
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Sub ReferralPipelineCreate()
+
+Dim BegDate As Date
+Dim EndDate As Date
+Dim vClient As String
+Dim Cdb As Database
+Dim CasesT As RecordSet
+Dim ForeT As RecordSet
+Dim Cstrsql As String
+Dim Fstrsql As String
+Dim NCRpt As RecordSet
+Dim VStatus As String
+
+ 
+
+BegDate = InputBox("Enter Beginning Date")
+EndDate = InputBox("Enter Ending Date")
+
+Set Cdb = CurrentDb()
+
+Dim VQry
+CurrentDb.Execute "delete * from ReferralTrackPipelineFiles"
+
+
+'FORECLOSURE
+CurrentDb.Execute "Delete * from newcasesrpt;", dbFailOnError
+
+Cstrsql = ("Select * from Cases where ([date recieved] >= #" & BegDate & "# and [date recieved] <=#" & EndDate & "#) or ([resume_recd] >= #" & _
+    BegDate & "# and [resume_recd] <=#" & EndDate & "#)")
+
+Set CasesT = Cdb.OpenRecordset(Cstrsql, dbOpenSnapshot)
+
+Set NCRpt = Cdb.OpenRecordset("NewCasesRpt", dbOpenDynaset, dbSeeChanges)
+
+While Not CasesT.EOF
+With NCRpt
+.AddNew
+!filenum = CasesT!filenum
+!ClientRefNumber = CasesT![ClientRefNumber]
+!LastNameDebtor1 = CasesT![LastNameDebtor1]
+!PropAddress = CasesT![PropAddress]
+!PropertyState = CasesT![PropertyState]
+!LastNameDebtor1 = CasesT!LastNameDebtor1
+!FirstNameDebtor1 = CasesT!FirstNameDebtor1
+!LastNameDebtor2 = CasesT!LastNameDebtor2
+!FirstNameDebtor2 = CasesT!FirstNameDebtor2
+![Date Recieved] = CasesT![Date Recieved]
+!resume_recd = CasesT!resume_recd
+![Client] = CasesT!Client
+!BegDate = BegDate
+!EndDate = EndDate
+.Update
+End With
+CasesT.MoveNext
+Wend
+
+CurrentDb.Execute "Delete * from NewRefQry;", dbFailOnError
+DoCmd.OpenQuery ("NewRefFCQryPipeline")
+
+Set CasesT = Nothing
+Set NCRpt = Nothing
+
+DoCmd.OpenQuery ("ReferralTrackPipelineFileINSERTFC")
+
+
+'EVICTION
+
+
+Set CasesT = Nothing
+Set NCRpt = Nothing
+
+
+End Sub
+
+
+Public Function ChangeStatusEstateExport()
+
+Dim filepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+
+ 
+Call RemoveSheetsExcel(filepath, "ChangeStatusEstateRpt.xls", "MainData", "CurrentEstateData")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "changestatusestateqrymain", filepath & "ChangeStatusEstateRpt.xls", True, "MainData"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "changestatusestatecurrent", filepath & "ChangeStatusEstateRpt.xls", True, "CurrentEstateData"
+
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_ChangeStatusEstateRpt.xls"
+
+sourcefile = filepath & "ChangeStatusEstateRpt.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function NoticeReportClose() As String
+
+    NoticeReportClose = Screen.ActiveReport.recordsource
+
+End Function
+
+
+Public Function DeedstoberecordNEW()
+
+
+ 
+On Error GoTo handler
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_DeedstoberecordedNEW.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\managers\" & dumpname
+DoCmd.OutputTo acOutputQuery, "DeedstoberecordNEWQry", acFormatXLS, destinationfile
+  
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function MDReferralsPipelineJNP()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "MDReferralsPipelineJNP" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "MDReferralsPipelineJNPwFollowupQry"
+Call WarningsNowFalse
+
+
+On Error Resume Next
+    CurrentDb.Execute ("drop table tempjnp")
+    CurrentDb.Execute ("drop table ClientReferralMainDSETtbl")
+On Error GoTo 0
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+CurrentDb.Execute "select [BWW#] into tempJNP from MDReferralsPipelineJNPQry", dbFailOnError
+DoCmd.OpenQuery "MDReferralsPipelineJNPmktblQry"
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "MDReferralsPipelineJNPwFollowupQry", _
+    "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "MDReferralsPipelineJNP" & ".xls", True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+Public Function SalesFiled()
+
+
+ 
+On Error GoTo handler
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_SalesFiled.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\managers\" & dumpname
+DoCmd.OutputTo acOutputQuery, "SalesFiledQry", acFormatXLS, destinationfile
+  
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+
+
+End Function
+
+Public Function DefLtrPipeline()
+
+Dim filepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+
+ 
+
+Call RemoveSheetsExcel(filepath, "DefLtrPipeline.xls", "MainData")
+
+Call exportmeera
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "DefLtrPipelineQry", filepath & "DefLtrPipeline.xls", True, "MainData"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_DefLtrPipeline.xls"
+
+sourcefile = filepath & "DefLtrPipeline.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Sub exportmeera()
+
+CurrentDb.Execute "Delete * from TempDefALL;", dbFailOnError
+DoCmd.OpenQuery ("vadefall"), acViewNormal
+DoCmd.OpenQuery ("vadefallappend"), acViewNormal
+DoCmd.OpenQuery ("vadefallappend2nd"), acViewNormal
+DoCmd.OpenQuery ("vadefallappend3rd"), acViewNormal
+DoCmd.OpenQuery ("VADefALLUpdateCOMM"), acViewNormal
+
+
+'DoCmd.OutputTo acOutputReport, "VAAcctDelCOMPLETE", acFormatXLS, pathuser() & "\DeficiencyCOMPLETE.xls"
+'Call Shell("excel.exe c:\4closure\DeficiencyCOMPLETE.xls")
+
+End Sub
+
+
+Public Function BillingPipelineExport()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim queryname2 As String
+Dim savepath As String
+
+spreadsht = "BillingPipeline" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "BillingDatePreparedClientPipelineCalcsQry"
+queryname2 = "BillingDatePreparedClientPipelineMAINDSETQry"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+
+Call RemoveSheetsExcel(filepath, spreadsht, "Averages", "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "Averages"
+    
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname2, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function FeesCostsPipelineExport()
+
+Dim filepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+
+ 
+Call RemoveSheetsExcel(filepath, "FeesCostsPipeline.xls", "MainData")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "FeesCostsListingPipelineMAINDSETQry", filepath & "FeesCostsPipeline.xls", True, "MainData"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_FeesCostsPipeline.xls"
+
+sourcefile = filepath & "FeesCostsPipeline.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function EvictionPipelineExport()
+
+Dim filepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+
+ 
+Call RemoveSheetsExcel(filepath, "EvictionPipeline.xls", "CasesActive", "AffOfOccMD", "MissingDeeds", "Hearings")
+
+Call EvictionPipelineCasesActiveExport
+Call EvictionPipelineAffOfOccExport
+Call EvictionPipelineMissingDeedsExport
+Call EvictionPipelineHearingsExport
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_EvictionPipeline.xls"
+
+sourcefile = filepath & "EvictionPipeline.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function EvictionPipelineHearingsExport()
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "EvictionPipelineHearingsQry", filepath & "EvictionPipeline.xls", True, "Hearings"
+ 
+End Function
+
+Public Function EvictionPipelineMissingDeedsExport()
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "EvictionPipelineMissingDeedsQry", filepath & "EvictionPipeline.xls", True, "MissingDeeds"
+ 
+End Function
+
+Public Function EvictionPipelineAffOfOccExport()
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "EvictionPipelineAffOfOccMDQry", filepath & "EvictionPipeline.xls", True, "AffOfOccMD"
+ 
+End Function
+
+Public Function EvictionPipelineCasesActiveExport()
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "EvictionPipelineCasesActiveQry", filepath & "EvictionPipeline.xls", True, "CasesActive"
+ 
+End Function
+
+Public Function RefTrackingVAExport()
+
+Dim Vfilename, enterdate
+Dim rs
+
+On Error GoTo handler
+
+Vfilename = Format$(Now(), "yyyymmddhhnnss") & "_RefTrackingMDVA.xls"
+
+Call ReferralPipelineCreate
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "RefTrackingVAReferralsONLYQry", "G:\SPREADSHEETS\Managers\" & Vfilename, True, "VAReferralsONLY"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "RefTrackingVARestartsONLYQry", "G:\SPREADSHEETS\Managers\" & Vfilename, True, "VARestartsONLY"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "RefTrackingMDReferralsONLYQry", "G:\SPREADSHEETS\Managers\" & Vfilename, True, "MDReferralsONLY"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "RefTrackingMDRestartsONLYQry", "G:\SPREADSHEETS\Managers\" & Vfilename, True, "MDRestartsONLY"
+
+MsgBox "Spreadsheet can be found: G:\SPREADSHEETS\Managers\ and is called: " & Vfilename
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+'Public Function ChangeStatusExport()
+'
+'Dim filepath As String
+'
+'filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+'
+'On Error GoTo handler
+'
+'
+'Call RemoveSheetsExcel(filepath, "ChangeStatusRpt.xls", "MainData")
+'
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "changestatusqrymain", filepath & "ChangeStatusRpt.xls", True, "MainData"
+'
+'dumpname = Format$(Now(), "yyyymmddhhnnss") & "_ChangeStatusRpt.xls"
+'
+'sourcefile = filepath & "ChangeStatusRpt.xls"
+'destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+'
+'FileCopy sourcefile, destinationfile    ' Copy source to target.
+'
+'MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+'
+'Exit Function
+'
+'handler:
+'
+'MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+'
+'End Function
+
+Public Function DocketingPipeline()
+
+Dim filepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+
+ 
+Call RemoveSheetsExcel(filepath, "DocketingPipeline.xls", "MainData")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "DocketingPipelineQry", filepath & "DocketingPipeline.xls", True, "MainData"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_DocketingPipeline.xls"
+
+sourcefile = filepath & "DocketingPipeline.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function BKMFRPendingValidation()
+'BK MFR Pending Validation
+Dim filepath As String
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+
+ 
+    
+Call RemoveSheetsExcel(filepath, "BKMFRPendVal.xls", "MainData")
+    
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "BKMFRPendValQry", filepath & "BKMFRPendVal.xls", , "MainData"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_BKMFRPendVal.xls"
+
+sourcefile = filepath & "\BKMFRPendVal.xls"
+destinationfile = "\\rvdv-fs01\shared\Spreadsheets\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox ("The Spreadsheet of MDReferralsPipeline can be viewed/printed and is this directory: G:\Spreadsheets\Managers\ directory.  The name of the spreadsheet is: " & dumpname)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DSPortReportExport()
+
+Dim filepath As String
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+
+ 
+
+Call RemoveSheetsExcel(filepath, "DSReportPvt.xls", "natstarMainData", "champmaindata", "wellsmaindata")
+
+CurrentDb.Execute "Delete * from WellsVol;", dbFailOnError
+
+DoCmd.OpenQuery ("WellsVolume")
+DoCmd.OpenQuery ("WellsVolume2")
+DoCmd.OpenQuery ("WellsVolume3")
+
+Call DSPortChamp
+Call DSPortWells
+Call DSPortNatStar
+
+
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_DSReportPvt.xls"
+
+sourcefile = filepath & "DSReportPvt.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function DSPortChamp()
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+DoCmd.OpenQuery ("DSPortfolioMainDSETChampQry")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "OcwenReportUnion895", filepath & "DSReportPvt.xls", True, "ChampMainData"
+ 
+End Function
+
+Public Function DSPortWells()
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+DoCmd.OpenQuery ("DSPortfolioMainDSETWellsQry")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "OcwenReportUnion895", filepath & "DSReportPvt.xls", True, "WellsMainData"
+ 
+End Function
+
+
+Public Function DSPortNatStar()
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+DoCmd.OpenQuery ("DSPortfolioMainDSETNatStarQry")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "OcwenReportUnion895", filepath & "DSReportPvt.xls", True, "NatStarMainData"
+ 
+End Function
+
+Public Function HOADues()
+
+
+ 
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_HOADues.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+DoCmd.OutputTo acOutputQuery, "HOADuesQry", acFormatXLS, destinationfile
+  
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+
+End Function
+
+Public Function VATitleComprehensive()
+
+
+ 
+
+DoCmd.OpenQuery ("VATitleComprehensiveQry")
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_VATitleComprhensive.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "VACompehensiveMainQry", FilePath & "VATitleComprehnsive.xls", True, "MainData"
+DoCmd.OutputTo acOutputQuery, "VACompehensiveMainQry", acFormatXLS, destinationfile
+  
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+
+End Function
+
+Public Function TitleGradeDFReport()
+
+
+ 
+
+
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_TitleGradeDFReport.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "VACompehensiveMainQry", FilePath & "VATitleComprehnsive.xls", True, "MainData"
+DoCmd.OutputTo acOutputQuery, "TitleGradeDFReportQry", acFormatXLS, destinationfile
+  
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+
+End Function
+
+Public Function FNMADeedNotRecordedNot3PP()
+
+Dim Vfilename, enterdate
+Dim rs
+
+On Error GoTo handler
+
+Vfilename = Format$(Now(), "yyyymmddhhnnss") & "_FNMADeedNotRecordedNot3PP.xls "
+DoCmd.OutputTo acOutputQuery, "FNMADeedNotRecordedNot3PP", acFormatXLS, "G:\SPREADSHEETS\Managers\" & Vfilename
+
+MsgBox "Spreadsheet can be found: G:\SPREADSHEETS\Managers and is called: " & Vfilename
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function MDRatificationPvt()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+Dim queryname2 As String
+
+spreadsht = "MDRatificationPvt" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "vwmissingratpivotreportCategoryALLbuckets"
+queryname2 = "MissingRatPivotReportStatusUnion"
+
+Call WarningsNowFalse
+
+'On Error GoTo handler
+
+Call RemoveSheetsExcel(filepath, spreadsht, "CategoryData", "StatusData")
+
+DoCmd.OpenQuery ("MissingRatPivotReportStatus")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+'1st one
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "CategoryData"
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname2, savepath, True, "StatusData"
+
+
+CurrentDb.Execute "drop table tblMissingRatPivotReportStatus;", dbFailOnError
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function MediationHearSchd()
+
+Dim filepath As String
+
+Call WarningsNowFalse
+On Error GoTo handler
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+Call RemoveSheetsExcel(filepath, "MedHearingReq.xls", "MainData")
+
+DoCmd.OpenQuery "MedReqd"
+DoCmd.OpenQuery "MedReqdUpdate"
+CurrentDb.Execute ("alter table MedReqTable alter column Med_Hearing date")
+CurrentDb.Execute ("alter table MedReqTable alter column Med_hearing_held date")
+CurrentDb.Execute ("alter table MedReqTable alter column Med_results date")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "MedReqTable", filepath & "MedHearingReq.xls", True, "MainData"
+
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_MedHearingReq.xls"
+
+sourcefile = filepath & "MedHearingReq.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function ExportPostsaleEviction()
+
+Dim filepath, dumpname, destinationfile As String
+Dim rs As RecordSet
+Dim stater
+
+filepath = "\\rvdv-fs01\shared\SPREADSHEETS\"
+stater = InputBox("Select state:" & vbCrLf & "1) MD" & vbCrLf & "2) VA", "Select State")
+'DoCmd.OutputTo acOutputQuery, "MDJudAllForm", acFormatXLS, pathuser() & "\BulkSpreadsheet.xls"
+If stater = 1 Then
+
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_PostsaleEvictionMD.xls"
+destinationfile = filepath & dumpname
+
+DoCmd.OutputTo acOutputQuery, "PostsaleEvictionMDQry", acFormatXLS, destinationfile
+
+MsgBox ("The Spreadsheet of MDPostSaleEviction can be viewed/printed and is this directory: G:\Spreadsheets\ directory.  The name of the spreadsheet is: " & dumpname)
+
+ElseIf stater = 2 Then
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_PostsaleEvictionVA.xls"
+destinationfile = filepath & dumpname
+
+DoCmd.OutputTo acOutputQuery, "PostsaleEvictionVAQry", acFormatXLS, destinationfile
+
+MsgBox ("The Spreadsheet of VAPostSaleEviction can be viewed/printed and is this directory: G:\Spreadsheets\ directory.  The name of the spreadsheet is: " & dumpname)
+    
+Else
+
+Exit Function
+    
+End If
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated.", vbCritical, "Report Error"
+
+Exit Function
+
+
+End Function
+
+
+Public Function Ocwen102()
+
+Dim filepath As String
+
+On Error GoTo handler
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+Call RemoveSheetsExcel(filepath, "Ocwen102Report.xls", "MainData")
+
+DoCmd.OpenQuery ("Ocwen102MainDSETQry")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "OcwenReportUnion895", filepath & "Ocwen102Report.xls", True, "MainData"
+
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_Ocwen102Report.xls"
+
+sourcefile = filepath & "Ocwen102Report.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function AOMNeededReport()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "AOMNeededReport" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "AOMNeededReportQry"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+
+
+Public Function DSNoticeCertQC()
+
+Dim Vfilename, enterdate
+Dim rs
+
+On Error GoTo handler
+
+Vfilename = Format$(Now(), "yyyymmddhhnnss") & "_DSNoticeCertQC.xls "
+DoCmd.OutputTo acOutputQuery, "DSNoticeCertQC", acFormatXLS, "G:\SPREADSHEETS\Managers\" & Vfilename
+
+MsgBox "Spreadsheet can be found: G:\SPREADSHEETS\Managers and is called: " & Vfilename
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+
+Public Function MDReferralsPipeline()
+
+Dim filepath As String
+
+On Error GoTo handler
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+Call RemoveSheetsExcel(filepath, "MDReferralsReport.xls", "MainData")
+
+DoCmd.OpenQuery ("MDReferralsMainDSetQry")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "MDReferralsUnion", filepath & "MDReferralsReport.xls", True, "MainData"
+
+'change to ocwenfollowupqry
+
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_MDReferralsReport.xls.xls"
+
+sourcefile = filepath & "MDReferralsReport.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+
+End Function
+
+Public Function TitleIssuesClientHandling()
+
+Dim Vfilename, enterdate
+Dim rs
+
+Set rs = CurrentDb.OpenRecordset("TitleIssuesClientHandling")
+
+If rs.EOF Then
+    MsgBox ("No Records found for current Criteria Entered Please Try Again."), vbOKOnly
+Exit Function
+End If
+
+
+Vfilename = Format$(Now(), "yyyymmddhhnnss") & "_TitleIssuesClientHandling.xls"
+DoCmd.OutputTo acOutputQuery, "TitleIssuesClientHandling", acFormatXLS, "G:\SPREADSHEETS\Managers\" & Vfilename
+
+MsgBox "Spreadsheet can be found: G:\SPREADSHEETS\Managers and is called: " & Vfilename
+
+End Function
+
+
+Public Function Refspec_datechanged()
+
+Dim Vfilename, enterdate
+Dim rs
+
+Vfilename = Format$(Now(), "yyyymmddhhnnss") & "_RefCompleteDateChecked.xls"
+DoCmd.OutputTo acOutputQuery, "refspec_qrymain", acFormatXLS, "G:\SPREADSHEETS\" & Vfilename
+
+MsgBox "Spreadsheet can be found: G:\SPREADSHEETS\ and is called: " & Vfilename
+
+End Function
+
+Public Function AccountingDueVA()
+Dim vFile As String
+Dim sourcefile, destinationfile As String
+Dim filepath As String
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+Call RemoveSheetsExcel(filepath, "AcctDueVA_all.xls", "MainData")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "AcctVAQryDueALL", filepath & "AcctDueVA_all.xls", True, "MainData"
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "AcctDueVA_all.xls"
+sourcefile = filepath & "AcctDueVA_all.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+'DoCmd.OutputTo acOutputQuery, "MissingAcctVAQRY", acFormatXLS, "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & Dumpname
+MsgBox ("You will find the Excel spreadsheet for Accounting Due (VA) ALL in the \\rvdv-fs01\shared\SPREADSHEETS\Managers\ directory")
+
+ 
+End Function
+
+Public Function DeedReportingExport()
+
+Dim vFile As String
+Dim sourcefile, destinationfile As String
+Dim filepath As String
+
+On Error GoTo handler
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+Call DeedstobeRecordedWaterPaid
+Call DeedstoBeRecordedHoldingFundsVA
+Call DeedtoBeRecordedBillNotPaid
+
+ 
+
+Call RemoveSheetsExcel(filepath, "DeedReporting.xls", "MainData")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "DeedReportingQry", filepath & "DeedReporting.xls", True, "MainData"
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "DeedReporting.xls"
+sourcefile = filepath & "DeedReporting.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+'DoCmd.OutputTo acOutputQuery, "MissingAcctVAQRY", acFormatXLS, "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & Dumpname
+MsgBox ("Deed Reporting spreadsheet has been exported to the \\rvdv-fs01\shared\SPREADSHEETS\Managers\ directory")
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function HowardCountySpreadExport()
+
+Dim filepath As String
+
+    filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+     
+    Call RemoveSheetsExcel(filepath, "Howard County Spreadsheet.xls", "MainData")
+    DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "HowardCountySpreadQry", _
+        filepath & "Howard County Spreadsheet.xls", True, "MainData"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_Howard County Spreadsheet.xls"
+
+sourcefile = filepath & "\Howard County Spreadsheet.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox ("The Spreadsheet of Howard County Spreadsheet can be viewed/printed and is this directory: G:\SPREADSHEETS directory.  The name of the spreadsheet is: " & dumpname)
+    
+
+End Function
+
+Public Function VASalesReadytoSet()
+
+Dim Vfilename, enterdate
+Dim rs
+
+Set rs = CurrentDb.OpenRecordset("VASalesReadytoSet")
+
+If rs.EOF Then
+    MsgBox ("No Records found for current Criteria Entered Please Try Again."), vbOKOnly
+Exit Function
+End If
+
+Vfilename = Format$(Now(), "yyyymmddhhnnss") & "_VASalesReadytoSet.xls"
+DoCmd.OutputTo acOutputQuery, "VASalesReadytoSet", acFormatXLS, "G:\SPREADSHEETS\Managers\" & Vfilename
+
+MsgBox "Spreadsheet can be found: G:\SPREADSHEETS\Managers\ and is called: " & Vfilename
+
+End Function
+
+Public Function DSFLMAExport()
+
+Dim Vfilename, enterdate1
+Dim rs
+
+ 
+CurrentDb.Execute "Delete * from dsflmatbl;", dbFailOnError
+
+enterdate1 = InputBox("Enter 1st Allow FLMA date (beg)", "Enter date")
+enterdate2 = InputBox("Enter 1st Allow FLMA date (end)", "Enter date")
+
+If IsNull(enterdate1) Or Len(enterdate1) = 0 Then Exit Function
+If IsNull(enterdate2) Or Len(enterdate2) = 0 Then Exit Function
+
+With CurrentDb.QueryDefs("DSFLMAqry")
+    .Parameters("Enter 1st Allow FLMA date (beg)") = enterdate1
+    .Parameters("Enter 1st Allow FLMA date (end)") = enterdate2
+    .Execute
+End With
+
+Set rs = CurrentDb.OpenRecordset("DSFLMAtbl")
+
+If rs.EOF Then
+    MsgBox ("No Records found for Criteria Entered Please Try Again."), vbOKOnly
+Exit Function
+End If
+
+ExcelSaveAsTBL ("DSFLMAtbl")
+ 
+End Function
+
+Public Function WellsAffsRecd()
+
+On Error GoTo handler
+
+Dim filepath As String
+
+    filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+    'Call RemoveSheetsExcel(FilePath, "WellsAffsRecd.xls", "MainData")
+    DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "WellsAffsRecd", filepath & "WellsAffsRecd.xls"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_WellsAffsRecd.xls"
+
+sourcefile = filepath & "\WellsAffsRecd.xls"
+destinationfile = "\\rvdv-fs01\shared\Wells Fargo\spreadsheets\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+
+MsgBox ("The Spreadsheet of WellsAffsRecd can be viewed/printed and is this directory: G:\Wells Fargo\spreadsheets directory.  The name of the spreadsheet is: " & dumpname)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+    
+
+End Function
+
+Public Function DSservicecompleted()
+
+On Error GoTo handler
+
+Dim filepath As String
+
+    filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+    'Call RemoveSheetsExcel(FilePath, "WellsAffsRecd.xls", "MainData")
+    DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "DSservicecompleted", filepath & "DSservicecompleted.xls"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_DSservicecompleted.xls"
+
+sourcefile = filepath & "\DSservicecompleted.xls"
+destinationfile = "\\rvdv-fs01\shared\Wells Fargo\spreadsheets\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+
+MsgBox ("The Spreadsheet of DSservicecompleted can be viewed/printed and is this directory: G:\Wells Fargo\spreadsheets directory.  The name of the spreadsheet is: " & dumpname)
+    
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+
+End Function
+
+Public Function DS_DocketFiledQry()
+
+On Error GoTo handler
+Dim filepath As String
+
+    filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+    'Call RemoveSheetsExcel(FilePath, "WellsAffsRecd.xls", "MainData")
+    DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "DS_DocketFiledQry", filepath & "DSDocketsFiled.xls"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_DSDocketsFiled.xls"
+
+sourcefile = filepath & "\DSDocketsFiled.xls"
+destinationfile = "\\rvdv-fs01\shared\Wells Fargo\spreadsheets\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+
+MsgBox ("The Spreadsheet of DSDocketsFiled can be viewed/printed and is this directory: G:\Wells Fargo\spreadsheets directory.  The name of the spreadsheet is: " & dumpname)
+    
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+
+End Function
+
+Public Function ReferralCountMonthly()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim queryname2 As String
+Dim savepath As String
+    
+spreadsht = "ReferralCountMonthly" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "ReferralCountMonthlyQry"
+queryname2 = "ReferralCountMonthlySalesQry"
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+Call WarningsNowFalse
+
+
+On Error GoTo handler
+ 
+Call RemoveSheetsExcel(filepath, "ReferralCountMonthly.xls", "ReferralCount", "Sales")
+
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "ReferralCountMonthlyQry", filepath & "ReferralCountMonthly.xls", True, "ReferralCount"
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+'    "ReferralCountMonthlySalesQry", filepath & "ReferralCountMonthly.xls", True, "Sales"
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+   
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "ReferralCount"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname2, savepath, True, "Sales"
+    
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+
+Public Function NoticeReviewPipeline()
+
+Dim filepath As String
+
+CurrentDb.Execute "Delete * from noticereview;", dbFailOnError
+
+DoCmd.OpenQuery "NoticeRevewQRY"
+
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+Call RemoveSheetsExcel(filepath, "NoticeReviewPipeline.xls", "MainData")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "NoticeReviewPipelineQryMain", filepath & "NoticeReviewPipeline.xls", True, "MainData"
+
+ 
+   
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_NoticeReviewPipeline.xls"
+
+sourcefile = filepath & "NoticeReviewPipeline.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+End Function
+
+
+
+Public Function TitleReviewedByReportPvt()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "TitleReviewedByReportPvt" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "TitleReviewedByReportPvt"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+ 
+Call RemoveSheetsExcel(filepath, spreadsht, "TitleReviewedData")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "TitleReviewedData"
+
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function BillsTotalsClientByInitialsCategoryState()
+
+Dim filepath As String
+Dim spreadsht As String
+Dim queryname As String
+Dim savepath As String
+
+spreadsht = "BillsTotalsClientByInitialsCategoryState" & ".xls"
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+queryname = "BillsTotalsClientByInitialsCategoryState"
+
+Call WarningsNowFalse
+
+On Error GoTo handler
+
+Call RemoveSheetsExcel(filepath, "BillsTotalsClientByInitialsCategoryState.xls", "ClientIniCat")
+
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "ClientIniCat"
+    
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function BillsTotalsClientByCategory()
+
+Dim filepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+On Error GoTo handler
+
+Call RemoveSheetsExcel(filepath, "BillsTotalsClientByCategory.xls", "ClientandCat")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "BillsTotalsClientByCategory", filepath & "BillsTotalsClientByCategory.xls", True, "ClientandCat"
+
+'change to ocwenfollowupqry
+
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_BillsTotalsClientByCategory.xls"
+
+sourcefile = filepath & "BillsTotalsClientByCategory.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated" & vbCrLf & Err.description, vbCritical, "Report Error"
+
+End Function
+
+Public Function NoticesSentwIRS()
+
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Dim filepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+Call RemoveSheetsExcel(filepath, "NoticesSentReport.xls", "NoticesSent", "NoticesSentIRS")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "Sharisse_NoticesSent(1)", filepath & "NoticesSentReport.xls", True, "NoticesSent"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "Sharisse_NoticesSentIRS(2)", filepath & "NoticesSentReport.xls", True, "NoticesSentIRS"
+
+
+ 
+   
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_NoticesSentReport.xls"
+
+sourcefile = filepath & "NoticesSentReport.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+
+End Function
+
+
+
+Public Function exportSOTTimes()
+
+Dim filepath As String
+
+    filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+    Call RemoveSheetsExcel(filepath, "SOTTimes.xls", "SOTOverdueRecordingsVA")
+
+    DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "SOTOverdueRecordingsVAQry", filepath & "SOTTimes.xls", , "SOTOverdueRecordingsVA"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_SOTTimes.xls"
+
+sourcefile = filepath & "\SOTTimes.xls"
+destinationfile = "\\rvdv-fs01\shared\SOTTimes\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+
+MsgBox ("The Spreadsheet of SOTTimes can be viewed/printed and is this directory: G:\SOTTimes directory.  The name of the spreadsheet is: " & dumpname)
+    
+
+End Function
+
+Public Function exportBillFees()
+
+Dim filepath As String
+
+    filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+    Call RemoveSheetsExcel(filepath, "HowieBilling.xls", "TotalFees")
+    DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, "TotalFees", filepath & "HowieBilling.xls", , "TotalFees"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_BillingFees.xls"
+
+sourcefile = filepath & "\HowieBilling.xls"
+destinationfile = "\\rvdv-fs01\shared\BillingSpreadsheets\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+
+MsgBox ("The Spreadsheet of Billing Totals can be viewed/printed and is this directory: G:\BillingSpreadsheets directory.  The name of the spreadsheet is: " & dumpname)
+    
+
+End Function
+
+
+Public Function OcwenPipeline3()
+
+Dim filepath As String
+
+    filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+    
+    Call RemoveSheetsExcel(filepath, "OcwenPipelineReport.xls", "PipelineMainData", "FollowupMainData")
+
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "OcwenReportPipelineQry", filepath & "OcwenPipelineReport.xls", True, "PipelineMainData"
+
+'change to ocwenfollowupqry
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "OcwenFollowupQry", filepath & "OcwenPipelineReport.xls", True, "FollowupMainData"
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_OcwenPipelineReport.xls"
+
+sourcefile = filepath & "OcwenPipelineReport.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+
+End Function
+
+Public Function MDOcwenStatus()
+
+Dim filepath As String
+
+    filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+Call RemoveSheetsExcel(filepath, "MDOcwenStatus.xls", "MDOcwenStatus")
+
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "MDOcwenStatusQry_new", filepath & "MDOcwenStatus.xls", True, "MDOcwenStatus"
+
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_MDOcwenStatus.xls"
+
+sourcefile = filepath & "MDOcwenStatus.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+
+End Function
+
+Public Function FCVAComprehensive()
+
+Dim filepath As String
+
+    filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+Call RemoveSheetsExcel(filepath, "FCVAComprehensive.xls", "FCVAComprehensive", "SOT_Sent_Exceptions")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "FCVAComprehensive", filepath & "FCVAComprehensive.xls", True, "FCVAComprehensive"
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "FCVAComprehensivewSOT", filepath & "FCVAComprehensive.xls", True, "SOT_Sent_Exceptions"
+
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_FCVAComprehensive.xls"
+
+sourcefile = filepath & "FCVAComprehensive.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+
+End Function
+
+Public Function OcwenPipeline()
+
+Dim filepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+Call RemoveSheetsExcel(filepath, "OcwenPipelineReport.xls", "MainData1")
+
+DoCmd.OpenQuery ("OcwenReportMainDSETQry")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "OcwenReportUnion", filepath & "OcwenPipelineReport.xls", True, "MainData1"
+
+'change to ocwenfollowupqry
+
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_OcwenPipelineReport.xls"
+
+sourcefile = filepath & "OcwenPipelineReport.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+
+End Function
+
+Public Function SuggestedAudits()
+
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Dim filepath As String
+Dim Email As String
+Dim emailsubject As String
+Dim emailmessage As String
+Dim from, varemailto, varsendemail As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+DoCmd.OpenReport "DataCollectorSuggestedAudit", acViewPreview
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+Call RemoveSheetsExcel(filepath, "SuggestedAudits.xls", "piidata", "dcdata")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "PIIDataQry", filepath & "SuggestedAudits.xls", True, "PIIdata"
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "DCdataQry", filepath & "SuggestedAudits.xls", True, "DCdata"
+   
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_SuggestedAudits.xls"
+
+sourcefile = filepath & "SuggestedAudits.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\" & dumpname
+
+FileCopy sourcefile, destinationfile
+
+'emailsubject = "BWW Suggested Audit(s)"
+'emailmessage = "Please find attached spreadsheet."
+
+'Set MyOutlook = New Outlook.Application
+'Set MyMail = MyOutlook.CreateItem(olMailItem)
+'MyMail.To = "Daniel.Hill-Crossdale@bww-law.com"
+'MyMail.CC = "ccurley@bozmangroup.com; malston@bozmangroup.com"
+'MyMail.Subject = emailsubject
+'MyMail.body = emailmessage
+'MyMail.Attachments.ADD "G:\SPREADSHEETS\" & dumpname
+'MyMail.Display
+
+'Set MyMail = Nothing
+'Set MyOutlook = Nothing
+
+End Function
+
+Public Function Ocwen895()
+
+
+Dim filepath As String
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+Call RemoveSheetsExcel(filepath, "Ocwen895Report.xls", "MainData")
+
+
+DoCmd.OpenQuery ("Ocwen895MainDSETQry")
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "OcwenReportUnion895", filepath & "Ocwen895Report.xls", True, "MainData"
+
+'change to ocwenfollowupqry
+
+    
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_Ocwen895Report.xls"
+
+sourcefile = filepath & "Ocwen895Report.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+
+End Function
+
+'------------------DO NOT REMOVE BELOW!!!!!-----------------------
+Public Sub RemoveSheetsExcel(filepath As String, workbook As String, SheetName As String, Optional SheetName2 As String, Optional SheetName3 As String, Optional SheetName4 As String, Optional SheetName5 As String)
+'Call RemoveSheetsExcel("\\rvdv-fs01\DataTransfer\Templates\Excel\", "Copy of DSReportPvt.xls", "natstarMainData", "champmaindata", "wellsmaindata")
+'Call RemoveSheetsExcel("\\rvdv-fs01\DataTransfer\Templates\Excel\", "Copy of DSReportPvt.xls", "wellsmaindata")
+
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+'Dim FilePath As String
+'FilePath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+On Error GoTo handler
+
+Set xl = CreateObject("Excel.Application")
+xl.DisplayAlerts = False
+'Set xlBook = xl.Workbooks.Open(FilePath & "Copy of DSReportPvt.xls")
+Set xlBook = xl.Workbooks.Open(filepath & workbook)
+'Set xlSheet = xlBook.Sheets("ChampMainData")
+Set xlSheet = xlBook.Sheets(SheetName)
+
+xlSheet.Delete
+
+If Len(SheetName2) > 0 Then
+    Set xlSheet = xlBook.Sheets(SheetName2)
+    xlSheet.Delete
+End If
+
+If Len(SheetName3) > 0 Then
+    Set xlSheet = xlBook.Sheets(SheetName3)
+    xlSheet.Delete
+End If
+
+If Len(SheetName4) > 0 Then
+    Set xlSheet = xlBook.Sheets(SheetName4)
+    xlSheet.Delete
+End If
+
+If Len(SheetName5) > 0 Then
+    Set xlSheet = xlBook.Sheets(SheetName5)
+    xlSheet.Delete
+End If
+
+
+xlBook.Save
+xlBook.Close
+xl.Quit
+
+Exit Sub
+
+handler:
+xlBook.Saved = True
+xlBook.Close
+xl.Quit
+Set xl = Nothing
+Exit Sub
+
+End Sub
+
+Public Sub RemoveSheetsExcelSUPER(filepath As String, workbook As String, except As String, Optional except2 As String, Optional except3 As String)
+
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+Dim s As Excel.Worksheet
+
+
+On Error GoTo handler
+
+Set xl = CreateObject("Excel.Application")
+xl.DisplayAlerts = False
+Set xlBook = xl.Workbooks.Open(filepath & workbook)
+
+For Each s In xlBook.Sheets
+Set xlSheet = xlBook.Sheets(s.name)
+
+If xlSheet.name <> except And xlSheet.name <> except2 And xlSheet.name <> except3 Then
+    xlSheet.Delete
+End If
+
+
+Next s
+xlBook.Save
+xlBook.Close
+xl.Quit
+
+Exit Sub
+
+handler:
+
+xl.Quit
+
+Exit Sub
+
+End Sub
+
+Public Sub SaveAsXLSB(filepath As String)
+
+Dim xl As Excel.Application
+Dim xlBook As Excel.workbook
+Dim xlSheet As Excel.Worksheet
+'Dim FilePath As String
+'FilePath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+On Error GoTo handler
+
+Set xl = CreateObject("Excel.Application")
+xl.DisplayAlerts = False
+Set xlBook = xl.Workbooks.Open(filepath)
+
+
+xlBook.SaveAs Replace(filepath, ".xls", ""), 50
+xlBook.Close
+xl.Quit
+Kill (filepath)
+Exit Sub
+
+handler:
+
+xl.Quit
+
+Exit Sub
+
+End Sub
+
+
+Public Function DeedstobeRecordedVAHoldingFunds()
+
+
+ 
+CurrentDb.Execute "delete * from TempPS"
+DoCmd.OpenQuery ("DeedRecHoldingFundsQry")
+DoCmd.OpenQuery ("DeedsRecHoldingFundsQry2")
+CurrentDb.Execute "delete * from TempPS"
+DoCmd.OpenQuery ("DeedsRecHoldingFundsQry3")
+
+Call TransDEED
+
+End Function
+
+Public Function DeedRecVa()
+ 
+DoCmd.OpenQuery ("TEMPPSdelete")
+DoCmd.OpenQuery ("Missing RatDeedRecVA")
+Call TransDEED
+End Function
+

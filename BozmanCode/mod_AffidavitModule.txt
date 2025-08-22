@@ -1,0 +1,221 @@
+Attribute VB_Name = "AffidavitModule"
+Option Compare Database
+
+Public Function AffsTrackingCreation()
+
+Dim rs As RecordSet
+Dim rsData As RecordSet
+Dim vBegSent As Date
+Dim vEndSent As Date
+Dim vBegRecd As Date
+Dim vEndRecd As Date
+Dim vClient As String
+'Dim vInitials As String
+
+Dim VAffSent
+Dim VAffRecd
+Dim VAffSentPF
+Dim VAffRecdPF
+
+VAffSent = 0
+VAffRecd = 0
+VAffSentPF = 0
+VAffRecdPF = 0
+
+vClient = InputBox("Enter Client or return for all")
+vBegSent = InputBox("Enter Beginning Sent Date")
+vEndSent = InputBox("Enter Ending Sent Date")
+vBegRecd = InputBox("Enter Beginning Recd Date")
+vEndRecd = InputBox("Enter Ending Recd Date")
+
+ 
+
+CurrentDb.Execute "DELETE * FROM AffTrackingTbl;", dbFailOnError
+CurrentDb.Execute "DELETE * FROM AffTrackingData;", dbFailOnError
+DoCmd.OpenQuery "AffTrackingDataQry"
+
+Set rs = CurrentDb.OpenRecordset("AffTrackingTBL", dbOpenDynaset, dbSeeChanges)
+
+Set rsData = CurrentDb.OpenRecordset("AffTrackingData", dbOpenSnapshot)
+
+rsData.MoveFirst
+
+Do While Not rsData.EOF
+
+If (rsData!Client Like vClient & "*") And _
+((rsData![sot sent] >= vBegSent And rsData![sot sent] <= vEndSent) Or (rsData![sot sent] >= vBegSent And rsData![sot sent] <= vEndSent) Or _
+(rsData![aco sent] >= vBegSent And rsData![aco sent] <= vEndSent) Or (rsData![aco sent] >= vBegSent And rsData![aco sent] <= vEndSent) Or _
+(rsData![def sent] >= vBegSent And rsData![def sent] <= vEndSent) Or (rsData![def sent] >= vBegSent And rsData![def sent] <= vEndSent) Or _
+(rsData![debt sent] >= vBegSent And rsData![debt sent] <= vEndSent) Or (rsData![debt sent] >= vBegSent And rsData![debt sent] <= vEndSent) Or _
+(rsData![plma sent] >= vBegSent And rsData![plma sent] <= vEndSent) Or (rsData![plma sent] >= vBegSent And rsData![plma sent] <= vEndSent) Or _
+(rsData![flma sent] >= vBegSent And rsData![flma sent] <= vEndSent) Or (rsData![flma sent] >= vBegSent And rsData![flma sent] <= vEndSent) Or _
+(rsData![mailing sent] >= vBegSent And rsData![mailing sent] <= vEndSent) Or (rsData![mailing sent] >= vBegSent And rsData![mailing sent] <= vEndSent) Or _
+(rsData![military sent] >= vBegSent And rsData![military sent] <= vEndSent) Or (rsData![military sent] >= vBegSent And rsData![military sent] <= vEndSent) Or _
+(rsData![sot rec'd] >= vBegRecd And rsData![sot rec'd] <= vEndRecd) Or (rsData![sot rec'd] >= vBegRecd And rsData![sot rec'd] <= vEndRecd) Or _
+(rsData![aco rec'd] >= vBegRecd And rsData![aco rec'd] <= vEndRecd) Or (rsData![aco rec'd] >= vBegRecd And rsData![aco rec'd] <= vEndRecd) Or _
+(rsData![def rec'd] >= vBegRecd And rsData![def rec'd] <= vEndRecd) Or (rsData![def rec'd] >= vBegRecd And rsData![def rec'd] <= vEndRecd) Or _
+(rsData![debt rec'd] >= vBegRecd And rsData![debt rec'd] <= vEndRecd) Or (rsData![debt rec'd] >= vBegRecd And rsData![debt rec'd] <= vEndRecd) Or _
+(rsData![plma rec'd] >= vBegRecd And rsData![plma rec'd] <= vEndRecd) Or (rsData![plma rec'd] >= vBegRecd And rsData![plma rec'd] <= vEndRecd) Or _
+(rsData![flma rec'd] >= vBegRecd And rsData![flma rec'd] <= vEndRecd) Or (rsData![flma rec'd] >= vBegRecd And rsData![flma rec'd] <= vEndRecd) Or _
+(rsData![mailing rec'd] >= vBegRecd And rsData![mailing rec'd] <= vEndRecd) Or (rsData![mailing rec'd] >= vBegRecd And rsData![mailing rec'd] <= vEndRecd) Or _
+(rsData![military rec'd] >= vBegRecd And rsData![military rec'd] <= vEndRecd) Or (rsData![military rec'd] >= vBegRecd And rsData![military rec'd] <= vEndRecd)) Then
+
+With rs
+.AddNew
+![BWW#] = rsData![BWW#]
+!Client = rsData!Client
+![loan#] = rsData![loan#]
+![borrower last name] = rsData![borrower last name]
+![1st allowable date] = rsData![1st allowable date]
+!initials = rsData!initials
+
+
+'Sent Dates
+
+If rsData![sot sent] >= vBegSent And rsData![sot sent] <= vEndSent Then
+![sot sent] = rsData![sot sent]
+![SOT Sent Ini] = rsData![SOT Sent Ini]
+
+VAffSent = VAffSent + 1
+VAffSentPF = VAffSentPF + 1
+
+End If
+If rsData![aco sent] >= vBegSent And rsData![aco sent] <= vEndSent Then
+'MsgBox (rsData!BWW#])
+![aco sent ini] = rsData![aco sent ini]
+![aco sent] = rsData![aco sent]
+VAffSent = VAffSent + 1
+VAffSentPF = VAffSentPF + 1
+
+End If
+If rsData![debt sent] >= vBegSent And rsData![debt sent] <= vEndSent Then
+![debt sent] = rsData![debt sent]
+![debt sent ini] = rsData![debt sent ini]
+VAffSentPF = VAffSentPF + 1
+
+VAffSent = VAffSent + 1
+End If
+If rsData![plma sent] >= vBegSent And rsData![plma sent] <= vEndSent Then
+![plma sent] = rsData![plma sent]
+![plma sent ini] = rsData![plma sent ini]
+VAffSentPF = VAffSentPF + 1
+
+VAffSent = VAffSent + 1
+End If
+If rsData![def sent] >= vBegSent And rsData![def sent] <= vEndSent Then
+![def sent] = rsData![def sent]
+![def sent ini] = rsData![def sent ini]
+VAffSentPF = VAffSentPF + 1
+
+VAffSent = VAffSent + 1
+End If
+If rsData![flma sent] >= vBegSent And rsData![flma sent] <= vEndSent Then
+![flma sent] = rsData![flma sent]
+![flma sent ini] = rsData![flma sent ini]
+VAffSentPF = VAffSentPF + 1
+
+VAffSent = VAffSent + 1
+End If
+If rsData![mailing sent] >= vBegSent And rsData![mailing sent] <= vEndSent Then
+![mail sent] = rsData![mailing sent]
+![mail sent ini] = rsData![mail sent ini]
+VAffSentPF = VAffSentPF + 1
+
+VAffSent = VAffSent + 1
+End If
+If rsData![military sent] >= vBegSent And rsData![military sent] <= vEndSent Then
+![military sent] = rsData![military sent]
+![military sent ini] = rsData![military sent ini]
+VAffSentPF = VAffSentPF + 1
+
+VAffSent = VAffSent + 1
+End If
+
+!AffsSent = VAffSent
+!affsentpf = VAffSentPF
+VAffSentPF = 0
+
+'Received Dates
+
+If rsData![sot rec'd] >= vBegRecd And rsData![sot rec'd] <= vEndRecd Then
+![sot rec'd] = rsData![sot rec'd]
+![SOT Rec'd  Ini] = rsData![SOT Rec'd  Ini]
+VAffRecdPF = VAffRecdPF + 1
+
+VAffRecd = VAffRecd + 1
+End If
+If rsData![aco rec'd] >= vBegRecd And rsData![aco rec'd] <= vEndRecd Then
+![aco rec'd] = rsData![aco rec'd]
+![aco rec'd ini] = rsData![aco rec'd ini]
+VAffRecdPF = VAffRecdPF + 1
+
+VAffRecd = VAffRecd + 1
+End If
+If rsData![debt rec'd] >= vBegRecd And rsData![debt rec'd] <= vEndRecd Then
+![debt rec'd] = rsData![debt rec'd]
+![Debt rec'd  Ini] = rsData![Debt rec'd  Ini]
+VAffRecdPF = VAffRecdPF + 1
+
+VAffRecd = VAffRecd + 1
+End If
+If rsData![plma rec'd] >= vBegRecd And rsData![plma rec'd] <= vEndRecd Then
+![plma rec'd] = rsData![plma rec'd]
+![plma rec'd ini] = rsData![plma rec'd ini]
+VAffRecdPF = VAffRecdPF + 1
+
+VAffRecd = VAffRecd + 1
+End If
+If rsData![def rec'd] >= vBegRecd And rsData![def rec'd] <= vEndRecd Then
+![def rec'd] = rsData![def rec'd]
+![def rec'd ini] = rsData![def rec'd ini]
+VAffRecdPF = VAffRecdPF + 1
+
+VAffRecd = VAffRecd + 1
+End If
+If rsData![flma rec'd] >= vBegRecd And rsData![flma rec'd] <= vEndRecd Then
+![flma rec'd] = rsData![flma rec'd]
+![flma rec'd ini] = rsData![flma rec'd ini]
+VAffRecdPF = VAffRecdPF + 1
+
+VAffRecd = VAffRecd + 1
+End If
+If rsData![mailing rec'd] >= vBegRecd And rsData![mailing rec'd] <= vEndRecd Then
+![mail rec'd] = rsData![mailing rec'd]
+![mail rec'd ini] = rsData![mail rec'd ini]
+VAffRecdPF = VAffRecdPF + 1
+
+VAffRecd = VAffRecd + 1
+End If
+If rsData![military rec'd] >= vBegRecd And rsData![military rec'd] <= vEndRecd Then
+![military rec'd] = rsData![military rec'd]
+![military rec'd ini] = rsData![military rec'd ini]
+VAffRecdPF = VAffRecdPF + 1
+
+VAffRecd = VAffRecd + 1
+End If
+!affsrecd = VAffRecd
+!affrecdpf = VAffRecdPF
+VAffRecdPF = 0
+
+.Update
+End With
+End If
+rsData.MoveNext
+
+Loop
+
+
+
+vseldoc = InputBox("1. Query by Processor" & vbCr & "2. All" & vbCr & vbCr & "enter 1 or 2")
+If vseldoc = 1 Then
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "AffidavitTrackingPROCESSOR.xls"
+DoCmd.OutputTo acOutputReport, "AffTrackingTBL-QUERY", acFormatXLS, "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+
+Else
+ExcelSaveAsTBL ("AffTrackingTBL")
+End If
+
+
+
+End Function
+

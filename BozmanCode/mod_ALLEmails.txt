@@ -1,0 +1,247 @@
+Attribute VB_Name = "ALLEmails"
+Option Compare Database
+Option Explicit
+Public Function EmailDeeds()
+
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim emailsubject, emailbody As String
+Set MyOutlook = New Outlook.Application
+Dim from, varemailto, varsendemail, emailmessage  As String
+
+If [Forms]![foreclosure database screen]![PropertyState] = "VA" Then
+
+If [Forms]![foreclosure database screen]![PropertyState] = "VA" And _
+[Forms]![foreclosure database screen]![TypeOfLoan] <> "FHA" And _
+[Forms]![foreclosure database screen]![TypeOfLoan] <> "VA" Then
+DoCmd.OutputTo acOutputReport, "Deed-VA", acFormatSNP, "C:\4closure\DeedVirginia.snp"
+End If
+If [Forms]![foreclosure database screen]![PropertyState] = "VA" And _
+[Forms]![foreclosure database screen]![TypeOfLoan] Like "FHA*" And _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![3rd_party] = 1 Then
+DoCmd.OutputTo acOutputReport, "Deed-VA", acFormatSNP, "C:\4closure\DeedVirginia.snp"
+End If
+If [Forms]![foreclosure database screen]![PropertyState] = "VA" And _
+[Forms]![foreclosure database screen]![TypeOfLoan] = "VA" And _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] <> "REO" Then
+DoCmd.OutputTo acOutputReport, "Deed-VA", acFormatSNP, "C:\4closure\DeedVirginia.snp"
+End If
+If [Forms]![foreclosure database screen]![PropertyState] = "VA" And _
+([Forms]![foreclosure database screen]![TypeOfLoan] Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) And _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![3rd_party] = 0 Then
+DoCmd.OutputTo acOutputReport, "Deed-hudVA", acFormatSNP, "C:\4closure\DeedVirginia.snp"
+End If
+If [Forms]![foreclosure database screen]![PropertyState] = "VA" And _
+[Forms]![foreclosure database screen]![TypeOfLoan] = "VA" And _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] = "REO" Then
+DoCmd.OutputTo acOutputReport, "Deed-VAVA2", acFormatSNP, "C:\4closure\DeedVirginia.snp"
+End If
+
+DoCmd.OutputTo acOutputReport, "Deed-VA-Trustees Cert", acFormatSNP, "C:\4closure\DeedVACert.snp"
+
+DoCmd.OutputTo acOutputReport, "Virginia Attachment-SubTr", acFormatSNP, "C:\4closure\DeedVAAttach.snp"
+
+
+emailsubject = "Deed Attached:" & Forms![foreclosure database screen]!LastNameDebtor1 & " / " & PROP()
+emailbody = "Attached please find Trustees Deed."
+
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = ""
+MyMail.Attachments.ADD pathuser() & "\DeedVirginia.snp"
+MyMail.Attachments.ADD pathuser() & "\DeedVACert.snp"
+MyMail.Attachments.ADD pathuser() & "\DeedVAAttach.snp"
+
+MyMail.Subject = emailsubject
+MyMail.body = emailbody & SigEmail()
+MyMail.Display
+Set MyMail = Nothing
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+DoCmd.OutputTo acOutputReport, "Deed-md", acFormatSNP, "C:\4closure\DeedMD.snp"
+DoCmd.OutputTo acOutputReport, "Deed-AttachPS", acFormatSNP, "C:\4closure\DeedMDAttach.snp"
+
+If [Forms]![foreclosure database screen]![County] Like "Baltimore*" Then
+DoCmd.OutputTo acOutputReport, "affidavitconsideration", acFormatSNP, "C:\4closure\DEEDMDaffcon.snp"
+
+End If
+
+emailsubject = "Deed Attached:" & Forms![foreclosure database screen]!LastNameDebtor1 & " / " & PROP()
+emailbody = "Attached please find Trustees Deed."
+
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = ""
+MyMail.Attachments.ADD pathuser() & "\DeedMD.snp"
+If [Forms]![foreclosure database screen]![County] Like "Baltimore*" Then
+MyMail.Attachments.ADD pathuser() & "\DeedMDAffCon.snp"
+End If
+MyMail.Attachments.ADD pathuser() & "\DeedMDAttach.snp"
+
+MyMail.Subject = emailsubject
+MyMail.body = emailbody & SigEmail()
+MyMail.Display
+Set MyMail = Nothing
+
+End If
+
+
+
+
+End Function
+Public Function EmailIRSNeeded()
+Dim rs As RecordSet
+Dim emailmessage
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+Set rs = CurrentDb.OpenRecordset("VASalesIRS", dbOpenSnapshot)
+
+If rs.EOF Then
+Exit Function
+Else
+Do While Not rs.EOF
+emailmessage = emailmessage + "BWW#: " & rs!filenum & ": Client: " & rs!Client & ": Borrower: " & rs!LastNameDebtor1 & ": Property: " & rs!PropAddress & ": County: " & rs!Propertycounty & ": Sale date: " & rs!SaleDate & vbCr & vbCr
+rs.MoveNext
+Loop
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "Drew.Brown@bww-law.com; Laurie.Welt@bww-law.com; Reese.Lesko@bww-law.com"
+MyMail.Subject = "IRS Lien Needed"
+MyMail.body = emailmessage + SigEmail()
+MyMail.Display
+
+
+End If
+
+End Function
+Public Function EMailTitlePrem()
+
+Dim rsDR As RecordSet
+Dim RDMd
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+RDMd = ""
+Set rsDR = CurrentDb.OpenRecordset("QryPaidTitlePrem")
+
+If rsDR.EOF Then
+rsDR.Close
+Else
+
+Do While Not rsDR.EOF
+RDMd = RDMd + "BWW#: " & rsDR!filenum & vbCr & rsDR!Client & vbCr & "Loan#: " & rsDR!Loan_No & vbCr & "Sale Date: " & rsDR!bill_saledate & vbCr & vbCr
+rsDR.MoveNext
+Loop
+rsDR.Close
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "Carlene.Assing@bww-law.com"
+MyMail.Subject = "Title Insurance Premium Monies Paid"
+MyMail.body = "We have received title insurance premium for this case, please make a note of this, and once the deed is recorded we must pay the premium" & vbCr & vbCr & RDMd & vbCr
+MyMail.Display
+Set MyMail = Nothing
+
+
+End If
+
+End Function
+Public Function EMailDeedRecord()
+
+Dim rsDR, rsTEv As RecordSet
+Dim RDVa, RDMd
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim VProp, VStatus
+
+VProp = ""
+RDVa = ""
+RDMd = ""
+VStatus = ""
+
+Set rsTEv = CurrentDb.OpenRecordset("QryPaidDeedRecordEv")
+Set rsDR = CurrentDb.OpenRecordset("QryPaidDeedRecord")
+'Rachel PS Changes
+'DoCmd.OpenQuery "QryPaidDeedRecordUPDATE"
+
+If rsDR.EOF Then
+rsDR.Close
+Else
+Do While Not rsDR.EOF
+If rsDR!PropertyState = "MD" Then
+VProp = "MD"
+VStatus = rsDR!Status
+
+RDMd = RDMd + "BWW#: " & rsDR!filenum & vbCr & rsDR!Client & vbCr & "Loan#: " & rsDR!Loan_No & vbCr & "Sale Date: " & rsDR!bill_saledate & vbCr & vbCr
+Else
+VProp = "VA"
+VStatus = rsDR!Status
+RDVa = RDVa + "BWW#: " & rsDR!filenum & vbCr & rsDR!Client & vbCr & "Loan#: " & rsDR!Loan_No & vbCr & "Sale Date: " & rsDR!bill_saledate & vbCr & vbCr
+End If
+rsDR.MoveNext
+Loop
+rsDR.Close
+
+If RDVa <> "" Then
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+If VProp = "MD" Then
+MyMail.To = "Monica.Lee@bww-law.com; Abegail.Saliente@bww-law.com"
+Else
+MyMail.To = "Monica.Lee@bww-law.com; Abegail.Saliente@bww-law.com"
+End If
+
+MyMail.Subject = "Record Deed"
+MyMail.CC = "josh.tremble@bww-law.com"
+MyMail.body = "Money has been received on the following account(s).  Please record deed:" & vbCr & vbCr & RDVa
+MyMail.Display
+Set MyMail = Nothing
+
+End If
+
+If RDMd <> "" Then
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "Carlene.Assing@bww-law.com"
+MyMail.Subject = "Record Deed"
+'If VStatus = "Deed in Lieu" Then
+'MyMail.CC = "sue.johnson@bww-law.com"
+'End If
+MyMail.body = "Money has been received on the following account(s).  Please record deed:" & vbCr & vbCr & RDMd
+MyMail.Display
+Set MyMail = Nothing
+
+End If
+End If
+
+If rsTEv.EOF Then
+rsTEv.Close
+Else
+RDMd = ""
+RDVa = ""
+Do While Not rsTEv.EOF
+If rsTEv!PropertyState = "MD" Then
+RDMd = RDMd + "MD Eviction(s): BWW#: " & rsTEv!filenum & vbCr & rsTEv!Client & vbCr & "Loan#: " & rsTEv!Loan_No & vbCr & "Sale Date: " & rsTEv!bill_saledate & vbCr & vbCr
+Else
+RDVa = RDVa + "VA/DC Eviction(s): BWW#: " & rsTEv!filenum & vbCr & rsTEv!Client & vbCr & "Loan#: " & rsTEv!Loan_No & vbCr & "Sale Date: " & rsTEv!bill_saledate & vbCr & vbCr
+End If
+rsTEv.MoveNext
+Loop
+rsTEv.Close
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "evictions@bww-law.com"
+MyMail.Subject = "Record Deed"
+MyMail.body = "Money has been received on the following account(s)." & vbCr & vbCr & RDVa & vbCr & vbCr & RDMd
+MyMail.Display
+Set MyMail = Nothing
+
+
+End If
+
+End Function
+

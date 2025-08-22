@@ -1,0 +1,271 @@
+Attribute VB_Name = "DeleteandExportData"
+
+Option Compare Database
+Option Explicit
+Function DeleteAllButTheTables()
+On Error GoTo ErrHandler
+  Dim obj As AccessObject
+  Dim objs() As String
+  Dim strOut As String
+  Dim index As Long
+  
+  Const conThisModuleName = "modCleaner"
+  
+  If Forms.Count > 0 Then
+    If MsgBox("Open forms can't be deleted, continue anyway?", _
+            vbQuestion + vbOKCancel, "Warning:") = vbCancel Then
+      Exit Function
+    End If
+  End If
+  
+  If MsgBox("Are you sure you want to delete all database objects (except tables)?", _
+            vbQuestion + vbYesNo, "Caution:") = vbNo Then
+    Exit Function
+  Else
+    Screen.MousePointer = 11
+    SysCmd acSysCmdSetStatus, "Deleting objects, please wait..."
+  End If
+  
+  If CurrentData.AllQueries.Count > 0 Then
+    ReDim objs(CurrentData.AllQueries.Count - 1)
+    index = 0
+  
+    For Each obj In CurrentData.AllQueries
+      If obj.IsLoaded Then
+        DoCmd.Close acQuery, obj.name, acSaveNo
+      End If
+      objs(index) = obj.name
+      index = index + 1
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting queries, please wait..."
+    
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acQuery, objs(index), True
+      DoCmd.DeleteObject acQuery, objs(index)
+      DoEvents
+    Next
+  End If
+  
+  If CurrentProject.AllMacros.Count > 0 Then
+    ReDim objs(CurrentProject.AllMacros.Count - 1)
+    index = 0
+    
+    For Each obj In CurrentProject.AllMacros
+      If obj.IsLoaded Then
+        DoCmd.Close acMacro, obj.name, acSaveNo
+      End If
+      objs(index) = obj.name
+      index = index + 1
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting macros, please wait..."
+    
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acMacro, objs(index), True
+      DoCmd.DeleteObject acMacro, objs(index)
+      DoEvents
+    Next
+  End If
+  
+  If CurrentProject.AllForms.Count > 0 Then
+    ReDim objs(CurrentProject.AllForms.Count - 1)
+    index = 0
+    
+    For Each obj In CurrentProject.AllForms
+      If obj.IsLoaded Then
+        DoCmd.Close acForm, obj.name, acSaveNo
+      End If
+      objs(index) = obj.name
+      index = index + 1
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting forms, please wait..."
+    
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acForm, objs(index), True
+      DoCmd.DeleteObject acForm, objs(index)
+      DoEvents
+    Next
+  End If
+  
+  If CurrentProject.AllReports.Count > 0 Then
+    ReDim objs(CurrentProject.AllReports.Count - 1)
+    index = 0
+    
+    For Each obj In CurrentProject.AllReports
+      If obj.IsLoaded Then
+        DoCmd.Close acReport, obj.name, acSaveNo
+      End If
+      objs(index) = obj.name
+      index = index + 1
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting reports, please wait..."
+    
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acReport, objs(index), True
+      DoCmd.DeleteObject acReport, objs(index)
+      DoEvents
+    Next
+  End If
+  
+  If CurrentProject.AllModules.Count > 1 Then
+    ReDim objs(CurrentProject.AllModules.Count - 2)
+    index = 0
+    
+    For Each obj In CurrentProject.AllModules
+      If obj.name <> conThisModuleName Then
+        If obj.IsLoaded Then
+          DoCmd.Close acModule, obj.name, acSaveNo
+        End If
+        objs(index) = obj.name
+        index = index + 1
+      End If
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting modules, please wait..."
+  
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acModule, objs(index), True
+      DoCmd.DeleteObject acModule, objs(index)
+      DoEvents
+    Next
+  End If
+  
+  If CurrentProject.AllDataAccessPages.Count > 0 Then
+    ReDim objs(CurrentProject.AllDataAccessPages.Count - 1)
+    index = 0
+    
+    For Each obj In CurrentProject.AllDataAccessPages
+      If obj.IsLoaded Then
+        DoCmd.Close acDataAccessPage, obj.name, acSaveNo
+      End If
+      objs(index) = obj.name
+      index = index + 1
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting DAPs, please wait..."
+    
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acDataAccessPage, objs(index), True
+      DoCmd.DeleteObject acDataAccessPage, objs(index)
+      DoEvents
+    Next
+  End If
+  
+ExitHere:
+  SysCmd acSysCmdClearStatus
+  Screen.MousePointer = 0
+  MsgBox "Operation completed successfully." & vbCrLf & vbCrLf & _
+    "Module """ & conThisModuleName & """ must be deleted manually." & _
+    IIf(Len(strOut) > 0, vbCrLf & vbCrLf & "Exceptions:" & vbCrLf & _
+    strOut, ""), vbInformation, "Results:"
+  MsgBox "You should run compact and repair before using this database.", _
+    vbInformation, "Attention:"
+  On Error Resume Next
+  'clear the startup form property if it exists since
+  'no forms should be left after the deletes.
+  CurrentDb().Properties("StartupForm").Value = "(none)"
+  Exit Function
+ErrHandler:
+  If Err = 2008 Then   'Forms closed by code won't get deleted - Access bug.
+    strOut = strOut & Err.description & vbCrLf
+    Resume Next
+  End If
+  SysCmd acSysCmdClearStatus
+  Screen.MousePointer = 0
+  MsgBox "An Error occurred: " & Err & "-" & Err.description
+End Function
+
+Public Sub DeleteDB()
+
+CurrentDb.Execute ("drop table tblUser")
+CurrentDb.Execute ("drop table Autonumbers")
+CurrentDb.Execute ("drop table Bankruptcy")
+CurrentDb.Execute ("drop table Billing")
+CurrentDb.Execute ("drop table BKInvNo")
+CurrentDb.Execute ("drop table BRTrustees")
+CurrentDb.Execute ("drop table Cases")
+CurrentDb.Execute ("drop table Clients")
+CurrentDb.Execute ("drop table ClosedFiles")
+CurrentDb.Execute ("drop table Creditors")
+CurrentDb.Execute ("drop table dba_bkdebtorsattorneys")
+CurrentDb.Execute ("drop table dba_court_auditors")
+CurrentDb.Execute ("drop table dba_feescosts")
+CurrentDb.Execute ("drop table DeedReviews")
+CurrentDb.Execute ("drop table defendants")
+CurrentDb.Execute ("drop table [Demand Letter]")
+CurrentDb.Execute ("drop table Diary")
+CurrentDb.Execute ("drop table Employees")
+CurrentDb.Execute ("drop table Eviction")
+CurrentDb.Execute ("drop table foreclosure")
+CurrentDb.Execute ("drop table investor")
+CurrentDb.Execute ("drop table InvoiceNumbering")
+CurrentDb.Execute ("drop table Jurisdiction")
+CurrentDb.Execute ("drop table Litigation")
+CurrentDb.Execute ("drop table Login")
+CurrentDb.Execute ("drop table MDLine")
+CurrentDb.Execute ("drop table [Ocwen Investors]")
+CurrentDb.Execute ("drop table Postsale")
+CurrentDb.Execute ("drop table SecuredParty")
+CurrentDb.Execute ("drop table SeniorLien")
+CurrentDb.Execute ("drop table [Servicer Table]")
+CurrentDb.Execute ("drop table tblFidelity")
+CurrentDb.Execute ("drop table tblInput")
+CurrentDb.Execute ("drop table Title")
+CurrentDb.Execute ("drop table [Title Companies]")
+CurrentDb.Execute ("drop table titledeeds")
+CurrentDb.Execute ("drop table titleissue")
+CurrentDb.Execute ("drop table titlejudgments")
+CurrentDb.Execute ("drop table titleliens")
+CurrentDb.Execute ("drop table titletaxes")
+CurrentDb.Execute ("drop table [VA Appraisers]")
+CurrentDb.Execute ("drop table VAline")
+
+End Sub
+
+Public Sub ExportDB()
+
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "tblUser", "tblUser"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Bankruptcy", "Bankruptcy"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Billing", "Billing"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "BKInvNo", "BKInvNo"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "BRTrustees", "BRTrustees"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Cases", "Cases"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Clients", "Clients"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "ClosedFiles", "ClosedFiles"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Creditors", "Creditors"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "bkdebtorsattorneys", "bkdebtorsattorneys"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "court_auditors", "court_auditors"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "feescosts", "feescosts"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "DeedReviews", "DeedReviews"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "defendants", "defendants"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "DemandLetter", "Demand Letter"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Diary", "Diary"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Employees", "Employees"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Eviction", "Eviction"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "foreclosure", "foreclosure"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "investor", "investor"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "InvoiceNumbering", "InvoiceNumbering"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Jurisdiction", "Jurisdiction"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Litigation", "Litigation"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "MDLine", "MDLine"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "OcwenInvestors", "Ocwen Investors"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Postsale", "Postsale"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "SecuredParty", "SecuredParty"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "SeniorLien", "SeniorLien"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "ServicerTable", "Servicer Table"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "tblFidelity", "tblFidelity"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "tblInput", "tblInput"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "Title", "Title"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "TitleCompanies", "Title Companies"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "titledeeds", "titledeeds"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "titleissue", "titleissue"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "titlejudgments", "titlejudgments"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "titleliens", "titleliens"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "titletaxes", "titletaxes"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "VAAppraisers", "VA Appraisers"
+DoCmd.TransferDatabase acExport, "ODBC Database", "ODBC;DSN=FCdata", acTable, "VAline", "VAline"
+End Sub
+

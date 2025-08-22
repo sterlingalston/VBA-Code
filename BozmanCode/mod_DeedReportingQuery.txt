@@ -1,0 +1,93 @@
+Attribute VB_Name = "DeedReportingQuery"
+Option Compare Database
+
+Sub DeedstobeRecordedWaterPaid()
+
+ 
+CurrentDb.Execute "DELETE * FROM RatQryLinkedBilling;", dbFailOnError
+
+DoCmd.OpenQuery "RatQryTaxesWaterLinkedToBill"
+DoCmd.OpenQuery "RatQryTaxesWaterLinkedToBill2"
+DoCmd.OpenQuery "RatQryTaxesWaterLinkedToBill3"
+DoCmd.OpenQuery "RatQryTaxesWaterLinkedToBill4"
+DoCmd.OpenQuery "RatQryTaxesWaterLinkedToBill5"
+DoCmd.OpenQuery "RatQryTaxesWaterLinkedToBill6"
+
+
+End Sub
+
+Sub DeedstoBeRecordedHoldingFundsVA()
+ 
+CurrentDb.Execute "delete * from TempPS"
+DoCmd.OpenQuery ("DeedRecHoldingFundsQryALL")
+DoCmd.OpenQuery ("DeedsRecHoldingFundsQry2")
+CurrentDb.Execute "delete * from TempPS"
+DoCmd.OpenQuery ("DeedsRecHoldingFundsQry3")
+DoCmd.OpenQuery ("DeedsRecHoldingFundsData")
+
+
+Call DeedBills
+
+End Sub
+
+Public Function DeedBills()
+
+
+DoCmd.OpenQuery ("Missing DeedUpdateEviction")
+Dim rs As RecordSet, rsbill As RecordSet
+Dim strsql As String
+
+strsql = "select * from TempPS order by Filenum"
+Set rsbill = CurrentDb.OpenRecordset("TransferfeeCHK", dbOpenSnapshot)
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+If Not rsbill.EOF Then
+rsbill.MoveFirst
+End If
+
+Do While Not rs.EOF
+
+rsbill.MoveFirst
+
+Do While Not rsbill.EOF
+
+If rs!filenum = rsbill!filenum Then
+
+If rs!TRANSFERFEE = 0 And (rsbill!d_transfee > 0 Or rsbill!re_recording > 0) Then
+With rs
+.Edit
+If (rsbill!TypeOfLoan = "FHLMC" Or rsbill!TypeOfLoan = "FNMA") And rsbill!re_recording > 0 Then
+!TRANSFERFEE = rsbill!re_recording
+Else
+!TRANSFERFEE = rsbill!d_transfee
+End If
+'d_titleins
+!DATE_BILLED = rsbill!billingdate
+!Inv_No = rsbill!CustomerID
+!bill_paid = rsbill!bill_paid
+.Update
+End With
+End If
+End If
+rsbill.MoveNext
+Loop
+rs.MoveNext
+Loop
+rsbill.Close
+rs.Close
+End Function
+
+Sub DeedtoBeRecordedBillNotPaid()
+
+DoCmd.OpenQuery ("TEMPPSdelete")
+DoCmd.OpenQuery ("Missing RatDeedRecVA")
+Call TransDEED
+
+DoCmd.OpenQuery ("DeedtoberecordedBillNotPaidQry")
+
+End Sub
+

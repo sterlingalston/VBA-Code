@@ -1,0 +1,3419 @@
+Attribute VB_Name = "DocketModule"
+
+
+Option Compare Database
+Public Function TrusteeRevd()
+Dim VTRevd
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!qc2subform.Form!p1_trustee) Then
+
+VTRevd = Forms![foreclosure database screen]!ForeclosureSubForm.Form!qc2subform.Form!p1_trustee
+If VTRevd < Date Then
+TrusteeRevd = 1
+Else
+TrusteeRevd = 0
+End If
+
+End If
+
+End Function
+Public Function HOCQueueScreen()
+Dim VSel
+VSel = InputBox("Enter Password")
+If VSel = "pratima" Then
+DoCmd.OpenForm "HOC Queue"
+Else
+MsgBox ("INCORRECT Password")
+
+End If
+
+
+End Function
+Public Function RegNeeded()
+RegNeeded = 0
+
+If (Forms![foreclosure database screen]!Propertycounty = "Prince George's" And Forms![foreclosure database screen]!PropertyCity = "Laurel") Or _
+Forms![foreclosure database screen]!PropertyCity = "Annapolis" Or _
+Forms![foreclosure database screen]!PropertyCity = "College Park" Or _
+Forms![foreclosure database screen]!PropertyCity = "Salisbury" Or _
+Forms![foreclosure database screen]!PropertyCity = "Poolesville" Then
+RegNeeded = 1
+End If
+
+
+End Function
+Public Function RegNeededDocket()
+RegNeededDocket = 0
+
+If (Forms![docketform]!Propertycounty = "Prince George's" And Forms![docketform]!PropertyCity = "Laurel") Or _
+Forms![docketform]!PropertyCity = "Annapolis" Or _
+Forms![docketform]!PropertyCity = "College Park" Or _
+Forms![docketform]!PropertyCity = "Salisbury" Or _
+Forms![docketform]!PropertyCity = "Poolesville" Then
+RegNeededDocket = 1
+End If
+
+End Function
+Public Function AddDefDate()
+
+Dim rs As RecordSet
+Dim rsFC
+Dim strsql As String
+Dim vduedate As Date
+
+
+strsql = "select * from FCtracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If rs.EOF Then
+rs.Close
+
+Set rsFC = CurrentDb.OpenRecordset("FCtracking", dbOpenDynaset, dbSeeChanges)
+vduedate = InputBox("Enter Default Due Date")
+
+With rsFC
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!date_default = vduedate
+.Update
+.Close
+End With
+
+Else
+
+If IsNull(rs!date_default) Then
+
+vduedate = InputBox("Enter Default Date")
+
+With rs
+.Edit
+!date_default = vduedate
+.Update
+.Close
+
+End With
+
+End If
+
+
+End If
+
+
+
+
+
+End Function
+Public Function AddDueDate()
+Dim rs As RecordSet
+Dim rsFC
+Dim strsql As String
+Dim vduedate As Date
+
+
+strsql = "select * from FCtracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If rs.EOF Then
+rs.Close
+
+Set rsFC = CurrentDb.OpenRecordset("FCtracking", dbOpenDynaset, dbSeeChanges)
+vduedate = InputBox("Enter Due Date")
+
+With rsFC
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!due_date = vduedate
+.Update
+.Close
+End With
+
+Else
+
+If IsNull(rs!due_date) Then
+
+vduedate = InputBox("Enter Due Date")
+
+With rs
+.Edit
+!due_date = vduedate
+.Update
+.Close
+
+End With
+
+End If
+
+
+End If
+
+
+
+
+End Function
+Public Function DSRestartFU()
+ExcelSaveAsQRY ("DSRestartFU")
+
+End Function
+Public Function PreFinal()
+
+strsqlfc = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+
+If Not rsFC.EOF Then
+If Not IsNull(rsFC!final_docket_sent_service) Then
+PreFinal = "FINAL"
+ElseIf Not IsNull(rsFC!pre_docket_sent_service) Then
+PreFinal = "PRE"
+End If
+End If
+
+rsFC.Close
+
+
+End Function
+Public Function LoanTypeDIL()
+Dim rs
+Dim strsql
+strsql = "SELECT typeofloan FROM cases WHERE FILENUM = " & Forms![DILForm]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+LoanTypeDIL = rs!TypeOfLoan
+rs.Close
+
+End Function
+Public Function ClientDIL()
+Dim rs
+Dim strsql
+strsql = "SELECT client FROM cases WHERE FILENUM = " & Forms![DILForm]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+ClientDIL = rs!Client
+rs.Close
+
+End Function
+Public Function LoanNoDIL()
+Dim rs
+Dim strsql
+strsql = "SELECT clientrefnumber FROM cases WHERE FILENUM = " & Forms![DILForm]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+LoanNoDIL = rs!ClientRefNumber
+rs.Close
+
+End Function
+Public Function SALEDATEdil()
+Dim rs
+Dim strsql
+strsql = "SELECT SALEDATE FROM FORECLOSURE WHERE SUBFILENUM = " & Forms![DILForm]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+SALEDATEdil = rs!SaleDate
+rs.Close
+
+End Function
+Public Function MilAct()
+If Forms![foreclosure database screen]!Mil1 = 1 Or Forms![foreclosure database screen]!Mil1 = -1 Or _
+Forms![foreclosure database screen]!mil2 = 1 Or Forms![foreclosure database screen]!mil2 = -1 Or _
+Forms![foreclosure database screen]!mil3 = 1 Or Forms![foreclosure database screen]!mil3 = -1 Or _
+Forms![foreclosure database screen]!mil4 = 1 Or Forms![foreclosure database screen]!mil4 = -1 Or _
+Forms![foreclosure database screen]!mil5 = 1 Or Forms![foreclosure database screen]!mil5 = -1 Then
+
+MilAct = "1"
+End If
+
+
+End Function
+Public Function MilAffSelPS()
+Call MilAffDump
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim VFirst, VSecond, VThird, VFourth, VFifth
+Dim VMil
+Dim VNonMil
+VMil = 0
+VNonMil = 0
+
+VFirst = firstdebtor()
+VSecond = secondDebtor()
+VThird = thirddebtor()
+VFourth = fourthdebtor()
+VFifth = fifthdebtor()
+
+strsql = "select * from notices where noticeto = " & """" & VFirst & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!Mil1 = 1 Or Forms![foreclosure database screen]!Mil1 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VSecond & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil2 = 1 Or Forms![foreclosure database screen]!mil2 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VThird & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil3 = 1 Or Forms![foreclosure database screen]!mil3 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VFourth & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil4 = 1 Or Forms![foreclosure database screen]!mil4 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VFifth & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil5 = 1 Or Forms![foreclosure database screen]!mil5 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+VSel = InputBox("1. Preview Military Aff" & vbCr & "2. Print Military Aff" & vbCr & "input 1 or 2")
+If VSel = 1 Then
+
+DoCmd.OpenReport "militaryaffNonMilInHouse", acViewPreview
+Else
+DoCmd.OpenReport "militaryaffNonMilInHouse", acViewNormal
+End If
+
+
+
+End Function
+
+Public Function MilAffSel()
+Call MilAffDump
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim VFirst, VSecond, VThird, VFourth, VFifth
+Dim VMil
+Dim VNonMil
+VMil = 0
+VNonMil = 0
+
+VFirst = firstdebtor()
+VSecond = secondDebtor()
+VThird = thirddebtor()
+VFourth = fourthdebtor()
+VFifth = fifthdebtor()
+
+strsql = "select * from notices where noticeto = " & """" & VFirst & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!Mil1 = 1 Or Forms![foreclosure database screen]!Mil1 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VSecond & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil2 = 1 Or Forms![foreclosure database screen]!mil2 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VThird & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil3 = 1 Or Forms![foreclosure database screen]!mil3 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VFourth & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil4 = 1 Or Forms![foreclosure database screen]!mil4 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VFifth & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil5 = 1 Or Forms![foreclosure database screen]!mil5 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+Dim VSel
+
+VSel = InputBox("1. Executing In House" & vbCr & "2. Client Signs" & vbCr & vbCr & "input 1 or 2")
+
+If VSel = 1 Then
+DoCmd.OpenReport "militaryaffNonMilInHouse", acViewPreview
+Else
+
+If Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+DoCmd.OpenReport "OWBMilAff", acViewPreview
+Else
+DoCmd.OpenReport "militaryaffGrantor51410CS", acViewPreview
+End If
+
+End If
+
+
+End Function
+
+Public Function NCMilAffSel()
+Call MilAffDump
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim VFirst, VSecond, VThird, VFourth, VFifth
+Dim VMil
+Dim VNonMil
+VMil = 0
+VNonMil = 0
+
+VFirst = firstdebtor()
+VSecond = secondDebtor()
+VThird = thirddebtor()
+VFourth = fourthdebtor()
+VFifth = fifthdebtor()
+
+strsql = "select * from notices where noticeto = " & """" & VFirst & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!Mil1 = 1 Or Forms![foreclosure database screen]!Mil1 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VSecond & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil2 = 1 Or Forms![foreclosure database screen]!mil2 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VThird & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil3 = 1 Or Forms![foreclosure database screen]!mil3 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VFourth & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil4 = 1 Or Forms![foreclosure database screen]!mil4 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+
+strsql = "select * from notices where noticeto = " & """" & VFifth & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+If Not rs.EOF Then
+With rs
+.Edit
+If Forms![foreclosure database screen]!mil5 = 1 Or Forms![foreclosure database screen]!mil5 = -1 Then
+!MilActive = 2
+VMil = VMil + 1
+Else
+!MilActive = 1
+VNonMil = VNonMil + 1
+End If
+.Update
+.Close
+End With
+End If
+
+Dim VSel
+
+VSel = InputBox("1. Executing In House" & vbCr & "2. Client Signs" & vbCr & vbCr & "input 1 or 2")
+
+If VSel = 1 Then
+DoCmd.OpenReport "NCmilitaryaffNonMilInHouse", acViewPreview
+Else
+
+If Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+DoCmd.OpenReport "NCOWBMilAff", acViewPreview
+Else
+DoCmd.OpenReport "NCmilitaryaffGrantor51410CS", acViewPreview
+End If
+
+End If
+
+
+End Function
+Public Function MilAff()
+Dim strsql As String
+Dim rs As RecordSet
+
+
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" Then
+
+'And ([Forms]![foreclosure database screen]![PropertyCounty] = "Anne Arundel" Or [Forms]![foreclosure database screen]![PropertyCounty] = "Howard") Then
+
+Call MilAffAA
+
+'If [Forms]![foreclosure database screen]![ForeclosureSubForm].Form!Mil_Active = 0 Or _
+'IsNull([Forms]![foreclosure database screen]![ForeclosureSubForm].Form!Mil_Active) Then
+
+'strsql = "select * from notices where extra = " & """" & "1" & """" & ";"
+'Set rs = CurrentDb.OpenRecordset(strsql, dbopensnapshot)
+
+'If Not rs.EOF Then
+'If Forms![foreclosure database screen]!PropertyCounty = "Anne Arundel" Then
+'DoCmd.OpenReport "MilitaryAff-AA1", acPreview
+'Else
+'DoCmd.OpenReport "MilitaryAff-1", acPreview
+'End If
+'rs.Close
+'End If
+
+'strsql = "select * from notices where extra = " & """" & "3" & """" & " OR EXTRA = " & """" & "0" & """" & ";"
+'Set rs = CurrentDb.OpenRecordset(strsql, dbopensnapshot)
+'If Not rs.EOF Then
+'rs.Close
+
+'DoCmd.OpenReport "MilitaryAff-AA3", acPreview
+'End If
+'Else
+
+'DoCmd.OpenForm ("MilAffScrn")
+'End If
+Dim VSel
+
+
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!mil_active = -1 Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!mil_active = 1 Then
+DoCmd.OpenForm ("MilAffScrn")
+Else
+VSel = InputBox("1. Executing In House" & vbCr & "2. Client Signs" & vbCr & vbCr & "input 1 or 2")
+
+If VSel = 1 Then
+DoCmd.OpenReport "militaryaffGrantor51410", acPreview
+Else
+DoCmd.OpenReport "militaryaffGrantor51410CS", acPreview
+End If
+End If
+
+Else
+
+DoCmd.OpenReport "MilitaryAff", acPreview
+
+End If
+
+
+End Function
+Public Function AffCertPreAMEND()
+'vsplenght = Len(Forms![foreclosure database screen]!LongSecured)
+'MsgBox (vsplenght)
+
+'If vsplenght > 100 Or Not IsNull(Forms![foreclosure database screen]!lastnamedebtor4) Or Not IsNull(Forms![foreclosure database screen]![lastnameo1]) Then
+'DoCmd.OpenReport "affidavitcertownershipCLIENTLONGAMEND", acViewPreview
+
+'Else
+DoCmd.OpenReport "affidavitcertownershipCLIENTAMEND", acViewPreview
+
+'End If
+
+'If [Forms]![foreclosure database screen]![Client] = "Citi Residential Lending Inc." Then
+'DoCmd.OpenReport ("AffCertAttach"), acViewPreview
+'End If
+
+End Function
+
+Public Function AffCertPre()
+'vsplenght = Len(Forms![foreclosure database screen]!LongSecured)
+'MsgBox (vsplenght)
+
+
+If Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+DoCmd.OpenReport "OWBaffidavitcertownershipCLIENT", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "Citi*" Then
+DoCmd.OpenReport "affidavitcertownershipCITI", acViewPreview
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "JPM*" Then
+DoCmd.OpenReport "AffCertOwnCLIENT-Chase", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+DoCmd.OpenReport "affidavitcertownershipBAC", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" And (Forms![foreclosure database screen]!prime_nonprime = 2 Or Forms![foreclosure database screen]!prime_nonprime = 1) Then
+DoCmd.OpenReport "affidavitcertownershipCLIENT-OcwenHomeward", acViewPreview
+
+
+
+
+Else
+DoCmd.OpenReport "affidavitcertownershipCLIENT", acViewPreview
+
+End If
+
+'If [Forms]![foreclosure database screen]![Client] = "Citi Residential Lending Inc." Then
+'DoCmd.OpenReport ("AffCertAttach"), acViewPreview
+'End If
+
+End Function
+
+Public Function AffCert()
+
+If Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+DoCmd.OpenReport "OWBaffidavitcertownershipCLIENT", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "Citi*" Then
+DoCmd.OpenReport "affidavitcertownershipCITI", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "JPM*" Then
+DoCmd.OpenReport "AffCertOwnCLIENT-Chase", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+DoCmd.OpenReport "affidavitcertownershipBAC", acViewPreview
+
+
+Else
+DoCmd.OpenReport "affidavitcertownershipCLIENT"
+End If
+
+
+End Function
+Public Function AffDefNot()
+Dim VPreparesNOI
+
+If Client Like "Wells*" Then
+DoCmd.OpenReport "AffidavitDefaultNoticeWELLS", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "CitiM*" Then
+DoCmd.OpenReport "AffidavitDefaultNoticeCITI", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+MsgBox ("There are 2 separate Affidavits for OneWest Bank.  They will BOTH preview now")
+
+DoCmd.OpenReport "OWBaffidavitdefaultnoticeNew", acViewPreview
+DoCmd.OpenReport "OWBaffidavitmailingNew", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Then
+Set oDoc = oapp.Documents.ADD("\\rvdv-fs01\DataTransfer\Templates\FC\AffDefaultEVERHOME.doc", , , True)
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+Set oDoc = oapp.Documents.ADD("\\rvdv-fs01\DataTransfer\Templates\FC\AffDefaultBAC.doc", , , True)
+
+Else
+
+VPreparesNOI = InputBox("1. BWW Prepared NOI" & vbCr & "2. Client Prepared NOI" & vbCr & vbCr & "input 1 or 2")
+
+If VPreparesNOI = 1 Then
+
+DoCmd.OpenReport "affidavitdefaultnoticeBGWSends", acViewPreview
+
+
+Else
+
+
+DoCmd.OpenReport "affidavitdefaultnoticeNew", acViewPreview
+
+
+
+End If
+
+End If
+
+End Function
+
+Public Function AffsEmail()
+
+Dim emailsubject, emailbody As String
+Dim rsCLT As RecordSet
+Dim strsqlclt As String
+Dim VPreparesNOI
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+emailsubject = "Investor Type: " & Forms![foreclosure database screen]![TypeOfLoan] & ": 1st Legal Required Affidavits, Due By: " & Date + 5
+Else
+emailsubject = Forms![foreclosure database screen]![LastNameDebtor1] & ": 1st Legal Required Affidavits, Due By: " & Date + 3
+End If
+
+
+emailbody = "Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr & vbCr & _
+"New Maryland procedure requires one Appointment of Substitute Trustee, one Affidavit Certifying Ownership of Debt and one Affidavit of Default and Mailing of Notice of Intent to Foreclose to docket the case.  Please ensure that all 3 of these affidavits are printed, executed and returned back to our office as soon as possible. Thanks!" & vbCr
+
+'"New Maryland procedure requires one Appointment of Substitute Trustees, one Affidavit Certifying Ownership of Debt and one Affidavit of Default and Notice of Default to docket the case.   Please ensure that BOTH of The Deeds of Appointment are printed and executed and returned back to our office as soon as possible, coupled with a single version of the other affidavits." & vbCr
+
+Dim rs As RecordSet
+Dim strsql, VTo As String
+Dim vsplenght
+
+vsplenght = Len(Forms![foreclosure database screen]!longsecured)
+
+strsql = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If IsNull(rs!Email) Or rs!Email = "" And Forms![foreclosure database screen]!Client <> "OCWEN Loan Servicing, LLC" Then
+MsgBox ("No email address for " & Forms![foreclosure database screen]!Client & ", please go into Client Information Screen and input.")
+VTo = ""
+ElseIf Forms![foreclosure database screen]!Client = "OCWEN Loan Servicing, LLC" Then
+VTo = "affidavits@ocwen.com"
+Else
+VTo = rs!Email
+End If
+
+Call AffPkgEmail
+
+
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Or _
+Forms![foreclosure database screen]!Client Like "Suntrust M*" Or _
+Forms![foreclosure database screen]!Client Like "Ocwen*" Or _
+Forms![foreclosure database screen]!Client Like "CitiMortgag*" Or _
+Forms![foreclosure database screen]!Client Like "Nationst*" Or _
+Forms![foreclosure database screen]!Client Like "JPM*" Or _
+Forms![foreclosure database screen]!Client Like "Bank of Americ*" Then
+
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OutputTo acOutputReport, "doa-md-Chase", acFormatRTF, pathuser() & "\DOA-md.rtf"
+
+Else
+DoCmd.OutputTo acOutputReport, "doa-md", acFormatRTF, pathuser() & "\DOA-md.rtf"
+End If
+
+If Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+DoCmd.OutputTo acOutputReport, "OWBAffidavitCertOwnershipCLIENT", acFormatRTF, pathuser() & "\AffidavitCertOwnership.rtf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OutputTo acOutputReport, "AffCertOwnCLIENT-Chase", acFormatRTF, pathuser() & "\AffidavitCertOwnership.rtf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+DoCmd.OutputTo acOutputReport, "affidavitcertownershipBAC", acFormatRTF, pathuser() & "\AffidavitCertOwnership.rtf"
+
+
+Else
+
+DoCmd.OutputTo acOutputReport, "AffidavitCertOwnershipCLIENT", acFormatRTF, pathuser() & "\AffidavitCertOwnership.rtf"
+End If
+
+If Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+MsgBox ("There are 2 separate Affidavits for OneWest Bank.  They will BOTH preview now")
+
+DoCmd.OutputTo acOutputReport, "OWBaffidavitdefaultnoticeNew", acFormatRTF, pathuser() & "\AffidavitDefaultNotice.rtf"
+DoCmd.OutputTo acOutputReport, "OWBaffidavitmailingNew", acFormatRTF, pathuser() & "\AffidavitDefaultNotice.rtf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Then
+Set oDoc = oapp.Documents.ADD("\\rvdv-fs01\DataTransfer\Templates\FC\AffDefaultEVERHOME.doc", , , True)
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+Set oDoc = oapp.Documents.ADD("\\rvdv-fs01\DataTransfer\Templates\FC\AffDefaultBAC.doc", , , True)
+
+Else
+VPreparesNOI = InputBox("1. BWW Prepared NOI" & vbCr & "2. Client Prepared NOI" & vbCr & vbCr & "input 1 or 2")
+
+If VPreparesNOI = 1 Then
+
+DoCmd.OutputTo acOutputReport, "affidavitdefaultnoticeBGWSends", acFormatRTF, pathuser() & "\AffidavitDefaultNotice.rtf"
+
+
+Else
+
+DoCmd.OutputTo acOutputReport, "affidavitdefaultnoticeNew", acFormatRTF, pathuser() & "\AffidavitDefaultNotice.rtf"
+
+
+End If
+
+End If
+gAttachment1 = pathuser() & "\AffidavitDefaultNotice.rtf"
+
+gAttachment2 = pathuser() & "\Doa-md.rtf"
+gAttachment3 = pathuser() & "\AffidavitCertOwnership.rtf"
+'gattachment4 = pathuser() & "\affpackage.pdf"
+
+Else
+
+If Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+VConvRpt = "OWBAffidavitCertOwnershipCLIENT"
+ElseIf Forms![foreclosure database screen]!Client Like "CitiM*" Then
+VConvRpt = "AffidavitCertOwnershipCiti"
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+VConvRpt = "affidavitcertownershipBAC"
+
+Else
+VConvRpt = "AffidavitCertOwnershipCLIENT"
+End If
+
+Call ConvertPDFALL
+If Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+gAttachment1 = pathuser() & "\OWBAffidavitCertOwnershipCLIENT.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "CitiM*" Then
+gAttachment1 = pathuser() & "\AffidavitCertOwnershipCiti.pdf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+gAttachment1 = pathuser() & "\affidavitcertownershipBAC.pdf"
+Else
+gAttachment1 = pathuser() & "\AffidavitCertOwnershipCLIENT.pdf"
+End If
+
+gAttachment2 = ""
+gAttachment3 = ""
+gattachment4 = ""
+
+If Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+MsgBox ("There are 2 separate Affidavits for OneWest Bank.  They will BOTH preview now")
+
+VConvRpt = "OWBaffidavitdefaultnoticeNew"
+
+Call ConvertPDFALL
+gAttachment2 = pathuser() & "\OWBAffidavitDefaultNoticeNEW.pdf"
+VConvRpt = "OWBaffidavitmailingNew"
+Call ConvertPDFALL
+gAttachment5 = pathuser() & "\OWBaffidavitmailingNew.pdf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Then
+VConvRpt = "AffdavitDefaultnoticeEVERHOME"
+gAttachment2 = pathuser() & "\AffidavitDefaultnoticeEverhome.pdf"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+VConvRpt = "affidavitdefaultbac"
+gAttachment2 = pathuser() & "\AffidavitDefaultBAC.pdf"
+
+Else
+
+VPreparesNOI = InputBox("1. BWW Prepared NOI" & vbCr & "2. Client Prepared NOI" & vbCr & vbCr & "input 1 or 2")
+
+If VPreparesNOI = 1 Then
+
+VConvRpt = "affidavitdefaultnoticeBGWSends"
+gAttachment2 = pathuser() & "\AffidavitDefaultNoticeBGWSends.pdf"
+
+
+Call ConvertPDFALL
+
+
+Else
+
+VConvRpt = "affidavitdefaultnoticeNEW"
+gAttachment2 = pathuser() & "\AffidavitDefaultNoticeNew.pdf"
+
+
+
+Call ConvertPDFALL
+
+End If
+
+End If
+
+
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+VConvRpt = "doa-md-chase"
+Else
+VConvRpt = "doa-md"
+End If
+
+Call ConvertPDFALL
+
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+gAttachment3 = pathuser() & "\Doa-md-chase.pdf"
+Else
+gAttachment3 = pathuser() & "\Doa-md.pdf"
+End If
+
+
+End If
+
+gRecipients = VTo
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Or _
+Forms![foreclosure database screen]!Client Like "Suntrust M*" Or _
+Forms![foreclosure database screen]!Client Like "Bank of Americ*" Then
+gRecipients = "Rebecca.Delaney@bww-law.com"
+End If
+
+GSubject = emailsubject
+gBody = emailbody + SigEmail()
+gCCRecipients = ""
+
+'Call SendEmail(gRecipients, gCCRecipients, GSubject, gBody, gAttachment1, gAttachment2, gAttachment3, gattachment4)
+
+'Send Email
+MyMail.To = gRecipients
+MyMail.Subject = GSubject
+MyMail.body = gBody
+MyMail.Attachments.ADD gAttachment1
+MyMail.Attachments.ADD gAttachment2
+MyMail.Attachments.ADD gAttachment3
+'MyMail.Attachments.ADD gattachment4
+
+If Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+MyMail.Attachments.ADD gAttachment5
+End If
+
+MyMail.Display
+Set MyMail = Nothing
+
+
+
+End Function
+
+Public Function AffDefClient()
+
+Call AffDefCheckData
+
+If AffDefCheckData() = "Missing Data" Then
+Exit Function
+
+Else
+If Client Like "Wells*" Then
+DoCmd.OpenReport "AffidavitDefaultNoticeWELLS", acViewPreview
+ElseIf Forms![foreclosure database screen]!Client Like "CitiM*" Then
+DoCmd.OpenReport "AffidavitDefaultNoticeCITI", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+DoCmd.OpenReport "AffidavitDefaultBAC", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+MsgBox ("There are 2 separate Affidavits for OneWest Bank.  They will BOTH preview now")
+
+DoCmd.OpenReport "OWBaffidavitdefaultnoticeNew", acViewPreview
+DoCmd.OpenReport "OWBaffidavitmailingNew", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Then
+DoCmd.OpenReport "AffidavitDefaultnoticeEVERHOME", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" And (Forms![foreclosure database screen]!prime_nonprime = 2 Or Forms![foreclosure database screen]!prime_nonprime = 1) Then
+DoCmd.OpenReport "AffidavitDefaultnotice-OcwenHomeward", acViewPreview
+
+Else
+DoCmd.OpenReport "AffidavitDefaultNoticeNEW", acViewPreview
+
+End If
+End If
+
+
+End Function
+
+Public Function affidavitlostnoteassignment()
+
+Dim strsql As String, VPrt As String
+
+
+Vselect = InputBox("1. Preview" & vbCr & "2. Print")
+
+If Vselect = 1 Then
+
+DoCmd.RunMacro ("affidavitlostnoteassignmentPreview")
+
+Else
+
+DoCmd.RunMacro ("affidavitlostnoteassignment")
+
+
+End If
+
+
+End Function
+Public Function AffidavitLostNotePreview()
+
+Dim rs As RecordSet
+Dim strsql
+
+strsql = "select * from virginiaaccounting where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+
+If Forms![foreclosure database screen]![Propertycounty] = "fairfax" Or _
+Forms![foreclosure database screen]![Propertycounty] = "Prince William" Then
+If rs.EOF Then
+DoCmd.OpenReport "VA Accounting Receipt with LNA-Blank", acViewPreview
+Else
+DoCmd.OpenReport "VA Accounting Receipt with LNA", acViewPreview
+End If
+
+End If
+
+
+If Forms![foreclosure database screen]![PropertyState] = "VA" Then
+If rs.EOF Then
+rs.Close
+DoCmd.OpenReport "VA Accounting Receipt with LNA From Client-Blank", acViewPreview
+Else
+rs.Close
+DoCmd.OpenReport "VA Accounting Receipt with LNA From Client", acViewPreview
+End If
+End If
+
+
+If Forms![foreclosure database screen]![PropertyState] = "MD" Then
+DoCmd.OpenReport "CertificationMDlostnote", acViewPreview
+
+If Forms![foreclosure database screen]!Client Like "PNC*" Then
+
+VSel = MsgBox("Is copy of the note available?", vbYesNo)
+
+If VSel = vbYes Then
+DoCmd.OpenReport "AffidavitLostNoteMD-PNC-Yes", acViewPreview
+Else
+DoCmd.OpenReport "AffidavitLostNoteMD-PNC-No", acViewPreview
+End If
+
+
+Else
+DoCmd.OpenReport "AffidavitLostNoteMD", acViewPreview
+End If
+
+
+Else
+
+If IsNull([Forms]![foreclosure database screen]![sp]) Then
+DoCmd.OpenReport "AffidavitLostNoteVA-FC", acViewPreview
+Else
+DoCmd.OpenReport "AffidavitLostNoteVA2-FC", acViewPreview
+End If
+End If
+End Function
+Public Function AffidavitLostNotePRINT()
+
+strsql = "select * from virginiaaccounting where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql)
+
+
+If Forms![foreclosure database screen]![Propertycounty] = "fairfax" Or _
+Forms![foreclosure database screen]![Propertycounty] = "Prince William" Then
+If rs.EOF Then
+DoCmd.OpenReport "VA Accounting Receipt with LNA-Blank", acViewNormal
+Else
+DoCmd.OpenReport "VA Accounting Receipt with LNA", acViewNormal
+End If
+
+End If
+
+
+If Forms![foreclosure database screen]![PropertyState] = "VA" Then
+If rs.EOF Then
+rs.Close
+DoCmd.OpenReport "VA Accounting Receipt with LNA From Client-Blank", acViewNormal
+Else
+rs.Close
+DoCmd.OpenReport "VA Accounting Receipt with LNA From Client", acViewNormal
+End If
+End If
+
+
+
+If Forms![foreclosure database screen]![PropertyState] = "MD" Then
+DoCmd.OpenReport "CertificationMDlostnote", acViewPreview
+
+If Forms![foreclosure database screen]!Client Like "PNC*" Then
+
+VSel = MsgBox("Is copy of the note available?", vbYesNo)
+
+If VSel = vbYes Then
+DoCmd.OpenReport "AffidavitLostNoteMD-PNC-Yes", acViewNormal
+Else
+DoCmd.OpenReport "AffidavitLostNoteMD-PNC-No", acViewNormal
+End If
+
+
+Else
+DoCmd.OpenReport "AffidavitLostNoteMD", acViewNormal
+End If
+
+
+Else
+
+If IsNull([Forms]![foreclosure database screen]![sp]) Then
+DoCmd.OpenReport "AffidavitLostNoteVA-FC", acViewNormal
+Else
+DoCmd.OpenReport "AffidavitLostNoteVA2-FC", acViewNormal
+End If
+End If
+End Function
+Public Function AffidavitLostNote()
+
+Vselect = InputBox("1. Preview Affidavit" & vbCr & "2. Print directly to Printer")
+If Vselect = 1 Then
+Call AffidavitLostNotePreview
+Else
+Call AffidavitLostNotePRINT
+End If
+
+End Function
+Public Function AffidavitLostNoteNEW()
+
+If Forms![foreclosure database screen]!Client Like "PNC*" Then
+Dim vlna As String
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!LNA = "Yes" Then
+vlna = vbYes
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!LNA = "No" Then
+vlna = vbNo
+Else
+vlna = MsgBox("Did You File a Lost Note Affidavit?", vbYesNo)
+
+If vlna = vbYes Then
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!LNA = "Yes"
+Else
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!LNA = "No"
+End If
+
+End If
+
+If vlna = vbYes Then
+
+ElseIf vlna = vbNo Then
+
+End If
+
+ 
+
+VTypeMerge = "LNA"
+Call FCMerge
+
+Dim oapp As Word.Application
+Dim oDoc As Word.document
+Dim oMMDoc As Word.document
+Set oapp = CreateObject("word.application")
+
+Set oDoc = oapp.Documents.ADD("\\rvdv-fs01\DataTransfer\Templates\FC\CitiTest.doc", , , True)
+
+With oDoc.MailMerge
+.MainDocumentType = wdFormLetters
+.OpenDataSource name:=pathuser() & "fcmerge.txt"
+End With
+
+With oDoc.MailMerge
+.destination = wdSendToNewDocument
+.Execute Pause:=False
+oDoc.Close False
+oapp.Visible = True
+End With
+
+
+Else
+
+Dim vprePrt
+vprePrt = InputBox("1. Preview Affidavit" & vbCr & "2. Print Affidavit")
+If vprePrt = 1 Then
+Call AffidavitLostNotePreview
+Else
+Call AffidavitLostNotePRINT
+End If
+
+End If
+
+End Function
+Public Function AffDefNotPre()
+
+If Client Like "Wells*" Then
+DoCmd.OpenReport "AffidavitDefaultNoticeWELLS", acViewPreview
+ElseIf Forms![foreclosure database screen]!Client Like "CitiM*" Then
+DoCmd.OpenReport "AffidavitDefaultNoticeCITI", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "OneWe*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+MsgBox ("There are 2 separate Affidavits for OneWest Bank.  They will BOTH preview now")
+
+DoCmd.OpenReport "OWBaffidavitdefaultnoticeNew", acViewPreview
+DoCmd.OpenReport "OWBaffidavitmailingNew", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ever*" Then
+DoCmd.OpenReport "AffidavitDefaultnoticeEVERHOME", acViewPreview
+
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+DoCmd.OpenReport "affidavitdefaultbac", acViewPreview
+
+Else
+
+Dim VPreparesNOI
+VPreparesNOI = InputBox("1. BWW Prepared NOI" & vbCr & "2. Client Prepared NOI" & vbCr & vbCr & "input 1 or 2")
+
+If VPreparesNOI = 1 Then
+
+DoCmd.OpenReport "affidavitdefaultnoticeBGWSends", acViewPreview
+
+
+Else
+
+If Forms![foreclosure database screen]!Client Like "Ocwen*" And (Forms![foreclosure database screen]!prime_nonprime = 2 Or Forms![foreclosure database screen]!prime_nonprime = 1) Then
+DoCmd.OpenReport "AffidavitDefaultnotice-OcwenHomeward", acViewPreview
+Else
+DoCmd.OpenReport "affidavitdefaultnoticeNew", acViewPreview
+End If
+
+
+End If
+
+End If
+
+End Function
+Public Function FDFiled() As String
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+
+If Not IsNull(rs!pre_docket_court) Then
+FDFiled = rs!pre_docket_court
+End If
+
+If Not IsNull(rs!final_docket_court) Then
+FDFiled = rs!final_docket_court
+End If
+Else
+FDFiled = ""
+
+End If
+
+rs.Close
+Else
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentCourt) Then
+
+FDFiled = Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentCourt
+Else
+FDFiled = ""
+End If
+
+
+End If
+
+
+
+End Function
+Public Function AffNotOcc()
+
+DoCmd.OpenReport "AffidavitNoticeOccupant", acViewNormal
+
+'DoCmd.OpenReport "line_AffNotOcc", acViewPreview
+'Dim VUpdateDt
+'VUpdateDt = MsgBox("Will Update Affidavit Notice to Occupant date on Docket Screen, continue", vbYesNo)
+'If VUpdateDt = vbYes Then
+
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If IsNull(rs!Aff_to_Occ) Then
+
+With rs
+.Edit
+!Aff_to_Occ = Date
+.Update
+.Close
+End With
+
+End If
+
+rs.Close
+
+End Function
+Public Function AffdebtintdateFCScreen()
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim VDate
+
+AffdebtintdateFCScreen = ""
+
+strsql = "SELECT * FROM fcinterest WHERE Filenum = " & Forms![foreclosure database screen]!filenum & " order by int_thru Asc;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Do While Not rs.EOF
+AffdebtintdateFCScreen = rs!Int_thru
+rs.MoveNext
+Loop
+rs.Close
+
+
+If AffdebtintdateFCcreen = "" Then
+strsql = "Select * from affdebt where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not IsNull(rs![int_through3]) Or _
+rs![int_through3] <> "" Then
+AffdebtintdateFCScreen = rs![int_through3]
+ElseIf Not IsNull(rs![int_through2]) Or _
+rs![int_through2] <> "" Then
+AffdebtintdateFCScreen = rs![int_through2]
+ElseIf Not IsNull(rs![interest thru]) Or _
+rs![interest thru] <> "" Then
+AffdebtintdateFCScreen = rs![interest thru]
+End If
+
+End If
+
+
+
+End Function
+
+Public Function AffDebtIntDatePlus1()
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim VDate
+
+AffDebtIntDatePlus1 = ""
+
+strsql = "SELECT * FROM fcinterest WHERE Filenum = " & Forms![affidavitdebtmain]!filenum & " order by int_thru Asc;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Do While Not rs.EOF
+AffDebtIntDatePlus1 = rs!Int_thru
+rs.MoveNext
+Loop
+rs.Close
+
+If AffDebtIntDate = "" Then
+If Not IsNull(Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through3]) Or _
+Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through3] <> "" Then
+AffDebtIntDatePlus1 = Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through3] + 1
+ElseIf Not IsNull(Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through2]) Or _
+Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through2] <> "" Then
+AffDebtIntDatePlus1 = Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through2] + 1
+ElseIf Not IsNull(Forms![affidavitdebtmain]!AffidavitDebt.Form![int thru]) Or _
+Forms![affidavitdebtmain]!AffidavitDebt.Form![int thru] <> "" Then
+AffDebtIntDatePlus1 = Forms![affidavitdebtmain]!AffidavitDebt.Form![int thru] + 1
+End If
+
+End If
+
+
+
+End Function
+
+Public Function AffDebtIntDatePS()
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim VDate
+
+AffDebtIntDatePS = ""
+
+strsql = "SELECT * FROM fcinterest WHERE Filenum = " & Forms![AffDebtAmendedPS]!filenum & " order by int_thru Asc;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Do While Not rs.EOF
+AffDebtIntDatePS = rs!Int_thru
+rs.MoveNext
+Loop
+rs.Close
+
+If AffDebtIntDatePS = "" Then
+If Not IsNull(Forms![AffDebtAmendedPS]![int_through3]) Or _
+Forms![AffDebtAmendedPS]![int_through3] <> "" Then
+AffDebtIntDatePS = Forms![AffDebtAmendedPS]![int_through3]
+ElseIf Not IsNull(Forms![AffDebtAmendedPS]![int_through2]) Or _
+Forms![AffDebtAmendedPS]![int_through2] <> "" Then
+AffDebtIntDatePS = Forms![AffDebtAmendedPS]![int_through2]
+ElseIf Not IsNull(Forms![AffDebtAmendedPS]![int thru]) Or _
+Forms![AffDebtAmendedPS]![int thru] <> "" Then
+AffDebtIntDatePS = Forms![AffDebtAmendedPS]![int thru]
+End If
+
+End If
+
+
+
+End Function
+
+Public Function AffDebtIntDate()
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim VDate
+
+AffDebtIntDate = ""
+
+strsql = "SELECT * FROM fcinterest WHERE Filenum = " & Forms![affidavitdebtmain]!filenum & " order by int_thru Asc;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Do While Not rs.EOF
+AffDebtIntDate = rs!Int_thru
+rs.MoveNext
+Loop
+rs.Close
+
+If AffDebtIntDate = "" Then
+If Not IsNull(Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through3]) Or _
+Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through3] <> "" Then
+AffDebtIntDate = Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through3]
+ElseIf Not IsNull(Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through2]) Or _
+Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through2] <> "" Then
+AffDebtIntDate = Forms![affidavitdebtmain]!AffidavitDebt.Form![int_through2]
+ElseIf Not IsNull(Forms![affidavitdebtmain]!AffidavitDebt.Form![int thru]) Or _
+Forms![affidavitdebtmain]!AffidavitDebt.Form![int thru] <> "" Then
+AffDebtIntDate = Forms![affidavitdebtmain]!AffidavitDebt.Form![int thru]
+End If
+
+End If
+
+
+
+End Function
+Public Function interestTotal()
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vtotal
+
+Vtotal = 0
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+strsql = "SELECT * FROM fcinterest WHERE Filenum = " & GblFilenum & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Do While Not rs.EOF
+Vtotal = rs!Int_Amt + Vtotal
+rs.MoveNext
+Loop
+rs.Close
+If IsNull(Vtotal) Then
+interestTotal = 0
+Else
+interestTotal = Format(Vtotal, "$###,##0.00")
+End If
+
+
+
+End Function
+Public Function BalDueAsOfAMENDED()
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vtotal
+
+Vtotal = 0
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+strsql = "SELECT * FROM fcinterest WHERE Filenum = " & GblFilenum & " order by int_thru desc;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+rs.MoveFirst
+BalDueAsOf = Format(rs!Int_thru, "mmmm dd, yyyy")
+
+Else
+
+If Not IsNull(Forms![AffDebtAmendedPS]!int_through3) Then
+BalDueAsOf = Format(Forms![AffDebtAmendedPS]!int_through3, "mmmm dd, yyyy")
+ElseIf Not IsNull(Forms![AffDebtAmendedPS]!int_through2) Then
+BalDueAsOf = Format(Forms![AffDebtAmendedPS]!int_through2, "mmmm dd, yyyy")
+ElseIf Not IsNull(Forms![AffDebtAmendedPS]![interest thru]) Then
+BalDueAsOf = Format(Forms![AffDebtAmendedPS]![interest thru], "mmmm dd, yyyy")
+End If
+
+
+End If
+rs.Close
+End Function
+Public Function BalDueAsOf()
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vtotal
+
+Vtotal = 0
+GblFilenum = Forms![foreclosure database screen]!filenum
+strsql = "SELECT * FROM fcinterest WHERE Filenum = " & GblFilenum & " order by int_thru desc;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+If Not rs.EOF And Not IsNull(rs!Int_thru) Then
+
+rs.MoveFirst
+BalDueAsOf = Format(rs!Int_thru, "mmmm dd, yyyy")
+
+Else
+
+Dim strsqlAF As String
+Dim rsAF As RecordSet
+strsqlAF = "Select * from affdebt where subfilenum  = " & GblFilenum & ";"
+Set rsAF = CurrentDb.OpenRecordset(strsqlAF, dbOpenSnapshot)
+
+
+If Not IsNull(rsAF!int_through3) Then
+BalDueAsOf = Format(rsAF!int_through3, "mmmm dd, yyyy")
+ElseIf Not IsNull(rsAF!int_through2) Then
+BalDueAsOf = Format(rsAF!int_through2, "mmmm dd, yyyy")
+ElseIf Not IsNull(rsAF![interest thru]) Then
+BalDueAsOf = Format(rsAF![interest thru], "mmmm dd, yyyy")
+rsAF.Close
+
+End If
+
+
+End If
+rs.Close
+
+
+End Function
+Public Function baldueasofpsPS()
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vtotal
+
+Vtotal = 0
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+strsql = "SELECT * FROM fcinterest WHERE Filenum = " & GblFilenum & " order by int_thru desc;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+rs.MoveFirst
+BalDueAsOfPS = Format(rs!Int_thru, "mmmm dd, yyyy")
+
+Else
+
+If Not IsNull(Forms![AffDebtAmendedPS]!int_through3) Then
+BalDueAsOfPS = Format(Forms![AffDebtAmendedPS]!int_through3, "mmmm dd, yyyy")
+ElseIf Not IsNull(Forms![AffDebtAmendedPS]!int_through2) Then
+BalDueAsOfPS = Format(Forms![AffDebtAmendedPS]!int_through2, "mmmm dd, yyyy")
+ElseIf Not IsNull(Forms![AffDebtAmendedPS]![interest thru]) Then
+BalDueAsOfPS = Format(Forms![AffDebtAmendedPS]![interest thru], "mmmm dd, yyyy")
+End If
+
+
+End If
+rs.Close
+
+
+End Function
+
+
+Public Function InterestThru()
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vtotal
+
+Vtotal = 0
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+strsql = "SELECT * FROM fcinterest WHERE Filenum = " & GblFilenum & " order by int_thru desc;"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not rs.EOF Then
+rs.MoveFirst
+
+If Forms![foreclosure database screen]!Client Like "Onew*" Then
+InterestThru = Format(rs!Int_thru, "mmmm dd, yyyy")
+Else
+InterestThru = Format(rs!Int_thru + 1, "mmmm dd, yyyy")
+End If
+
+Else
+
+If Not IsNull(Forms![affidavitdebtmain]!int_through3) Then
+If Forms![foreclosure database screen]!Client Like "Onew*" Then
+InterestThru = Format(Forms![affidavitdebtmain]!int_through3, "mmmm dd, yyyy")
+Else
+InterestThru = Format(Forms![affidavitdebtmain]!int_through3 + 1, "mmmm dd, yyyy")
+End If
+
+ElseIf Not IsNull(Forms![affidavitdebtmain]!int_through2) Then
+If Forms![foreclosure database screen]!Client Like "Onew*" Then
+InterestThru = Format(Forms![affidavitdebtmain]!int_through2, "mmmm dd, yyyy")
+Else
+InterestThru = Format(Forms![affidavitdebtmain]!int_through2 + 1, "mmmm dd, yyyy")
+End If
+
+ElseIf Not IsNull(Forms![affidavitdebtmain]![interest thru]) Then
+If Forms![foreclosure database screen]!Client Like "Onew*" Then
+InterestThru = Format(Forms![affidavitdebtmain]![interest thru], "mmmm dd, yyyy")
+Else
+InterestThru = Format(Forms![affidavitdebtmain]![interest thru] + 1, "mmmm dd, yyyy")
+End If
+
+End If
+
+
+End If
+rs.Close
+
+
+End Function
+
+Public Function AffDefPara1()
+
+If Forms![foreclosure database screen]!Client Like "citimor*" Then
+
+If Forms![foreclosure database screen]!SPsameasCl = -1 Or _
+Forms![foreclosure database screen]!SPsameasCl = 1 Then
+
+AffDefPara1 = "My name is ______________________.  I am employed by CitiMortgage, Inc. as a Vice President - Document Control.  In that capacity, I am authorized to execute this affidavit on behalf of CitiMortgage, Inc."
+Else
+AffDefPara1 = "My name is ______________________.  I am employed by CitiMortgage, Inc. as a Vice President - Document Control.  In that capacity, I am authorized to execute this affidavit on behalf of CitiMortgage, Inc.  " & [Forms]![foreclosure database screen]![Client] & " is the servicer of the subject loan and is authorized to act on behalf of " & LSecured() & ", the secured party to the Mortgage or Deed of Trust that is the subject of this foreclosure action on residential property."
+ 
+End If
+
+Else
+
+AffDefPara1 = "In the regular performance of my job functions, I have access to and am familiar with business records maintained by the noteholder" & IIf(Client() Like "Dov*" And (Forms![foreclosure database screen]![SPsigns] = -1 Or Forms![foreclosure database screen]![SPsigns] = 1), "", "/servicer") & ", for the purpose of servicing mortgage loans.  These records (which include data compilations, electronically imaged documents, and others) are: (a) made at or near the time of the occurrence of the matters set forth by, or from information provided by, persons with knowledge of the activity and transactions reflected in such records; and (b) kept as a regular practice and in the ordinary course of business.  In connection with making this Affidavit, I reviewed and relied on those business records concerning the loan which is the subject of this proceeding. "
+End If
+
+End Function
+
+
+Public Function AffDefPara2()
+
+If Forms![foreclosure database screen]!Client Like "Financial Free*" Or _
+Forms![foreclosure database screen]!Client Like "Champion*" Or _
+Forms![foreclosure database screen]!Client Like "Celin*" Or _
+(Forms![foreclosure database screen]!Client Like "OneWest*" And _
+(Forms![foreclosure database screen]!FF = 1 Or Forms![foreclosure database screen]!FF = -1)) Then
+
+Dim VPara
+VPara = InputBox("Paragraph 2 Selection" & vbCr & vbCr & "1. (Died) The borrower died and the property was no longer the borrower's principal residence" & vbCr & "2. (Moved Out) The property ceased to be the principal residence of the Borrower" & vbCr & "3. (Sold) All of the borrower's right, title and interest in the property was transferred" & vbCr & "4. Insurance" & vbCr & "5. Repairs" & vbCr & "6. Taxes" & vbCr & "7. Taxes and Insurance" & vbCr & "input 1, 2, 3, 4, 5, 6 or 7")
+If VPara = 1 Then
+'The default under the Deed of Trust securing the Note which is the subject of this proceeding, occurred on April 28, 2012 when the borrower died
+AffDefPara2 = NOIDefDate() & " when the borrower died."
+ElseIf VPara = 2 Then
+AffDefPara2 = NOIDefDate() & " when the property ceased to be the principal residence of the borrower."
+ElseIf VPara = 3 Then
+AffDefPara2 = NOIDefDate() & " when all of the borrower's right, title and interest in the property was transferred."
+ElseIf VPara = 4 Then
+AffDefPara2 = NOIDefDate() & " when the borrower failed to pay all required and outstanding insurance amounts due and owing."
+ElseIf VPara = 5 Then
+AffDefPara2 = NOIDefDate() & " when the borrower failed to complete all repairs to the property that were enumerated on the Repair Rider to the loan agreement."
+ElseIf VPara = 6 Then
+AffDefPara2 = NOIDefDate() & " when the borrower failed to pay all required and outstanding taxes due and owing."
+ElseIf VPara = 7 Then
+AffDefPara2 = NOIDefDate() & " when the borrower failed to pay all required and outstanding tax and insurance payments due and owing."
+
+End If
+
+Else
+AffDefPara2 = NOIDefDate() & " when the defendant(s) did not tender the payment due on " & NOIDueDate() & "."
+End If
+
+End Function
+Public Function DocketOldPartOne()
+Dim ps As String
+ps = InputBox("Enter Password")
+If ps = "rebecca" Then
+DoCmd.OpenQuery "DocketOldPartOne"
+Else
+MsgBox ("Incorrect Password")
+End If
+
+End Function
+
+Public Function LabelsNoticeTable()
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("Notices")
+Dim VUser
+Dim Vcnt
+Dim VSelprt
+Vcnt = 1
+
+Do While VSelprt <> 2 And VSelprt <> 11 And VSelprt <> 12 And VSelprt <> 15 And VSelprt <> 3 And VSelprt <> 4 And VSelprt <> 5 And VSelprt <> 6 And VSelprt <> 7 And VSelprt <> 8 And VSelprt <> 9
+VSelprt = InputBox("Select PRINTER #:" & vbCr & vbCr & "2 = PRINTER 2" & vbCr & "3 - PRINTER 3" & vbCr & "4 - PRINTER 4" & vbCr & "5 - PRINTER 5" & vbCr & "6 - PRINTER 6 (Arlington)" & vbCr & "7 - PRINTER 7 (Trio)" & vbCr & "8 - PRINTER 8" & vbCr & "9 - PRINTER 9" & vbCr & "11 - Printer 11" & vbCr & "12 - Printer 12" & vbCr & "15 - Printer 15")
+If VSelprt = "" Then Exit Function
+If VSelprt <> 2 And VSelprt <> 11 And VSelprt <> 12 And VSelprt <> 3 And VSelprt <> 4 And VSelprt <> 5 And VSelprt <> 6 And VSelprt <> 7 And VSelprt <> 8 And VSelprt <> 9 And VSelprt <> 15 Then
+MsgBox ("Incorrect Printer Number")
+End If
+Loop
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+Set fs = CreateObject("Scripting.FileSystemObject")
+txtname = Forms![foreclosure database screen]!filenum & "_" & Vcnt & "_Label.txt"
+docsfldr = "\\rvdv-fs01\LabelRequests\"
+'DocsFldr = "c:\4closure\"
+Set A = fs.CreateTextFile(docsfldr & txtname, True)
+A.WriteLine ("|Printer " & VSelprt)
+A.WriteLine ("|FONTSIZE 10")
+A.WriteLine ("|USER " & username() & ", Address Label, File " & rs!filenum)
+A.WriteLine (rs!NoticeTo)
+A.WriteLine (rs!NoticeAdd)
+If Not IsNull(rs!NoticeAdd2) Then
+A.WriteLine (rs!NoticeAdd2)
+End If
+A.WriteLine (rs!NoticeCSZ)
+A.WriteLine ("|NEWLINE")
+A.WriteLine ("|NEWLINE")
+A.WriteLine ("BWW#: " & rs!filenum)
+
+A.Close
+Vcnt = Vcnt + 1
+rs.MoveNext
+Loop
+
+MsgBox ("Labels Sent to Label Printer")
+Else
+MsgBox ("No labels to generate from this BWW#")
+End If
+End Function
+
+Public Function DocumentCert()
+DocumentCert = InputBox("Enter Name of Document for Cert Service")
+'MsgBox ("THIS IS ONLY IN TESTING!!!!")
+
+
+End Function
+Public Function DocAlter()
+Dim VSel
+VSel = InputBox("1. Amended" & vbCr & "2. Confirmatory" & vbCr & "3. Reverified" & vbCr & vbCr & "type in 1, 2 or 3 if required otherwise hit return key")
+If VSel = 1 Then
+DocAlter = "AMENDED "
+ElseIf VSel = 2 Then
+DocAlter = "CONFIRMATORY "
+ElseIf VSel = 3 Then
+DocAlter = "REVERIFIED "
+Else
+DocAlter = ""
+End If
+
+End Function
+Public Function DocketCheckDocketed()
+ 
+
+
+MsgBox ("This program does the following:" & vbCr & "ALL MD Files in All Status that: " & vbCr & vbCr & "1. All Files where the Part 1 to Court is filled in OR" & vbCr & "2. Prelim Docket to Court filled in OR" & vbCr & "3. Final Docket Filled in" & vbCr & "4. Spreadsheet will generate to your c:\4closure directory after completion")
+DoCmd.OpenQuery ("QueryDocketedAll1")
+DoCmd.OpenQuery ("QueryDocketedAll2")
+
+ExcelSaveAsQRY ("QueryDocketChkFC")
+
+End Function
+Public Function DocketCheckFC()
+ 
+
+
+MsgBox ("This program does the following:" & vbCr & "ALL MD Files in Foreclosure Status that: " & vbCr & vbCr & "1. All Files where the Part 1 to Court is filled in" & vbCr & "2. Prelim Docket to Court filled in" & vbCr & "3. Final Docket Filled in" & vbCr & "4. Sale Date is Blank or AFTER yesterday" & vbCr & "5. Spreadsheet will generate to your c:\4closure directory after completion")
+DoCmd.OpenQuery ("QueryDocketChk1")
+DoCmd.OpenQuery ("QueryDocketChk2")
+
+ExcelSaveAsQRY ("QueryDocketChkFC")
+
+
+End Function
+Public Function AffsRecdBetweenEnterClient()
+ 
+
+
+MsgBox ("This program does the following:" & vbCr & "ALL MD Files in Foreclosure Status that: " & vbCr & vbCr & "1. Affs Received between 2 dates entered" & vbCr & "2. Prelim and Final Filed both Blank" & vbCr & vbCr & "3. Spreadsheet will generate to your c:\4closure directory after completion")
+'DoCmd.OpenQuery ("AffsRecdBetweenEnterClient")
+
+ExcelSaveAsQRY ("AffsRecdBetweenEnterClient")
+
+End Function
+Public Function ChaseQry()
+ 
+CurrentDb.Execute "DELETE * FROM querychasetbl;", dbFailOnError
+
+
+'MsgBox ("This program does the following:" & vbCr & "ALL MD Files in Foreclosure Status that: " & vbCr & vbCr & "1. All Files where the Part 1 to Court is filled in" & vbCr & "2. Prelim Docket to Court filled in" & vbCr & "3. Final Docket Filled in" & vbCr & "4. Sale Date is Blank or AFTER yesterday" & vbCr & "5. Spreadsheet will generate to your c:\4closure directory after completion")
+DoCmd.OpenQuery ("QueryDocketChk1CHASE")
+DoCmd.OpenQuery ("QueryDocketChk2CHASE")
+DoCmd.OpenQuery ("QueryDocketChk3CHASE")
+ExcelSaveAsQRY ("QueryChase")
+
+End Function
+
+Public Function DocketCheckPS()
+ 
+
+MsgBox ("This program does the following:" & vbCr & "ALL MD Files in Postsale/Litigation Status that: " & vbCr & vbCr & "1. Rat Date is Blank" & vbCr & "2. Spreadsheet will generate to your c:\4closure directory after completion")
+ExcelSaveAsQRY ("QueryDocketChkPS")
+
+End Function
+
+Public Function DocketsOnHold()
+DoCmd.OpenQuery ("QryDocketsNotRecd")
+DoCmd.OpenQuery ("QryDocketsNoNOI")
+
+
+End Function
+Public Function EmailDocketRequest()
+Dim emailsubject As String
+Dim emailmessage As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+Dim VSub
+VSub = InputBox("Email Subject Line selection" & vbCr & vbCr & "1. Can this case be docketed" & vbCr & "2. Can this Final LMA Case be docketed" & vbCr & vbCr & "select 1 or 2")
+
+If VSub = 2 Then
+emailsubject = "Can Final LMA for this " & Forms![foreclosure database screen]!Client & " " & Forms![foreclosure database screen]!TypeOfLoan & " Case be docketed in " & County() & " today"
+'Remove Ocwen Code?
+
+emailmessage = "NOI Expired: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent + 45 & vbCr _
+& "DOA Rec'd: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsRecClient & vbCr _
+& "Aff of Default Recd:" & rs!Aff_Recd_Client & vbCr _
+& "Aff of Ownership Recd: " & rs!affcert_recd_client & vbCr _
+& "Aff of Debt Sent to Client:" & rs!affdebt_to_client & vbCr _
+& "Aff of Debt Rec'd From Client: " & rs!affdebt_from_client & vbCr _
+& "Military Aff Sent to Client:" & rs!MilAff_To_Client & vbCr _
+& "Military Aff Rec'd From Client: " & rs!MilAff_From_Client & vbCr _
+& "Preliminary Loss Mit Aff Rec'd: " & rs!PAff_Retd & vbCr _
+& "Final Loss Mit Aff Rec'd: " & rs!FAff_Retd & vbCr _
+& "Preliminary Loss Mit Filed: " & rs!pre_docket_filed & vbCr _
+& "1st Allowable Final Loss Mit: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!service_complete + 28 & vbCr _
+& "Final LMA to Court: " & rs!final_LMA_Court & vbCr _
+& "BWW#: " & Forms![foreclosure database screen]!filenum & vbCr _
+& "Borrowers: " & Forms![foreclosure database screen]!LastNameDebtor1 & vbCr _
+& "Restart Recd: " & Forms![foreclosure database screen]!resume_recd & vbCr _
+& "Restart Completed: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!date_reset & vbCr _
+& "Property: " & Forms![foreclosure database screen]!PropAddress & vbCr _
+& "Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr _
+& "Jurisdiction: " & Forms![foreclosure database screen]!Propertycounty & vbCr _
+& "Deed of Trust Date: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!DOTDate & vbCr _
+& "Original Loan Amt: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgAmount & vbCr _
+& "Beneficiary: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgLender & vbCr _
+& "Liber/Folio: " & liberfolio() & vbCr _
+& "Comments: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!comment_date & ": " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!Info
+
+Else
+
+emailsubject = "Can this " & Forms![foreclosure database screen]!TypeOfLoan & " Case be docketed in " & County() & " today"
+
+emailmessage = "NOI Expired: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent + 45 & vbCr _
+& "DOA Rec'd: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsRecClient & vbCr _
+& "Aff of Default Recd:" & rs!Aff_Recd_Client & vbCr _
+& "Aff of Ownership Recd: " & rs!affcert_recd_client & vbCr _
+& "Aff of Debt Sent to Client:" & rs!affdebt_to_client & vbCr _
+& "Aff of Debt Rec'd From Client: " & rs!affdebt_from_client & vbCr _
+& "Military Aff Sent to Client:" & rs!MilAff_To_Client & vbCr _
+& "Military Aff Rec'd From Client: " & rs!MilAff_From_Client & vbCr _
+& "Preliminary Loss Mit Aff Rec'd: " & rs!PAff_Retd & vbCr _
+& "Final Loss Mit Aff Rec'd: " & rs!FAff_Retd & vbCr _
+& "BWW#: " & Forms![foreclosure database screen]!filenum & vbCr _
+& "Borrowers: " & Forms![foreclosure database screen]!LastNameDebtor1 & vbCr _
+& "Restart Recd: " & Forms![foreclosure database screen]!resume_recd & vbCr _
+& "Restart Completed: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!date_reset & vbCr _
+& "Property: " & Forms![foreclosure database screen]!PropAddress & vbCr _
+& "Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr _
+& "Jurisdiction: " & Forms![foreclosure database screen]!Propertycounty & vbCr _
+& "Deed of Trust Date: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!DOTDate & vbCr _
+& "Original Loan Amt: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgAmount & vbCr _
+& "Beneficiary: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!OrgLender & vbCr _
+& "Liber/Folio: " & liberfolio() & vbCr _
+& "Comments: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!comment_date & ": " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!Info
+
+End If
+
+rs.Close
+
+MyMail.To = ""
+'MyMail.CC = ""
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+
+Set MyMail = Nothing
+
+
+End Function
+
+Public Function EmailMissingDocs()
+Dim emailsubject As String
+Dim emailmessage As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+Dim strsql As String
+Dim rs As RecordSet
+Dim vdoa
+Dim VAff
+Dim VAffCert
+Dim VPre
+Dim VFinal
+Dim VAffDebt
+Dim VMilAff
+
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+'If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentClient) And _
+'IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsRecClient) Then
+vdoa = "DOA Sent to Client: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentClient & vbCr _
+& "DOA Rec'd: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsRecClient & vbCr
+'Else
+'vdoa = ""
+'End If
+
+'If Not IsNull(rs!aff_to_client) And _
+'IsNull(rs!aff_recd_client) Then
+VAff = "Aff of Default Sent to Client: " & rs!Aff_to_Client & vbCr _
+& "Aff of Default Rec'd: " & rs!Aff_Recd_Client & vbCr
+'Else
+'VAff = ""
+'End If
+
+'If Not IsNull(rs!affcert_to_client) And _
+'IsNull(rs!affcert_recd_client) Then
+VAffCert = "Aff of Certificate of Ownership Sent to Client: " & rs!affcert_to_client & vbCr _
+& "Aff of Certificate of Ownership Rec'd: " & rs!affcert_recd_client & vbCr
+'Else
+'VAffCert = ""
+'End If
+
+VAffDebt = "Aff of Debt Sent to Client: " & rs!affdebt_to_client & vbCr _
+& "Aff of Debt Rec'd: " & rs!affdebt_from_client & vbCr
+
+
+'If Not IsNull(rs!PAff_Sent) And _
+'IsNull(rs!PAff_Retd) Then
+VPre = "Preliminary Loss Mit Aff Sent to Client: " & rs!PAff_Sent & vbCr _
+& "Preliminary Loss Mit Aff Rec'd: " & rs!PAff_Retd & vbCr
+'Else
+'VPre = ""
+'End If
+
+'If Not IsNull(rs!FAff_Sent) And _
+'IsNull(rs!FAff_Retd) Then
+VFinal = "Final Loss Mit Aff Sent to Client: " & rs!FAff_Sent & vbCr _
+& "Final Loss Mit Aff Rec'd: " & rs!FAff_Retd
+'Else
+'VFinal = ""
+'End If
+
+VMilAff = "Military Aff Sent: " & rs!MilAff_To_Client & vbCr _
+& "Military Aff Recd: " & rs!MilAff_From_Client & vbCr
+
+
+emailsubject = "Pleadings Needed to Proceed"
+
+emailmessage = "Please note that our office is still in need of pleadings to proceed with the foreclosure transaction." & vbCr & vbCr _
+& "BWW#: " & Forms![foreclosure database screen]!filenum & "/" & "Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr _
+& "Client: " & Forms![foreclosure database screen]![Client] & vbCr _
+& vdoa _
+& VAff _
+& VAffCert _
+& VAffDebt _
+& VMilAff _
+& VPre _
+& VFinal
+
+
+MyMail.To = ""
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+
+Set MyMail = Nothing
+End Function
+
+Public Function ReqMediation()
+DoCmd.OpenReport "RequestforMediation", acViewNormal
+'Call LabelsMediation
+'MsgBox ("Your Labels for the Request for Mediation has printed to Label Printer #3")
+End Function
+Public Function ReadyToSetSale()
+
+strsqlfc = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+
+If Not IsNull(rsFC!pre_docket_court) And Not IsNull(rsFC!final_LMA_filed) Then
+ReadyToSetSale = 1
+Else
+ReadyToSetSale = 0
+End If
+
+If Not IsNull(rsFC!final_docket_court) Then
+ReadyToSetSale = 1
+End If
+
+rsFC.Close
+End Function
+Public Function FirstLegal()
+strsqlfc = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+
+
+If Forms![foreclosure database screen]![ForeclosureSubForm].Form![1ST Legal] <> "" Then
+FirstLegal = Format(Forms![foreclosure database screen]![ForeclosureSubForm].Form![1ST Legal], "mm/dd/yy")
+ElseIf Not IsNull(rsFC!pre_docket_filed) Then
+FirstLegal = rsFC!pre_docket_filed
+ElseIf Not IsNull(rsFC!final_docket_filed) Then
+FirstLegal = rsFC!final_docket_filed
+End If
+
+rsFC.Close
+
+End Function
+Public Function LabelsMediation()
+
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+Dim Vcnt As Integer
+Vcnt = 0
+
+Dim VSelprt
+Do While VSelprt <> 2 And VSelprt <> 11 And VSelprt <> 12 And VSelprt <> 3 And VSelprt <> 4 And VSelprt <> 5 And VSelprt <> 6 And VSelprt <> 7 And VSelprt <> 8 And VSelprt <> 9 And VSelprt <> 15
+VSelprt = InputBox("Select PRINTER #:" & vbCr & vbCr & "2 = PRINTER 2" & vbCr & "3 - PRINTER 3" & vbCr & "4 - PRINTER 4" & vbCr & "5 - PRINTER 5" & vbCr & "6 - PRINTER 6 (Arlington)" & vbCr & "7 - PRINTER 7 (Trio)" & vbCr & "8 - PRINTER 8" & vbCr & "9 - PRINTER 9" & vbCr & "11 - Printer 11" & vbCr & "12 - Printer 12" & vbCr & "15 = Printer 15")
+If VSelprt <> 2 And VSelprt <> 11 And VSelprt <> 12 And VSelprt <> 3 And VSelprt <> 4 And VSelprt <> 5 And VSelprt <> 6 And VSelprt <> 7 And VSelprt <> 8 And VSelprt <> 9 And VSelprt <> 15 Then
+MsgBox ("Incorrect Printer Number")
+End If
+Loop
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+
+Set A = fs.CreateTextFile("\\rvdv-fs01\LabelRequests\" & Vcnt & "_" & Forms![foreclosure database screen]!filenum & "_" & Format$(Date, "mmddyy") & "_LabelReq.txt", True)
+A.WriteLine ("|Printer " & VSelprt)
+A.WriteLine ("|User " & username() & ", Address Label, File " & Forms![foreclosure database screen]!filenum)
+A.WriteLine ("Circuit Court for")
+A.WriteLine (County())
+A.WriteLine (rs!CourtAddress)
+A.WriteLine (rs!CourtCity & ", MD  " & rs!CourtZip)
+A.WriteLine (" ")
+A.WriteLine ("|FONTSIZE 14")
+A.WriteLine ("REQUEST FOR FORECLOSURE")
+A.WriteLine ("MEDIATION")
+
+Vcnt = Vcnt + 1
+
+Set A = fs.CreateTextFile("\\rvdv-fs01\LabelRequests\" & Vcnt & "_" & Forms![foreclosure database screen]!filenum & "_" & Format$(Date, "mmddyy") & "_LabelReq.txt", True)
+A.WriteLine ("|Printer " & VSelprt)
+A.WriteLine ("|User " & username() & ", Address Label, File " & Forms![foreclosure database screen]!filenum)
+A.WriteLine ("BWW Law Group, LLC")
+A.WriteLine ("6003 Executive Blvd., Ste. 101")
+A.WriteLine ("Rockville, MD 20852")
+A.WriteLine (" ")
+A.WriteLine ("|FONTSIZE 14")
+A.WriteLine ("REQUEST FOR FORECLOSURE")
+A.WriteLine ("MEDIATION")
+
+End Function
+Public Function AffRegardinglien()
+
+If Forms![foreclosure database screen]!Client Like "Ocwen*" And _
+(Forms![foreclosure database screen]!HomewardOcwen = 0 Or IsNull(Forms![foreclosure database screen]!HomewardOcwen)) Then
+vocw = MsgBox("Copy of the Note Aff Needed?", vbYesNo)
+If vocw = vbYes Then
+DoCmd.OpenReport "affidavitregardingcopylienocwen", acViewPreview
+Else
+DoCmd.OpenReport "affidavitregardingcopylien", acViewPreview
+End If
+
+Else
+DoCmd.OpenReport "affidavitregardingcopylien", acViewPreview
+
+End If
+End Function
+Public Function orderdocket()
+
+VPF = InputBox("1. Preliminary Aff" & vbCr & "2. Final Aff")
+
+If VPF = 1 Then
+If Forms![foreclosure database screen]!Client Like "Ocwen*" And _
+(Forms![foreclosure database screen]!HomewardOcwen = 0 Or IsNull(Forms![foreclosure database screen]!HomewardOcwen)) Then
+vocw = MsgBox("Copy of the Note Aff Needed (OTD)?", vbYesNo)
+If vocw = vbYes Then
+DoCmd.OpenReport "ordertodocketmdchase", acViewPreview
+DoCmd.OpenReport "ordertodocketmdchase", acViewPreview
+Else
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "ordertodocketmdChase", acViewPreview
+DoCmd.OpenReport "ordertodocketmdChase", acViewPreview
+Else
+DoCmd.OpenReport "ordertodocketmd", acViewPreview
+DoCmd.OpenReport "ordertodocketmd", acViewPreview
+End If
+End If
+
+Else
+
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "ordertodocketmdChase", acViewPreview
+DoCmd.OpenReport "ordertodocketmdChase", acViewPreview
+Else
+DoCmd.OpenReport "ordertodocketmd", acViewPreview
+DoCmd.OpenReport "ordertodocketmd", acViewPreview
+
+
+End If
+End If
+
+
+
+
+Else
+
+If Forms![foreclosure database screen]!Client Like "Ocwen*" And _
+(Forms![foreclosure database screen]!HomewardOcwen = 0 Or IsNull(Forms![foreclosure database screen]!HomewardOcwen)) Then
+vocw = MsgBox("Copy of the Note Aff Needed (OTD)?", vbYesNo)
+If vocw = vbYes Then
+DoCmd.OpenReport "ordertodocketmd-FinalChase", acViewPreview
+DoCmd.OpenReport "ordertodocketmd-FinalChase", acViewPreview
+Else
+
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "ordertodocketmd-FinalChase", acViewPreview
+DoCmd.OpenReport "ordertodocketmd-FinalChase", acViewPreview
+Else
+DoCmd.OpenReport "ordertodocketmd-Final", acViewPreview
+DoCmd.OpenReport "ordertodocketmd-Final", acViewPreview
+End If
+End If
+
+Else
+
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "ordertodocketmd-FinalChase", acViewPreview
+DoCmd.OpenReport "ordertodocketmd-FinalChase", acViewPreview
+Else
+DoCmd.OpenReport "ordertodocketmd-Final", acViewPreview
+DoCmd.OpenReport "ordertodocketmd-Final", acViewPreview
+End If
+
+End If
+
+
+
+
+End If
+End Function
+Public Function OTDFinalLine()
+
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "ordertodocketmd-FinalChase", acViewPreview
+Else
+DoCmd.OpenReport "ordertodocketmd-Final", acViewPreview
+End If
+
+End Function
+Public Function AffMailBWWSends()
+
+If Forms![foreclosure database screen]!Client Like "Ever*" Then
+DoCmd.OpenReport "AffidavitDefaultnoticeEVERHOME", acViewPreview
+
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+DoCmd.OpenReport "affidavitdefaultbac2", acViewPreview
+
+Else
+DoCmd.OpenReport "affidavitmailingBGWSends", acViewPreview
+End If
+
+End Function
+Public Function PartOneApplication()
+Dim VPF As String
+Dim VPrt
+
+VPF = InputBox("1. Preliminary Aff" & vbCr & "2. Final Aff" & vbCr & "3. Non Owner Occupied NOI" & vbCr & "4. Pre File Mediation - No Agreement" & vbCr & "5. Pre File Mediation - Agreement")
+
+If VPF = 1 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Pre.PDF")
+ElseIf VPF = 2 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Final.PDF")
+ElseIf VPF = 3 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-NotOO.PDF")
+ElseIf VPF = 4 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-NoAgree.PDF")
+ElseIf VPF = 5 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Agree.PDF")
+
+End If
+
+End Function
+Public Function PartOne() As String
+
+Call PrtChecks
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!docket_ltrsent) Then
+Dim VLtrSent As String
+VLtrSent = MsgBox("Was the FDL Sent?", vbYesNo)
+If VLtrSent = vbYes Then
+Dim VDateSent As Date
+VDateSent = InputBox("What was the Date it was Sent?")
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!fdl_sent = VDateSent
+Else
+MsgBox ("PLEASE SEND LETTER ASAP!")
+End If
+End If
+End If
+
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" Then
+
+Call RunMilAffCheck
+
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "ChaseAff", acViewNormal
+DoCmd.OpenReport "ChaseLine", acViewNormal
+DoCmd.OpenReport "AffidavitForDocketCHASE", acViewNormal
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" And _
+(Forms![foreclosure database screen]!HomewardOcwen = 0 Or IsNull(Forms![foreclosure database screen]!HomewardOcwen)) Then
+vocw = MsgBox("Copy of the Note Aff Needed?", vbYesNo)
+If vocw = vbYes Then
+DoCmd.OpenReport "affidavitregardingcopylienocwen", acViewNormal
+Else
+DoCmd.OpenReport "affidavitregardingcopylien", acViewNormal
+DoCmd.OpenReport "CertificationDOA", acViewNormal
+End If
+
+Else
+DoCmd.OpenReport "affidavitregardingcopylien", acViewNormal
+DoCmd.OpenReport "CertificationDOA", acViewNormal
+
+End If
+
+
+Dim VPreparesNOI
+
+VPreparesNOI = InputBox("1. BWW Prepared NOI" & vbCr & "2. Client Prepared NOI" & vbCr & vbCr & "input 1 or 2")
+
+If VPreparesNOI = 1 Then
+
+If Forms![foreclosure database screen]!Client Like "Ever*" Then
+DoCmd.OpenReport "AffidavitDefaultnoticeEVERHOME", acViewNormal
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of A*" Then
+DoCmd.OpenReport "affidavitdefaultbac", acViewNormal
+Else
+DoCmd.OpenReport "affidavitmailingBGWSends", acViewNormal
+End If
+End If
+
+'INSERT CODE
+
+
+
+End If
+
+If [Forms]![foreclosure database screen]![Propertycounty] = "District of Columbia" Then
+DoCmd.OpenReport "coverltrdc", acViewNormal
+End If
+
+If [Forms]![foreclosure database screen]![Propertycounty] = "Garrett" Or _
+[Forms]![foreclosure database screen]![Propertycounty] = "Somerset" Or _
+[Forms]![foreclosure database screen]![Propertycounty] = "Allegany" Or _
+[Forms]![foreclosure database screen]![Propertycounty] = "Dorchester" Or _
+[Forms]![foreclosure database screen]![Propertycounty] = "Wicomico" Or _
+[Forms]![foreclosure database screen]![Propertycounty] = "Worcester" Then
+MsgBox ("PREPARE BOND W/COURT DOCKET")
+End If
+
+Dim VPF As String
+Dim VPrt
+
+VPF = InputBox("1. Preliminary Aff" & vbCr & "2. Final Aff" & vbCr & "3. Non Owner Occupied NOI" & vbCr & "4. Pre File Mediation - No Agreement" & vbCr & "5. Pre File Mediation - Agreement")
+
+If VPF = 1 Then
+
+If Forms![foreclosure database screen]!Client Like "Ocwen*" And _
+(Forms![foreclosure database screen]!HomewardOcwen = 0 Or _
+IsNull(Forms![foreclosure database screen]!HomewardOcwen)) Then
+vocw = MsgBox("Copy of the Note Aff Needed?", vbYesNo)
+
+If vocw = vbYes Then
+DoCmd.OpenReport "ordertodocketmdchase", acViewNormal
+Else
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "ordertodocketmdchase", acViewNormal
+Else
+DoCmd.OpenReport "ordertodocketmd", acViewNormal
+End If
+End If
+
+Else
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "ordertodocketmdchase", acViewNormal
+Else
+DoCmd.OpenReport "ordertodocketmd", acViewNormal
+End If
+End If
+
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!commercial = 0 Or _
+IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!commercial) Then
+DoCmd.OpenReport "AffidavitNoticeOccupant", acViewNormal
+End If
+
+
+VPrt = MsgBox("PREVIEW Prelim Loss Mit Aff Cover on screen?", vbYesNo)
+If VPrt = vbYes Then
+DoCmd.OpenReport "Preliminary Loss Mit Aff Cover", acViewNormal
+
+Else
+
+DoCmd.OpenReport "Preliminary Loss Mit Aff Cover", acViewNormal
+
+End If
+
+
+If VPF = 1 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Pre.PDF")
+ElseIf VPF = 2 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Final.PDF")
+ElseIf VPF = 3 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-NotOO.PDF")
+ElseIf VPF = 4 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-NoAgree.PDF")
+ElseIf VPF = 5 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Agree.PDF")
+
+End If
+
+
+If Forms![foreclosure database screen]!Client Like "JP*" And VPF = 1 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NOICoverPage.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\TimelineNOI.pdf")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\HAMP\ChaseLMA-Attach.pdf")
+
+Else
+
+Call NOI_AttachmentsVIEW
+End If
+
+
+'Docket_Pre_Final
+If Forms![foreclosure database screen]!Client Like "Wells*" Or _
+Forms![foreclosure database screen]!Client Like "Homeward*" Or _
+Forms![foreclosure database screen]!Client Like "Bank of Amer*" Or _
+Forms![foreclosure database screen]!Client Like "Speciali*" Or _
+Forms![foreclosure database screen]!Client Like "JPM*" Or _
+Forms![foreclosure database screen]!Client Like "Seter*" Then
+DoCmd.OpenReport "docket_pre_final", acViewNormal
+
+If Forms![foreclosure database screen]!Client Like "Seter*" Then
+Dim strsqlS
+Dim rsS As RecordSet
+strsqlS = "select occupied from fctracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsS = CurrentDb.OpenRecordset(strsqlS, dbOpenSnapshot)
+
+'remark out JUST USE 762!!
+
+'If rsS!Occupied = 1 Or _
+'rsS!Occupied = 2 Or _
+'rsS!Occupied = 4 Then
+
+Call RunPart1LBPS762
+
+
+End If
+
+End If
+
+Else
+
+If Forms![foreclosure database screen]!Client Like "Ocwen*" And _
+(Forms![foreclosure database screen]!HomewardOcwen = 0 Or _
+IsNull(Forms![foreclosure database screen]!HomewardOcwen)) Then
+vocw = MsgBox("Copy of the Note Aff Needed (OTD-Final)?", vbYesNo)
+If vocw = vbYes Then
+DoCmd.OpenReport "ordertodocketmd-FinalChase", acViewNormal
+
+
+Else
+
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "ordertodocketmd-FinalChase", acViewNormal
+Else
+DoCmd.OpenReport "ordertodocketmd-Final", acViewNormal
+End If
+
+End If
+Else
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "ordertodocketmd-FinalChase", acViewNormal
+Else
+DoCmd.OpenReport "ordertodocketmd-Final", acViewNormal
+End If
+
+End If
+
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!commercial = 0 Or IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!commercial) Then
+DoCmd.OpenReport "AffidavitNoticeOccupant", acViewNormal
+End If
+
+
+If VPF = 1 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Pre.PDF")
+ElseIf VPF = 2 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Final.PDF")
+ElseIf VPF = 3 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-NotOO.PDF")
+ElseIf VPF = 4 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-NoAgree.PDF")
+ElseIf VPF = 5 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Agree.PDF")
+End If
+
+If VPF <> 3 Then
+Call ReqMediation
+End If
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Or _
+Forms![foreclosure database screen]!Client Like "Homeward*" Or _
+Forms![foreclosure database screen]!Client Like "JPM*" Or _
+Forms![foreclosure database screen]!Client Like "Bank of Amer*" Or _
+Forms![foreclosure database screen]!Client Like "Speciali*" Or _
+Forms![foreclosure database screen]!Client Like "Seter*" Then
+DoCmd.OpenReport "docket_final", acViewNormal
+End If
+End If
+
+
+Dim vdoa
+vdoa = MsgBox("Print Out DOA?", vbYesNo)
+If vdoa = vbYes Then
+DoCmd.RunMacro "doa-print"
+End If
+
+ 
+
+DoCmd.RunMacro "Partone-normal"
+
+End Function
+
+Public Function NoticeMdPreFinal()
+VPF = InputBox("1. Preliminary Aff" & vbCr & "2. Final Aff" & vbCr & "3. Not Owner Occupied" & vbCr & "4. Pre File Mediation - No Agreement" & vbCr & "5. Pre File Mediation - Agreement")
+
+If VPF = 1 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Pre.PDF")
+ElseIf VPF = 2 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Final.PDF")
+ElseIf VPF = 3 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-NotOO.PDF")
+ElseIf VPF = 4 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-NoAgree.PDF")
+ElseIf VPF = 5 Then
+FollowHyperlink ("\\rvdv-fs01\datatransfer\NOI_Application\NoticeMd-Agree.PDF")
+
+End If
+
+
+End Function
+Public Function NoticeDocket()
+
+'If IsNull([Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![DocketSubform].[Form]![NOC_Mailed]) Then
+
+Dim VSend
+VSend = MsgBox("Send Notice to Occupants to Walz?", vbYesNo)
+
+If VSend = vbYes Then
+MsgBox ("PLEASE wait until the Letter Sent to Walz box pops up before proceeding.")
+Call noticeOcc
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+    With rs
+    .Edit
+    !NOC_Mailed = Date
+   .Update
+   .Close
+   End With
+End If
+
+If [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![DocketSubform].[Form].Dirty = True Then
+DoCmd.RunCommand acCmdRefresh
+End If
+'[Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![DocketSubform].[Form]![NOC_Mailed] = Date
+
+'DoCmd.OpenReport "NoticeDocket", acViewPreview
+
+Else
+DoCmd.OpenReport "NoticeDocket", acViewPreview
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+    With rs
+    .Edit
+    !NOC_Mailed = Date
+   .Update
+   .Close
+   End With
+End If
+
+If [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![DocketSubform].[Form].Dirty = True Then
+DoCmd.RunCommand acCmdRefresh
+End If
+
+'[Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![DocketSubform].[Form]![NOC_Mailed] = Date
+
+End If
+
+Dim vsendI
+VConvRpt = "NoticeDocket"
+
+vsendI = InputBox("Send Notice to Occupants to Imaged Docs? type YES to dump")
+If vsendI = "YES" Then
+Call ConvertPDFALL
+
+CopyDocToBGWWDocs VConvRpt, "NOStoOcc", "_NoticeOccupant.PDF"
+
+End If
+
+'End If
+
+End Function
+
+Public Function PreFinAffSent()
+
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+Call hudoccltrs
+End If
+
+Dim VSend
+VSend = MsgBox("Send Notice to Occupants to Walz?", vbYesNo)
+If VSend = vbYes Then
+MsgBox ("PLEASE wait until the Letter Sent to Walz box pops up before proceeding.")
+Call noticeOcc
+DoCmd.OpenReport "NoticeDocket", acViewPreview
+
+Else
+DoCmd.OpenReport "NoticeDocket", acViewPreview
+
+End If
+
+End Function
+
+Public Function FinalAffMerge()
+VTypeMerge = "FAFF"
+
+ 
+
+Call FCMerge
+
+Dim oDoc As Word.document
+
+If Client() Like "Bank of*" Then
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\FC\FinalLMANoCaption.doc", "Word.Document")
+ElseIf Client() Like "JP*" Then
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\FC\FinalLMANoCaptionChase.doc", "Word.Document")
+FollowHyperlink ("\\rvdv-fs01\datatransfer\Attachments\ChaseLMAAttachment.PDF")
+ElseIf Forms![foreclosure database screen]!servicer Like "OneM*" Or Forms![foreclosure database screen]!servicer Like "CitiFin*" Then
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\FC\FinalLMACitiFin.doc", "Word.Document")
+
+Else
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\FinalLMA.doc", "Word.Document")
+End If
+
+oDoc.Application.Visible = True
+oDoc.MailMerge.OpenDataSource _
+name:=pathuser() & "fcmerge.txt"
+oDoc.MailMerge.Execute
+oDoc.Close
+
+ 
+
+
+End Function
+Public Function PVD()
+ 
+
+Call FCMerge
+
+Dim oDoc As Word.document
+Set oDoc = GetObject("\\rvdv-fs01\DataTransfer\Templates\Property Visitation Declaration Blank.doc", "Word.Document")
+oDoc.Application.Visible = True
+oDoc.MailMerge.OpenDataSource _
+name:=pathuser() & "fcmerge.txt"
+oDoc.MailMerge.Execute
+oDoc.Close
+
+ 
+End Function
+
+Public Function DelDocket()
+
+
+Dim rsDD As RecordSet
+
+Set rsDD = CurrentDb.OpenRecordset("DocketDeleteExcel", dbOpenSnapshot)
+
+If Not rsDD.EOF Then
+
+CopyDocToBGWWDocs "DocketDeleteExcel", "Misc", "_DocketDeletedExcel.PDF"
+
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+    With rs
+    .Edit
+    !pre_docket_court = Null
+    !pre_docket_filed = Null
+    !final_docket_court = Null
+    !final_docket_filed = Null
+    !final_LMA_filed = Null
+    !pre_docket_sent_service = Null
+    !final_docket_sent_service = Null
+   .Update
+   .Close
+   End With
+End If
+
+strsql = "select * from postsale where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+    With rs
+    .Edit
+    !CaseNo = Null
+    .Update
+   .Close
+   End With
+End If
+
+strsql = "select * from foreclosure where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+    With rs
+    .Edit
+    ![Approx_1st] = Null
+    !ups_no = Null
+    !Hand_Del_Court = Null
+    .Update
+   .Close
+   End With
+End If
+
+End If
+
+
+End Function
+Public Function DocketStageFC()
+
+' Verify that the referenced form is still there
+If Not CurrentProject.AllForms("foreclosure database screen").IsLoaded Then Exit Function
+
+'1st legal filed/active docket already on prop
+Dim strsqlAD
+Dim rsAD As RecordSet
+
+strsqlAD = "Select * from fcaffs_tracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsAD = CurrentDb.OpenRecordset(strsqlAD, dbOpenDynaset, dbSeeChanges)
+Dim VADocket
+If Not rsAD.EOF Then
+VADocket = rsAD!activedocket
+Else
+VADocket = 0
+End If
+rsAD.Close
+
+If VADocket = -1 Or VADocket = 1 Then
+DocketStageFC = "1st Legal Filed - Active Docket already on prop - do not proceed past service"
+Exit Function
+End If
+
+
+
+'Litigation Code
+Dim strsqlL
+Dim rsL As RecordSet
+
+strsqlL = "Select * from litigation where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsL = CurrentDb.OpenRecordset(strsqlL, dbOpenDynaset, dbSeeChanges)
+Dim VFdcpaRecd, VFDCPASent, VNoDebtReq
+If Not rsL.EOF Then
+VFdcpaRecd = rsL!fdcpa_recd
+VFDCPASent = rsL!fdcpa_sent
+VNoDebtReq = rsL!NoDebtReq
+Else
+VFdcpaRecd = Null
+VFDCPASent = Null
+VNoDebtReq = Null
+End If
+rsL.Close
+
+'start postsale check
+If Forms![foreclosure database screen]!Status = "Postsale" Then
+
+Dim strsqlPS As String
+Dim rsPS As RecordSet
+
+strsqlPS = "select * from postsale where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rsPS = CurrentDb.OpenRecordset(strsqlPS, dbOpenSnapshot)
+
+If Not rsPS.EOF Then
+
+If Not IsNull(rsPS!holddeed) Then
+If rsPS!holddeed = -1 Or rsPS!holddeed = 1 Then
+DocketStageFC = "DO NOT RECORD DEED"
+Exit Function
+ElseIf IsNull(rsPS!RatDateMD) And Not IsNull(rsPS!cooper_pkg) Then
+DocketStageFC = "POST-SALE – NOT YET RATIFIED"
+Exit Function
+End If
+End If
+
+Else
+rsPS.Close
+End If
+
+End If
+
+'end postsale check
+
+'Check fctracking
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("fctracking", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+
+End If
+Set rs = Nothing
+
+'end fctracking check
+
+'Check docupload
+Dim rsDU As RecordSet
+Dim strsqlDU As String
+
+strsqlDU = "select * from docupload where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsDU = CurrentDb.OpenRecordset(strsqlDU, dbOpenSnapshot)
+
+If rsDU.EOF Then
+Set rsDU = CurrentDb.OpenRecordset("docupload", dbOpenDynaset, dbSeeChanges)
+
+With rsDU
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+
+End If
+Set rsDU = Nothing
+
+'end docupload check
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+'start lit receivership check
+
+Dim strsqlRC As String
+Dim rsRC As RecordSet
+Dim RCAppt
+Dim RCStay
+Dim RCClosed
+
+strsqlRC = "select * from litrectbl where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsRC = CurrentDb.OpenRecordset(strsqlRC, dbOpenSnapshot)
+
+If rsRC.EOF Then
+
+RCAppt = ""
+RCStay = ""
+RCClosed = ""
+
+Else
+
+If Not IsNull(rsRC!rev_recvr_appt) Then
+RCAppt = rsRC!rev_recvr_appt
+Else
+RCAppt = ""
+End If
+
+If Not IsNull(rsRC!rev_staydate) Then
+RCStay = rsRC!rev_staydate
+Else
+RCStay = ""
+End If
+
+If Not IsNull(rsRC!rev_resolved) Then
+RCClosed = rsRC!rev_resolved
+Else
+RCClosed = ""
+End If
+
+End If
+
+rsRC.Close
+
+'end lit receivership check
+
+Dim vDef
+
+
+vDef = Forms![foreclosure database screen]!ForeclosureSubForm.Form!next_pay + 120
+
+
+If Date < vDef Then
+DocketStageFC = "CFPB ALERT:  Loan is not yet 120 days delinquent. (" & vDef - Date & ")"
+Exit Function
+End If
+
+If (rs!receivership = 1 Or rs!receivership = -1) And RCClosed = "" Then
+DocketStageFC = "Receivership Complaint Filed"
+Exit Function
+ElseIf (rs!receivership = 1 Or rs!receivership = -1) And RCStay = "" And RCAppt <> "" Then
+DocketStageFC = "Receivership: RECEIVER Appointed"
+Exit Function
+End If
+
+'FDL VA pending
+
+If Forms![foreclosure database screen]!PropertyState = "VA" And _
+IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!fdl_sent) Then
+DocketStageFC = "FDL PENDING, NOT YET SENT"
+End If
+
+
+If Forms![foreclosure database screen]!Status = "foreclosure" And _
+Forms![foreclosure database screen]!PropertyState = "VA" And vDef - Date < 0 Then
+
+If Not IsNull(VFdcpaRecd) And IsNull(VNoDebtReq) And _
+(VFDCPASent = "" Or IsNull(VFDCPASent)) Then
+DocketStageFC = UCase("Verification of Debt Not Sent - Do Not Proceed")
+End If
+
+Exit Function
+End If
+
+If (Forms![foreclosure database screen]!Status = "foreclosure" Or _
+Forms![foreclosure database screen]!Status = "DC Judicial") And _
+Forms![foreclosure database screen]!PropertyState = "DC" Then
+
+If Not IsNull(VFdcpaRecd) And IsNull(VNoDebtReq) And _
+(VFDCPASent = "" Or IsNull(VFDCPASent)) Then
+DocketStageFC = UCase("Verification of Debt Not Sent - Do Not Proceed")
+
+End If
+End If
+
+
+
+If (Forms![foreclosure database screen]!Status = "foreclosure" Or Forms![foreclosure database screen]!Status = "Postsale") And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+Dim vWait
+
+
+'CHECK DIL
+Dim VDIL
+Dim strsqlDIL As String
+Dim rsDIL As RecordSet
+VDIL = 0
+
+strsqlDIL = "select * from deedinlieu where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsDIL = CurrentDb.OpenRecordset(strsqlDIL, dbOpenSnapshot)
+
+If Not rsDIL.EOF Then
+If Not IsNull(rsDIL!dil_referral_recd) And IsNull(rsDIL!dil_file_closed) Then
+VDIL = 1
+Else
+VDIL = 0
+End If
+End If
+
+rsDIL.Close
+'End Check DIL
+
+
+Dim vNOIExp
+vNOIExp = [Forms]![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent + 45
+
+If Not IsNull(VFdcpaRecd) And IsNull(VNoDebtReq) And _
+(VFDCPASent = "" Or IsNull(VFDCPASent)) Then
+DocketStageFC = UCase("Verification of Debt Not Sent - Do Not Proceed")
+
+ElseIf VDIL = 1 Then
+DocketStageFC = "DEED IN LIEU IN PROCESS, PLEASE CHECK WITH DIL TEAM"
+
+ElseIf IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!fdl_sent) Then
+DocketStageFC = "FDL PENDING, NOT YET SENT"
+
+ElseIf (Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!aom_reqd) Or _
+Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!aom_sent)) And _
+((IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!aom_recd) And _
+IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm!DocketSubform.Form!AOM_Recorded)) And _
+(IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!aom_notneeded) Or _
+[Forms]![foreclosure database screen]!ForeclosureSubForm.Form!aom_notneeded = 0)) Then
+DocketStageFC = "ASSIGNMENT NEEDED"
+
+ElseIf Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!aom_recd) And _
+IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm!DocketSubform.Form!AOM_Recorded) Then
+DocketStageFC = "ASSIGNMENT RECEIVED, NOT YET RECORDED"
+
+ElseIf Not IsNull(rs!med_req) And _
+IsNull(rs!med_hearing_held) And _
+IsNull(rs!Med_Concluded) Then
+DocketStageFC = "IN MEDIATION: Req'd: " & rs!med_req
+'Sale Date Set
+
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate > Date Then
+DocketStageFC = "SALE DATE SET FOR " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+'No Secured Party
+
+ElseIf IsNull(Forms![foreclosure database screen]![secured party]) Then
+DocketStageFC = "AWAITING SECURED PARTY"
+
+'NOI pending
+ElseIf Not IsNull(Forms![foreclosure database screen]![secured party]) And _
+IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent) And _
+(Forms![foreclosure database screen]!commercial.Form!commercial = 0 Or IsNull(Forms![foreclosure database screen]!commercial.Form!commercial)) Then
+DocketStageFC = "NOI PENDING, NOT YET SENT"
+'NOI Not Expired
+ElseIf (Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent) And _
+vNOIExp > Date) Then
+DocketStageFC = "NOI SENT ON : " & [Forms]![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent & " EXPIRES ON " & [Forms]![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent + 45
+'Part 1 filed previous to 7/1/10
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form![1ST Legal] <= #7/1/2010# And _
+IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!service_complete) And _
+[Forms]![foreclosure database screen]!ForeclosureSubForm.Form!Noi_Expires < Date And _
+Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!Hand_Del_Court) Then
+DocketStageFC = "Docket Filed: " & [Forms]![foreclosure database screen]!ForeclosureSubForm.Form!Hand_Del_Court & " Pending Service"
+'Efile Stage
+ElseIf Not IsNull(rs!Efile_Submitted) And IsNull(rs!efile_Accepted) Then
+DocketStageFC = "Docket Submitted for Efiling on: " & rs!Efile_Submitted
+'Restart Instructions Rec'd - Sale Date Pending
+ElseIf Not IsNull(Forms![foreclosure database screen]![Date Recieved]) And _
+([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!date_reset > Forms![foreclosure database screen]![Date Recieved]) And _
+[Forms]![foreclosure database screen]!ForeclosureSubForm.Form!resume_DA = "Amend" And _
+IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+DocketStageFC = UCase("Restart Instructions Rec'd - Sale Date Pending")
+
+'Unable To Docket Awaiting
+ElseIf (rs!unable_docket = -1 Or rs!unable_docket = 1) And IsNull(rs!docket_prepared) Then
+
+
+If (rs!UD_Occ = -1 Or rs!UD_Occ = 1) Then
+vWait = vWait & "Occ / "
+End If
+If (rs!ud_skip = -1 Or rs!ud_skip = 1) Then
+vWait = vWait & "Skip / "
+End If
+If (rs!ud_note = -1 Or rs!ud_note = 1) Then
+vWait = vWait & "Note / "
+End If
+If (rs!ud_ass = -1 Or rs!ud_ass = 1) Then
+vWait = vWait & "assignment / "
+End If
+If (rs!UD_LoamMod = -1 Or rs!UD_LoamMod = 1) Then
+vWait = vWait & "loanmod / "
+End If
+If (rs!ud_sot = -1 Or rs!ud_sot = 1) Then
+vWait = vWait & "SOT / "
+End If
+If (rs!ud_affdef = -1 Or rs!ud_affdef = 1) Then
+vWait = vWait & "AffDef / "
+End If
+If (rs!ud_affdebt = -1 Or rs!ud_affdebt = 1) Then
+vWait = vWait & "AffDebt / "
+End If
+If (rs!ud_ACO = -1 Or rs!ud_ACO = 1) Then
+vWait = vWait & "ACO / "
+End If
+If (rs!ud_lma = -1 Or rs!ud_lma = 1) Then
+vWait = vWait & "LMA / "
+End If
+If (rs!ud_affmail = -1 Or rs!ud_affmail = 1) Then
+vWait = vWait & "AffMail / "
+End If
+If (rs!ud_milaff = -1 Or rs!ud_milaff = 1) Then
+vWait = vWait & "MilAff / "
+End If
+If Not IsNull(rs!ud_other) Then
+vWait = vWait & Trim(rs!ud_other) & "/"
+End If
+If Not IsNull(rs!ud_other2) Then
+vWait = vWait & Trim(rs!ud_other2) & "/"
+End If
+If Not IsNull(rs!ud_other3) Then
+vWait = vWait & Trim(rs!ud_other3) & "/"
+End If
+
+DocketStageFC = vWait
+
+'NOI Expired Awaiting Affs
+ElseIf (Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!aom_reqd) Or Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!aom_sent)) And _
+IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!aom_recd) And [Forms]![foreclosure database screen]!ForeclosureSubForm.Form!aom_notneeded = 1 Then
+DocketStageFC = UCase("Awaiting assignment")
+
+ElseIf vNOIExp < Date And _
+(IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!DocsRecClient) Or _
+IsNull(rs!Aff_Recd_Client) Or _
+IsNull(rs!affcert_recd_client) Or _
+(IsNull(rs!MilAff_From_Client) And (Forms![foreclosure database screen]!prime_nonprime = 0 Or IsNull(Forms![foreclosure database screen]!prime_nonprime)) And Forms![foreclosure database screen]!Client Like "Ocwen*") Or _
+IsNull(rs!PAff_Retd) Or _
+IsNull(rs!affdebt_from_client) Or _
+IsNull(rs!FAff_Retd)) Then
+
+If IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!DocsRecClient) Then
+vWait = "SOT/"
+End If
+
+If IsNull(rs!Aff_Recd_Client) Then
+vWait = vWait + "Awaiting Aff of Def/"
+End If
+
+If IsNull(rs!affdebt_from_client) Then
+vWait = vWait + "Awaiting Aff of Debt/"
+End If
+
+If IsNull(rs!affcert_recd_client) Then
+vWait = vWait + "Aff of Note Ownership/"
+End If
+
+If IsNull(rs!PAff_Retd) And IsNull(rs!FAff_Retd) Then
+vWait = vWait + "Prelim Aff/"
+End If
+
+If (IsNull(rs!MilAff_From_Client) And (Forms![foreclosure database screen]!prime_nonprime = 0 Or IsNull(Forms![foreclosure database screen]!prime_nonprime)) And _
+Forms![foreclosure database screen]!Client Like "Ocwen*") Then
+vWait = vWait + "Military Aff/"
+End If
+
+
+If IsNull(rs!FAff_Retd) Or IsNull(rs!PAff_Retd) Then
+
+If Not IsNull(rs!pre_docket_filed) Then
+vWait = vWait + "/Prelim Docket Filed: " & rs!pre_docket_filed
+
+If IsNull(rs!final_LMA_filed) Then
+vWait = vWait + "; Awaiting Final Loss Mit Aff"
+End If
+
+End If
+
+If Not IsNull(rs!final_docket_filed) Then
+vWait = vWait + "/Final Docket Filed: " & rs!pre_docket_filed
+End If
+
+If Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!service_complete) Then
+vWait = vWait + "/Served: " & [Forms]![foreclosure database screen]!ForeclosureSubForm.Form!service_complete
+End If
+
+End If
+
+If vWait = "" Then
+DocketStageFC = "Affs Received.  Ready to Docket."
+ElseIf (Forms![foreclosure database screen]!Client Like "Wells*" Or Forms![foreclosure database screen]!Client Like "Nations*") And (rs!BWWSentNOI = -1 Or rs!BWWSentNOI = -1) Then
+DocketStageFC = "BWW sent NOI: " & vWait
+Else
+DocketStageFC = "NOI EXPIRED AWAITING AFFS: " & vWait
+End If
+
+'NOI Expired Affs All In Docket(s) Pending
+'vWait = ""
+ElseIf vNOIExp < Date And _
+(Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!DocsRecClient) And _
+Not IsNull(rs!Aff_Recd_Client) And _
+Not IsNull(rs!affcert_recd_client) And _
+Not IsNull(rs!PAff_Retd) And _
+Not IsNull(rs!FAff_Retd)) And _
+(Not IsNull(rs!MilAff_From_Client) And Forms![foreclosure database screen]!Client Like "Ocwen*" And (Forms![foreclosure database screen]!prime_nonprime = 0 Or IsNull(Forms![foreclosure database screen]!prime_nonprime))) And _
+IsNull(rs!pre_docket_filed) And _
+IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!Hand_Del_Court) And _
+IsNull(rs!final_docket_filed) Then
+
+
+If IsNull(rs!pre_docket_filed) Then
+vWait = "Pre Docket Not Filed"
+End If
+If IsNull(rs!final_docket_filed) Then
+vWait = "/Final Docket Not Filed"
+End If
+
+
+
+
+DocketStageFC = "NOI EXPIRED, AFFS REC'D, DOCKET PENDING: " & vWait
+'Pre or Final Filed Pending Service
+vWait = ""
+
+ElseIf (Not IsNull(rs!pre_docket_filed) Or _
+Not IsNull(rs!final_docket_filed) Or _
+Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!Hand_Del_Court)) And _
+IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!service_complete) Then
+If Not IsNull(rs!pre_docket_filed) Then
+vWait = vWait + "PRE DOCKET: " & rs!pre_docket_filed
+End If
+If Not IsNull(rs!final_docket_filed) Then
+vWait = vWait + "FINAL DOCKET: " & rs!final_docket_filed
+End If
+If Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!Hand_Del_Court) Then
+vWait = vWait + "TRIO DOCKETED: " & [Forms]![foreclosure database screen]!ForeclosureSubForm.Form!Hand_Del_Court
+End If
+DocketStageFC = vWait + " FILED, PENDING SERVICE: "
+'Pre or Final Filed Pending Service
+vWait = ""
+ElseIf Not IsNull(rs!pre_docket_filed) And _
+Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!service_complete) And _
+IsNull(rs!final_LMA_filed) Then
+DocketStageFC = "PRE FILED, SERVICE COMPLETE, FINAL LMA NOT FILED"
+'PENDING MEDIATION
+vWait = ""
+ElseIf Not IsNull(rs!final_docket_filed) And _
+Date < [Forms]![foreclosure database screen]!ForeclosureSubForm.Form!service_complete + 20 Then
+DocketStageFC = "WAITING FOR MEDIATION PERIOD TO EXPIRE"
+'MEDIATION PERIOD EXPIRED PENDING SALE DATE
+vWait = ""
+ElseIf Not IsNull(rs!final_docket_filed) And _
+Date > [Forms]![foreclosure database screen]!ForeclosureSubForm.Form!service_complete + 20 And IsNull( _
+[Forms]![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+DocketStageFC = "PENDING SALE DATE"
+'MEDIATION REQUESTED AWAITING HEARING
+vWait = ""
+ElseIf Not IsNull(rs!final_docket_filed) And _
+Not IsNull(rs!med_req) And _
+Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!service_complete) And _
+IsNull(rs!Med_Hearing) Then
+DocketStageFC = "MEDIATION REQUESTED AWAITING HEARING"
+'MEDIATION HEARING
+vWait = ""
+ElseIf Not IsNull(rs!final_docket_filed) And _
+Not IsNull(rs!med_req) And _
+Not IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!service_complete) And _
+Not IsNull(rs!Med_Hearing) And _
+IsNull(rs!med_hearing_held) Then
+DocketStageFC = "MEDIATION HEARING DATE SCHEDULED " & rs!Med_Hearing
+ElseIf Forms![foreclosure database screen]!commercial.Form!commercial = -1 Or Forms![foreclosure database screen]!commercial.Form!commercial = 1 Then
+DocketStageFC = "COMMERCIAL Property"
+Else
+'OTHER this would be for any case which does not fall within one of the above categories
+DocketStageFC = "OTHER"
+End If
+
+
+If Not IsNull(Forms![foreclosure database screen]!Transferred) Then
+DocketStageFC = "Transfer FILE : " & DocketStageFC
+End If
+
+
+End If
+'MsgBox (DocketStageFC)
+
+End Function
+
+Public Function docketstage()
+Dim vWait
+'Sale Date Set
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate > Date Then
+docketstage = "SALE DATE SET FOR " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+'No Secured Party
+ElseIf IsNull(Forms![foreclosure database screen]![secured party]) Then
+docketstage = "AWAITING SECURED PARTY"
+'NOI Not Expired
+ElseIf (Not IsNull([Forms]!docketform!noi_sent) And _
+Forms!docketform!Noi_Expires > Date) Then
+docketstage = "NOI HAS NOT EXPIRED"
+'Part 1 filed previous to 7/1/10
+ElseIf Forms![foreclosure database screen]!ForeclosureSubForm.Form![1ST Legal] <= #7/1/2010# And _
+IsNull(Forms!docketform!service_complete) And _
+Forms!docketform!Noi_Expires < Date And _
+Not IsNull(Forms!docketform!Hand_Del_Court) Then
+docketstage = "Docket Filed: " & Forms!docketform!Hand_Del_Court & " Pending Service"
+'Restart Instructions Rec'd - Sale Date Pending
+
+ElseIf Not IsNull(Forms![foreclosure database screen]![Date Recieved]) And _
+([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!date_reset > Forms![foreclosure database screen]![Date Recieved]) And _
+[Forms]![foreclosure database screen]!ForeclosureSubForm.Form!resume_DA = "Amend" And _
+IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+docketstage = UCase("Restart Instructions Rec'd - Sale Date Pending")
+
+'Restart Instructions Recd - Not Completed
+
+ElseIf Not IsNull(Forms![foreclosure database screen]![Date Recieved]) And _
+IsNull([Forms]![foreclosure database screen]!ForeclosureSubForm.Form!date_reset) Then
+docketstage = "Restart instructions rec'd; file needs to be processed"
+
+'NOI Expired Awaiting Affs
+
+ElseIf Forms!docketform!Noi_Expires < Date And _
+(IsNull(Forms!docketform!DocsRecClient) Or _
+IsNull(Forms!docketform!Aff_Recd_Client) Or _
+IsNull(Forms!docketform!affcert_recd_client) Or _
+IsNull(Forms!docketform!PAff_Retd) Or _
+IsNull(Forms!docketform!FAff_Retd)) Then
+
+If IsNull(Forms!docketform!DocsRecClient) Then
+vWait = "DOA/"
+End If
+If IsNull(Forms!docketform!Aff_Recd_Client) Then
+vWait = vWait + "Aff of Def/"
+End If
+If IsNull(Forms!docketform!affcert_recd_client) Then
+vWait = vWait + "Aff of Note Ownership/"
+End If
+If IsNull(Forms!docketform!PAff_Retd) Then
+vWait = vWait + "Prelim Aff/"
+End If
+If IsNull(Forms!docketform!FAff_Retd) Then
+If Not IsNull(Forms!docketform!pre_docket_filed) Then
+vWait = vWait + "/Prelim Docket Filed: " & Forms!docketform!pre_docket_filed
+End If
+If Not IsNull([Forms]!docketform!service_complete) Then
+vWait = vWait + "/Served: " & [Forms]![docketform]!service_complete
+End If
+If IsNull(Forms!docketform!FAff_Retd) Then
+vWait = vWait + "Final Loss Mit Aff"
+End If
+
+docketstage = "NOI EXPIRED AWAITING AFFS: " & vWait
+End If
+
+'NOI Expired Affs All In Docket(s) Pending
+vWait = ""
+ElseIf Forms!docketform!Noi_Expires > Date And _
+(Not IsNull(Forms!docketform!DocsRecClient) And _
+Not IsNull(Forms!docketform!Aff_Recd_Client) And _
+Not IsNull(Forms!docketform!affcert_recd_client) And _
+Not IsNull(Forms!docketform!PAff_Retd) And _
+Not IsNull(Forms!docketform!FAff_Retd)) And _
+IsNull(Forms!docketform!pre_docket_filed) And _
+IsNull(Forms!docketform!Hand_Del_Court) And _
+IsNull(Forms!docketform!final_docket_filed) Then
+If IsNull(Forms!docketform!pre_docket_filed) Then
+vWait = "Pre Docket Not Filed"
+End If
+If IsNull(Forms!docketform!final_docket_filed) Then
+vWait = "/Final Docket Not Filed"
+End If
+
+docketstage = "NOI EXPIRED, AFFS REC'D, DOCKET PENDING: " & vWait
+'Pre or Final or Trio Filed Pending Service
+vWait = ""
+ElseIf (Not IsNull(Forms!docketform!pre_docket_filed) Or _
+Not IsNull(Forms!docketform!final_docket_filed) Or _
+Not IsNull(Forms!docketform!Hand_Del_Court)) And _
+IsNull(Forms!docketform!service_complete) Then
+If Not IsNull(Forms!docketform!pre_docket_filed) Then
+vWait = "PRE DOCKET: " & Forms!docketform!pre_docket_filed
+End If
+If Not IsNull(Forms!docketform!final_docket_filed) Then
+vWait = vWait + "FINAL DOCKET: " & Forms!docketform!final_docket_filed
+End If
+If Not IsNull(Forms!docketform!Hand_Del_Court) Then
+vWait = vWait + "TRIO DOCKETED: " & Forms!docketform!Hand_Del_Court
+End If
+docketstage = vWait + " FILED, PENDING SERVICE: "
+'Pre or Final Filed Pending Service
+vWait = ""
+ElseIf Not IsNull(Forms!docketform!pre_docket_filed) And _
+Not IsNull(Forms!docketform!service_complete) And _
+IsNull(Forms!docketform!final_LMA_filed) Then
+docketstage = "PRE FILED, SERVICE COMPLETE, FINAL LMA NOT FILED"
+'PENDING MEDIATION
+vWait = ""
+ElseIf Not IsNull(Forms!docketform!final_docket_filed) And _
+Date < Forms!docketform!service_complete + 20 Then
+docketstage = "WAITING FOR MEDIATION PERIOD TO EXPIRE"
+'MEDIATION PERIOD EXPIRED PENDING SALE DATE
+vWait = ""
+ElseIf Not IsNull(Forms!docketform!final_docket_filed) And _
+Date > Forms!docketform!service_complete + 20 And IsNull( _
+Forms!docketform!SaleDate) Then
+docketstage = "PENDING SALE DATE"
+'MEDIATION REQUESTED AWAITING HEARING
+vWait = ""
+ElseIf Not IsNull(Forms!docketform!final_docket_filed) And _
+Not IsNull(Forms!docketform!med_req) And _
+Not IsNull(Forms!docketform!service_complete) And _
+IsNull(Forms!docketform!Med_Hearing) Then
+docketstage = "MEDIATION REQUESTED AWAITING HEARING"
+'MEDIATION HEARING
+vWait = ""
+ElseIf Not IsNull(Forms!docketform!final_docket_filed) And _
+Not IsNull(Forms!docketform!med_req) And _
+Not IsNull(Forms!docketform!service_complete) And _
+Not IsNull(Forms!docketform!Med_Hearing) And _
+IsNull(Forms!docketform!med_hearing_held) And _
+IsNull(Forms!docketform!mediationScreen.Form!Med_Concluded) Then
+docketstage = "MEDIATION HEARING DATE SCHEDULED " & Forms![docketform]!Med_Hearing
+Else
+'OTHER this would be for any case which does not fall within one of the above categories
+docketstage = "OTHER"
+End If
+
+'MsgBox (DocketStage)
+
+
+End Function
+

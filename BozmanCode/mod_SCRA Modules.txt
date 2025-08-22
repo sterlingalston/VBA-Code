@@ -1,0 +1,73 @@
+Attribute VB_Name = "SCRA Modules"
+Option Compare Database
+
+Public Function BusDayBefore(dater As Date) As Date
+    If Weekday(dater) = 1 Then
+        BusDayBefore = dater - 2
+        BusDayBefore = DateValue(BusDayBefore)
+    ElseIf Weekday(dater) = 7 Then
+     BusDayBefore = dater - 1
+     BusDayBefore = DateValue(BusDayBefore)
+    Else
+        BusDayBefore = dater
+    End If
+    
+End Function
+
+Public Function BusDayAfter(dater As Date) As Date
+      If Weekday(dater) = 1 Then
+        BusDayAfter = dater + 1
+        BusDayAfter = DateValue(BusDayAfter)
+    ElseIf Weekday(dater) = 7 Then
+     BusDayAfter = dater + 2
+     BusDayAfter = DateValue(BusDayAfter)
+    Else
+        BusDayAfter = dater
+    End If
+    
+End Function
+Public Function AppendSCRADeadlines()
+'SCRA Deadline
+DoCmd.OpenQuery ("SalesUPDATESCRADeadline1")
+DoCmd.OpenQuery ("SalesUPDATESCRADeadline2")
+DoCmd.OpenQuery ("SalesUPDATESCRADeadline3")
+DoCmd.OpenQuery ("SalesUPDATESCRADeadline4")
+DoCmd.OpenQuery ("SalesUPDATESCRADeadline5")
+DoCmd.OpenQuery ("SalesUPDATESCRADeadline6")
+
+
+End Function
+
+Public Function AppendSCRADeadlinesFC()
+DoCmd.OpenQuery ("SalesUPDATESCRADeadlineFC1")
+DoCmd.OpenQuery ("SalesUPDATESCRADeadlineFC2")
+DoCmd.OpenQuery ("SalesUPDATESCRADeadlineFC3")
+DoCmd.OpenQuery ("SalesUPDATESCRADeadlineFC4")
+DoCmd.OpenQuery ("SalesUPDATESCRADeadlineFC5")
+DoCmd.OpenQuery ("SalesUPDATESCRADeadlineFC6")
+
+End Function
+
+Public Function ScraVADC()
+If Format(Date, "ddd") = "fri" Then
+
+DoCmd.OpenQuery ("SCRAQueueALL-VADCMkTblFriday")
+ExcelSaveAsQRY ("SCRASearchVADCQryPrintOutFriday")
+Else
+DoCmd.OpenQuery ("SCRAQueueALL-VADCMkTbl")
+ExcelSaveAsQRY ("SCRASearchVADCQryPrintOut")
+
+
+End If
+
+End Function
+
+Public Function SCRAMd()
+DoCmd.OpenQuery ("SCRAQueueALL-MDMkTbl")
+DoCmd.OpenQuery ("SCRAQueueALL-MDAppend")
+DoCmd.OpenQuery ("SCRAQueueALL-MDAppend2")
+DoCmd.OpenQuery ("SCRAQueueALL-MDAppend3")
+
+ExcelSaveAsQRY ("SCRASearchMDQryPrintOut")
+
+End Function

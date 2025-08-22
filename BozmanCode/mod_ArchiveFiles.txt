@@ -1,0 +1,160 @@
+Attribute VB_Name = "ArchiveFiles"
+Option Compare Database
+
+Public Function ArchiveFile()
+
+Dim Ars, casesRS, NoRS, Arch As RecordSet
+Dim AC, DR, DSR, ACp, DRp, DSRp, StrCriteria  As String
+Dim DoArchive, strsql, archive, Astrsql, GblFilenum, Dup As String
+Dim archiveV As Long
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+
+Astrsql = "select * from archives where filenum = " & GblFilenum
+Set Ars = CurrentDb.OpenRecordset(Astrsql)
+
+
+If Not Ars.EOF Then
+
+MsgBox ("BGW #: " & GblFilenum & " has already been Archived")
+Ars.Close
+
+If Forms![foreclosure database screen]!PropertyState = "DC" And Not IsNull(Forms![foreclosure database screen]!ForeclosureSubFormDC.Form!complaint_filed) Then
+
+MyMail.To = "Angele.Djabare@bww-law.com; Dawn.Early@bww-law.com; Kristen.Misleh@bww-law.com; Matt.Cohen@bww-law.com"
+MyMail.Subject = "BWW#: " & Forms![foreclosure database screen]!filenum & ": FILE ARCHIVED"
+MyMail.body = "Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr & vbCr & "Please dismiss the case and confirm dismissal prior to billing."
+MyMail.Display
+Set MyMail = Nothing
+End If
+Exit Function
+
+Else
+
+If Forms![foreclosure database screen]!PropertyState = "DC" And Not IsNull(Forms![foreclosure database screen]!ForeclosureSubFormDC.Form!complaint_filed) Then
+
+MyMail.To = "Angele.Djabare@bww-law.com; Dawn.Early@bww-law.com; Kristen.Misleh@bww-law.com; Matt.Cohen@bww-law.com"
+MyMail.Subject = "BWW#: " & Forms![foreclosure database screen]!filenum & ": FILE ARCHIVED"
+MyMail.body = "Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr & vbCr & "Please dismiss the case and confirm dismissal prior to billing."
+MyMail.Display
+Set MyMail = Nothing
+End If
+Exit Function
+
+Set Arch = CurrentDb.OpenRecordset("archives")
+
+If Not IsNull(Forms![foreclosure database screen]![PostsaleSubForm].Form!accounting_completed) Or _
+(Forms![foreclosure database screen]![PostsaleSubForm].Form![AccttngCompleted] = -1 Or _
+Forms![foreclosure database screen]![PostsaleSubForm].Form![AccttngCompleted] = 1) Then
+AC = 1
+Else
+AC = 0
+End If
+
+DR = Forms![foreclosure database screen]![PostsaleSubForm].Form![DeedRecorded]
+DSR = Forms![foreclosure database screen]![PostsaleSubForm].Form![deed_sent_recording]
+
+If (Forms![foreclosure database screen]!PropertyState = "MD" Or _
+Forms![foreclosure database screen]!PropertyState = "VA") And _
+((AC = 1 And DR <> "") Or (AC = 1 And DSR <> "")) _
+Or (Forms![foreclosure database screen]!PropertyState = "DC" And _
+((DR <> "") Or (DSR <> ""))) Then
+
+archive = MsgBox("Archive Loan #: " & Forms![foreclosure database screen]![ClientRefNumber] & "?", vbYesNo)
+
+If archive = vbYes Then
+archiveV = GetAutoNumber("NextArchive")
+
+With Arch
+.AddNew
+!filenum = GblFilenum
+!Archiveno = archiveV
+.Update
+.Close
+End With
+
+
+Forms![foreclosure database screen]!Archiveno = archiveV
+Forms![foreclosure database screen]!Status = "Archived"
+DoCmd.OpenQuery ("ArchiveRecord")
+
+If Forms![foreclosure database screen]!PropertyState = "DC" And Not IsNull(Forms![foreclosure database screen]!ForeclosureSubFormDC.Form!complaint_filed) Then
+
+MyMail.To = "Angele.Djabare@bww-law.com; Dawn.Early@bww-law.com; Kristen.Misleh@bww-law.com; Matt.Cohen@bww-law.com"
+MyMail.Subject = "BWW#: " & Forms![foreclosure database screen]!filenum & ": FILE ARCHIVED"
+MyMail.body = "Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr & vbCr & "Please dismiss the case and confirm dismissal prior to billing."
+MyMail.Display
+Set MyMail = Nothing
+End If
+
+Else
+MsgBox ("Not archived")
+Exit Function
+
+End If
+
+
+Else
+
+If (IsNull(DR) And IsNull(DSR)) Then
+DRp = "Neither the Deed Recorded Date or the Deed Sent for Recording Date is filled in."
+Else
+DRp = "X"
+End If
+
+If DRp = "X" And AC = 0 Then
+ACp = "Accounting Completed button/date is not filled in."
+End If
+
+If DRp <> "X" And AC = 0 Then
+ACp = "Accounting Completed button/date is not filled in and neither the Deed Recorded Date or the Deed Sent for Recording Date is filled in."
+End If
+
+If DRp <> "X" And AC = 1 Then
+ACp = "neither the Deed Recorded Date or the Deed Sent for Recording Date is filled in."
+End If
+
+
+If Forms![foreclosure database screen]![PropertyState] = "DC" Then
+DoArchive = MsgBox("This Record is a " & Forms![foreclosure database screen]![PropertyState] & _
+" file and " & DRp & " Do you want to Archive this file anyway?", vbYesNo)
+Else
+DoArchive = MsgBox("This Record is a " & Forms![foreclosure database screen]![PropertyState] & _
+" file and " & ACp & " Do you want to Archive this file anyway?", vbYesNo)
+End If
+
+If DoArchive = vbYes Then
+
+archiveV = GetAutoNumber("NextArchive")
+
+With Arch
+.AddNew
+!filenum = GblFilenum
+!Archiveno = archiveV
+.Update
+.Close
+End With
+
+Forms![foreclosure database screen]!Archiveno = archiveV
+Forms![foreclosure database screen]!Status = "Archived"
+DoCmd.OpenQuery ("ArchiveRecord")
+
+MsgBox ("BGW #: " & filenum & " has been Archived, the Archive # is: " & archiveV)
+
+Else
+MsgBox ("Not Archived")
+Exit Function
+End If
+
+End If
+
+End If
+
+End Function
+
+
+

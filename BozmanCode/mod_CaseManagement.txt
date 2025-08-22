@@ -1,0 +1,232 @@
+Attribute VB_Name = "CaseManagement"
+Option Compare Database
+Public Function OpenCMView()
+Dim vpassword
+vpassword = InputBox("This Screen Requires a password for viewing.  Please enter or contact Carrie regarding same.")
+If vpassword = "123" Then
+DoCmd.OpenForm ("Case Management Processor View")
+Else
+MsgBox ("Incorrect Password")
+End If
+
+End Function
+Public Function CMTitleManager()
+ 
+
+Dim vpassword
+vpassword = InputBox("This Screen Requires a password for viewing.  Please enter or contact Carrie regarding same.")
+If vpassword = "dmay" Then
+
+DoCmd.OpenForm ("Case Management Processor Titles")
+
+
+Else
+MsgBox ("Incorrect Password")
+End If
+End Function
+Public Function OpenCMBKScreen()
+ 
+
+Dim vpassword
+vpassword = InputBox("This Screen Requires a password for viewing.  Please enter or contact Carrie regarding same.")
+If vpassword = "jrice" Then
+
+DoCmd.OpenForm ("Case Management Processor BK")
+
+
+Else
+MsgBox ("Incorrect Password")
+End If
+
+End Function
+
+Public Function OpenCMScreen()
+ 
+
+Dim vpassword
+vpassword = InputBox("This Screen Requires a password for viewing.  Please enter or contact Carrie regarding same.")
+If vpassword = "123" Then
+
+CurrentDb.Execute "DELETE * FROM tempCM;", dbFailOnError
+
+DoCmd.OpenQuery ("CMImportedNotOpenedScreen")
+
+Dim rs As RecordSet
+Dim VSDate, vad, strsql
+Dim VStartTime As Date
+Dim ContNo As Double
+
+ContNo = 0
+Set rs = CurrentDb.OpenRecordset("tempCM", dbOpenDynaset, dbSeeChanges)
+
+If rs.EOF Then
+
+MsgBox ("No records. Screen will not open")
+
+Else
+
+If Not rs.EOF Then
+rs.MoveFirst
+Do While Not rs.EOF
+ContNo = ContNo + 1
+With rs
+.Edit
+!contact_no = ContNo
+.Update
+End With
+rs.MoveNext
+Loop
+End If
+rs.Close
+
+
+DoCmd.OpenForm ("Case Management Processor Availability")
+End If
+
+Else
+MsgBox ("Incorrect Password")
+End If
+
+End Function
+Public Function OpenCM()
+Dim VPS
+VPS = InputBox("Enter Password")
+If VPS = "bgw123" Then
+DoCmd.OpenForm ("Case Management Processor Availability")
+Else
+MsgBox ("Password incorrect")
+Exit Function
+End If
+
+
+End Function
+Public Function CMAssignFiles()
+
+Dim rsCM, rsProc, rsCnt, rsCMCnt, rsA, rsAssign As RecordSet
+Dim strsql, strsqlCnt, VAssigned_to, Vcnt, strsqla, strsqlAssign
+
+Set rsCM = CurrentDb.OpenRecordset("CMUnassigned")
+
+Set rsCnt = CurrentDb.OpenRecordset("CMUNASSignedCOUNT", dbOpenSnapshot)
+strsql = "select * from employees where cm_inout = " & 1 & ";"
+Set rsProc = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+CurrentDb.Execute "delete * from cm;", dbFailOnError
+
+Set rsCMCnt = CurrentDb.OpenRecordset("CM")
+
+If Not rsProc.EOF Then
+rsProc.MoveFirst
+
+Do While Not rsProc.EOF
+With rsCMCnt
+.AddNew
+!Processor = rsProc!EmployeeID
+!numcases = 0
+.Update
+rsProc.MoveNext
+End With
+Loop
+rsCMCnt.Close
+rsProc.Close
+
+Else
+rsProc.Close
+rsCMCnt.Close
+
+MsgBox ("Need to select Processors for availability")
+End If
+
+If rsCnt.EOF Then
+rsCnt.Close
+
+Else
+
+rsCnt.MoveFirst
+VAssigned = rsCnt!EmployeeID
+
+Do While Not rsCnt.EOF
+
+VAssigned = rsCnt!EmployeeID
+
+strsqla = "select * from CM where processor = " & """" & VAssigned & """" & ";"
+Set rsA = CurrentDb.OpenRecordset(strsqla)
+
+Vcnt = rsA!numcases + 1
+With rsA
+.Edit
+!numcases = Vcnt
+.Update
+End With
+rsA.Close
+
+rsCnt.MoveNext
+Loop
+
+
+
+End If
+
+If rsCM.EOF Then
+MsgBox ("No Unassigned Cases in Queue")
+rsCM.Close
+Else
+
+Do While Not rsCM.EOF
+
+If rsCM!PropertyState = "MD" Then
+Set rsProc = CurrentDb.OpenRecordset("CMUnassignedProcMD")
+rsProc.MoveFirst
+
+Do While Not rsProc.EOF And (rsCM!imported_assigned_to = "" Or IsNull(rsCM!imported_assigned_to))
+With rsCM
+.Edit
+!imported_assigned_to = rsProc!EmployeeID
+.Update
+End With
+strsqlCnt = "select * from cm where processor = " & """" & rsProc!EmployeeID & """" & ";"
+Set rsCMCnt = CurrentDb.OpenRecordset(strsqlCnt)
+With rsCMCnt
+.Edit
+!numcases = !numcases + 1
+.Update
+End With
+rsCMCnt.Close
+rsProc.MoveNext
+Loop
+
+ElseIf rsCM!PropertyState <> "MD" Then
+
+Set rsProc = CurrentDb.OpenRecordset("CMUnassignedProcdcva")
+rsProc.MoveFirst
+
+Do While Not rsProc.EOF And (rsCM!imported_assigned_to = "" Or IsNull(rsCM!imported_assigned_to))
+With rsCM
+.Edit
+!imported_assigned_to = rsProc!EmployeeID
+.Update
+End With
+
+strsqlCnt = "select * from cm where processor = " & """" & rsProc!EmployeeID & """" & ";"
+Set rsCMCnt = CurrentDb.OpenRecordset(strsqlCnt)
+
+With rsCMCnt
+.Edit
+!numcases = !numcases + 1
+.Update
+End With
+rsCMCnt.Close
+rsProc.MoveNext
+Loop
+
+End If
+
+
+rsCM.MoveNext
+Loop
+
+
+End If
+
+
+End Function
+

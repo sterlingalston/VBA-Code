@@ -1,0 +1,181 @@
+Attribute VB_Name = "modCleaner"
+Option Compare Database
+Option Explicit
+
+Function DeleteAllButTheTables()
+On Error GoTo ErrHandler
+  Dim obj As AccessObject
+  Dim objs() As String
+  Dim strOut As String
+  Dim index As Long
+  
+  Const conThisModuleName = "modCleaner"
+  
+  If Forms.Count > 0 Then
+    If MsgBox("Open forms can't be deleted, continue anyway?", _
+            vbQuestion + vbOKCancel, "Warning:") = vbCancel Then
+      Exit Function
+    End If
+  End If
+  
+  If MsgBox("Are you sure you want to delete all database objects (except tables)?", _
+            vbQuestion + vbYesNo, "Caution:") = vbNo Then
+    Exit Function
+  Else
+    Screen.MousePointer = 11
+    SysCmd acSysCmdSetStatus, "Deleting objects, please wait..."
+  End If
+  
+  If CurrentData.AllQueries.Count > 0 Then
+    ReDim objs(CurrentData.AllQueries.Count - 1)
+    index = 0
+  
+    For Each obj In CurrentData.AllQueries
+      If obj.IsLoaded Then
+        DoCmd.Close acQuery, obj.name, acSaveNo
+      End If
+      objs(index) = obj.name
+      index = index + 1
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting queries, please wait..."
+    
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acQuery, objs(index), True
+      DoCmd.DeleteObject acQuery, objs(index)
+      DoEvents
+    Next
+  End If
+  
+  If CurrentProject.AllMacros.Count > 0 Then
+    ReDim objs(CurrentProject.AllMacros.Count - 1)
+    index = 0
+    
+    For Each obj In CurrentProject.AllMacros
+      If obj.IsLoaded Then
+        DoCmd.Close acMacro, obj.name, acSaveNo
+      End If
+      objs(index) = obj.name
+      index = index + 1
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting macros, please wait..."
+    
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acMacro, objs(index), True
+      DoCmd.DeleteObject acMacro, objs(index)
+      DoEvents
+    Next
+  End If
+  
+  If CurrentProject.AllForms.Count > 0 Then
+    ReDim objs(CurrentProject.AllForms.Count - 1)
+    index = 0
+    
+    For Each obj In CurrentProject.AllForms
+      If obj.IsLoaded Then
+        DoCmd.Close acForm, obj.name, acSaveNo
+      End If
+      objs(index) = obj.name
+      index = index + 1
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting forms, please wait..."
+    
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acForm, objs(index), True
+      DoCmd.DeleteObject acForm, objs(index)
+      DoEvents
+    Next
+  End If
+  
+  If CurrentProject.AllReports.Count > 0 Then
+    ReDim objs(CurrentProject.AllReports.Count - 1)
+    index = 0
+    
+    For Each obj In CurrentProject.AllReports
+      If obj.IsLoaded Then
+        DoCmd.Close acReport, obj.name, acSaveNo
+      End If
+      objs(index) = obj.name
+      index = index + 1
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting reports, please wait..."
+    
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acReport, objs(index), True
+      DoCmd.DeleteObject acReport, objs(index)
+      DoEvents
+    Next
+  End If
+  
+  If CurrentProject.AllModules.Count > 1 Then
+    ReDim objs(CurrentProject.AllModules.Count - 2)
+    index = 0
+    
+    For Each obj In CurrentProject.AllModules
+      If obj.name <> conThisModuleName Then
+        If obj.IsLoaded Then
+          DoCmd.Close acModule, obj.name, acSaveNo
+        End If
+        objs(index) = obj.name
+        index = index + 1
+      End If
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting modules, please wait..."
+  
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acModule, objs(index), True
+      DoCmd.DeleteObject acModule, objs(index)
+      DoEvents
+    Next
+  End If
+  
+  If CurrentProject.AllDataAccessPages.Count > 0 Then
+    ReDim objs(CurrentProject.AllDataAccessPages.Count - 1)
+    index = 0
+    
+    For Each obj In CurrentProject.AllDataAccessPages
+      If obj.IsLoaded Then
+        DoCmd.Close acDataAccessPage, obj.name, acSaveNo
+      End If
+      objs(index) = obj.name
+      index = index + 1
+    Next
+    
+    SysCmd acSysCmdSetStatus, "Deleting DAPs, please wait..."
+    
+    For index = 0 To UBound(objs)
+      DoCmd.SelectObject acDataAccessPage, objs(index), True
+      DoCmd.DeleteObject acDataAccessPage, objs(index)
+      DoEvents
+    Next
+  End If
+  
+ExitHere:
+  SysCmd acSysCmdClearStatus
+  Screen.MousePointer = 0
+  MsgBox "Operation completed successfully." & vbCrLf & vbCrLf & _
+    "Module """ & conThisModuleName & """ must be deleted manually." & _
+    IIf(Len(strOut) > 0, vbCrLf & vbCrLf & "Exceptions:" & vbCrLf & _
+    strOut, ""), vbInformation, "Results:"
+  MsgBox "You should run compact and repair before using this database.", _
+    vbInformation, "Attention:"
+  On Error Resume Next
+  'clear the startup form property if it exists since
+  'no forms should be left after the deletes.
+  CurrentDb().Properties("StartupForm").Value = "(none)"
+  Exit Function
+ErrHandler:
+  If Err = 2008 Then   'Forms closed by code won't get deleted - Access bug.
+    strOut = strOut & Err.description & vbCrLf
+    Resume Next
+  End If
+  SysCmd acSysCmdClearStatus
+  Screen.MousePointer = 0
+  MsgBox "An Error occurred: " & Err & "-" & Err.description
+End Function
+
+

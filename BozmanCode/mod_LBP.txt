@@ -1,0 +1,278 @@
+Attribute VB_Name = "LBP"
+Option Compare Database
+Public Function LBPBillsNotPaid()
+
+ExcelSaveAsQRY ("LBPSelect")
+End Function
+Public Function LookBackProjectCHECK()
+
+DoCmd.OpenQuery "LBPSelect", acViewPreview
+
+End Function
+Public Function LookBackProjectMultipleREDO()
+VConvRpt = "bill-email-LBP-MultipleREDO"
+Call ConvertPDFALL
+
+VConvRpt = "LBProjectMultipleBillingREDO"
+Call ConvertPDFALL
+
+
+DoCmd.OpenReport "bill-email-LBP-MultipleREDO", acViewPreview
+
+DoCmd.OpenReport "LBProjectMultipleBillingREDO", acViewPreview
+
+DoCmd.OutputTo acOutputQuery, "LBProjectTableREDO", acFormatXLS, pathuser() & "\LBProjectMultipleBilling.xls"
+emailsubject = "LOOK BACK INVOICE (MULTIPLE) "
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.Subject = emailsubject
+MyMail.body = "Sir or Madam:" & vbCr & vbCr & "Attached please find an invoice" & vbCr & vbCr & SigEmail()
+MyMail.Attachments.ADD pathuser() & "\bill-email-LBP-MultipleREDO.pdf"
+MyMail.Attachments.ADD pathuser() & "\LBProjectMultipleBillingREDO.pdf"
+MyMail.Attachments.ADD pathuser() & "\LBProjectMultipleBilling.xls"
+MyMail.Attachments.ADD ("\\rvdv-fs01\datatransfer\attachments\W9.pdf")
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+End Function
+
+Public Function LookBackProjectMultiple()
+
+VPsswd = InputBox("This function is password protected.  Enter password")
+If VPsswd = "lbp" Then
+
+ 
+
+DoCmd.OpenQuery "LBProjectTable"
+
+Set rs = CurrentDb.OpenRecordset("LBPMultiple", dbOpenDynaset, dbSeeChanges)
+If rs.EOF Then
+MsgBox ("No files for Look Back Project Multiple Billing.  May have already been billed, will exit.")
+rs.Close
+
+Exit Function
+
+Else
+
+
+VConvRpt = "bill-email-LBP-Multiple"
+Call ConvertPDFALL
+
+VConvRpt = "LBProjectMultipleBilling"
+Call ConvertPDFALL
+
+
+DoCmd.OpenReport "bill-email-LBP-Multiple", acViewPreview
+DoCmd.OpenReport "LBProjectMultipleBilling", acViewPreview
+
+DoCmd.OutputTo acOutputQuery, "LBProjectMultipleBilling", acFormatXLS, pathuser() & "\LBProjectMultipleBilling.xls"
+emailsubject = "LOOK BACK INVOICE (MULTIPLE) "
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.Subject = emailsubject
+MyMail.body = "Sir or Madam:" & vbCr & vbCr & "Attached please find an invoice" & vbCr & vbCr & SigEmail()
+MyMail.Attachments.ADD pathuser() & "\bill-email-LBP-Multiple.pdf"
+MyMail.Attachments.ADD pathuser() & "\LBProjectMultipleBilling.pdf"
+MyMail.Attachments.ADD pathuser() & "\LBProjectMultipleBilling.xls"
+MyMail.Attachments.ADD ("\\rvdv-fs01\datatransfer\attachments\W9.pdf")
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+
+
+VUp = InputBox("Upating look back project multiple bill date field, type YES to agree")
+
+If VUp = "YES" Then
+DoCmd.OpenQuery "LBProjectMultipleBillingUPDATE"
+End If
+
+End If
+
+End If
+
+End Function
+Public Function LookBackProject()
+Dim VPswd
+
+If Forms![foreclosure database screen]!LBProject = -1 Or _
+Forms![foreclosure database screen]!LBProject = 1 Then
+
+VPswd = InputBox("The Look Back Project button on the foreclosure screen is already checked, bill has been sent! Check to see if this is a result of an older Invoice and if so please input password to continue.")
+
+If VPswd = "continue" Then
+Else
+MsgBox ("Incorrect Password, exiting")
+Exit Function
+End If
+
+Else
+
+Dim VCreate
+
+VCreate = MsgBox("CREATING Invoice for BWW: " & Forms![foreclosure database screen]!filenum & ", continue?", vbYesNo)
+If VCreate = vbYes Then
+
+Dim rsbill As RecordSet
+Dim VINv As Long
+Dim VType
+Dim VarFee
+
+Dim strsql
+Dim rs As RecordSet
+strsql = "Select lbp_fee, lbp_email from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+varmailto = rs!LBP_email
+
+If IsNull(rs!LBP_Fee) Then
+VarFee = 0
+MsgBox ("There is not an amount listed for Look Back billing on the " & Forms![foreclosure database screen]!Client & " record on the Client Information Page.  Exiting...")
+Exit Function
+
+Else
+VarFee = rs!LBP_Fee
+End If
+
+rs.Close
+
+VINv = GetAutoNumber("NextBillNum")
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+
+With rsbill
+.AddNew
+!CustomerID = VINv
+!filenum = Forms![foreclosure database screen]![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+!feeothermoney = VarFee
+!feeothertext = "Look back project"
+'!bill_uploaded = Date
+!bill_processor = "LBP_Bill"
+!initials = "rac"
+![printed and sent] = Date
+'Zero Out Billing Monies
+!water = 0#
+!lien_citation_violation = 0#
+!process_service = 0#
+!post_mail_lma = 0#
+!prop_reg = 0#
+!estate_cost = 0#
+!estate_adm = 0#
+!dod_search = 0#
+!skip_trace = 0#
+!d_titlesearch = 0#
+![Attorney Fee] = 0#
+!fee_prepassignment = 0#
+![fee_recassignment] = 0#
+!d_recording = 0#
+!lien_citation_violation = 0#
+!cert_cpy_dot = 0#
+!lit_money1 = 0#
+!process_service = 0#
+!skip_trace = 0#
+!auct_NC = 0#
+!forbearance = 0#
+!motion_accept = 0#
+!l_att341 = 0#
+!d_process = 0#
+!re_recording = 0#
+!d_realestatetaxes = 0#
+!d_transfee = 0#
+!water = 0#
+!otherm1 = 0#
+!d_titleins = 0#
+!d_adv = 0#
+!d_auctfee = 0#
+!lit_money1 = 0#
+!d_bondprem = 0#
+!d_servbymail = 0#
+!d_liencert = 0#
+!d_filing = 0#
+!l_initial = 0#
+!l_preptitle = 0#
+!d_audfee = 0#
+!d_advnisi = 0#
+!add_court_costs = 0#
+!ps_liencert = 0#
+!l_prepabstract = 0#
+!otherm2 = 0#
+!otherm10 = 0#
+!fee_dismcase = 0#
+![fee_recpoweratt] = 0#
+!d_reqjud = 0#
+!l_dil = 0#
+!l_appearance = 0#
+!d_titlesearch = 0#
+!l_preppoc = 0#
+!add_court_costs = 0#
+!auct_NC = 0#
+![sheriff_fee] = 0#
+!writ_fee = 0#
+!evicdc_spnq = 0#
+!evicdc_comp = 0#
+!evicdc_usmf = 0#
+!evicmd_mjap = 0#
+!evicmd_pshco = 0#
+!evicdc_sps = 0#
+!evicva_UD = 0#
+!costs1 = 0#
+!costs2 = 0#
+!fees1 = 0#
+.Update
+.Close
+End With
+
+
+If Forms![foreclosure database screen]!LBProject = 0 Or IsNull(Forms![foreclosure database screen]!LBProject) Then
+Forms![foreclosure database screen]!LBProject = -1
+DoCmd.RunCommand acCmdRefresh
+End If
+
+vsendbill = InputBox("Invoice has been created. Send individual bill Now or add for Multiple creation for: " & Forms![foreclosure database screen]!Client & " NOW? Type YES to proceed or return to create as a multiple bill")
+If vsendbill = "YES" Then
+
+VConvRpt = "bill-email-LBP"
+Call ConvertPDFALL
+
+emailsubject = "LOOK BACK INVOICE: " & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress]
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "ccurley@bozmangroup.com"
+MyMail.Subject = emailsubject
+MyMail.body = "Sir or Madam:" & vbCr & vbCr & "Attached please find an invoice and W-9 for the below referenced loan, pursuant to your email directive.  Please do not hesitate to contact the undersigned should you have any further questions or concerns." & vbCr & _
+"Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr & _
+"Borrower Name: " & Forms![foreclosure database screen]![LastNameDebtor1] & vbCr & _
+"Property Address: " & PROP() & vbCr & vbCr & _
+SigEmail()
+'MyMail.Attachments.ADD pathuser() & "\LBProject.xls"
+MyMail.Attachments.ADD pathuser() & "\bill-email-LBP.pdf"
+MyMail.Attachments.ADD ("\\rvdv-fs01\datatransfer\attachments\W9.pdf")
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+DoCmd.OpenQuery "LBProjectINDBillingUPDATE"
+
+End If
+End If
+
+End If
+
+
+
+End Function
+

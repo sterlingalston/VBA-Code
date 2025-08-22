@@ -1,0 +1,2810 @@
+Attribute VB_Name = "Billing"
+Option Compare Database
+Public Function BillRestoreArchive()
+
+Dim VPasswd
+VPasswd = InputBox("RESTORE ARCHIVED INVOICES" & vbCr & vbCr & "Type in Password to restore Invoices.")
+If VPasswd = "restorearchive" Then
+DoCmd.OpenQuery "BillingAppendArchivedToBilling"
+MsgBox ("Invoices Imported")
+Else
+MsgBox ("Incorrect password")
+End If
+
+
+End Function
+Public Function ImportAgedRecFiles()
+Dim vFile As String
+ 
+
+If IsTable("BillAgedRecSS") Then
+DoCmd.DeleteObject acTable, "BillAgedRecSS"
+End If
+
+MsgBox ("You HAVE to have the spreadsheet copied into your \\rvdv-fs01\Shared\BillingSpreadsheets\ directory and column header for Invoice number HAS TO BE: INVOICE #")
+
+vFile = InputBox("Enter Spreadsheet File Name (do NOT type in the .xls portion of the file name). Spreadsheet has to be a .xls file NOT a .xlsx file.")
+DoCmd.TransferSpreadsheet acImport, , "BillAgedRecSS", "\\rvdv-fs01\Shared\BillingSpreadsheets\" & vFile, 1
+
+ExcelSaveAsQRY ("BillAgeRecSSQRY")
+
+End Function
+
+Public Function AddBillToBePrep()
+
+'MsgBox ("here")
+
+Dim strsql
+strsql = "select * from BillsToPrepare where Filenum = " & Forms![foreclosure database screen]!filenum & ";"
+Dim rsB As RecordSet
+Set rsB = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+
+If Not rsB.EOF Then
+
+With rsB
+.Edit
+!EmailSent = Now()
+!SaleCancelled = Forms![foreclosure database screen]!ForeclosureSubForm.Form!sale_cancelled
+!SaleDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+!SaleTime = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleTime
+.Update
+.Close
+End With
+
+Else
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("select top 1 * from BillsToPrepare", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!EmailSent = Now()
+!SaleCancelled = Forms![foreclosure database screen]!ForeclosureSubForm.Form!sale_cancelled
+!SaleDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+!SaleTime = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleTime
+.Update
+.Close
+End With
+End If
+
+
+End Function
+Public Function UnpaidBillScreen()
+Dim rs As RecordSet
+Dim rsupb As RecordSet
+Dim VBill
+
+Dim VAcct As String
+CurrentDb.Execute "DELETE * FROM tbldepositscrn;", dbFailOnError
+DoCmd.OpenQuery ("qrycpydeposit")
+
+Dim VDel
+Set rsupb = CurrentDb.OpenRecordset("tblunpaidbills", dbOpenSnapshot)
+
+If Not rsupb.EOF Then
+VDel = MsgBox("DELETE Review Screen Data", vbYesNo)
+If VDel = vbYes Then
+CurrentDb.Execute "DELETE * FROM tblunpaidbills;", dbFailOnError
+Else
+MsgBox ("To access data go to (REVIEW) screen.")
+End If
+Else
+CurrentDb.Execute "DELETE * FROM tblunpaidbills;", dbFailOnError
+End If
+
+rsupb.Close
+
+'--------------------------------------
+ 
+
+'DoCmd.OpenQuery "unpaidbills"
+
+Set rs = CurrentDb.OpenRecordset("UnpaidBKBillLink", dbOpenSnapshot)
+
+Set rsupb = CurrentDb.OpenRecordset("UnpaidBillScreen", dbOpenDynaset, dbseechange)
+If Not rsupb.EOF Then
+
+rsupb.MoveFirst
+
+Do While Not rsupb.EOF
+
+rs.MoveFirst
+VBill = 0
+
+Do While Not rs.EOF
+
+If rs!Inv_No = rsupb!CustomerID Then
+'MsgBox (rs!Inv_No & ": " & rs!Amount_Fee_Cost)
+
+With rsupb
+.Edit
+!bkbill = VBill + rs!Amount_Fee_Cost
+VBill = VBill + rs!Amount_Fee_Cost
+!NewBK = 1
+.Update
+End With
+End If
+
+rs.MoveNext
+Loop
+
+rsupb.MoveNext
+Loop
+End If
+
+DoCmd.OpenForm ("Unpaid Bill Screen")
+
+End Function
+Public Function AddBillBKTbl()
+Dim varaddbill As String
+
+Dim strsql
+strsql = "select * from billing where filenum = " & Forms![foreclosure database screen]!filenum
+Dim rsChk
+Set rsChk = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rsChk.EOF Then
+MsgBox ("There was not an Invoice created for this file.  Creating now.")
+varaddbill = vbYes
+
+Else
+varaddbill = vbNo
+
+'varaddbill = MsgBox("Do you want to create a New Invoice.  Todays Date and an Invoice Number will be assigned.  The screen will refresh.  Please input information in box with date and assigned processor.  Do you Want to Continue?", vbYesNo)
+DoCmd.OpenForm "BillingMainEdit-BK-New"
+DoCmd.Maximize
+
+End If
+
+
+If varaddbill = vbYes Then
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("Billing", dbOpenDynaset, dbSeeChanges)
+     
+Dim VINv
+VINv = GetAutoNumber("NextBillNum")
+
+    With rs
+    .AddNew
+    !CustomerID = VINv
+    !filenum = Forms![foreclosure database screen]![filenum]
+    !billingdate = Date
+    !bkfileno = Forms!bankruptcymain!BankruptcySubForm.Form!counter
+    !Category = "Bankruptcy"
+     .Update
+     .Close
+      End With
+      
+    
+'DoCmd.Close acForm, "BillingMainEdit-BK-New"
+DoCmd.OpenForm "BillingMainEdit-BK-New"
+DoCmd.Maximize
+
+
+End If
+
+End Function
+Public Function AddBillBKScreen()
+Dim varaddbill As String
+
+varaddbill = MsgBox("Do you want to create a New Invoice.  Todays Date and an Invoice Number will be assigned.  The screen will refresh.  Please input information in box with date and assigned processor.  Do you Want to Continue?", vbYesNo)
+
+If varaddbill = vbYes Then
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("Billing", dbOpenDynaset, dbSeeChanges)
+     
+Dim VINv
+VINv = GetAutoNumber("NextBillNum")
+
+    With rs
+    .AddNew
+    !CustomerID = VINv
+    !filenum = Forms![foreclosure database screen]![filenum]
+    !billingdate = Date
+    !bkfileno = Forms!bankruptcymain!BankruptcySubForm.Form!counter
+    !Category = "Bankruptcy"
+     .Update
+     .Close
+      End With
+      
+    
+DoCmd.Close acForm, "BillingMainEdit-BK-New"
+DoCmd.OpenForm "BillingMainEdit-BK-New"
+DoCmd.Maximize
+
+
+End If
+
+End Function
+
+
+Public Function BKBillFees()
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "SELECT BillingBK.* from billingbk WHERE (BillingBK.Fee_Cost = " & """" & "Fee" & """" & " AND BillingBK.FileNum = " & [Forms]![foreclosure database screen]![filenum] & _
+" AND BillingBK.Inv_No = " & [Forms]![billingmainedit-bk-new]![CustomerID] & " AND BillingBK.bkfileno = " & [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![counter] & ");"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not rs.EOF Then
+
+rs.MoveFirst
+BKBillFees = 0
+
+Do While Not rs.EOF
+BKBillFees = BKBillFees + rs!Amount_Fee_Cost
+rs.MoveNext
+Loop
+
+End If
+
+
+
+End Function
+Public Function BKBillCosts()
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "SELECT BillingBK.* from billingbk WHERE (BillingBK.Fee_Cost = " & """" & "Cost" & """" & " AND BillingBK.FileNum = " & [Forms]![foreclosure database screen]![filenum] & _
+" AND BillingBK.Inv_No = " & [Forms]![billingmainedit-bk-new]![CustomerID] & " AND BillingBK.bkfileno = " & [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![counter] & ");"
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not rs.EOF Then
+
+rs.MoveFirst
+BKBillCosts = 0
+
+Do While Not rs.EOF
+BKBillCosts = BKBillCosts + rs!Amount_Fee_Cost
+rs.MoveNext
+Loop
+End If
+
+End Function
+
+Public Function AgedRec()
+Dim VOrder, VTbl As String
+
+ 
+
+VOrder = MsgBox("All Categories?", vbYesNo)
+
+If VOrder = vbYes Then
+'DoCmd.OpenQuery ("BillsDueCategoryArchivedwoClientInfoQry")
+VTbl = "Billing-Aged Receivables Report-Category"
+DoCmd.OpenReport ("Billing-Aged Receivables Report-category-Archived"), acViewPreview
+
+Else
+VTbl = "Billing-Aged Receivables Report-Client"
+DoCmd.OpenReport ("Billing-Aged Receivables Report-Client-Archived"), acViewPreview
+
+End If
+
+
+DoCmd.OpenReport (VTbl), acViewPreview
+End Function
+Public Function AddNewBill()
+Dim js As RecordSet
+Dim sqljd As String
+Dim VSaleD As Date
+Dim stateT  As String
+Dim countyT As String
+Dim strsqlClient As String
+Dim rsClient As RecordSet
+Dim rsbill As RecordSet
+
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges) '
+If IsNull(Forms![foreclosure database screen]!PropertyState) Then
+MsgBox ("NO State input for Property exiting....")
+Exit Function
+Else
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+BillSaleDateCalc = 0
+Else
+BillSaleDateCalc = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+End If
+
+
+stateT = Forms![foreclosure database screen]![PropertyState]
+    End If
+    
+    If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+    VSaleD = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+    End If
+    
+    
+    If Not IsNull(Forms![foreclosure database screen]![Propertycounty]) Then
+    countyT = Forms![foreclosure database screen]![Propertycounty]
+    sqljd = "Select * from jurisdiction where state = " & """" & stateT & """" & " and county = " & """" & countyT & """"
+    Set js = CurrentDb.OpenRecordset(sqljd, dbOpenSnapshot)
+    End If
+    
+    strsqlClient = "Select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+    Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+    
+    
+Dim dbclient, VNormalTaxes As String
+vcustomerid = GetAutoNumber("NextBillNum")
+
+VNormalTaxes = InputBox("1. Foreclosure Bill" & vbCr & "2. Taxes Bill" & vbCr & "3. Eviction Bill" & vbCr & "4. Senior Lien Monitoring Bill" & vbCr & "5. Estate Bill" & vbCr & "please select 1, 2, 3, 4 or 5")
+If VNormalTaxes = "" Then
+MsgBox ("Incorrect Input.  Click Add Bill Again")
+Exit Function
+End If
+
+If VNormalTaxes <> 2 Then
+
+With rsbill
+.AddNew
+!filenum = Forms![foreclosure database screen]![filenum]
+
+'Dates------------------
+Dim Part1
+Part1 = FDFiled()
+
+If Not IsNull(Forms![foreclosure database screen]!resume_recd) Then
+!bill_referraldate = Forms![foreclosure database screen]!resume_recd
+Else
+!bill_referraldate = Forms![foreclosure database screen]![Date Recieved]
+End If
+!bill_saledate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+!bill_1stad = Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad]
+!bill_titleclaimsent = [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![TitleClaimSent]
+
+If Not IsNull(Part1) And Part1 <> "" Then
+!bill_va_partonefiled = FDFiled()
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_recd) Then
+!bill_titlerecd = Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_recd
+ElseIf Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_ord) Then
+!bill_titlerecd = Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_ord
+ElseIf Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved]) Then
+!bill_titlerecd = Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved]
+Else
+!bill_titlerecd = Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportOrdered]
+End If
+
+!bill_fc_cooper = Forms![foreclosure database screen]!ForeclosureSubForm.Form!fc_cooper
+!bill_noticesent = Forms![foreclosure database screen]!ForeclosureSubForm.Form!noticesent
+If [Forms]![foreclosure database screen]![ForeclosureSubForm].Form!LNA = "Yes" Then
+End If
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!DODBilling.Form!DODBilling) Then
+!DODBilling = DODBillingCalc()
+End If
+'End Dates--------------
+
+!invmatch = VInvMatch
+If VInvMatch > 0 Then
+!Final = 1
+End If
+!Title_Co = BillTitleCo()
+!invmatch = VInvMatch
+If Not IsNull(VSaleD) Then
+!bill_saledate = VSaleD
+End If
+!Title_Co = BillTitleCo()
+!trio_filenum = TrioFilenumber()
+!billingdate = Date
+!CustomerID = vcustomerid
+
+If VNormalTaxes = 1 Or VNormalTaxes = 4 Or IsNull(VNormalTaxes) Then
+!Category = "Foreclosure"
+ElseIf VNormalTaxes = 5 Then
+!Category = "Estate"
+'Monies Zeroed Out/Zero Out Billing Monies
+!water = 0#
+!lien_citation_violation = 0#
+!process_service = 0#
+!post_mail_lma = 0#
+!prop_reg = 0#
+!estate_cost = 0#
+!estate_adm = 0#
+!dod_search = 0#
+!skip_trace = 0#
+!d_titlesearch = 0#
+![Attorney Fee] = 0#
+!fee_prepassignment = 0#
+![fee_recassignment] = 0#
+!d_recording = 0#
+!lien_citation_violation = 0#
+!cert_cpy_dot = 0#
+!lit_money1 = 0#
+!skip_trace = 0#
+!auct_NC = 0#
+!forbearance = 0#
+!motion_accept = 0#
+!l_att341 = 0#
+!d_process = 0#
+!re_recording = 0#
+!d_realestatetaxes = 0#
+!d_transfee = 0#
+!water = 0#
+!otherm1 = 0#
+!d_titleins = 0#
+!d_adv = 0#
+!d_auctfee = 0#
+!lit_money1 = 0#
+!d_bondprem = 0#
+!d_servbymail = 0#
+!d_liencert = 0#
+!d_filing = 0#
+!l_initial = 0#
+!l_preptitle = 0#
+!d_audfee = 0#
+!d_advnisi = 0#
+!add_court_costs = 0#
+!ps_liencert = 0#
+!l_prepabstract = 0#
+!otherm2 = 0#
+!otherm10 = 0#
+!fee_dismcase = 0#
+![fee_recpoweratt] = 0#
+!d_reqjud = 0#
+!l_dil = 0#
+!l_appearance = 0#
+!d_titlesearch = 0#
+!l_preppoc = 0#
+!add_court_costs = 0#
+!auct_NC = 0#
+![sheriff_fee] = 0#
+!writ_fee = 0#
+!evicdc_spnq = 0#
+!evicdc_comp = 0#
+!evicdc_usmf = 0#
+!evicmd_mjap = 0#
+!evicmd_pshco = 0#
+!evicdc_sps = 0#
+!evicva_UD = 0#
+!costs1 = 0#
+!costs2 = 0#
+!fees1 = 0#
+
+
+ElseIf VNormalTaxes = 3 Then
+!Category = "Eviction"
+
+'Monies Zeroed Out/Zero Out Billing Monies
+!water = 0#
+!lien_citation_violation = 0#
+!process_service = 0#
+!post_mail_lma = 0#
+!prop_reg = 0#
+!estate_cost = 0#
+!estate_adm = 0#
+!dod_search = 0#
+!skip_trace = 0#
+!d_titlesearch = 0#
+![Attorney Fee] = 0#
+!fee_prepassignment = 0#
+![fee_recassignment] = 0#
+!d_recording = 0#
+!lien_citation_violation = 0#
+!cert_cpy_dot = 0#
+!lit_money1 = 0#
+!skip_trace = 0#
+!auct_NC = 0#
+!forbearance = 0#
+!motion_accept = 0#
+!l_att341 = 0#
+!d_process = 0#
+!re_recording = 0#
+!d_realestatetaxes = 0#
+!d_transfee = 0#
+!water = 0#
+!otherm1 = 0#
+!d_titleins = 0#
+!d_adv = 0#
+!d_auctfee = 0#
+!lit_money1 = 0#
+!d_bondprem = 0#
+!d_servbymail = 0#
+!d_liencert = 0#
+!d_filing = 0#
+!l_initial = 0#
+!l_preptitle = 0#
+!d_audfee = 0#
+!d_advnisi = 0#
+!add_court_costs = 0#
+!ps_liencert = 0#
+!l_prepabstract = 0#
+!otherm2 = 0#
+!otherm10 = 0#
+!fee_dismcase = 0#
+![fee_recpoweratt] = 0#
+!d_reqjud = 0#
+!l_dil = 0#
+!l_appearance = 0#
+!d_titlesearch = 0#
+!l_preppoc = 0#
+!add_court_costs = 0#
+!auct_NC = 0#
+![sheriff_fee] = 0#
+!writ_fee = 0#
+!evicdc_spnq = 0#
+!evicdc_comp = 0#
+!evicdc_usmf = 0#
+!evicmd_mjap = 0#
+!evicmd_pshco = 0#
+!evicdc_sps = 0#
+!evicva_UD = 0#
+!costs1 = 0#
+!costs2 = 0#
+!fees1 = 0#
+
+
+End If
+
+
+
+If VNormalTaxes = 3 Then
+!Category = "Eviction"
+!invoice_type_id = "808"
+End If
+
+If VNormalTaxes = 4 Then
+!invoice_type_id = "101"
+End If
+'If VNormalTaxes = 1 And (IsNull(VInvMatch) Or VInvMatch = 0) Then
+'!d_recording = RecordingFee()
+'Else
+d_recording = 0#
+'End If
+.Update
+.Close
+End With
+
+
+Else
+
+With rsbill
+.AddNew
+
+If VNormalTaxes = 2 Then
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+!advanced_ret = -1
+!advanced_transfee = -1
+End If
+!invoice_type_id = "808"
+End If
+
+!d_realestatetaxes = MD_RealEstateTaxes()
+!d_transfee = transfertax()
+
+!Category = "Foreclosure"
+!invmatch = VInvMatch
+If VInvMatch > 0 Then
+!Final = 1
+End If
+!filenum = Forms![foreclosure database screen]![filenum]
+!Title_Co = BillTitleCo()
+
+If Not IsNull(VSaleD) Then
+!bill_saledate = VSaleD
+End If
+!billingdate = Date
+!CustomerID = vcustomerid
+!invoice_type_id = "808"
+
+!re_recording = RealEstateRec()
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form!intakeOther2 > 0 Then
+!water = Forms![foreclosure database screen]!PostsaleSubForm.Form!intakeOther2
+Else
+!water = 0#
+End If
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Or _
+ Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Then
+!d_titleins = TitleIns()
+End If
+!d_liencert = LienCert()
+
+'Monies Zeroed Out
+!lien_citation_violation = 0#
+!cert_cpy_dot = 0#
+!process_service = 0#
+!skip_trace = 0#
+!lit_money1 = 0#
+!auct_NC = 0#
+!forbearance = 0#
+!motion_accept = 0#
+!l_att341 = 0#
+!d_process = 0#
+!d_adv = 0#
+!post_mail_lma = 0#
+!prop_reg = 0#
+!estate_cost = 0#
+!estate_adm = 0#
+!dod_search = 0#
+!d_auctfee = 0#
+!d_bondprem = 0#
+!d_recording = 0#
+!d_servbymail = 0#
+![Attorney Fee] = 0#
+!d_filing = 0#
+!l_initial = 0#
+!l_preptitle = 0#
+![d_titlesearch] = 0#
+!d_audfee = 0#
+!d_advnisi = 0#
+!add_court_costs = 0#
+!ps_liencert = 0#
+!l_prepabstract = 0#
+!otherm2 = 0#
+!feeothermoney = 0#
+!otherm10 = 0#
+!fee_dismcase = 0#
+!fee_prepassignment = 0#
+![fee_recassignment] = 0#
+![fee_recpoweratt] = 0#
+!d_reqjud = 0#
+!l_dil = 0#
+!l_appearance = 0#
+!d_titlesearch = 0#
+!l_preppoc = 0#
+!add_court_costs = 0#
+!auct_NC = 0#
+![sheriff_fee] = 0#
+!writ_fee = 0#
+!evicdc_spnq = 0#
+!evicdc_comp = 0#
+!evicdc_usmf = 0#
+!evicmd_mjap = 0#
+!evicmd_pshco = 0#
+!evicdc_sps = 0#
+!evicva_UD = 0#
+!costs1 = 0#
+!costs2 = 0#
+!fees1 = 0#
+
+.Update
+.Close
+End With
+
+End If
+
+js.Close
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+If VNormalTaxes = "3" Then
+DocName = "billingmainediteviction"
+ElseIf VNormalTaxes = "4" Then
+DocName = "billingmaineditSLM"
+Else
+DocName = "BillingMainEdit"
+End If
+
+If VInvMatch > 0 Then
+Dim strsqlInt
+Dim rsInt
+strsqlInt = "select * from billing where customerid = " & VInvMatch & ";"
+Set rsInt = CurrentDb.OpenRecordset(strsqlInt, dbOpenDynaset, dbSeeChanges)
+With rsInt
+.Edit
+!invmatch = vcustomerid
+.Update
+.Close
+End With
+VInvMatch = 0
+
+End If
+
+
+linkcriteria = "[CustomerID] =  " & vcustomerid & " And FIleNum = " & GblFilenum
+DoCmd.OpenForm DocName, , , linkcriteria
+If CurrentProject.AllForms("TrioEditsNOIInvoice").IsLoaded Then Forms!BillingMainEdit!Source = "NOI"
+DoCmd.Close acForm, "BillingMain"
+
+
+End Function
+
+Public Function BKBillingQRY()
+ExcelSaveAsQRY ("BKBillingQry")
+End Function
+Public Function DODBillingCalc()
+Dim VDodBill As String
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!DODBilling.Form!DODBilling) Then
+
+VDodBill = Forms![foreclosure database screen]!ForeclosureSubForm.Form!DODBilling.Form!DODBilling
+
+Dim VCalc As Integer
+If VDodBill Like "*10*" Then
+VCalc = 10
+ElseIf VDodBill Like "*20*" Then
+VCalc = 20
+ElseIf VDodBill Like "*30*" Then
+VCalc = 30
+ElseIf VDodBill Like "*40*" Then
+VCalc = 40
+ElseIf VDodBill Like "*50*" Then
+VCalc = 50
+End If
+
+Dim CntSS As Integer
+CntSS = 0
+
+If Not IsNull(Forms![foreclosure database screen]!Ssno_1) Then
+CntSS = CntSS + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!Ssno_2) Then
+CntSS = CntSS + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!Ssno_3) Then
+CntSS = CntSS + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!Ssno_4) Then
+CntSS = CntSS + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!ssno_5) Then
+CntSS = CntSS + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!SSno_01) Then
+CntSS = CntSS + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!SSno_02) Then
+CntSS = CntSS + 1
+End If
+If Not IsNull(Forms![foreclosure database screen]!SSno_03) Then
+CntSS = CntSS + 1
+End If
+
+If CntSS > 0 Then
+vdodbilling = CntSS * VCalc
+
+DODBillingCalc = "DOD Billing: $" & vdodbilling
+
+End If
+
+End If
+
+'MsgBox (DODBillingCalc)
+
+End Function
+Public Function TaxesBillingQRY()
+Vname = (Format$(Now(), "mmddyyyyhhnnss"))
+
+DoCmd.OpenQuery "TaxesBillingCreate"
+Call RegisterMoneyCheck
+DoCmd.OpenQuery "TaxesBillingUpdate"
+
+ExcelSaveAsQRY ("TaxesBillingQry")
+
+End Function
+
+Public Function ASSBill()
+
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmpID As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VType
+
+VEmpID = ""
+VMailNotes = ""
+
+If (Forms![foreclosure database screen]!Client Like "OneW*" And _
+(Forms![foreclosure database screen]!FF = 1 Or Forms![foreclosure database screen]!FF = -1)) Then
+
+strsqlCheck = "select * from billing where filenum = " & _
+Forms![foreclosure database screen]!filenum & " and fee_prepassignment > " & 0 & ";"
+Set rsBillCheck = CurrentDb.OpenRecordset(strsqlCheck, dbOpenSnapshot)
+
+VSel = MsgBox("Create new Assignment Bill?", vbYesNo)
+If VSel = vbYes Then
+
+VINv = GetAutoNumber("NextBillNum")
+
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+With rsbill
+.AddNew
+
+'Bill Data
+!CustomerID = VINv
+
+'Interim
+!Interim = 0
+
+!filenum = Forms![foreclosure database screen]![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+'!bill_uploaded = Date
+!initials = VEmp
+![printed and sent] = Date
+!bill_processor = "autoAssignment"
+
+'Fee
+!fee_prepassignment = 35#
+
+'Costs
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!fee_recassignment = 60#
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+!fee_recassignment = 33.5
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+!fee_recassignment = 21#
+End If
+
+'Zero Out other money fields
+    !Title_Co = ""
+    !d_titlesearch = 0#
+    ![Attorney Fee] = 0#
+    !d_recording = 0#
+    !post_mail_lma = 0#
+    !prop_reg = 0#
+    !estate_cost = 0#
+    !estate_adm = 0#
+    !dod_search = 0#
+    !lien_citation_violation = 0#
+    !cert_cpy_dot = 0#
+    !lit_money1 = 0#
+    !process_service = 0#
+    !skip_trace = 0#
+    !auct_NC = 0#
+    !forbearance = 0#
+    !motion_accept = 0#
+    !l_att341 = 0#
+    !d_process = 0#
+    !re_recording = 0#
+    !d_realestatetaxes = 0#
+    !d_transfee = 0#
+    !water = 0#
+    !otherm1 = 0#
+    !d_titleins = 0#
+    !d_adv = 0#
+    !d_auctfee = 0#
+    !lit_money1 = 0#
+    !d_bondprem = 0#
+    !d_servbymail = 0#
+    !d_liencert = 0#
+    !d_filing = 0#
+    !l_initial = 0#
+    !l_preptitle = 0#
+    !d_audfee = 0#
+    !d_advnisi = 0#
+    !add_court_costs = 0#
+    !ps_liencert = 0#
+    !l_prepabstract = 0#
+    !otherm2 = 0#
+    !feeothermoney = 0#
+    !otherm10 = 0#
+    !fee_dismcase = 0#
+    ![fee_recpoweratt] = 0#
+    !d_reqjud = 0#
+    !l_dil = 0#
+    !l_appearance = 0#
+    !l_preppoc = 0#
+    !add_court_costs = 0#
+    !auct_NC = 0#
+    ![sheriff_fee] = 0#
+    !writ_fee = 0#
+    !evicdc_spnq = 0#
+    !evicdc_comp = 0#
+    !evicdc_usmf = 0#
+    !evicmd_mjap = 0#
+    !evicmd_pshco = 0#
+    !evicdc_sps = 0#
+    !evicva_UD = 0#
+.Update
+.Close
+End With
+
+
+DocName = "bill-email-Assignment"
+DoCmd.OpenReport DocName, acViewPreview
+
+VConvRpt = "bill-email-Assignment"
+Call ConvertPDFALL
+
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+emailsubject = "MERS ASSIGNMENT INVOICE: " & Forms![foreclosure database screen]!Client & "/" & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / Inv#: " & VINv
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\bill-email-Assignment.PDF"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+End If
+
+
+End Function
+
+
+Public Function CreateInterim()
+
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmpID As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VType
+
+VEmpID = ""
+VMailNotes = ""
+
+strsqlCheck = "select * from billing where filenum = " & _
+Forms![foreclosure database screen]!filenum & " and interim = " & 1 & " or interim = " & -1 & ";"
+
+Set rsBillCheck = CurrentDb.OpenRecordset(strsqlCheck, dbOpenSnapshot)
+
+If Not rsBillCheck.EOF Then
+
+MsgBox ("There is an Interim Bill for this BWW#!  Exiting...")
+
+Else
+
+VSel = MsgBox("Create new Interim Bill?", vbYesNo)
+
+If VSel = vbYes Then
+
+VINv = GetAutoNumber("NextBillNum")
+
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+With rsbill
+.AddNew
+
+'Bill Data
+!CustomerID = VINv
+
+'Interim
+!Interim = 1
+
+!filenum = Forms![foreclosure database screen]![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+'!bill_uploaded = Date
+!initials = VEmp
+![printed and sent] = Date
+!bill_processor = "autoInterim"
+
+'Fee
+   
+![Attorney Fee] = 390#
+
+
+'Costs
+!d_titlesearch = 225#
+
+
+'Zero Out other money fields
+    !Title_Co = ""
+    !d_recording = 0#
+    !post_mail_lma = 0#
+    !prop_reg = 0#
+    !estate_cost = 0#
+    !estate_adm = 0#
+    !dod_search = 0#
+    !lien_citation_violation = 0#
+    !cert_cpy_dot = 0#
+    !lit_money1 = 0#
+    !process_service = 0#
+    !skip_trace = 0#
+    !auct_NC = 0#
+    !forbearance = 0#
+    !motion_accept = 0#
+    !l_att341 = 0#
+    !d_process = 0#
+    !re_recording = 0#
+    !d_realestatetaxes = 0#
+    !d_transfee = 0#
+    !water = 0#
+    !otherm1 = 0#
+    !d_titleins = 0#
+    !d_adv = 0#
+    !d_auctfee = 0#
+    !lit_money1 = 0#
+    !d_bondprem = 0#
+    !d_servbymail = 0#
+    !d_liencert = 0#
+    !d_filing = 0#
+    !l_initial = 0#
+    !l_preptitle = 0#
+    !d_audfee = 0#
+    !d_advnisi = 0#
+    !add_court_costs = 0#
+    !ps_liencert = 0#
+    !l_prepabstract = 0#
+    !otherm2 = 0#
+    !feeothermoney = 0#
+    !otherm10 = 0#
+    !fee_dismcase = 0#
+    ![fee_recpoweratt] = 0#
+    !d_reqjud = 0#
+    !l_dil = 0#
+    !l_appearance = 0#
+    !l_preppoc = 0#
+    !add_court_costs = 0#
+    !auct_NC = 0#
+    ![sheriff_fee] = 0#
+    !writ_fee = 0#
+    !evicdc_spnq = 0#
+    !evicdc_comp = 0#
+    !evicdc_usmf = 0#
+    !evicmd_mjap = 0#
+    !evicmd_pshco = 0#
+    !evicdc_sps = 0#
+    !evicva_UD = 0#
+.Update
+.Close
+End With
+
+
+DocName = "bill-email-Interim"
+DoCmd.OpenReport DocName, acViewPreview
+
+VConvRpt = "bill-email-Interim"
+Call ConvertPDFALL
+
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+emailsubject = "Chase Interim INVOICE: " & Forms![foreclosure database screen]!Client & "/" & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / Inv#: " & VINv
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\bill-email-Interim.PDF"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+End If
+
+
+
+End Function
+
+Public Function BillTransferFile()
+
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmpID As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VType
+
+VEmpID = ""
+VMailNotes = ""
+
+strsqlCheck = "select * from billing where filenum = " & _
+Forms![foreclosure database screen]!filenum & " and feeothertext = " & """" & "Transfer Fee" & """" & ";"
+Set rsBillCheck = CurrentDb.OpenRecordset(strsqlCheck, dbOpenSnapshot)
+
+If Not rsBillCheck.EOF Then
+
+MsgBox ("There is a bill already in our system for a Transfer Fee.  Will exit.")
+
+Else
+
+VSel = MsgBox("Create new Transfer Fee Bill?", vbYesNo)
+If VSel = vbYes Then
+
+VINv = GetAutoNumber("NextBillNum")
+
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+With rsbill
+.AddNew
+
+'Bill Data
+!CustomerID = VINv
+
+'Interim
+!Interim = 0
+
+!filenum = Forms![foreclosure database screen]![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+'!bill_uploaded = Date
+!initials = VEmp
+![printed and sent] = Date
+!bill_processor = "autoTransfer"
+
+'Fee
+!feeothertext = "Transfer Fee"
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!feeothermoney = 250#
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+!feeothermoney = 0#
+
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+!feeothermoney = 150#
+
+
+End If
+
+'Zero Out other money fields
+    !fee_recassignment = 0#
+    !Title_Co = ""
+    !d_titlesearch = 0#
+    ![Attorney Fee] = 0#
+    !d_recording = 0#
+    !post_mail_lma = 0#
+    !prop_reg = 0#
+    !estate_cost = 0#
+    !estate_adm = 0#
+    !dod_search = 0#
+    !lien_citation_violation = 0#
+    !cert_cpy_dot = 0#
+    !lit_money1 = 0#
+    !process_service = 0#
+    !skip_trace = 0#
+    !auct_NC = 0#
+    !forbearance = 0#
+    !motion_accept = 0#
+    !l_att341 = 0#
+    !d_process = 0#
+    !re_recording = 0#
+    !d_realestatetaxes = 0#
+    !d_transfee = 0#
+    !water = 0#
+    !otherm1 = 0#
+    !d_titleins = 0#
+    !d_adv = 0#
+    !d_auctfee = 0#
+    !lit_money1 = 0#
+    !d_bondprem = 0#
+    !d_servbymail = 0#
+    !d_liencert = 0#
+    !d_filing = 0#
+    !l_initial = 0#
+    !l_preptitle = 0#
+    !d_audfee = 0#
+    !d_advnisi = 0#
+    !add_court_costs = 0#
+    !ps_liencert = 0#
+    !l_prepabstract = 0#
+    !otherm2 = 0#
+    !otherm10 = 0#
+    !fee_dismcase = 0#
+    ![fee_recpoweratt] = 0#
+    !d_reqjud = 0#
+    !l_dil = 0#
+    !l_appearance = 0#
+    !l_preppoc = 0#
+    !add_court_costs = 0#
+    !auct_NC = 0#
+    ![sheriff_fee] = 0#
+    !writ_fee = 0#
+    !evicdc_spnq = 0#
+    !evicdc_comp = 0#
+    !evicdc_usmf = 0#
+    !evicmd_mjap = 0#
+    !evicmd_pshco = 0#
+    !evicdc_sps = 0#
+    !evicva_UD = 0#
+.Update
+.Close
+End With
+
+
+DocName = "bill-email-transfer"
+DoCmd.OpenReport DocName, acViewPreview
+
+VConvRpt = "bill-email-transfer"
+Call ConvertPDFALL
+
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+
+emailsubject = "Bill (Transfer Fee: ( " & Forms![foreclosure database screen]!Transferred & "): " & Forms![foreclosure database screen]!Client & "/" & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / Inv#: " & VINv
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\bill-email-transfer.PDF"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+
+
+End If
+
+End Function
+
+Public Function ClearBillingComments()
+
+Dim VClear
+
+VClear = InputBox("Do you want to Clear the Additional Billing Comments?  (This will copy to the Memo Section then delete from the screen.) TYPE in password.")
+
+If VClear = "clear" Then
+
+Dim rstjournal As RecordSet
+
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!EntryBy = "Auto"
+!EntryDate = Now()
+!Entry = "Additional Billing Comments " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!FC_Comments.Form!bill_comments
+
+.Update
+End With
+
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!FC_Comments.Form!bill_comments = Null
+
+Forms![foreclosure database screen].Refresh
+
+End If
+
+
+End Function
+Public Function BillingPrepared()
+
+
+
+End Function
+Public Function ImageBKBillNEW()
+
+Dim VSend
+VSend = InputBox("Send BK Bill to Imaged Docs? type YES to send")
+If VSend = "YES" Then
+docsfldr = AutoIndexPath & "BGWInvoice" & "\"
+
+
+sourcefile = pathuser() & "\bk-bill-NEW.PDF"
+destinationfile = docsfldr & Forms![foreclosure database screen]!filenum & "_BGWInvoice.PDF"
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+End If
+
+End Function
+
+Public Function ImageBKBill()
+
+Dim VSend
+VSend = InputBox("Send BK Bill to Imaged Docs? type YES to send")
+If VSend = "YES" Then
+docsfldr = AutoIndexPath & "BGWInvoice" & "\"
+
+
+sourcefile = pathuser() & "\bk-bill.PDF"
+destinationfile = docsfldr & Forms![foreclosure database screen]!filenum & "_BGWInvoice.PDF"
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+End If
+
+End Function
+Public Function billingSaleHELD()
+    
+     
+    
+    CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+    Dim rs, rsTemp As RecordSet
+    Dim VState
+    Dim vClient
+    Dim VDate
+    VDate = Date - 5
+    
+    'VState = InputBox("Enter State or Return for ALL")
+    'VClient = InputBox("Enter Client or Return for ALL")
+    
+    strsql = "SELECT foreclosure.sale_cancelled, foreclosure.SubFileNum, CASES.LastNameDebtor1, " _
+    & " CASES.PropAddress, CASES.PropertyCity, cases.status, foreclosure.saledate, CASES.PropertyCounty, CASES.PropertyState, CASES.PropZip, " _
+    & " CASES.Client, CASES.ClientRefNumber, CASES.[Date Recieved], CASES.propaddress2, CASES.Unit_no " _
+    & " FROM CASES INNER JOIN foreclosure ON CASES.FileNum = foreclosure.SubFileNum " _
+    & " WHERE foreclosure.saledate < #" & VDate & "# and foreclosure.sale_cancelled is null;"
+    
+    Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+    
+    Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+    
+    If Not rs.EOF Then
+    rs.MoveFirst
+    End If
+    
+    Do While Not rs.EOF
+    'If rs!Status = "closed" Or rs!Status = "archived" Then
+    With rsTemp
+    .AddNew
+    !filenum = rs!SubFileNum
+    !LastNameDebtor1 = rs!LastNameDebtor1
+    !PropAddress = rs!PropAddress
+    !ClientRefNumber = rs!ClientRefNumber
+    !Client = rs!Client
+    !PropertyState = rs!PropertyState
+    !Propertycounty = rs!Propertycounty
+    !propzip = rs!propzip
+    !propaddress2 = rs!propaddress2
+    !unit_no = rs!unit_no
+    !Status = rs!Status
+    !SaleDate = rs!SaleDate
+    If Not IsNull(rs![Date Recieved]) Then
+    ![Date Recieved] = rs![Date Recieved]
+    End If
+    .Update
+    End With
+    
+    rs.MoveNext
+    Loop
+    rsTemp.Close
+    rs.Close
+    
+    'Call RegisterMonies
+    'DoCmd.OpenQuery ("VaAcctUpdate3")
+    DoCmd.OpenQuery ("VaAcctUpdate3aBill")
+    
+End Function
+
+Public Function billingSaleCan()
+    
+     
+    
+    CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+    Dim rs, rsTemp As RecordSet
+    Dim VState
+    Dim vClient
+    Dim VDate
+    VDate = Date - 30
+    
+    'VState = InputBox("Enter State or Return for ALL")
+    'VClient = InputBox("Enter Client or Return for ALL")
+    
+    strsql = "SELECT foreclosure.sale_cancelled, foreclosure.SubFileNum, CASES.LastNameDebtor1, " _
+    & " CASES.PropAddress, CASES.PropertyCity, cases.status, CASES.PropertyCounty, CASES.PropertyState, CASES.PropZip, " _
+    & " CASES.Client, CASES.ClientRefNumber, CASES.[Date Recieved], CASES.propaddress2, CASES.Unit_no " _
+    & " FROM CASES INNER JOIN foreclosure ON CASES.FileNum = foreclosure.SubFileNum " _
+    & " WHERE foreclosure.sale_cancelled is not null;"
+    
+    Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+    
+    Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+    
+    If Not rs.EOF Then
+    rs.MoveFirst
+    End If
+    
+    Do While Not rs.EOF
+    'If rs!Status = "closed" Or rs!Status = "archived" Then
+    With rsTemp
+    .AddNew
+    !filenum = rs!SubFileNum
+    !LastNameDebtor1 = rs!LastNameDebtor1
+    !PropAddress = rs!PropAddress
+    !ClientRefNumber = rs!ClientRefNumber
+    !Client = rs!Client
+    !PropertyState = rs!PropertyState
+    !Propertycounty = rs!Propertycounty
+    !propzip = rs!propzip
+    !propaddress2 = rs!propaddress2
+    !unit_no = rs!unit_no
+    !Status = rs!Status
+    !SaleDate = rs!sale_cancelled
+    If Not IsNull(rs![Date Recieved]) Then
+    ![Date Recieved] = rs![Date Recieved]
+    End If
+    .Update
+    End With
+    
+    rs.MoveNext
+    Loop
+    rsTemp.Close
+    rs.Close
+    
+    'Call RegisterMonies
+    'DoCmd.OpenQuery ("VaAcctUpdate3")
+    DoCmd.OpenQuery ("VaAcctUpdate3aBill")
+    
+End Function
+
+    Public Function BillingSaleCancelled()
+    
+     
+    
+    CurrentDb.Execute "DELETE * FROM tempvasales;", dbFailOnError
+    Dim rs, rsTemp As RecordSet
+    Dim VState
+    Dim vClient
+    Dim VDate
+    VDate = Date - 30
+    
+    'VState = InputBox("Enter State or Return for ALL")
+    'VClient = InputBox("Enter Client or Return for ALL")
+    
+    strsql = "SELECT foreclosure.sale_cancelled, foreclosure.SubFileNum, CASES.LastNameDebtor1, " _
+    & " CASES.PropAddress, CASES.PropertyCity, cases.status, CASES.PropertyCounty, CASES.PropertyState, CASES.PropZip, " _
+    & " CASES.Client, CASES.ClientRefNumber, CASES.[Date Recieved], CASES.propaddress2, CASES.Unit_no " _
+    & " FROM CASES INNER JOIN foreclosure ON CASES.FileNum = foreclosure.SubFileNum " _
+    & " WHERE foreclosure.sale_cancelled is not null;"
+    
+    Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+    
+    Set rsTemp = CurrentDb.OpenRecordset("tempVASales", dbOpenDynaset, dbSeeChanges)
+    
+    If Not rs.EOF Then
+    rs.MoveFirst
+    End If
+    
+    Do While Not rs.EOF
+    'If rs!Status = "closed" Or rs!Status = "archived" Then
+    With rsTemp
+    .AddNew
+    !filenum = rs!SubFileNum
+    !LastNameDebtor1 = rs!LastNameDebtor1
+    !PropAddress = rs!PropAddress
+    !ClientRefNumber = rs!ClientRefNumber
+    !Client = rs!Client
+    !PropertyState = rs!PropertyState
+    !Propertycounty = rs!Propertycounty
+    !propzip = rs!propzip
+    !propaddress2 = rs!propaddress2
+    !unit_no = rs!unit_no
+    !Status = rs!Status
+    !SaleDate = rs!sale_cancelled
+    If Not IsNull(rs![Date Recieved]) Then
+    ![Date Recieved] = rs![Date Recieved]
+    End If
+    .Update
+    End With
+    
+    rs.MoveNext
+    Loop
+    rsTemp.Close
+    rs.Close
+    
+    'Call RegisterMonies
+    'DoCmd.OpenQuery ("VaAcctUpdate3")
+    DoCmd.OpenQuery ("VaAcctUpdate3aBill")
+    DoCmd.OpenReport "Billing Sale Cancelled", acViewPreview
+    End Function
+
+Public Function InterimBill()
+If IsNull(Forms!BillingMainEdit!Interim) Or _
+Forms!BillingMainEdit!Interim = 0 Then
+Dim VIntTotal
+Dim Vtotal
+
+VIntTotal = Forms![BillingMainEdit]!d_titlesearch + Forms!BillingMainEdit!process_service + Forms![BillingMainEdit]!d_process + Forms![BillingMainEdit]!d_filing + Forms![BillingMainEdit]!d_recording
+Vtotal = Forms![BillingMainEdit]![balance due]
+
+If Vtotal = VIntTotal Then
+Dim VInt
+VInt = MsgBox("The Title/Process/Filing and Recording fees are the only figures that are input.  Is this an Interim Bill?", vbYesNo)
+If VInt = vbYes Then
+Forms!BillingMainEdit!Interim = 1
+End If
+
+End If
+
+End If
+
+End Function
+Public Function InterimBillCheck()
+Dim strsql
+Dim rsBills As RecordSet
+Dim rs As RecordSet
+
+CurrentDb.Execute "DELETE * FROM interimbilling;", dbFailOnError
+
+Set rsBills = CurrentDb.OpenRecordset("interimbilling", dbOpenDynaset, dbSeeChanges)
+
+strsql = "select * from billing where filenum = " & Forms!billingmain!filenum & " and (invmatch is null or invmatch = " & 0 & ") and (interim = " & 1 & " or interim = " & -1 & " or final = " & 1 & " or final = " & -1 & ") order by customerid DESC;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+Dim VID
+VID = 0
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+
+If rs!nofinalneeded = 0 Or IsNull(rs!nofinalneeded) Then
+
+VID = VID + 1
+With rsBills
+.AddNew
+!ID = VID + 1
+!Invoice_No = rs!CustomerID
+!billingdate = rs!billingdate
+!invmatch = rs!invmatch
+!Final = rs!Final
+!Interim = rs!Interim
+'Monies Zeroed Out/Zero Out Billing Monies
+
+
+.Update
+End With
+End If
+
+rs.MoveNext
+Loop
+
+End If
+
+If VID > 1 Then
+rs.Close
+DoCmd.OpenForm ("InterimBilling")
+
+
+ElseIf VID = 1 Then
+rsBills.MoveFirst
+
+Dim VInvNo
+VInvNo = rsBills!Invoice_No
+rs.Close
+Dim VCon
+
+VCon = MsgBox("There is an Interim Bill for " & Forms!billingmain!filenum & ", Inv#: " & VInvNo & vbCr & "Is this the final bill for this Invoice?", vbYesNo)
+
+If VCon = vbYes Then
+VInvMatch = VInvNo
+
+'Call AddNewBill
+
+End If
+
+End If
+
+
+End Function
+Public Function InterimTitle()
+If Not IsNull(Forms!BillingMainEdit!invmatch) Then
+
+strsql = "select * from billing where customerid = " & Forms!BillingMainEdit!invmatch & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not IsNull(rs!d_titlesearch) Then
+InterimTitle = rs!d_titlesearch
+End If
+
+rs.Close
+End If
+
+
+End Function
+Public Function InterimPS()
+If Not IsNull(Forms!BillingMainEdit!invmatch) Then
+
+strsql = "select * from billing where customerid = " & Forms!BillingMainEdit!invmatch & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not IsNull(rs!d_process) Then
+InterimPS = rs!d_process
+End If
+
+rs.Close
+End If
+End Function
+Public Function InterimRec()
+
+If Not IsNull(Forms!BillingMainEdit!invmatch) Then
+
+strsql = "select * from billing where customerid = " & Forms!BillingMainEdit!invmatch & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not IsNull(rs!d_recording) Then
+InterimRec = rs!d_recording
+End If
+
+rs.Close
+End If
+End Function
+
+Public Function InterimFiling()
+If Not IsNull(Forms!BillingMainEdit!invmatch) Then
+
+strsql = "select * from billing where customerid = " & Forms!BillingMainEdit!invmatch & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not IsNull(rs!d_process) Then
+InterimFiling = rs!d_filing
+End If
+
+rs.Close
+End If
+End Function
+Public Function BillPaymentScreen()
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "Select subfilenum from Bankruptcy where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+If rs.EOF Then
+DoCmd.OpenForm ("BillingPaymentsMain")
+
+Else
+Dim VarSelectBill As String
+VarSelectBill = InputBox("Go to: " & vbCr & "1. Bankruptcy Payment Screen" & vbCr & "2. Foreclosure Payment Screen")
+
+If VarSelectBill = "1" Then
+DoCmd.OpenForm ("BillingPaymentsMainbk")
+Else
+DoCmd.OpenForm ("BillingPaymentsMain")
+End If
+
+End If
+rs.Close
+
+End Function
+
+Public Function BillingScreen()
+
+ 
+
+DoCmd.OpenQuery ("UpdateCertCPTDot")
+Dim strsql, HM As String
+Dim rs As RecordSet
+
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+((Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "VA*" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FHL*" Then
+If Forms![foreclosure database screen]!PropertyState = "MD" And Forms![foreclosure database screen]!TypeOfLoan <> "FHA" Then
+MsgBox ("IMPORTANT!  This is a " & Forms![foreclosure database screen]!TypeOfLoan & " Loan. " & Forms![foreclosure database screen]!TypeOfLoan & " is EXEMPT from TRANSFER TAXES.  PLEASE BILL ACCORDINGLY.")
+Else
+MsgBox ("IMPORTANT!  This is a " & Forms![foreclosure database screen]!TypeOfLoan & " Loan. " & Forms![foreclosure database screen]!TypeOfLoan & " is EXEMPT from GRANTEE TAXES.  THE BILL FOR TAXES THEREFORE, SHOULD BE APPROX 1/2.  PLEASE CALCULATE AND BILL ACCORDINGLY.")
+End If
+
+End If
+
+strsql = "Select subfilenum from Bankruptcy where subfilenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+HM = "NO"
+rs.Close
+End If
+If HM = "NO" Then
+DoCmd.OpenForm ("BillingMain")
+Else
+rs.Close
+Dim VarSelectBill As String
+VarSelectBill = InputBox("Go to: " & vbCr & "1. Bankruptcy Billing Screen" & vbCr & "2. Foreclosure Billing Screen" & vbCr)
+If VarSelectBill = "1" Then
+DoCmd.OpenForm ("BillingMainEdit-bk")
+'NEW BK Bill
+'DoCmd.OpenForm ("BillingMainEdit-bk-new")
+
+Else
+DoCmd.OpenForm ("BillingMain")
+End If
+End If
+
+
+End Function
+
+Public Function BillingScreenFC()
+
+ 
+
+
+strsql = "Select subfilenum from Bankruptcy where subfilenum = " & Forms![FeesCosts]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+HM = "NO"
+rs.Close
+End If
+If HM = "NO" Then
+DoCmd.OpenForm ("BillingMainFC")
+Else
+rs.Close
+Dim VarSelectBill As String
+VarSelectBill = InputBox("Go to: " & vbCr & "1. Bankruptcy Billing Screen" & vbCr & "2. Foreclosure Billing Screen" & vbCr)
+If VarSelectBill = "1" Then
+DoCmd.OpenForm ("BillingMainEdit-bk")
+Else
+DoCmd.OpenForm ("BillingMainFC")
+End If
+End If
+
+
+End Function
+
+Public Function billattn() As String
+
+Dim cl As String
+Dim A As String
+Dim rs As RecordSet
+Dim strsql As String
+Dim attnF As String
+
+attnF = Forms![foreclosure database screen]![ClContactFirstF] & " " & Forms![foreclosure database screen]![ClContactLastF]
+cl = Forms![foreclosure database screen]![Client]
+strsql = "Select * from Clients where [OrganizationName] = " & """" & cl & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Not IsNull(rs!claddress2) Or rs!claddress2 <> "" Then
+
+If cl = "Wendover Financial Services" Then
+billattn = "Attn: Chris Pitts"
+ElseIf cl = "Household Finance Corporation, III" Then
+billattn = "Attn: Collections Invoice Processing"
+ElseIf cl Like "GRP*" Then
+billattn = "Attn: Linda Henderson, Paralegal"
+ElseIf cl = "Champion Mortgage Co., Inc." Then
+billattn = "Attn: Maggie Muresan"
+ElseIf cl <> "Household Finance Corporation, III" And cl <> "Wendover Financial Services" _
+And cl <> "Ocwen Loan Servicing, LLC" And cl <> "Champion Mortgage Co., Inc." _
+And cl <> "GRP Financial Services Corp." Then
+If Not IsNull(rs!bill_attn) Then
+billattn = rs!bill_attn
+ElseIf Not IsNull(Forms![foreclosure database screen]![billattn]) Then
+billattn = Forms![foreclosure database screen]![billattn]
+Else
+billattn = ""
+End If
+
+End If
+
+End If
+
+
+rs.Close
+
+
+End Function
+
+Public Function billadd3LBP() As String
+Dim cl As String
+Dim A As String
+Dim rs As RecordSet
+Dim strsql As String
+
+Dim rsLBP As RecordSet
+Set rsLBP = CurrentDb.OpenRecordset("LBPMultiple", dbOpenDynaset, dbSeeChanges)
+
+cl = rsLBP![Client]
+rsLBP.Close
+
+strsql = "Select * from Clients where [OrganizationName] = '" & cl & "'"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!claddress2) Then
+
+If cl = "Wendover Financial Services" Then
+billadd3LBP = "Attn: Chris Pitts"
+ElseIf cl = "Champion Mortgage Co., Inc." Then
+billadd3LBP = "Attn: Maggie Muresan"
+ElseIf cl = "Household Finance Corporation, III" Then
+billadd3LBP = "Attn: Collections Invoice Processing"
+ElseIf cl = "GRP Financial Services Corp." Then
+billadd3LBP = "Attn: Linda Henderson, Paralegal"
+ElseIf cl <> "Household Finance Corporation, III" And cl <> "Wendover Financial Services" _
+And cl <> "Ocwen Loan Servicing, LLC" And cl <> "Champion Mortgage Co., Inc." _
+And cl <> "GRP Financial Services Corp." Then
+
+
+End If
+
+Else
+
+If cl = "Ocwen Loan Servicing, LLC" Then
+billadd3LBP = "West Palm Beach, FL  33401"
+ElseIf cl = "Wendover Financial Services" Then
+billadd3LBP = "Greensboro, NC 27419-6903"
+Else
+billadd3LBP = rs!City & ", " & rs!cl_state & "  " & rs!PostalCode
+End If
+
+
+
+End If
+
+
+
+'MsgBox (billadd3lbp)
+rs.Close
+
+
+End Function
+
+
+Public Function billadd3() As String
+Dim cl As String
+Dim A As String
+Dim rs As RecordSet
+Dim strsql As String
+
+cl = Forms![foreclosure database screen]![Client]
+If IsNull(Forms![foreclosure database screen]!A2) Then
+A = 0
+Else
+A = Forms![foreclosure database screen]![A2]
+End If
+
+strsql = "Select * from Clients where [OrganizationName] = '" & cl & "'"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!claddress2) Or rs!claddress2 = "" Then
+
+If cl = "Wendover Financial Services" Then
+billadd3 = "Attn: Chris Pitts"
+ElseIf cl = "Champion Mortgage Co., Inc." Then
+billadd3 = "Attn: Maggie Muresan"
+ElseIf cl = "Household Finance Corporation, III" Then
+billadd3 = "Attn: Collections Invoice Processing"
+ElseIf cl = "GRP Financial Services Corp." Then
+billadd3 = "Attn: Linda Henderson, Paralegal"
+ElseIf cl <> "Household Finance Corporation, III" And cl <> "Wendover Financial Services" _
+And cl <> "Ocwen Loan Servicing, LLC" And cl <> "Champion Mortgage Co., Inc." _
+And cl <> "GRP Financial Services Corp." Then
+
+If Not IsNull(rs!bill_attn) Then
+billadd3 = rs!bill_attn
+ElseIf Not IsNull(Forms![foreclosure database screen]![billattn]) Then
+billadd3 = Forms![foreclosure database screen]![billattn]
+Else
+billadd3 = ""
+End If
+
+End If
+
+Else
+
+If cl = "Ocwen Loan Servicing, LLC" Then
+billadd3 = "West Palm Beach, FL  33401"
+ElseIf cl = "Wendover Financial Services" Then
+billadd3 = "Greensboro, NC 27419-6903"
+ElseIf cl <> "Wendover Financial Services" And cl <> "Ocwen Loan Servicing, LLC" And A = -1 Then
+billadd3 = rs!City2 & ", " & rs!State2 & "  " & rs!Zip2
+ElseIf cl <> "Wendover Financial Services" And cl <> "Ocwen Loan Servicing, LLC" And A = 0 Then
+billadd3 = rs!City & ", " & rs!cl_state & "  " & rs!PostalCode
+End If
+
+
+
+End If
+
+
+
+'MsgBox (billadd3)
+rs.Close
+
+
+End Function
+
+Public Function billrecd() As String
+
+Dim strsql, VarNI, VarClient As String
+Dim rs As RecordSet
+
+VarClient = Forms![foreclosure database screen]![Client]
+
+strsql = "Select * from clients where organizationname = " & """" & VarClient & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If (rs![newinvoice billing] = 1 Or rs![newinvoice billing] = -1) Then
+VarNI = "YES"
+End If
+
+If Not IsNull(Forms![foreclosure database screen]![resume_recd]) Then
+billrecd = "Referral Date: " & Format(Forms![foreclosure database screen]![resume_recd], "mm/dd/yy")
+Else
+billrecd = "Referral Date: " & Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+End If
+
+rs.Close
+
+End Function
+Public Function billlegal() As String
+Dim strsql, VarNI, VarClient As String
+Dim rs As RecordSet
+Dim rsFC As RecordSet
+Dim strsqlfc As String
+
+VarClient = Forms![foreclosure database screen]![Client]
+
+strsql = "Select * from clients where organizationname = " & """" & VarClient & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If (rs![newinvoice billing] = 1 Or rs![newinvoice billing] = -1) Then
+VarNI = "YES"
+End If
+
+strsqlfc = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+
+If Not rsFC.EOF Then
+
+If Forms![foreclosure database screen]![ForeclosureSubForm].Form![1ST Legal] <> "" Then
+billlegal = "1st Legal: " & Format(Forms![foreclosure database screen]![ForeclosureSubForm].Form![1ST Legal], "mm/dd/yy")
+ElseIf Not IsNull(rsFC!pre_docket_filed) Then
+billlegal = "1st Legal: " & rsFC!pre_docket_filed
+ElseIf Not IsNull(rsFC!final_docket_filed) Then
+billlegal = "1st Legal: " & rsFC!final_docket_filed
+End If
+End If
+
+rsFC.Close
+
+rs.Close
+
+End Function
+
+Public Function billprep() As String
+Dim strsql, VarNI, VarClient As String
+Dim rs As RecordSet
+
+VarClient = Forms![foreclosure database screen]![Client]
+
+strsql = "Select * from clients where organizationname = " & """" & VarClient & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If (rs![newinvoice billing] = 1 Or rs![newinvoice billing] = -1) Then
+If AppType = "billingmainedit" Then
+If [Forms]![BillingMainEdit]![fc_saleheld_reason] <> "" Then
+billprep = "Proc: " & Forms![BillingMainEdit]![Processor] & "Reason Sale Cancelled: " & Forms!BillingMainEdit!fc_saleheld_reason
+Else
+billprep = "Proc: " & Forms![BillingMainEdit]![Processor]
+End If
+Else
+If [Forms]![BillingMainEdit]![fc_saleheld_reason] <> "" Then
+billprep = "Proc: " & [Forms]![BillingMainEdit]![Processor] & "Reason Sale Cancelled: " & [Forms]![BillingMainEdit]!fc_saleheld_reason
+Else
+billprep = "Proc: " & [Forms]![BillingMainEdit]![Processor]
+End If
+
+
+End If
+
+End If
+
+rs.Close
+
+End Function
+Public Function billreset() As String
+Dim strsql, VarNI, VarClient As String
+Dim rs As RecordSet
+
+VarClient = Forms![foreclosure database screen]![Client]
+
+strsql = "Select * from clients where organizationname = " & """" & VarClient & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If (rs![newinvoice billing] = 1 Or rs![newinvoice billing] = -1) Then
+VarNI = "YES"
+End If
+
+If ((Client() Like "Merite*") Or VarNI = "Yes") _
+And Forms![foreclosure database screen]![resume_recd] <> "" Then
+billreset = "/Date Reset: " & Format(Forms![foreclosure database screen]![resume_recd], "mm/dd/yy")
+End If
+
+rs.Close
+End Function
+
+Public Function Clientbill()
+
+Dim formname As String
+Dim clientname, VarSP As String
+
+formname = Application.CurrentObjectName
+
+If formname Like "dem*" Or formname = "Breech Bill" Then
+
+clientname = Forms![demand letter screen]![Client]
+If IsNull(Forms![demand letter screen]![abbrsec]) Then
+VarSP = ""
+Else
+VarSP = Forms![demand letter screen]![SecuredParty]
+End If
+
+Else
+
+clientname = Forms![foreclosure database screen]![Client]
+
+If IsNull(Forms![foreclosure database screen]![abbrsec]) Then
+VarSP = ""
+Else
+VarSP = Forms![foreclosure database screen]![abbrsec]
+End If
+
+End If
+
+If clientname Like "JPMorgan*" Or clientname Like "CHASE" Then
+
+Clientbill = "JPMorgan Chase Bank, National Association"
+'ElseIf ClientName Like "Foreclosur*" Or ClientName Like "McCalla*" Then
+ElseIf clientname Like "McCalla*" Then
+If VarSP = "" Then
+Clientbill = clientname
+Else
+Clientbill = VarSP
+End If
+ElseIf clientname = "Aurora Loan Services, Inc." Then
+Clientbill = "Aurora Bank FSB"
+ElseIf clientname Like "BSI*" Then
+Clientbill = "O'Neil Group, LLC"
+Else
+Clientbill = clientname
+End If
+
+
+End Function
+
+Public Function billadd1LBP() As String
+Dim cl As String
+Dim A As String
+Dim rs As RecordSet
+Dim strsql As String
+
+Dim rsLBP As RecordSet
+Set rsLBP = CurrentDb.OpenRecordset("LBPMultiple", dbOpenDynaset, dbSeeChanges)
+
+cl = rsLBP![Client]
+rsLBP.Close
+
+strsql = "Select * from Clients where [OrganizationName] = " & """" & cl & """"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!bill_add1) Then
+
+If IsNull(rs!Address) Then
+MsgBox ("There is no address input for " & rs!OrganizationName & ".")
+billadd1LBP = ""
+Exit Function
+End If
+
+If cl = "Wendover Financial Services" Then
+billadd1LBP = "P.O.Box 26903"
+ElseIf cl <> "Wendover Financial Services" And cl <> "Ocwen Loan Servicing, LLC" And rs!Address2 <> "" Then
+billadd1LBP = rs!Address2
+ElseIf cl <> "Wendover Financial Services" And cl <> "Ocwen Loan Servicing, LLC" And (IsNull(rs!Address2)) Then
+billadd1LBP = rs!Address
+End If
+
+ElseIf cl Like "BSI*" Then
+billadd1LBP = "1629 K Street, NW, Suite 300"
+
+Else
+
+billadd1LBP = rs!bill_add1
+End If
+
+rs.Close
+
+End Function
+
+
+Public Function billadd1() As String
+Dim cl As String
+Dim A As String
+Dim rs As RecordSet
+Dim strsql As String
+
+cl = Forms![foreclosure database screen]![Client]
+If IsNull(Forms![foreclosure database screen]!A2) Then
+A = 0
+Else
+A = Forms![foreclosure database screen]![A2]
+End If
+
+strsql = "Select * from Clients where [OrganizationName] = " & """" & cl & """"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!bill_add1) Then
+
+If IsNull(rs!Address) Then
+MsgBox ("There is no address input for " & rs!OrganizationName & ".")
+billadd1 = ""
+Exit Function
+End If
+
+If cl = "Wendover Financial Services" Then
+billadd1 = "P.O.Box 26903"
+ElseIf cl <> "Wendover Financial Services" And cl <> "Ocwen Loan Servicing, LLC" And A = -1 And rs!Address2 <> "" Then
+billadd1 = rs!Address2
+ElseIf cl <> "Wendover Financial Services" And cl <> "Ocwen Loan Servicing, LLC" And (A = 0 Or IsNull(rs!Address2)) Then
+billadd1 = rs!Address
+End If
+
+ElseIf cl Like "BSI*" Then
+billadd1 = "1629 K Street, NW, Suite 300"
+
+Else
+
+billadd1 = rs!bill_add1
+End If
+
+rs.Close
+
+End Function
+Public Function billadd2LBP() As String
+Dim cl As String
+Dim A As String
+Dim rs As RecordSet
+Dim strsql As String
+
+Dim rsLBP As RecordSet
+Set rsLBP = CurrentDb.OpenRecordset("LBPMultiple", dbOpenDynaset, dbSeeChanges)
+
+cl = rsLBP![Client]
+rsLBP.Close
+
+strsql = "Select * from Clients where [OrganizationName] = " & """" & cl & """"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!bill_add1) Then
+If IsNull(rs!claddress2) Then
+
+If cl = "Wendover Financial Services" Then
+billadd2LBP = "Greensboro, NC 27419-6903"
+ElseIf cl <> "Wendover Financial Services" And cl <> "Ocwen Loan Servicing, LLC" And (rs!Address2 <> "") Then
+billadd2LBP = rs!City2 & ", " & rs!State2 & "  " & rs!Zip2
+ElseIf cl <> "Wendover Financial Services" And cl <> "Ocwen Loan Servicing, LLC" And (IsNull(rs!Address2)) Then
+billadd2LBP = rs!City & ", " & rs!cl_state & "  " & rs!PostalCode
+End If
+
+Else
+
+billadd2LBP = rs!claddress2
+
+End If
+
+Else
+billadd2LBP = rs!bill_citystatezip
+End If
+rs.Close
+
+'MsgBox (billadd2lbp)
+
+End Function
+
+Public Function billadd2() As String
+Dim cl As String
+Dim A As String
+Dim rs As RecordSet
+Dim strsql As String
+
+cl = Forms![foreclosure database screen]![Client]
+If IsNull(Forms![foreclosure database screen]!A2) Then
+A = 0
+Else
+A = Forms![foreclosure database screen]![A2]
+End If
+
+strsql = "Select * from Clients where [OrganizationName] = " & """" & cl & """"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!bill_add1) Or rs!bill_add1 = "" Then
+If IsNull(rs!claddress2) Or rs!claddress2 = "" Then
+
+If cl = "Wendover Financial Services" Then
+billadd2 = "Greensboro, NC 27419-6903"
+ElseIf cl <> "Wendover Financial Services" And cl <> "Ocwen Loan Servicing, LLC" And (A = -1 And rs!Address2 <> "") Then
+billadd2 = rs!City2 & ", " & rs!State2 & "  " & rs!Zip2
+ElseIf cl <> "Wendover Financial Services" And cl <> "Ocwen Loan Servicing, LLC" And (A = 0 Or IsNull(rs!Address2)) Then
+billadd2 = rs!City & ", " & rs!cl_state & "  " & rs!PostalCode
+End If
+
+Else
+
+billadd2 = rs!claddress2
+
+End If
+
+Else
+billadd2 = rs!bill_citystatezip
+End If
+rs.Close
+
+'MsgBox (billadd2)
+
+End Function
+
+Public Function BillingCheckNewInvoice()
+
+DoCmd.OpenQuery ("BillingUPDATENewInvoiceBATCHEDRpt")
+DoCmd.OpenQuery ("BillingBATCHEDCheck")
+
+End Function
+Public Function FindBill()
+Dim VBill As Long
+Dim strsql
+Dim rs As RecordSet
+Dim VCat
+
+VBill = InputBox("Enter Invoice Number:")
+strsql = "select * from billing where customerid = " & VBill & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+MsgBox ("Bill Found for BWW#: " & rs!filenum)
+
+If IsNull(rs!Category) Or rs!Category = "" Then
+VCat = InputBox("Category is blank.  Is it a (F)oreclosure or (B)ankruptcy bill. enter F or B")
+
+If VCat = "F" Or VCat = "f" Then
+With rs
+.Edit
+!Category = "Foreclosure"
+.Update
+.Close
+End With
+
+ElseIf VCat = "B" Or VCat = "b" Then
+With rs
+.Edit
+!Category = "Bankruptcy"
+.Update
+.Close
+End With
+End If
+
+Else
+MsgBox ("Bill Found but can not determine issue. Please Contact Charlene")
+End If
+
+
+Else
+
+MsgBox ("Invoice # not found you can contact Charlene")
+End If
+End Function
+Public Function BillsMonthly()
+
+Dim VPsswd
+
+VPsswd = InputBox("Enter Password.  This report will take quite some time to generate.")
+If VPsswd = "howie" Then
+
+Dim rs As RecordSet
+Dim strsql As String
+Dim rsQry As RecordSet
+Dim VBdate As Date
+Dim VEdate As Date
+Dim Vtoday
+Dim VtodayYR
+Dim VtodayLstYR
+Dim VOrderBy
+Dim VOrderDate As Date
+
+VBdate = InputBox("Enter Beginning Date of Yearly Report")
+If VBdate = Null Then
+VBdate = Date
+Else
+VBdate = VBdate
+End If
+
+Vtoday = Format(VBdate, "mm")
+VOrderBy = Vtoday - 1
+VtodayYR = Format(VBdate, "yyyy")
+VtodayLstYR = VtodayYR - 1
+
+VOrderDate = VOrderBy & "/01/" & VtodayYR
+
+If IsTable("BillsRpt") Then
+DoCmd.DeleteObject acTable, "BillsRpt"
+End If
+
+CurrentDb.Execute "Create table BillsRpt (MonthOrder Date, JanFeesBilled Currency, JanCostsBilled Currency, JanFeesOutstanding Currency, JanCostsOutstanding Currency, " _
+& " FebFeesBilled Currency, FebCostsBilled Currency, FebFeesOutstanding Currency, FebCostsOutstanding Currency, " _
+& " MarFeesBilled currency, MarCostsBilled currency, MarFeesOutstanding currency, MarCostsOutstanding currency, " _
+& " AprFeesBilled currency, AprCostsBilled currency, AprFeesOutstanding currency, AprCostsOutstanding currency, " _
+& " MayFeesBilled Currency, MayCostsBilled Currency, MayFeesOutstanding Currency, MayCostsOutstanding Currency, " _
+& " JunFeesBilled currency, JunCostsBilled currency, JunFeesOutstanding currency, JunCostsOutstanding currency, " _
+& " JulFeesBilled currency, JulCostsBilled currency, JulFeesOutstanding currency, JulCostsOutstanding currency, " _
+& " AugFeesBilled currency, AugCostsBilled currency, AugFeesOutstanding currency, AugCostsOutstanding currency, " _
+& " SepFeesBilled currency, SepCostsBilled currency, SepFeesOutstanding currency, SepCostsOutstanding currency, " _
+& " OctFeesBilled currency, OctCostsBilled currency, OctFeesOutstanding currency, OctCostsOutstanding currency, " _
+& " NovFeesBilled currency, NovCostsBilled currency,  NovFeesOutstanding currency, NovCostsOutstanding currency, " _
+& " DecFeesBilled currency, DecCostsBilled currency, DecFeesOutstanding currency, DecCostsOutstanding currency);"
+CurrentDb.Close
+
+Set rs = CurrentDb.OpenRecordset("BillsRpt", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!monthorder = VOrderDate
+.Update
+End With
+
+strsql = "select * from BillsBilledPaidOutstanding"
+Set rsQry = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+rsQry.MoveFirst
+
+VBdate = Vtoday & "/01/" & VtodayLstYR
+VEdate = Vtoday & "/01/" & VtodayYR
+
+rs.MoveFirst
+Dim VJanCb
+Dim VJanFb
+Dim VJanCo
+Dim VJanFo
+VJanCb = 0
+VJanFb = 0
+VJanCo = 0
+VJanFo = 0
+Dim VFebCb
+Dim VFebFb
+Dim VFebCo
+Dim VFebFo
+VFebCb = 0
+VFebFb = 0
+VFebCo = 0
+VFebFo = 0
+Dim VMarCb
+Dim VMarFb
+Dim VMarCo
+Dim VMarFo
+VMarCb = 0
+VMarFb = 0
+VMarCo = 0
+VMarFo = 0
+Dim VAprCb
+Dim VAprFb
+Dim VAprCo
+Dim VAprFo
+VAprCb = 0
+VAprFb = 0
+VAprCo = 0
+VAprFo = 0
+Dim VMayCb
+Dim VMayFb
+Dim VMayCo
+Dim VMayFo
+VMayCb = 0
+VMayFb = 0
+VMayCo = 0
+VMayFo = 0
+Dim VJunCb
+Dim VJunFb
+Dim VJunCo
+Dim VJunFo
+VJunCb = 0
+VJunFb = 0
+VJunCo = 0
+VJunFo = 0
+Dim VJulCb
+Dim VJulFb
+Dim VJulCo
+Dim VJulFo
+VJulCb = 0
+VJulFb = 0
+VJulCo = 0
+VJulFo = 0
+Dim VAugCb
+Dim VAugFb
+Dim VAugCo
+Dim VAugFo
+VAugCb = 0
+VAugFb = 0
+VAugCo = 0
+VAugFo = 0
+Dim VSepCb
+Dim VSepFb
+Dim VSepCo
+Dim VSepFo
+VSepCb = 0
+VSepFb = 0
+VSepCo = 0
+VSepFo = 0
+Dim VOctCb
+Dim VOctFb
+Dim VOctCo
+Dim VOctFo
+VOctCb = 0
+VOctFb = 0
+VOctCo = 0
+VOctFo = 0
+Dim VNovCb
+Dim VNovFb
+Dim VNovCo
+Dim VNovFo
+VNovCb = 0
+VNovFb = 0
+VNovCo = 0
+VNovFo = 0
+Dim VDecCb
+Dim VDecFb
+Dim VDecCo
+Dim VDecFo
+VDecCb = 0
+VDecFb = 0
+VDecCo = 0
+VDecFo = 0
+
+Do While Not rsQry.EOF
+With rs
+.Edit
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "January" Then
+VJanCb = VJanCb + rsQry!TotalCosts
+!jancostsbilled = VJanCb
+VJanFb = VJanFb + rsQry!TOTALFees
+!janfeesbilled = VJanFb
+VJanCo = VJanCo + rsQry!outstandingcosts
+!jancostsoutstanding = VJanCo
+VJanFo = VJanFo + rsQry!outstandingfees
+!janfeesoutstanding = VJanFo
+End If
+End If
+
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "February" Then
+VFebCb = VFebCb + rsQry!TotalCosts
+!Febcostsbilled = VFebCb
+VFebFb = VFebFb + rsQry!TOTALFees
+!Febfeesbilled = VFebFb
+VFebCo = VFebCo + rsQry!outstandingcosts
+!Febcostsoutstanding = VFebCo
+VFebFo = VFebFo + rsQry!outstandingfees
+!Febfeesoutstanding = VFebFo
+End If
+End If
+
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "March" Then
+VMarCb = VMarCb + rsQry!TotalCosts
+!Marcostsbilled = VMarCb
+VMarFb = VMarFb + rsQry!TOTALFees
+!Marfeesbilled = VMarFb
+VMarCo = VMarCo + rsQry!outstandingcosts
+!Marcostsoutstanding = VMarCo
+VMarFo = VMarFo + rsQry!outstandingfees
+!Marfeesoutstanding = VMarFo
+End If
+End If
+
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "April" Then
+VAprCb = VAprCb + rsQry!TotalCosts
+!Aprcostsbilled = VAprCb
+VAprFb = VAprFb + rsQry!TOTALFees
+!Aprfeesbilled = VAprFb
+VAprCo = VAprCo + rsQry!outstandingcosts
+!Aprcostsoutstanding = VAprCo
+VAprFo = VAprFo + rsQry!outstandingfees
+!Aprfeesoutstanding = VAprFo
+End If
+End If
+
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "May" Then
+VMayCb = VMayCb + rsQry!TotalCosts
+!Maycostsbilled = VMayCb
+VMayFb = VMayFb + rsQry!TOTALFees
+!Mayfeesbilled = VMayFb
+VMayCo = VMayCo + rsQry!outstandingcosts
+!Maycostsoutstanding = VMayCo
+VMayFo = VMayFo + rsQry!outstandingfees
+!Mayfeesoutstanding = VMayFo
+End If
+End If
+
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "June" Then
+VJunCb = VJunCb + rsQry!TotalCosts
+!Juncostsbilled = VJunCb
+VJunFb = VJunFb + rsQry!TOTALFees
+!Junfeesbilled = VJunFb
+VJunCo = VJunCo + rsQry!outstandingcosts
+!Juncostsoutstanding = VJunCo
+VJunFo = VJunFo + rsQry!outstandingfees
+!Junfeesoutstanding = VJunFo
+End If
+End If
+
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "July" Then
+VJulCb = VJulCb + rsQry!TotalCosts
+!Julcostsbilled = VJulCb
+VJulFb = VJulFb + rsQry!TOTALFees
+!Julfeesbilled = VJulFb
+VJulCo = VJulCo + rsQry!outstandingcosts
+!Julcostsoutstanding = VJulCo
+VJulFo = VJulFo + rsQry!outstandingfees
+!Julfeesoutstanding = VJulFo
+End If
+End If
+
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "August" Then
+VAugCb = VAugCb + rsQry!TotalCosts
+!Augcostsbilled = VAugCb
+VAugFb = VAugFb + rsQry!TOTALFees
+!Augfeesbilled = VAugFb
+VAugCo = VAugCo + rsQry!outstandingcosts
+!Augcostsoutstanding = VAugCo
+VAugFo = VAugFo + rsQry!outstandingfees
+!Augfeesoutstanding = VAugFo
+End If
+End If
+
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "September" Then
+VSepCb = VSepCb + rsQry!TotalCosts
+!Sepcostsbilled = VSepCb
+VSepFb = VSepFb + rsQry!TOTALFees
+!Sepfeesbilled = VSepFb
+VSepCo = VSepCo + rsQry!outstandingcosts
+!Sepcostsoutstanding = VSepCo
+VSepFo = VSepFo + rsQry!outstandingfees
+!Sepfeesoutstanding = VSepFo
+End If
+End If
+
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "October" Then
+VOctCb = VOctCb + rsQry!TotalCosts
+!Octcostsbilled = VOctCb
+VOctFb = VOctFb + rsQry!TOTALFees
+!Octfeesbilled = VOctFb
+VOctCo = VOctCo + rsQry!outstandingcosts
+!Octcostsoutstanding = VOctCo
+VOctFo = VOctFo + rsQry!outstandingfees
+!Octfeesoutstanding = VOctFo
+End If
+End If
+
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "November" Then
+VNovCb = VNovCb + rsQry!TotalCosts
+!Novcostsbilled = VNovCb
+VNovFb = VNovFb + rsQry!TOTALFees
+!Novfeesbilled = VNovFb
+VNovCo = VNovCo + rsQry!outstandingcosts
+!Novcostsoutstanding = VNovCo
+VNovFo = VNovFo + rsQry!outstandingfees
+!Novfeesoutstanding = VNovFo
+End If
+End If
+
+If rsQry!billingdate >= VBdate And rsQry!billingdate < VEdate Then
+If Format(rsQry!billingdate, "mmmm") = "December" Then
+VDecCb = VDecCb + rsQry!TotalCosts
+!Deccostsbilled = VDecCb
+VDecFb = VDecFb + rsQry!TOTALFees
+!Decfeesbilled = VDecFb
+VDecCo = VDecCo + rsQry!outstandingcosts
+!DecCostsOutstanding = VDecCo
+VDecFo = VDecFo + rsQry!outstandingfees
+!Decfeesoutstanding = VDecFo
+End If
+End If
+
+
+.Update
+End With
+rsQry.MoveNext
+Loop
+
+ExcelSaveAsQRY ("BillsRptQry")
+Else
+
+MsgBox ("Will Not Run")
+End If
+
+End Function
+Public Function BillingQry()
+ExcelSaveAsQRY ("Billing Created Qry")
+End Function
+Public Function VASBBill()
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmp As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VINv As Long
+Dim VType
+
+If NIFile() = "YES" Then
+VEmp = InputBox("Enter Initials for New Invoice Dumping")
+strPL = "Select * from employees where employeeid = " & """" & VEmp & """" & ";"
+Set rsPL = CurrentDb.OpenRecordset(strPL, dbOpenSnapshot)
+If rsPL.EOF Then
+MsgBox ("Incorrect Initials Input, WILL NOT BATCH")
+Exit Function
+Else
+If IsNull(rsPL!NewInvoice) Then
+MsgBox ("No New Invoice coding in Employee Screen for initials input, bill WILL NOT BATCH")
+Exit Function
+Else
+VEmpID = rsPL!NewInvoice
+End If
+End If
+End If
+
+strsqlCheck = "select * from billing where filenum = " & _
+Forms![foreclosure database screen]!filenum & " and l_initial > " & 0 & ";"
+
+Set rsBillCheck = CurrentDb.OpenRecordset(strsqlCheck, dbOpenSnapshot)
+
+VSel = MsgBox("Create new VASB Bill?", vbYesNo)
+If VSel = vbYes Then
+VINv = GetAutoNumber("NextBillNum")
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+With rsbill
+.AddNew
+!CustomerID = VINv
+!filenum = Forms![foreclosure database screen]![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+!feeothermoney = 25#
+If [Forms]![VA SB797 Notice]!Client Like "Bank of Am*" Then
+!d_servbymail = 0
+Else
+!d_servbymail = CountVASB()
+End If
+'!bill_uploaded = Date
+!created_vdruser_id = VEmpID
+!feeothertext = "VA SB797 Notice Sent"
+!initials = VEmp
+If NIFile() = "YES" Or IClearFile() = "YES" Then
+![Bill_Uploaded] = Date
+Else
+![printed and sent] = Date
+End If
+!water = 0#
+!lien_citation_violation = 0#
+!process_service = 0#
+!skip_trace = 0#
+.Update
+.Close
+End With
+
+
+[Forms]![VA SB797 Notice]![ACLSubform].[Form]![InvNo] = VINv
+[Forms]![VA SB797 Notice]![ACLSubform].[Form]![balance due_vasb] = CountVASB()
+[Forms]![VA SB797 Notice]![ACLSubform].[Form]!invoice_type_id_vasb = VType
+[Forms]![VA SB797 Notice]![ACLSubform].[Form]!created_vdruser_id_vasb = VEmpID
+
+Else
+Exit Function
+
+End If
+
+DocName = "bill-email-vasb"
+DoCmd.OpenReport DocName, acViewNormal
+
+DoCmd.OutputTo acOutputReport, DocName, acFormatRTF, pathuser() & "\FCBill.rtf"
+
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+
+emailsubject = "FC Bill (Preparation of VASB Letter): " & Forms![foreclosure database screen]!Client & "/ " & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / Inv#: " & VINv
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\fcbill.rtf"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+If NIFile() = "YES" Then
+Call ExportNIVASB
+End If
+
+
+'VAddBill = MsgBox("Print Out Bill?")
+
+End Function
+
+
+Public Function ACLBill()
+
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmp As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VINv As Long
+Dim VType
+
+If NIFile() = "YES" Then
+VEmp = InputBox("Enter Initials for New Invoice Dumping")
+strPL = "Select * from employees where employeeid = " & """" & VEmp & """" & ";"
+Set rsPL = CurrentDb.OpenRecordset(strPL, dbOpenSnapshot)
+If rsPL.EOF Then
+MsgBox ("Incorrect Initials Input, WILL NOT BATCH")
+Exit Function
+Else
+If IsNull(rsPL!NewInvoice) Then
+MsgBox ("No New Invoice coding in Employee Screen for initials input, bill WILL NOT BATCH")
+Exit Function
+Else
+VEmpID = rsPL!NewInvoice
+End If
+End If
+'ElseIf IClearFile = "YES" Then
+End If
+
+strsqlCheck = "select * from billing where filenum = " & _
+Forms![foreclosure database screen]!filenum & " and l_initial > " & 0 & ";"
+
+Set rsBillCheck = CurrentDb.OpenRecordset(strsqlCheck, dbOpenSnapshot)
+
+VSel = MsgBox("Create new ACL Bill?", vbYesNo)
+If VSel = vbYes Then
+VINv = GetAutoNumber("NextBillNum")
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+With rsbill
+.AddNew
+!CustomerID = VINv
+!filenum = Forms![foreclosure database screen]![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+!l_initial = 40#
+Else
+!l_initial = 50#
+End If
+
+If Forms![foreclosure database screen]!Client Like "Select*" Or _
+Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+!d_servbymail = 0#
+Else
+!d_servbymail = CountNoticeTableACL()
+End If
+'!bill_uploaded = Date
+!created_vdruser_id = VEmpID
+!initials = VEmp
+If NIFile() = "YES" Or IClearFile() = "YES" Then
+'![bill_uploaded] = Date
+'Else
+![printed and sent] = Date
+End If
+!water = 0#
+!lien_citation_violation = 0#
+!process_service = 0#
+!skip_trace = 0#
+'If IClearFile() = "YES" Then
+'!IClear_Misc1 = "11121"
+'End If
+.Update
+.Close
+End With
+
+
+Forms!aclmain!ACLSubform.Form!InvNo = VINv
+Forms!aclmain!ACLSubform.Form![balance due] = CountNoticeTableACL()
+Forms!aclmain!ACLSubform.Form!invoice_type_id = VType
+Forms!aclmain!ACLSubform.Form!created_vdruser_id = VEmpID
+
+Else
+Exit Function
+
+End If
+
+DocName = "bill-email-ACL"
+DoCmd.OpenReport DocName, acViewNormal
+
+DoCmd.OutputTo acOutputReport, DocName, acFormatRTF, pathuser() & "\FCBill.rtf"
+
+varmailto = "invoicescreated@bww-law.com;  agereceivable@bww-law.com"
+
+emailsubject = "FC Bill (Preparation of Demand Letter): " & Forms![foreclosure database screen]!Client & "/ " & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / Inv#: " & VINv
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+
+
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\fcbill.rtf"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+If NIFile() = "YES" Then
+Call ExportNIACL
+End If
+
+
+'VAddBill = MsgBox("Print Out Bill?")
+
+End Function
+

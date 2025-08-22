@@ -1,0 +1,1108 @@
+Attribute VB_Name = "CONVERSION"
+Option Compare Database
+Public Function CloseForms()
+Call CleanTables
+
+Dim access_obj As AccessObject
+For Each access_obj In Application.CurrentProject.AllForms
+            
+            If access_obj.IsLoaded = True Then
+                
+                If Not access_obj.name = "foreclosure database screen" And _
+                Not access_obj.name = "SearchFiles" And _
+                Not access_obj.name = "Main" Then
+                    
+                    DoCmd.Close acForm, access_obj.name
+                    
+                End If
+            End If
+        Next access_obj
+    
+For Each access_obj In Application.CurrentProject.AllReports
+    If access_obj.IsLoaded = True Then
+        DoCmd.Close acReport, access_obj.name
+    End If
+Next access_obj
+  
+End Function
+Public Function OpenBKScreen()
+Dim access_obj As AccessObject
+For Each access_obj In Application.CurrentProject.AllForms
+            
+            If access_obj.IsLoaded = False Then
+                
+                If Not access_obj.name = "BankruptcyMain" Then
+                    
+                DoCmd.OpenForm "BankruptcyMAIN", , , "[Filenum] = " & GblFilenum
+                
+            'access_obj.name
+                    
+                End If
+            End If
+        Next access_obj
+        
+
+End Function
+Public Function OpenREFERRALScreen()
+Dim access_obj As AccessObject
+For Each access_obj In Application.CurrentProject.AllForms
+            
+            If access_obj.IsLoaded = False Then
+                
+                If Not access_obj.name = "NOI Information Screen" Then
+                    
+                DoCmd.OpenForm "NOI Information Screen", , , "[Filenum] = " & GblFilenum
+                
+            'access_obj.name
+                    
+                End If
+            End If
+        Next access_obj
+        
+
+End Function
+
+Public Function CloseFormsQC()
+Call CleanTables
+
+Dim access_obj As AccessObject
+For Each access_obj In Application.CurrentProject.AllForms
+            
+            If access_obj.IsLoaded = True Then
+                
+                If Not access_obj.name = "SearchFiles" And _
+                Not access_obj.name = "Main" Then
+                    
+                    DoCmd.Close acForm, access_obj.name
+                    
+                End If
+            End If
+        Next access_obj
+End Function
+Public Function ScrnView()
+
+'Maturity Date Check
+
+If Forms![foreclosure database screen]!Status = "Foreclosure" Or _
+Forms![foreclosure database screen]!Status = "Bankruptcy" Or _
+Forms![foreclosure database screen]!Status = "Title Issue" Then
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!Maturity_Date) Then
+Dim Vexp
+
+'9-va 12-md Years
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+Vexp = Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!Maturity_Date + 4380
+Else
+Vexp = Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!Maturity_Date + 3286
+
+End If
+
+'MsgBox (Vexp)
+If Date > Vexp Then
+MsgBox ("Based on the maturity date entered, the statute of limitations to enforce the DOT has expired or will expire within a year. Immediately escalate this file to your supervisor for further review.")
+End If
+End If
+
+Dim VDOTCnt
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+VDOTCnt = Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!DOTDate + 14236
+Else
+VDOTCnt = Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!DOTDate + 6938
+
+End If
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!Maturity_Date) And _
+Date > VDOTCnt Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+MsgBox ("Please verify that a loan maturity date has been entered.  If a loan maturity date is not ascertainable from the recorded Deed of Trust, then based on the date of record of the Deed of Trust, our lien could be presumed to have been paid off within one year of today’s date.  Immediately escalate this file to your supervisor for further review.")
+Else
+MsgBox ("Please verify that a loan maturity date has been entered (if one exists), and enter it if it’s missing. If there is no maturity date for this loan, then based on the DOT date, the statute of limitations has expired or will expire within a year. Immediately escalate this file to your supervisor for further review.")
+End If
+
+End If
+End If
+' Verify that the referenced form is still there
+If Not CurrentProject.AllForms("foreclosure database screen").IsLoaded Then Exit Function
+
+Call CheckPostsaleSupplement
+ 
+ If Forms![foreclosure database screen]!PropertyState = "Md" And Forms![foreclosure database screen]!Status = "Forclosure" Then
+[Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![BrokerID] = _
+    DLookup("ID", "Brokers", "Broker_Name=" & """" & [Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![brokers_name] & """")
+  mySendKeys ("{F9}")
+End If
+
+'completes the Trust Revd btn in QC2SubForm
+'If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm![qc2subform].Form!p1_trustee) = False Then
+'    Forms![foreclosure database screen]!ForeclosureSubForm![qc2subform].Form!btntrustrevd = -1
+'    Else
+'    Forms![foreclosure database screen]!ForeclosureSubForm![qc2subform].Form!btntrustrevd = 0
+'End If
+
+If Not IsNull(Forms![foreclosure database screen]![secured party]) Then
+VSParty = Forms![foreclosure database screen]![secured party]
+Else
+VSParty = Null
+End If
+
+   If Forms![foreclosure database screen]!PropertyState = "VA" Then
+Forms![foreclosure database screen]!FeesPaidVA.Visible = True
+Forms![foreclosure database screen]!ocwenmilestones.Visible = False
+
+Else
+If Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+Forms![foreclosure database screen]!ocwenmilestones.Visible = True
+Else
+Forms![foreclosure database screen]!ocwenmilestones.Visible = False
+
+End If
+
+Forms![foreclosure database screen]!FeesPaidVA.Visible = False
+End If
+
+
+If Not IsNull(Forms![foreclosure database screen]![TypeOfLoan]) Then
+VTypeLoan = Forms![foreclosure database screen]![TypeOfLoan]
+Else
+VTypeLoan = Null
+End If
+
+gblCaption = Forms![foreclosure database screen]![AttorneyCAPFIELD]
+
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+
+Forms![foreclosure database screen]![TrusteesDC].Visible = True
+Forms![foreclosure database screen]![TrusteesMD].Visible = False
+
+If Not IsNull([Forms]![foreclosure database screen]![ForeclosureSubFormDC].[Form]![title_button]) Then
+Forms![foreclosure database screen]!ForeclosureSubFormDC.Form![IRSNotNeed].Visible = True
+Else
+Forms![foreclosure database screen]!ForeclosureSubFormDC.Form![IRSNotNeed].Visible = False
+End If
+
+Else
+Forms![foreclosure database screen]![TrusteesDC].Visible = False
+Forms![foreclosure database screen]![TrusteesMD].Visible = True
+End If
+
+
+If Forms![foreclosure database screen]!Screen_Change = "Bankruptcy" Or _
+Forms![foreclosure database screen]!Status = "Bankruptcy" Then
+DoCmd.OpenForm "BankruptcyMAIN", , , "[Filenum] = " & GblFilenum
+End If
+
+If Forms![foreclosure database screen]!Screen_Change = "Senior Lien Sale" Or _
+Forms![foreclosure database screen]!Status = "Senior Lien Sale" Then
+DoCmd.OpenForm "SeniorLienSaleMain", , , "[Filenum] = " & GblFilenum
+End If
+
+If Forms![foreclosure database screen]!Screen_Change = "Foreclosure" Or _
+Forms![foreclosure database screen]!Screen_Change = "DC Judicial" Or _
+Forms![foreclosure database screen]!Screen_Change = "Estate" Then
+
+
+    If Forms![foreclosure database screen]!PropertyState = "DC" Then
+    Call AddToFCTrackingDC
+    
+    
+      Forms![foreclosure database screen]![spentity].Form.Visible = True
+    Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = True
+     Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = False
+     Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = False
+                Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+    
+    
+    ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+    
+ 
+
+
+If (Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1) Then
+Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!HOCLang.Visible = True
+
+Else
+Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!HOCLang.Visible = False
+
+End If
+
+If Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!title_button = -1 Or _
+Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!title_button = 1 Then
+Forms![foreclosure database screen]!ForeclosureSubFormVA.Form![IRSNotNeed].Visible = True
+Else
+Forms![foreclosure database screen]!ForeclosureSubFormVA.Form![IRSNotNeed].Visible = False
+End If
+
+If Forms![foreclosure database screen]![Client] = "Select Portfolio Servicing, Inc." And Forms![foreclosure database screen]![PropertyState] = "VA" Then
+    Forms![foreclosure database screen]!ForeclosureSubFormVA.Form![NOS].Visible = True
+    Forms![foreclosure database screen]!ForeclosureSubFormVA.Form![NOSlabel].Visible = True
+    
+    If IsNull(Forms![foreclosure database screen]!ForeclosureSubFormVA.Form![NOS]) Then
+    Forms![foreclosure database screen]!ForeclosureSubFormVA.Form![NOS] = Forms![foreclosure database screen]![Date Recieved]
+    End If
+    
+           Else
+    
+     Forms![foreclosure database screen]!ForeclosureSubFormVA.Form![NOS].Visible = False
+    Forms![foreclosure database screen]!ForeclosureSubFormVA.Form![NOSlabel].Visible = False
+    End If
+    
+Forms![foreclosure database screen]![spentity].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+     Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = True
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+     Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = False
+     Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = True
+    Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+    
+    
+Else
+'On Current Code FC Md Screen
+
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!Liber) Or Forms![foreclosure database screen]!ForeclosureSubForm.Form!Liber <> "" Then
+VLiber = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Liber
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!Folio) Or Forms![foreclosure database screen]!ForeclosureSubForm.Form!Folio <> "" Then
+VFolio = Forms![foreclosure database screen]!ForeclosureSubForm.Form!Folio
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Or Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate <> "" Then
+VSaleDateGlobal = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+Else
+'VSaleDateGlobal = ""
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleReportOrdered) Or Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleReportOrdered <> "" Then
+VTitleOrd = Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleReportOrdered
+Else
+VTitleOrd = ""
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleTime) Or Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleTime <> "" Then
+VSaleTime = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleTime
+Else
+VSaleTime = ""
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!noticesent) Or Forms![foreclosure database screen]!ForeclosureSubForm.Form!noticesent <> "" Then
+VNoticeDate = Forms![foreclosure database screen]!ForeclosureSubForm.Form!noticesent
+Else
+VNoticeDate = ""
+End If
+
+If Forms![foreclosure database screen]![Date Received] <> "" Then
+VReferral = Forms![foreclosure database screen]![Date Received]
+End If
+
+
+If WF() = 1 Then
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!wf12.Visible = True
+Else
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!wf12.Visible = False
+End If
+
+If WF() = 2 Then
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!wf2.Visible = True
+Else
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!wf2.Visible = False
+End If
+
+If Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Then
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!HOCLang.Visible = True
+
+Else
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!HOCLang.Visible = False
+
+End If
+
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_button = -1 Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_button = 1 Then
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![IRSNotNeed].Visible = True
+Else
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![IRSNotNeed].Visible = False
+End If
+
+If [Forms]![foreclosure database screen]!Fidelity = -1 Then
+'Msgbox ("#2")
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![asap_label].Visible = True
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![asap_no].Visible = True
+Else
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![asap_label].Visible = False
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![asap_no].Visible = False
+End If
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+CurrentSale = ""
+Else
+CurrentSale = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+'end FC MD Current Code
+
+Forms![foreclosure database screen]![spentity].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = True
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+     Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+        Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+         Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = False
+     Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+
+    End If
+    End If
+
+If Forms![foreclosure database screen]!Screen_Change = "Bankruptcy" Then
+
+Forms![foreclosure database screen]![spentity].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+     Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+        Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+         Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = False
+     Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+End If
+
+
+If Forms![foreclosure database screen]!Screen_Change = "Postsale" Then
+
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+If Forms![foreclosure database screen]!PropertyCity = "Hagerstown" Then
+Forms![foreclosure database screen]![PostsaleSubForm].Form!Hagerstown.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!HagLabel.Visible = True
+Else
+Forms![foreclosure database screen]![PostsaleSubForm].Form!Hagerstown.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!HagLabel.Visible = False
+End If
+
+
+
+
+
+If (Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Or Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = -1) Then Forms![foreclosure database screen]![PostsaleSubForm].Form!printclientadd.Visible = False
+
+If Forms![foreclosure database screen]!Screen_Change = "Postsale" Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+If Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = 1 Or _
+Forms![foreclosure database screen]![PostsaleSubForm].Form![3rd_party] = -1 Then
+
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_company.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_contact.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_phone.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_fax.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_add1.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_csz.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label1.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label2.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label3.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label4.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label5.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label6.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label7.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_Label298.Visible = True
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_email.Visible = True
+
+Else
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_company.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_contact.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_phone.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_fax.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_add1.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_csz.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label1.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label2.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label3.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label4.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label5.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label6.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_label7.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!set_Label298.Visible = False
+Forms![foreclosure database screen]![PostsaleSubForm].Form!settlement_email.Visible = False
+End If
+
+    If Not IsNull(Forms![foreclosure database screen]![PostsaleSubForm].Form!SalePrice) Then
+    
+    If Forms![foreclosure database screen]!PropertyState = "MD" Then
+    If Forms![foreclosure database screen]![PostsaleSubForm].Form!recording_charge = 0 Or _
+    IsNull(Forms![foreclosure database screen]![PostsaleSubForm].Form!recording_charge) Then
+    Forms![foreclosure database screen]![PostsaleSubForm].Form!recording_charge = MD_Rec_Charge()
+    End If
+    If Forms![foreclosure database screen]![PostsaleSubForm].Form!surcharge = 0 Or _
+    IsNull(Forms![foreclosure database screen]![PostsaleSubForm].Form!surcharge) Then
+    Forms![foreclosure database screen]![PostsaleSubForm].Form!surcharge = MD_SurCharge()
+    End If
+    If Forms![foreclosure database screen]![PostsaleSubForm].Form!staterecordationtax = 0 Or _
+    IsNull(Forms![foreclosure database screen]![PostsaleSubForm].Form!staterecordationtax) Then
+    Forms![foreclosure database screen]![PostsaleSubForm].Form!staterecordationtax = MD_Recordation()
+    End If
+    If Forms![foreclosure database screen]![PostsaleSubForm].Form!statetransfertax = 0 Or _
+    IsNull(Forms![foreclosure database screen]![PostsaleSubForm].Form!statetransfertax) Then
+    Forms![foreclosure database screen]![PostsaleSubForm].Form!statetransfertax = MD_StateTransferTax()
+    End If
+    If Forms![foreclosure database screen]![PostsaleSubForm].Form!countytransfertax = 0 Or _
+    IsNull(Forms![foreclosure database screen]![PostsaleSubForm].Form!countytransfertax) Then
+    Forms![foreclosure database screen]![PostsaleSubForm].Form!countytransfertax = MD_CountyTransferTax()
+    End If
+    
+    End If
+    Else
+    
+    If Forms![foreclosure database screen]![PostsaleSubForm].Form!recording_charge = 0 Or _
+    IsNull(Forms![foreclosure database screen]![PostsaleSubForm].Form!recording_charge) Then
+    Forms![foreclosure database screen]![PostsaleSubForm].Form!recording_charge = DC_Rec_Charge()
+    End If
+    
+    If Forms![foreclosure database screen]![PostsaleSubForm].Form!staterecordationtax = 0 Or _
+    IsNull(Forms![foreclosure database screen]![PostsaleSubForm].Form!staterecordationtax) Then
+    Forms![foreclosure database screen]![PostsaleSubForm].Form!staterecordationtax = DC_Recordation()
+    End If
+    
+    
+    End If
+    End If
+    End If
+    
+    
+    Forms![foreclosure database screen]![spentity].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = True
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = True
+    Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = False
+     Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+      Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+     Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+    
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+
+    Forms![foreclosure database screen]![spentity].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = True
+     Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+      Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = True
+    Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = True
+    Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+    
+    
+If Forms![foreclosure database screen]!AttorneyCAPFIELD = "2 TrusteesDC" Then
+Forms![foreclosure database screen]![PostsaleDCSubForm].Form!signed_deed2.Visible = True
+Forms![foreclosure database screen]![PostsaleDCSubForm].Form!signed_deed6.Visible = False
+Forms![foreclosure database screen]![PostsaleDCSubForm].Form!signed_deed8.Visible = False
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "6 TrusteesDC" Then
+Forms![foreclosure database screen]![PostsaleDCSubForm].Form!signed_deed2.Visible = True
+Forms![foreclosure database screen]![PostsaleDCSubForm].Form!signed_deed6.Visible = False
+Forms![foreclosure database screen]![PostsaleDCSubForm].Form!signed_deed8.Visible = False
+Else
+Forms![foreclosure database screen]![PostsaleDCSubForm].Form!signed_deed8.Visible = True
+Forms![foreclosure database screen]![PostsaleDCSubForm].Form!signed_deed2.Visible = False
+Forms![foreclosure database screen]![PostsaleDCSubForm].Form!signed_deed6.Visible = False
+End If
+
+    Else
+ 
+
+
+
+
+      Forms![foreclosure database screen]![spentity].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = True
+     Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = True
+      Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = True
+    Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+
+End If
+End If
+
+
+
+If Forms![foreclosure database screen]!Screen_Change = "Eviction" Then
+
+Forms![foreclosure database screen]![spentity].Form.Visible = False
+       
+       If Forms![foreclosure database screen]!PropertyState = "MD" Then
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+     Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+        Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+         Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = True
+     Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = True
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+  
+  ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+  
+         Forms![foreclosure database screen]![spentity].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+     Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+        Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+         Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = True
+     Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = True
+
+  ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+        Call CounselDefault
+  
+        Forms![foreclosure database screen]![spentity].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+     Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+        Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+         Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = True
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = False
+     Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = True
+        Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = True
+        Forms![foreclosure database screen]![EvictionSubFormVA].Form!stage = EvicStage()
+        
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+    End If
+    End If
+    
+If Forms![foreclosure database screen]!Screen_Change = "Closed" Or _
+Forms![foreclosure database screen]!Screen_Change = "Hold" Or _
+Forms![foreclosure database screen]!Screen_Change = "Archived" Then
+
+[Forms]![foreclosure database screen]![Trustee].Form.Visible = False
+Forms![foreclosure database screen]![spentity].Form.Visible = False
+     Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+      Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = True
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+
+    
+    If [Forms]![foreclosure database screen]![Screen_Change] = "Archived" Then
+    [Forms]![foreclosure database screen]![ClosedSub2].[Form]![archivebutton].Visible = False
+    Else
+    [Forms]![foreclosure database screen]![ClosedSub2].[Form]![archivebutton].Visible = True
+    End If
+
+End If
+
+    
+If Forms![foreclosure database screen]!Screen_Change = "Litigation" Then
+strsql = "select * from litdeftbl where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("litdeftbl", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+strsql = "select * from litexctbl where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("litexctbl", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+strsql = "select * from litmotiontbl where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("litmotiontbl", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+strsql = "select * from litstatusconftbl where filenum = " & GblFilenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("litstatusconftbl", dbOpenDynaset, dbSeeChanges)
+With rs
+.AddNew
+!filenum = GblFilenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+
+ [Forms]![foreclosure database screen]![Trustee].Form.Visible = False
+ Forms![foreclosure database screen]![spentity].Form.Visible = False
+     Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+      Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+    End If
+    
+     If Forms![foreclosure database screen]!Screen_Change = "title issue" Then
+     MsgBox ("Title Issue Screen is in the SCREENS drop down menu at the top of the screen")
+     Forms![foreclosure database screen]![spentity].Form.Visible = False
+  [Forms]![foreclosure database screen]![Trustee].Form.Visible = False
+     Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+      Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+       Forms![foreclosure database screen]![signature block].Visible = True
+       Forms![foreclosure database screen]![sbtext].Visible = True
+        
+   End If
+   
+  
+  If Forms![foreclosure database screen]!Screen_Change = "Process Service" Then
+  Forms![foreclosure database screen]![spentity].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+        Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+         Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = False
+     Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = False
+        Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+    DoCmd.Close acForm, "ForeclosureSubForm"
+
+End If
+
+  If Forms![foreclosure database screen]!Screen_Change = "Senior Lien Sale" Then
+  Forms![foreclosure database screen]![spentity].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormVA].Form.Visible = False
+    Forms![foreclosure database screen]![ForeclosureSubFormDC].Form.Visible = False
+     Forms![foreclosure database screen]![ForeclosureSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![BankruptcySubForm].Form.Visible = False
+    Forms![foreclosure database screen]![PostsaleSubForm].Form.Visible = False
+        Forms![foreclosure database screen]![POSTSALEVASUBFORM].Form.Visible = False
+         Forms![foreclosure database screen]![PostsaleDCSubForm].Form.Visible = False
+    Forms![foreclosure database screen]![ClosedSub2].Form.Visible = False
+    Forms![foreclosure database screen]![SaleSubForm].Form.Visible = False
+     Forms![foreclosure database screen]![Attorneys].Form.Visible = False
+     [Forms]![foreclosure database screen]![Trustee].Form.Visible = False
+        Forms![foreclosure database screen]![EvictionSubFormMD].Form.Visible = False
+    Forms![foreclosure database screen]![EvictionSubFormVA].Form.Visible = False
+    'Forms![foreclosure database screen]![EvictionSubFormDC].Form.Visible = False
+
+End If
+Dim INV As String
+Dim rsinv, rsClient, rsDup, rsDupSS As RecordSet
+Dim VF_A, VNI As String
+Dim db As Database
+Dim sp As RecordSet
+
+Dim sqlresumes, sqlstr, sqlclient, sqlDup, sqlDupSS, VDupProp, VDupSS As String
+
+
+If Forms![foreclosure database screen]!Note_Pulled = -1 Or Forms![foreclosure database screen]!Note_Pulled = 1 Then
+VNp = Forms![foreclosure database screen]!Note_Pulled
+End If
+
+'Check Duplicates (Conflicts) and Check Maturity Date for Virginia files
+
+Forms![foreclosure database screen]!dup1 = 0
+Forms![foreclosure database screen]!SS1 = 0
+
+sqlDup = "select * from searchprop " _
+& " where (propaddress like " & """" & Forms![foreclosure database screen]!PropAddress & """" & ") or " _
+& " (clientrefnumber = " & """" & Forms![foreclosure database screen]!ClientRefNumber & """" & ");"
+Set rsDup = CurrentDb.OpenRecordset(sqlDup, dbOpenSnapshot)
+
+If Not rsDup.EOF Then
+rsDup.MoveFirst
+End If
+Do While Not rsDup.EOF
+If Not IsNull(Forms![foreclosure database screen]!filenum) Then
+If Forms![foreclosure database screen]!filenum <> rsDup!filenum Then
+VDupProp = VDupProp & rsDup!filenum & "  "
+vconflict = "YES"
+End If
+End If
+rsDup.MoveNext
+Loop
+rsDup.Close
+Set rsDup = Nothing
+Forms![foreclosure database screen]!dup1 = VDupProp
+
+'SSNO CHECK
+If Not IsNull(Forms![foreclosure database screen]!Ssno_1) Then
+sqlDupSS = "select * from searchssno " _
+& " where ssno_1 like " & """" & Forms![foreclosure database screen]!Ssno_1 & """" & ";"
+Set rsDupSS = CurrentDb.OpenRecordset(sqlDupSS, dbOpenSnapshot)
+If Not rsDupSS.EOF Then
+rsDupSS.MoveFirst
+End If
+
+Do While Not rsDupSS.EOF
+If Not IsNull(Forms![foreclosure database screen]!filenum) Then
+If Forms![foreclosure database screen]!filenum <> rsDupSS!filenum Then
+VDupSS = VDupSS & rsDupSS!filenum & "  "
+vconflict = "YES"
+End If
+End If
+rsDupSS.MoveNext
+Loop
+rsDupSS.Close
+Set rsDupSS = Nothing
+Forms![foreclosure database screen]!SS1 = VDupSS
+End If
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+If vconflict = "YES" And Forms![foreclosure database screen]![Date Recieved] > #9/14/2015# Then
+Dim strsqlQ As String
+Dim rsQ As RecordSet
+
+strsqlQ = "Select qc_conflicts_cleared from qc where filenum = " & Forms![foreclosure database screen]!filenum
+Set rsQ = CurrentDb.OpenRecordset(strsqlQ, dbOpenSnapshot)
+
+If rsQ.EOF Then
+MsgBox ("There may be a conflict of interest on this file, or this file is a duplicate of one already opened. Please carefully review before proceeding. If you believe there is a conflict, escalate to your supervisor for additional review. If you have reviewed the files and believe there is no conflict, complete the database field called “Conflict Cleared” with today’s date.")
+ElseIf IsNull(rsQ!qc_conflicts_cleared) Or rsQ!qc_conflicts_cleared = "" Then
+MsgBox ("There may be a conflict of interest on this file, or this file is a duplicate of one already opened. Please carefully review before proceeding. If you believe there is a conflict, escalate to your supervisor for additional review. If you have reviewed the files and believe there is no conflict, complete the database field called “Conflict Cleared” with today’s date.")
+End If
+
+rsQ.Close
+End If
+
+
+
+End If
+
+
+
+
+
+If Forms![foreclosure database screen]![Date Received] <> "" Then
+VReferral = Forms![foreclosure database screen]![Date Received]
+End If
+
+
+sqlclient = "select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(sqlclient, dbOpenSnapshot)
+
+If rsClient.EOF Then
+MsgBox ("CLIENT IS INPUT INCORRECTLY PLEASE UPDATE!")
+Else
+If rsClient!first_american = 1 Then
+VF_A = "YES"
+Else
+VF_A = "No"
+End If
+End If
+
+rsClient.Close
+
+If IsNull(Forms![foreclosure database screen]!Propertycounty) And _
+(Forms![foreclosure database screen]!PropertyState = "MD" Or Forms![foreclosure database screen]!PropertyState = "DC" Or _
+Forms![foreclosure database screen]!PropertyState = "VA") Then
+
+Dim sqlcounty
+Dim rsCounty As RecordSet
+
+sqlcounty = "select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & ";"
+Set rsCounty = CurrentDb.OpenRecordset(sqlcounty, dbOpenSnapshot)
+
+If rsCounty.EOF Then
+MsgBox ("County is not in drop down list please check!")
+End If
+
+rsCounty.Close
+End If
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+Forms![foreclosure database screen]!Asc_wff.Visible = True
+Forms![foreclosure database screen]!RevHeloc.Visible = False
+Forms![foreclosure database screen]!CITIFrame.Visible = False
+
+Forms![foreclosure database screen]!Client_id.Visible = True
+Forms![foreclosure database screen]!Label717.Visible = True
+Forms![foreclosure database screen]!Command799.Visible = True
+Forms![foreclosure database screen]!Certs.Visible = True
+Forms![foreclosure database screen]!SentEmailWells.Visible = True
+Forms![foreclosure database screen]!PrimeNonPrime.Visible = True
+Forms![foreclosure database screen]!HomewardOcwen.Visible = False
+
+ElseIf Forms![foreclosure database screen]!Client Like "Nationsta*" Then
+Forms![foreclosure database screen]!RevHeloc.Visible = True
+Forms![foreclosure database screen]!Asc_wff.Visible = False
+Forms![foreclosure database screen]!CITIFrame.Visible = False
+
+Forms![foreclosure database screen]!Client_id.Visible = False
+Forms![foreclosure database screen]!Label717.Visible = False
+Forms![foreclosure database screen]!Command799.Visible = True
+Forms![foreclosure database screen]!Certs.Visible = False
+Forms![foreclosure database screen]!SentEmailWells.Visible = False
+Forms![foreclosure database screen]!PrimeNonPrime.Visible = True
+Forms![foreclosure database screen]!HomewardOcwen.Visible = False
+
+ElseIf Forms![foreclosure database screen]!Client Like "Carrington*" Then
+Forms![foreclosure database screen]!Label796.Visible = False
+Forms![foreclosure database screen]!Label_LS.Visible = True
+Forms![foreclosure database screen]!Client_id.Visible = True
+
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" Or Forms![foreclosure database screen]!Client Like "Homeward*" Then
+Forms![foreclosure database screen]!RevHeloc.Visible = True
+Forms![foreclosure database screen]!Asc_wff.Visible = False
+Forms![foreclosure database screen]!CITIFrame.Visible = False
+
+Forms![foreclosure database screen]!Client_id.Visible = False
+Forms![foreclosure database screen]!Label717.Visible = False
+Forms![foreclosure database screen]!Command799.Visible = False
+Forms![foreclosure database screen]!Certs.Visible = False
+Forms![foreclosure database screen]!SentEmailWells.Visible = False
+Forms![foreclosure database screen]!PrimeNonPrime.Visible = False
+Forms![foreclosure database screen]!HomewardOcwen.Visible = True
+
+ElseIf Forms![foreclosure database screen]!Client Like "CitiM*" Then
+Forms![foreclosure database screen]!CITIFrame.Visible = True
+Forms![foreclosure database screen]!RevHeloc.Visible = False
+Forms![foreclosure database screen]!Asc_wff.Visible = False
+Forms![foreclosure database screen]!Client_id.Visible = False
+Forms![foreclosure database screen]!Label717.Visible = False
+Forms![foreclosure database screen]!Command799.Visible = False
+Forms![foreclosure database screen]!Certs.Visible = False
+Forms![foreclosure database screen]!SentEmailWells.Visible = False
+Forms![foreclosure database screen]!PrimeNonPrime.Visible = False
+Forms![foreclosure database screen]!HomewardOcwen.Visible = False
+
+Else
+Forms![foreclosure database screen]!RevHeloc.Visible = True
+Forms![foreclosure database screen]!Asc_wff.Visible = False
+Forms![foreclosure database screen]!CITIFrame.Visible = False
+
+Forms![foreclosure database screen]!Client_id.Visible = False
+Forms![foreclosure database screen]!Label717.Visible = False
+Forms![foreclosure database screen]!Command799.Visible = False
+Forms![foreclosure database screen]!Certs.Visible = False
+Forms![foreclosure database screen]!SentEmailWells.Visible = False
+Forms![foreclosure database screen]!PrimeNonPrime.Visible = True
+Forms![foreclosure database screen]!HomewardOcwen.Visible = False
+
+End If
+
+If Forms![foreclosure database screen]!Client Like "OneW*" Then
+Forms![foreclosure database screen]!FF.Visible = True
+Forms![foreclosure database screen]!FFLabel.Visible = True
+
+Else
+Forms![foreclosure database screen]!FF.Visible = False
+Forms![foreclosure database screen]!FFLabel.Visible = False
+
+
+End If
+
+
+If Forms![foreclosure database screen]!Status = "Foreclosure" Or _
+Forms![foreclosure database screen]!Status = "postsale" Then
+If Forms![foreclosure database screen]!PropertyState = "MD" Or _
+Forms![foreclosure database screen]!PropertyState = "DC" Then
+[Forms]![foreclosure database screen]![T1].Visible = False
+     [Forms]![foreclosure database screen]![T2].Visible = False
+     Else
+ [Forms]![foreclosure database screen]![T1].Visible = True
+     [Forms]![foreclosure database screen]![T2].Visible = True
+    
+     End If
+ Else
+ [Forms]![foreclosure database screen]![T1].Visible = False
+     [Forms]![foreclosure database screen]![T2].Visible = False
+
+ 
+ End If
+
+If Forms![foreclosure database screen]!Client Like "Greenpoi*" Then
+Forms![foreclosure database screen]![ClContactLastF].Visible = True
+Forms![foreclosure database screen]![Contact_Label].Visible = True
+Else
+Forms![foreclosure database screen]![ClContactLastF].Visible = False
+Forms![foreclosure database screen]![Contact_Label].Visible = False
+
+End If
+
+'If Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_button = -1 Or
+'Forms![foreclosure database screen]!ForeclosureSubForm.Form!title_button = 1 Then
+'Forms![foreclosure database screen]!ForeclosureSubForm.Form![IRSNotNeed].Visible = True
+'Else
+'Forms![foreclosure database screen]!ForeclosureSubForm.Form![IRSNotNeed].Visible = False
+'End If
+
+
+If IsNull(Forms![foreclosure database screen]!Screen_Change) Then
+FrmStatus = Forms![foreclosure database screen]!Status
+Else
+FrmStatus = Forms![foreclosure database screen]!Screen_Change
+End If
+
+  
+      Forms![foreclosure database screen]![signature block].Visible = True
+        Forms![foreclosure database screen]![sbtext].Visible = True
+                Forms![foreclosure database screen]![mers].Visible = True
+        Forms![foreclosure database screen]![MersLabel].Visible = True
+
+If IsNull(Forms![foreclosure database screen]![client address]![address#2]) Then
+Forms![foreclosure database screen]![client address].Form.Visible = False
+Forms![foreclosure database screen]![A1].Visible = False
+Forms![foreclosure database screen]![A2].Visible = False
+Else
+Forms![foreclosure database screen]![client address].Form.Visible = True
+Forms![foreclosure database screen]![A1].Visible = True
+Forms![foreclosure database screen]![A2].Visible = True
+End If
+
+'If Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+''Dim rsClient As Recordset
+'Set rsCLient = CurrentDb.OpenRecordset("clienttracking", dbOpenDynaset, dbSeeChanges)
+
+'Dim Vselect
+'Vselect = InputBox(Client() & " Tracking" & vbCr & vbCr & "1. Phone Call - Inbound" & vbCr & "2. Phone Call - Outbound" & vbCr & "3. Email - Inbound" & vbCr & "4. Letter - Inbound" & vbCr & "5. In Person Contact" & vbCr & vbCr & "Input 1, 2, 3, 4 or 5 or return for no communication")
+
+'If Vselect <> "" Then
+
+'With rsCLient
+'.AddNew
+
+'!FileNum = Forms![foreclosure database screen]!FileNum
+'!username = username()
+'!DateNoted = Date
+'If Vselect = 1 Then
+'!inbound_phone = 1
+'ElseIf Vselect = 2 Then
+'!outbound_phone = 1
+'ElseIf Vselect = 3 Then
+'!inbound_email = 1
+'ElseIf Vselect = 4 Then
+'!inbound_letter = 1
+'ElseIf Vselect = 5 Then
+'!Personal_Visit = 1
+'End If
+'.Update
+'.Close
+'End With
+
+
+
+
+'End If
+'End If
+End Function
+

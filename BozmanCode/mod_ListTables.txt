@@ -1,0 +1,20 @@
+Attribute VB_Name = "ListTables"
+Option Compare Database
+Option Explicit
+
+Sub ListTables()
+
+Dim fso As FileSystemObject
+Dim stream As TextStream
+Dim t As TableDef
+
+Set fso = New FileSystemObject
+Set stream = fso.CreateTextFile("C:\Charlene\MatthewAlston_stuff\tablelist.txt", True)
+
+stream.WriteLine "Table Name|Connection|Record Count|Field Count"
+For Each t In CurrentDb.TableDefs
+    stream.WriteLine t.name & "|" & t.Connect & "|" & t.RecordCount & "|" & t.Fields.Count
+Next t
+'stream.WriteLine "hello world my name is matthew!"
+
+End Sub

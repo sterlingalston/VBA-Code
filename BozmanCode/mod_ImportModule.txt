@@ -1,0 +1,686 @@
+Attribute VB_Name = "ImportModule"
+Option Compare Database
+
+Public Function ImportClientReferral()
+Dim vFile As String
+Dim filepath, dumpname As String
+
+Call WarningsNowFalse
+
+filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+
+ 
+
+If IsTable("ClientreferralLoan") Then
+    DoCmd.DeleteObject acTable, "clientreferralloan"
+End If
+
+
+MsgBox ("You HAVE to have the spreadsheet copied into your \\rvdv-fs01\DataTransfer\ClientReferral\ directory and column header has to be named LOAN # (that is loan #) (a space between loan and the # sign)")
+
+vFile = InputBox("Enter Spreadsheet File Name (do NOT type in the .xls portion of the file name)")
+
+If Len(vFile) = 0 Then Exit Function
+
+DoCmd.TransferSpreadsheet acImport, , "ClientreferralLoan", "\\rvdv-fs01\DataTransfer\ClientReferral\" & vFile, 1
+
+CurrentDb.Execute ("alter table clientreferralLoan alter column [Loan #] text")
+
+MsgBox "Loan numbers have imported.", vbOKOnly
+
+
+DoCmd.OpenQuery ("ClientReferralMainDSETQry")
+
+MsgBox "Creation of table is completed", vbOKOnly
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "ClientReferralUnionQry", filepath & "ClientReferralLoans.xls", True, "MainData"
+
+MsgBox "Spreadsheet transferring", vbOKOnly
+
+dumpname = Format$(Now(), "yyyymmddhhnnss") & "_ClientReferralLoans.xls"
+
+sourcefile = filepath & "ClientReferralLoans.xls"
+destinationfile = "\\rvdv-fs01\shared\SPREADSHEETS\Managers\" & dumpname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+MsgBox "Spreadsheet can be found: G:\Spreadsheets\Managers Menu and is called: " & dumpname
+
+
+ 
+
+End Function
+
+
+Public Function UpdateDepositField()
+Dim vFile As String
+
+If IsTable("MemoUpdateTbl") Then
+DoCmd.DeleteObject acTable, "UpdateDepositsTbl"
+End If
+
+ 
+
+MsgBox ("You HAVE to have the DepositUpdate spreadsheet copied into your \\rvdv-fs01\datatransfer\DepositUpdate directory and FileNum and Deposit have to be the names of the column headers.")
+
+vFile = InputBox("Enter Spreadsheet File Name (do NOT type in the .xls portion of the file name)")
+DoCmd.TransferSpreadsheet acImport, , "UpdateDepositsTbl", "\\rvdv-fs01\datatransfer\DepositUpdate\" & vFile, 1
+
+ 
+DoCmd.OpenQuery "UpdateDepositQRY"
+
+MsgBox ("Deposit field has been updated")
+
+
+End Function
+
+Public Function AddToJournalMEMO()
+Dim vFile As String
+
+If IsTable("MemoUpdateTbl") Then
+DoCmd.DeleteObject acTable, "MemoUpdateTbl"
+End If
+
+ 
+
+MsgBox ("You HAVE to have the MemoUpdate spreadsheet copied into your \\rvdv-fs01\datatransfer\MemoUpdate directory and column header has to be named LOAN # (EVEN if it is the BWW# just have the header the same name) and (that is loan #,a space between loan and the # sign) and Memo should be a column header of MEMO.")
+
+vFile = InputBox("Enter Spreadsheet File Name (do NOT type in the .xls portion of the file name)")
+DoCmd.TransferSpreadsheet acImport, , "MemoUpdateTbl", "\\rvdv-fs01\datatransfer\MemoUpdate\" & vFile, 1
+
+
+ 
+
+Dim rs As RecordSet
+Dim VSelec
+VSelec = InputBox("Linking spreadsheet using:" & vbCr & vbCr & "1. Loan#" & vbCr & "2. BWW#" & vbCr & vbCr & "enter 1 or 2")
+
+If VSelec = 1 Then
+CurrentDb.Execute ("alter table MemoUpdateTbl alter column [Loan #] text")
+Set rs = CurrentDb.OpenRecordset("MemoUpdateQRY")
+ElseIf VSelec = 2 Then
+Set rs = CurrentDb.OpenRecordset("MemoUpdateQRYFileNum")
+End If
+
+
+
+
+Dim rstjournal As RecordSet
+Dim VID
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+rstjournal.MoveLast
+
+'Set rs = CurrentDb.OpenRecordset("MemoUpdateQRY")
+
+Do While Not rs.EOF
+
+
+With rstjournal
+.AddNew
+!filenum = rs![filenum]
+!EntryBy = "AUTO"
+!EntryDate = Now()
+!Entry = rs!Memo
+.Update
+End With
+
+
+rs.MoveNext
+Loop
+rstjournal.Close
+
+MsgBox ("Memo field has been updated")
+
+
+End Function
+
+Public Function ImportFLMABulk()
+Dim vFile As String
+ 
+
+CurrentDb.Execute ("delete * from BulkFinal")
+
+If IsTable("BulkFinal") Then
+DoCmd.DeleteObject acTable, "BulkFinal"
+End If
+
+
+MsgBox ("You HAVE to have the spreadsheet copied into your T:\BulkFLMA directory")
+
+vFile = "FLMA.xls"
+DoCmd.TransferSpreadsheet acImport, , "BulkFinal", "T:\BulkFLMA\FLMA.xls", 1
+
+DoCmd.OpenReport "FinalLMAffBULK", acViewPreview
+
+ 
+
+End Function
+
+Public Function ImportClientOrgDoc()
+
+Dim vFile As String
+ 
+CurrentDb.Execute "DELETE * FROM clientstatusrequest;", dbFailOnError
+
+If IsTable("clientstatusloan") Then
+DoCmd.DeleteObject acTable, "clientstatusloan"
+End If
+
+MsgBox ("You HAVE to have the spreadsheet copied into your \\rvdv-fs01\datatransfer\ClientStatus directory and column header has to be named LOAN # (that is loan #) (a space between loan and the # sign)")
+
+vFile = InputBox("Enter Spreadsheet File Name (do NOT type in the .xls portion of the file name)")
+DoCmd.TransferSpreadsheet acImport, , "ClientStatusLoan", "\\rvdv-fs01\datatransfer\ClientStatus\" & vFile, 1
+CurrentDb.Execute ("alter table clientstatusLoan alter column [Loan #] text")
+CurrentDb.Execute "Delete * from clientstatusrequesttable;", dbFailOnError
+
+DoCmd.OpenQuery ("clientstatusrequestqueryMD")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD2")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD3")
+
+ExcelSaveAsQRY ("ClientOrgDocRequestQuery")
+ 
+
+End Function
+
+
+Public Function ImportClientStatus()
+Dim vFile As String
+ Call WarningsNowFalse
+
+CurrentDb.Execute "DELETE * FROM clientstatusrequest;", dbFailOnError
+
+If IsTable("clientstatusloan") Then
+DoCmd.DeleteObject acTable, "clientstatusloan"
+End If
+
+
+MsgBox ("You HAVE to have the spreadsheet copied into your \\rvdv-fs01\datatransfer\ClientStatus directory and column header has to be named LOAN # (that is loan #) (a space between loan and the # sign)")
+
+vFile = InputBox("Enter Spreadsheet File Name (do NOT type in the .xls portion of the file name)")
+If vFile = "" Then
+MsgBox ("Need to enter file name. Exiting function")
+Exit Function
+End If
+
+DoCmd.TransferSpreadsheet acImport, , "ClientStatusLoan", "\\rvdv-fs01\datatransfer\ClientStatus\" & vFile, 1
+CurrentDb.Execute ("alter table clientstatusLoan alter column [Loan #] text")
+CurrentDb.Execute "Delete * from clientstatusrequesttable;", dbFailOnError
+
+DoCmd.OpenQuery ("clientstatusrequestqueryMD")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD2")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD3")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD4")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD5")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD6")
+
+Dim Vini
+
+Dim VSel
+VSel = InputBox("Create Extended Spreadsheet (includes all borrowers, dns buttons and Org Lender y/n")
+
+Dim rsExc As RecordSet
+MsgBox ("Spreadsheets will generate you will be asked where to save each one separately. " & vbCr & "If there are any exceptions there will be a 2nd spreadsheet.")
+
+If VSel Like "y*" Then
+
+ExcelSaveAsQRY ("clientstatusrequestqueryMDExtended")
+
+Set rsExc = CurrentDb.OpenRecordset("clientstatusrequestqueryExc", dbOpenSnapshot)
+
+If Not rsExc.EOF Then
+ExcelSaveAsTBL ("clientstatusrequestqueryExtended")
+End If
+rsExc.Close
+
+Else
+
+
+
+Dim rsMd As RecordSet
+Dim rsVA As RecordSet
+Dim rsDC As RecordSet
+
+Set rsMd = CurrentDb.OpenRecordset("clientstatusrequesttable", dbOpenSnapshot)
+If Not rsMd.EOF Then
+MsgBox ("Maryland spreadsheet.")
+
+ExcelSaveAsTBL ("clientstatusrequesttable")
+End If
+rsMd.Close
+
+Set rsVA = CurrentDb.OpenRecordset("clientstatusrequestquery", dbOpenSnapshot)
+If Not rsVA.EOF Then
+MsgBox ("Virginia spreadsheet.")
+ExcelSaveAsQRY ("clientstatusrequestquery")
+End If
+rsVA.Close
+
+
+Set rsDC = CurrentDb.OpenRecordset("clientstatusrequestquerydc", dbOpenSnapshot)
+If Not rsDC.EOF Then
+MsgBox ("DC spreadsheet.")
+ExcelSaveAsQRY ("clientstatusrequestquerydc")
+End If
+rsDC.Close
+
+Set rsExc = CurrentDb.OpenRecordset("clientstatusrequestqueryExc", dbOpenSnapshot)
+If Not rsExc.EOF Then
+MsgBox ("Exception spreadsheet.  This may be blank due to blank fields imported from spreadsheet")
+ExcelSaveAsQRY ("clientstatusrequestqueryExc")
+End If
+rsExc.Close
+
+End If
+
+
+
+
+ 
+
+End Function
+
+
+Public Function ImportClientStatusInvestor()
+Dim vFile As String
+ 
+
+CurrentDb.Execute "DELETE * FROM clientstatusrequest;", dbFailOnError
+
+If IsTable("clientstatusloan") Then
+DoCmd.DeleteObject acTable, "clientstatusloan"
+End If
+
+
+MsgBox ("You HAVE to have the spreadsheet copied into your T:\ClientStatus directory and column header has to be named Investor#")
+
+vFile = InputBox("Enter Spreadsheet File Name (do NOT type in the .xls portion of the file name)")
+DoCmd.TransferSpreadsheet acImport, , "ClientStatusLoan", "\\rvdv-fs01\datatransfer\ClientStatus\" & vFile, 1
+CurrentDb.Execute ("alter table clientstatusLoan alter column [Investor#] text")
+CurrentDb.Execute "Delete * from clientstatusrequesttable;", dbFailOnError
+
+DoCmd.OpenQuery ("clientstatusrequestqueryInvestor")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD3")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD4")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD5")
+
+Dim Vini
+InputBox ("3 spreadsheets will generate.  You will have 3 pop ups to save and name")
+
+ExcelSaveAsTBL ("clientstatusrequesttable")
+ExcelSaveAsQRY ("clientstatusrequestqueryInvestor")
+ExcelSaveAsQRY ("clientstatusrequestqueryExcInvestor")
+ 
+
+End Function
+Public Function ImportClientStatusOcwen()
+Dim vFile As String
+ Call WarningsNowFalse
+
+CurrentDb.Execute "DELETE * FROM clientstatusrequest;", dbFailOnError
+
+If IsTable("clientstatusloan") Then
+DoCmd.DeleteObject acTable, "clientstatusloan"
+End If
+
+
+MsgBox ("You HAVE to have the spreadsheet copied into your \\rvdv-fs01\datatransfer\ClientStatus directory and column header has to be named LOAN # (that is loan #) (a space between loan and the # sign)")
+
+vFile = InputBox("Enter Spreadsheet File Name (do NOT type in the .xls portion of the file name)")
+DoCmd.TransferSpreadsheet acImport, , "ClientStatusLoan", "\\rvdv-fs01\datatransfer\ClientStatus\" & vFile, 1
+CurrentDb.Execute ("alter table clientstatusLoan alter column [Loan #] text")
+CurrentDb.Execute "Delete * from clientstatusrequesttable;", dbFailOnError
+
+DoCmd.OpenQuery ("clientstatusrequestqueryMD")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD2")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD3")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD4")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD5")
+
+
+ExcelSaveAsQRY ("clientstatusrequestOcwen")
+ 
+
+End Function
+Public Function ImportFNMAFiles()
+Dim vFile As String
+ 
+
+CurrentDb.Execute ("delete * from FNMAMDocsALL")
+
+If IsTable("clientstatusFileno") Then
+DoCmd.DeleteObject acTable, "clientstatusFileno"
+End If
+
+
+MsgBox ("You HAVE to have the spreadsheet copied into your \\rvdv-fs01\Shared\SPREADSHEETS\SpreadsheetLINK\ directory and column header has to be named BGWW#")
+
+vFile = InputBox("Enter Spreadsheet File Name (do NOT type in the .xls portion of the file name). Spreadsheet has to be a .xls file NOT a .xlsx file.")
+DoCmd.TransferSpreadsheet acImport, , "ClientStatusFileNo", "\\rvdv-fs01\Shared\SPREADSHEETS\SpreadsheetLINK\" & vFile, 1
+CurrentDb.Execute "Delete * from clientstatusrequesttable;", dbFailOnError
+CurrentDb.Execute ("delete * from FNMAMDocsALL")
+'DoCmd.OpenQuery ("clientstatusrequestqueryMD-BWW")
+DoCmd.OpenQuery ("FNMAstatusrequestqueryMD2-BWW")
+'DoCmd.OpenQuery ("clientstatusrequestqueryMD3")
+
+Dim rsmdocs As RecordSet
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("FNMAMDocsAll", dbOpenDynaset, dbSeeChanges)
+
+Set rsmdocs = CurrentDb.OpenRecordset("Clientstatusrequesttable", dbOpenDynaset, dbSeeChanges)
+
+rsmdocs.MoveFirst
+
+Do While Not rsmdocs.EOF
+
+'If IsNull(rsmdocs![Preliminary Loss Mit Aff Rec'd]) And IsNull(rsmdocs![Final Loss Mit Aff rec'd]) And _
+'IsNull(rsmdocs![Prelim Docket Filed]) And IsNull(rsmdocs![Final Docket Filed]) Or _
+'(IsNull(rsmdocs![Preliminary Loss Mit Aff Rec'd]) And IsNull(rsmdocs![Final Loss Mit Aff rec'd]) And _
+'IsNull(rsmdocs![Prelim Docket Filed]) And IsNull(rsmdocs![Final Docket Filed]) And _
+'((Not IsNull(rsmdocs![Preliminary Loss Mit Aff Sent]) Or Not IsNull(rsmdocs![Final Loss Mit Aff Sent]) Or _
+'Not IsNull(rsmdocs![Part 1 Filed])) And Not IsNull(rsmdocs![Restart Completed]))) Then
+'VNotes = ""
+'End If
+
+'If rsmdocs!Client Like "Bank of Am*" Or _
+'rsmdocs!Client Like "Bank of A*" Or _
+'rsmdocs!Client Like "Nationst*" Or _
+'rsmdocs!Client Like "Financial*" Or _
+'rsmdocs!Client Like "Residen*" Or _
+'rsmdocs!Client Like "Saxon*" Or _
+'rsmdocs!Client Like "Select*" Then
+'VNotes = "Awaiting servicer instruction for compliance with HB472"
+'ElseIf rsmdocs!Client Like "Chase H*" Then
+'VNotes = "Awaiting final information from servicer to issue NOI's"
+'ElseIf (rsmdocs!Client Like "Homeward*" Or _
+'rsmdocs!Client Like "Citi*" Or _
+'rsmdocs!Client Like "JPMor*" Or _
+'rsmdocs!Client Like "EMC*" Or _
+'rsmdocs!Client Like "Washington Mutu*" Or _
+'rsmdocs!Client Like "Nationwide*") And _
+'IsNull(rsmdocs![noi sent]) Then
+'VNotes = "Servicer is issuing NOI.  Awaiting copies to proceed."
+'ElseIf Not IsNull(rsmdocs!Comments) Then
+'VNotes = rsmdocs!Comments
+'Else
+'VNotes = ""
+'End If
+
+If Not IsNull(rsmdocs![Aff of Debt Sent]) And IsNull(rsmdocs![Aff of Debt rec'd]) Then
+With rs
+.AddNew
+!TypeDoc = "Affidavit of Debt"
+!InitialReq = rsmdocs![Aff of Debt Sent]
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs![BGWW#]
+!Status = rsmdocs!Status
+
+.Update
+End With
+End If
+
+If Not IsNull(rsmdocs!AffMailing_sent) And IsNull(rsmdocs!AffMailing_recd) Then
+With rs
+.AddNew
+!TypeDoc = "Affidavit of Mailing"
+!InitialReq = rsmdocs!AffMailing_sent
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs![BGWW#]
+!Status = rsmdocs!Status
+
+.Update
+End With
+End If
+
+
+If Not IsNull(rsmdocs![sot sent]) And IsNull(rsmdocs![sot rec'd]) Then
+With rs
+.AddNew
+!TypeDoc = "SOT"
+!InitialReq = rsmdocs![sot sent]
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs![BGWW#]
+!Status = rsmdocs!Status
+
+.Update
+End With
+End If
+
+
+If Not IsNull(rsmdocs!milaff_sent) And IsNull(rsmdocs!MilAff_recd) Then
+With rs
+.AddNew
+!TypeDoc = "Non-Military Affidavit"
+![BGWW#] = rsmdocs![BGWW#]
+
+!InitialReq = rsmdocs!milaff_sent
+![Investor#] = rsmdocs![Investor#]
+!Status = rsmdocs!Status
+
+.Update
+End With
+End If
+
+If rsmdocs![Preliminary Loss Mit Aff Sent] <> "" And (rsmdocs![Preliminary Loss Mit Aff Rec'd] = "" Or IsNull(rsmdocs![Preliminary Loss Mit Aff Rec'd])) Then
+
+With rs
+.AddNew
+!TypeDoc = "Affidavit - Prelim Loss Mit"
+!InitialReq = rsmdocs![Preliminary Loss Mit Aff Sent]
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs![BGWW#]
+!Status = rsmdocs!Status
+
+.Update
+End With
+
+End If
+
+
+If rsmdocs![Affidavit of Ownership Sent] <> "" And (rsmdocs![Affidavit of Ownership Rec'd] = "" Or IsNull(rsmdocs![Affidavit of Ownership Rec'd])) Then
+
+With rs
+.AddNew
+!TypeDoc = "Affidavit Certifying Ownership"
+!InitialReq = rsmdocs![Affidavit of Ownership Sent]
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs![BGWW#]
+!Status = rsmdocs!Status
+
+.Update
+End With
+End If
+
+If rsmdocs![Aff of Default Sent] <> "" And (rsmdocs![Aff of Default Rec'd] = "" Or IsNull(rsmdocs![Aff of Default Rec'd])) Then
+With rs
+.AddNew
+!TypeDoc = "Affidavit of Default and Mailing - MD"
+!InitialReq = rsmdocs![Aff of Default Sent]
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs![BGWW#]
+!Status = rsmdocs!Status
+
+.Update
+End With
+End If
+
+If rsmdocs![Final Loss Mit Aff Sent] <> "" And (rsmdocs![Final Loss Mit Aff rec'd] = "" Or IsNull(rsmdocs![Final Loss Mit Aff rec'd])) Then
+
+With rs
+.AddNew
+!TypeDoc = "Affidavit - Final Loss Mit"
+!InitialReq = rsmdocs![Final Loss Mit Aff Sent]
+![Investor#] = rsmdocs![Investor#]
+![BGWW#] = rsmdocs![BGWW#]
+!Status = rsmdocs!Status
+.Update
+End With
+End If
+
+rsmdocs.MoveNext
+Loop
+
+rs.Close
+rsmdocs.Close
+
+ExcelSaveAsTBL ("FNMAMDocsAll")
+
+End Function
+Public Function ImportClientStatusBWW()
+Dim vFile As String
+ 
+
+CurrentDb.Execute "DELETE * FROM clientstatusrequest;", dbFailOnError
+
+If IsTable("clientstatusFileno") Then
+DoCmd.DeleteObject acTable, "clientstatusFileno"
+End If
+
+
+MsgBox ("You HAVE to have the spreadsheet copied into your \\rvdv-fs01\Shared\SPREADSHEETS\SpreadsheetLINK\ directory and column header has to be named BWW#")
+
+vFile = InputBox("Enter Spreadsheet File Name (do NOT type in the .xls portion of the file name). Spreadsheet has to be a .xls file NOT a .xlsx file.")
+DoCmd.TransferSpreadsheet acImport, , "ClientStatusFileNo", "\\rvdv-fs01\Shared\SPREADSHEETS\SpreadsheetLINK\" & vFile, 1
+CurrentDb.Execute "Delete * from clientstatusrequesttable;", dbFailOnError
+
+DoCmd.OpenQuery ("clientstatusrequestqueryMD-BWW")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD2-BWW")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD3")
+DoCmd.OpenQuery ("clientstatusrequestqueryMD4")
+
+MsgBox ("2 spreadsheets will generate you will be asked where to save each one separately")
+ExcelSaveAsTBL ("clientstatusrequesttable")
+ExcelSaveAsQRY ("clientstatusrequestquery-BWW")
+ 
+End Function
+
+Public Function ImportBACLegal()
+ 
+'On Error Resume Next
+MsgBox ("To Import BAC Legal:" & vbCr & vbCr & "1.  Copy all Excel Spreadsheets to \DataTransfer\CWUploads\Legals Directory" & vbCr & "2. Excel has to be named BAC_1st_Legal_Deadline Dates" & vbCr & vbCr & "The field names on the Excel HAVE TO BE Loan # and 1st Legal Deadline Date!!! Please read all of this before proceeding and make sure the names are EXACT!!" & vbCr & vbCr & "When this is done click OK"), vbOKCancel
+
+Dim VFolder, f, fs, fldr, f1, fc, vFile, Vfilename
+Dim VFileTimeDownload, vfiletime As Date
+Dim vtime As String
+
+
+VFolder = "\\rvdv-fs01\DataTransfer\CWUploads\Legals"
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set fldr = fs.GetFolder(VFolder)
+
+f = FreeFile(1)
+
+For Each f1 In fldr.Files
+
+        DoCmd.DeleteObject acTable, "Sheet1"
+        vFile = "BAC_1st_Legal_Deadline Dates.xls"
+        DoCmd.TransferSpreadsheet acImport, , "Sheet1", DTLocation & "\CWUploads\Legals\" & vFile, True
+        CurrentDb.Execute ("alter table Sheet1 alter column [Loan #] text;")
+
+        DoCmd.OpenQuery ("UpdateBACLegals")
+        txtname = vFile
+        sourcefile = DTLocation & "\CWUploads\Legals\" & vFile
+        destinationfile = DTLocation & "\CWUploads\Legals\Backup\" & txtname
+        FileCopy sourcefile, destinationfile    ' Copy source to target.
+           
+        f1.Delete True
+        MsgBox ("IMPORTED AND COPYIED FILE NAME: " & vFile & " FROM THE DATATRANSFER CWUploads\Legals DIRECTORY")
+        
+        VFileTimeDownload = ""
+        vFile = ""
+        
+Next
+
+End Function
+Public Function ImportTimeAdCosts()
+ 
+'On Error Resume Next
+MsgBox ("To Import Sale Times and Ad Costs" & vbCr & vbCr & "1.  Copy all Excel Spreadsheets to \DataTransfer\CooperSale Directory (NOT the TimesAdCosts this is the Directory that we keep all copies)" & vbCr & "2.  When this is done click OK"), vbOKCancel
+
+Dim VFolder, f, fs, fldr, f1, fc, vFile, Vfilename
+Dim VFileTimeDownload, vfiletime As Date
+Dim vtime As String
+
+
+VFolder = "\\rvdv-fs01\DataTransfer\CooperSale"
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set fldr = fs.GetFolder(VFolder)
+
+f = FreeFile(1)
+
+    Open "\\rvdv-fs01\DataTransfer\CooperTimeTransaction.txt" For Input As #f
+    Input #f, vtime
+    Close #f
+    vfiletime = vtime
+
+
+
+For Each f1 In fldr.Files
+
+        DoCmd.DeleteObject acTable, "SaleTimes"
+        vFile = f1.name
+        VFileTimeDownload = f1.DateLastModified
+        Open "\\rvdv-fs01\DataTransfer\CooperTimeTransaction.txt" For Output As #1
+        Print #1, VFileTimeDownload
+        Close #1
+        vfiletime = VFileTimeDownload
+        DoCmd.TransferSpreadsheet acImport, acSpreadsheetTypeExcel8, "SaleTimes", DTLocation & "\CooperSale\" & vFile, True
+        DoCmd.OpenQuery ("UpdateSaleTimes")
+        DoCmd.OpenQuery ("UpdateSaleAdCostFees1")
+        DoCmd.OpenQuery ("UpdateSaleAdCostFees2")
+        DoCmd.OpenQuery ("UpdateSaleAdCostFees3")
+        DoCmd.OpenQuery ("UpdateAdCosts")
+
+        
+        txtname = vFile
+        sourcefile = DTLocation & "\CooperSale\" & vFile
+        destinationfile = DTLocation & "\CooperSale\TimesAdCosts\" & txtname
+        FileCopy sourcefile, destinationfile    ' Copy source to target.
+           
+        f1.Delete True
+        MsgBox ("IMPORTED AND COPYIED FILE NAME: " & vFile & " FROM THE DATATRANSFER CooperSale DIRECTORY")
+        
+        VFileTimeDownload = ""
+        vFile = ""
+        
+Next
+
+
+'If VFile = "" Then
+'MsgBox ("Completed")
+'Exit Function
+'End If
+
+
+
+
+
+
+End Function
+
+Public Function ImportCooperSaleDates()
+        
+Dim vFile As String
+vFile = InputBox("Save file to: \\rvdv-fs01\Datatransfer\CooperSale\SaleDatesMasters\" & vbCr & "and enter exact name of Sale Date File:")
+
+If IsTable("importsale") Then
+
+DoCmd.DeleteObject acTable, "importsale"
+
+End If
+
+DoCmd.TransferSpreadsheet acImport, acSpreadsheetTypeExcel8, "importsale", DTLocation & "\CooperSale\SaleDatesMasters\" & vFile, True
+
+
+Dim rsSale, rsCooper As RecordSet
+Dim VCounter As Integer
+
+Set rsSale = CurrentDb.OpenRecordset("saledays", dbOpenDynaset, dbSeeChanges)
+
+DoCmd.OpenQuery "ImportSaleDaysQRY"
+
+MsgBox ("Upload Complete")
+
+End Function
+
+

@@ -1,0 +1,43 @@
+Attribute VB_Name = "Functions For Menu Bar"
+Option Compare Database   'Use database order for string comparisons
+
+Function sAddNewDebtor()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+
+    DocName = "New Debtor"
+    DoCmd.OpenForm DocName, , , linkcriteria
+    'Forms![mainform].Visible = False
+
+On Error GoTo sAddNewDebtor_Err
+
+sAddNewDebtor_Exit:
+    Exit Function
+
+sAddNewDebtor_Err:
+    MsgBox Error$
+    Resume sAddNewDebtor_Exit
+
+    
+End Function
+
+Function sOpenDatabase()
+
+    Dim DocName As String
+    Dim linkcriteria As String
+
+    DocName = "Site Form Sub"
+    DoCmd.OpenForm DocName, , , linkcriteria
+    'Forms![mainform].Visible = False
+On Error GoTo sOpenDatabase_Err
+
+sOpenDatabase_Exit:
+    Exit Function
+
+sOpenDatabase_Err:
+    MsgBox Error$
+    Resume sOpenDatabase_Exit
+    
+End Function
+

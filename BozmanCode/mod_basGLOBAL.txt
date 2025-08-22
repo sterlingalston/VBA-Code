@@ -1,0 +1,147 @@
+Attribute VB_Name = "basGLOBAL"
+Option Compare Database
+Option Explicit
+' *********************   GLOBAL VARIABLES USED IN THE APPLICATION   *******************************
+Global ADORST1 As ADODB.RecordSet
+Global gFORM As Form
+Global VWalzRI As String
+Global VFieldNameDate As String
+Global strsql As String
+Global gstrSQL As String
+Global VSelAdd As Integer
+Global rst As DAO.RecordSet
+Global strSERVER_NM As String
+Global strDSN As String
+Global gUSER_NM As String
+Global gNoData As Boolean
+Global gREPORT As String
+Global gPDFDoc As String
+Global gpathuser() As String
+Global VInvMatch As Long
+Global gRecipients As String
+Global gCCRecipients As String
+Global GSubject As String
+Global gAttachment1 As String
+Global gAttachment2 As String
+Global gAttachment3 As String
+Global gattachment4 As String
+Global gAltAdd As Integer
+Global gVAssign As Integer
+Global gVExh As Integer
+Global VSpage As Integer
+Global VPreDFiled
+Global VFinalDFiled
+Global GblBKNo As Long
+Global VFLMAFiled
+Global VNotaryEv
+Global vAssignorPopUp
+Global vWalzPDF
+Global vARDate As Date
+Global VDecBor
+Global VTitleGrade
+Global gInitials
+Global DecdClicked
+Global GblPassword As Integer
+Global VField As String
+Global gBody As String
+Global gFile
+Global gTypeDoc
+Global gFName
+Global NewText As String
+Global VarTITLEORD
+Global VChapter As String
+Global ContactID As String
+Global CurrentSale As String
+Global VReferralType As String
+Global VarTrustee As Integer
+Global VSelState As Integer
+Global VSelQue As Integer
+Global VSaleDateGlobal, VNoticeDate, VSaleTime, VChkSent, VTitleOrd As String
+Global VReferral As String
+Global VNewInv As String
+Global VStatus As String
+Global VDnrn As String
+Global VSParty
+Global VTypeLoan
+Global VNp
+Global GblFilenum As Long
+Global VFs
+Global VGr
+
+
+Global gOcc
+Global VFdlLnl
+Public AppType
+Global FrmStatus As String
+Global VCCTo As String
+Global AudCty As String
+Global VarBKNo
+Global PSName As String
+Global DefASS As String
+Global VexitFunc As Integer
+Global VProcEv
+Global VSentWalz As Integer
+Global VEvOrd
+Global VINv
+Global Vlmn As String, VPayclient As String, Vservicer As String, VSecPNo As String, VSpA As String, VSpP As String, VBn As String, VBp As String, VMl As String, VlmnExt As String
+Global VCa As String, VCc As String, VCs As String, VCz As String, VPw As String
+Global VLiber As String
+Global VFolio As String
+Global VInst As String
+Global gnodebtors As Integer
+Global gNoDocs As Integer
+Global VMail
+Global VMailNotes
+Global PrivEditMemo As Boolean
+Global PrivForceUnlock As Boolean
+Global PrivReadOnlyLockExempt As Boolean
+Global PrivCeaseCommunications As Boolean
+Global gblUserName As String
+Global gblPrevDate
+Global gblPrevText
+Global vimageXML As String, vHUD1 As String, vHUD2 As String, VAttach As String
+Global VPDFxml As String
+Global strsqlLIEN As String, vNOIPDF As String
+Global VCntStart As Integer
+Global VLtr, VCode, VImage, VImageFile As String
+Global VLtrDate, VIDNo As String
+Global amt1, amt2, amt3, amt4
+Global dumpname As String
+Global VDocName As String
+
+Global VPDF As String
+Global VWLtrs As Integer
+Global VSndSup
+Global VOT
+Global PrepBy
+Global VTypeMerge As String
+Global VMergeData
+Global NOSMonies
+Global FDLMonies
+Global BILLDateCalc As Date
+Global BillSaleDateCalc As Date
+Global TVal
+Global VDilSelectAdd
+Global VMail1, VMail2, VMail3, VMail4, VMail5, VMailb1, VMailb2, VMailb3, VMailb4, VMailb5, VSdat1, VSdat2, VSdat5, VSdat3, VSdat4, VNF
+Global gblCaption
+Global VDOTDate
+Global VOrgAmount
+Global VDOTRecorded
+Global VOrgLender
+Global VOrgTrustee
+
+'---Folders
+Global Const DBLocation = "\\rvdv-fs01\4closure\"
+Global Const NOIDocLocation = "\\rvdv-fs01\NOI_Application\"
+Global Const LocalLocation = "c:\foreclosure"
+Global Const DTLocation = "\\rvdv-fs01\DataTransfer"
+Global Const BULocation = "\\rvdv-fs01\DataTransfer2"
+Global Const AcctLocation = "\\rvdv-fs01\DataTransfer2\AccountingBackupSpreadsheets\"
+Global Const path = "\\rvdv-fs01\DataTransfer\Emails\"
+Global Const AutoIndexPath = "\\rvdv-fs01\BGWFiles$\AutoIndex\"
+Global Const AutoIndexPathUser = "\\rvdv-fs01\BGWFiles$\UserAutoIndex\"
+Global Const ClientAnnPath = "\\rvdv-fs01\shared\ClientAnnouncements\"
+Global Const ScoreCardPath = "\\rvdv-fs01\shared\ScoreCards\"
+
+Global Const NadelPath = "T:\NT_files\"
+

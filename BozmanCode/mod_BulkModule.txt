@@ -1,0 +1,1701 @@
+Attribute VB_Name = "BulkModule"
+Option Compare Database
+
+Public Function BillTransferFileBULKIMAGE()
+
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmpID As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VType
+
+VEmpID = ""
+VMailNotes = ""
+
+strsqlCheck = "select * from billing where filenum = " & _
+Forms![foreclosure database screen]!filenum & " and feeothertext = " & """" & "Transfer Fee" & """" & ";"
+Set rsBillCheck = CurrentDb.OpenRecordset(strsqlCheck, dbOpenSnapshot)
+
+
+DocName = "bill-email-transfer"
+DoCmd.OpenReport DocName, acViewPreview
+
+VConvRpt = "bill-email-transfer"
+Call ConvertPDFALL
+
+varmailto = "invoicescreated@bww-law.com"
+
+emailsubject = "Bill (Transfer Fee: ( " & Forms![foreclosure database screen]!Transferred & "): " & Forms![foreclosure database screen]!Client & "/" & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / Inv#: " & VINv
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\bill-email-transfer.PDF"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+End Function
+
+Public Function BillTransferFileBULK()
+
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmpID As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VType
+
+VEmpID = ""
+VMailNotes = ""
+
+strsqlCheck = "select * from billing where filenum = " & _
+Forms![foreclosure database screen]!filenum & " and feeothertext = " & """" & "Transfer Fee" & """" & ";"
+Set rsBillCheck = CurrentDb.OpenRecordset(strsqlCheck, dbOpenSnapshot)
+
+If Not rsBillCheck.EOF Then
+
+MsgBox ("There is a bill already in our system for a Transfer Fee.  Will exit.")
+
+Else
+
+VSel = MsgBox("Create new Transfer Fee Bill?", vbYesNo)
+If VSel = vbYes Then
+
+VINv = GetAutoNumber("NextBillNum")
+
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+With rsbill
+.AddNew
+
+'Bill Data
+!CustomerID = VINv
+
+'Interim
+!Interim = 0
+
+!filenum = Forms![foreclosure database screen]![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+!Bill_Uploaded = Date
+!initials = VEmp
+![printed and sent] = Date
+!bill_processor = "autoTransfer"
+
+'Fee
+!feeothertext = "Transfer Fee"
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!feeothermoney = 250#
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+!feeothermoney = 0#
+
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+!feeothermoney = 150#
+
+
+End If
+
+'Zero Out other money fields
+    !fee_recassignment = 0#
+    !Title_Co = ""
+    !d_titlesearch = 0#
+    ![Attorney Fee] = 0#
+    !d_recording = 0#
+    !post_mail_lma = 0#
+    !prop_reg = 0#
+    !estate_cost = 0#
+    !estate_adm = 0#
+    !dod_search = 0#
+    !lien_citation_violation = 0#
+    !cert_cpy_dot = 0#
+    !lit_money1 = 0#
+    !process_service = 0#
+    !skip_trace = 0#
+    !auct_NC = 0#
+    !forbearance = 0#
+    !motion_accept = 0#
+    !l_att341 = 0#
+    !d_process = 0#
+    !re_recording = 0#
+    !d_realestatetaxes = 0#
+    !d_transfee = 0#
+    !water = 0#
+    !otherm1 = 0#
+    !d_titleins = 0#
+    !d_adv = 0#
+    !d_auctfee = 0#
+    !lit_money1 = 0#
+    !d_bondprem = 0#
+    !d_servbymail = 0#
+    !d_liencert = 0#
+    !d_filing = 0#
+    !l_initial = 0#
+    !l_preptitle = 0#
+    !d_audfee = 0#
+    !d_advnisi = 0#
+    !add_court_costs = 0#
+    !ps_liencert = 0#
+    !l_prepabstract = 0#
+    !otherm2 = 0#
+    !otherm10 = 0#
+    !fee_dismcase = 0#
+    ![fee_recpoweratt] = 0#
+    !d_reqjud = 0#
+    !l_dil = 0#
+    !l_appearance = 0#
+    !l_preppoc = 0#
+    !add_court_costs = 0#
+    !auct_NC = 0#
+    ![sheriff_fee] = 0#
+    !writ_fee = 0#
+    !evicdc_spnq = 0#
+    !evicdc_comp = 0#
+    !evicdc_usmf = 0#
+    !evicmd_mjap = 0#
+    !evicmd_pshco = 0#
+    !evicdc_sps = 0#
+    !evicva_UD = 0#
+.Update
+.Close
+End With
+
+
+DocName = "bill-email-transfer"
+DoCmd.OpenReport DocName, acViewPreview
+
+VConvRpt = "bill-email-transfer"
+Call ConvertPDFALL
+
+varmailto = "invoicescreated@bww-law.com"
+
+emailsubject = "Bill (Transfer Fee: ( " & Forms![foreclosure database screen]!Transferred & "): " & Forms![foreclosure database screen]!Client & "/" & Forms![foreclosure database screen]![LastNameDebtor1] & " / " & Forms![foreclosure database screen]![PropAddress] & " / Inv#: " & VINv
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = varmailto
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\bill-email-transfer.PDF"
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+
+
+End If
+
+End Function
+
+Public Function BulkDOCStoImagedDocs()
+Dim rs As RecordSet
+Dim Rpt As Report
+Dim rsCT As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("Query6", dbOpenSnapshot)
+rs.MoveFirst
+
+Do While Not rs.EOF
+    Dim vFile
+    vFile = rs![filenum]
+        sourcefile = "C:\4closure\FeeApproval_Invoice400Transfer_350DeedRecorded.pdf"
+        destinationfile = "C:\4closure\FeeApprovalImagedDocs\" & vFile & "_FeeApproval_Invoice400Transfer_350DeedRecorded.pdf"
+        FileCopy sourcefile, destinationfile    ' Copy source to target.
+    rs.MoveNext
+    
+Loop
+
+End Function
+
+
+Public Function AddtoJournalBulkMultipleEntries()
+
+Dim rs As RecordSet
+Dim rstjournal As RecordSet
+Dim VID
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+rstjournal.MoveLast
+Set rs = CurrentDb.OpenRecordset("UpdateSuntrustAffFields")
+
+Do While Not rs.EOF
+
+
+If Not IsNull(rs!DocsSentClient) Then
+With rstjournal
+.AddNew
+!filenum = rs![filenum]
+!EntryBy = "AUTO"
+!EntryDate = Now()
+!Entry = "Old DOA to Client: " & rs!DocsSentClient
+.Update
+End With
+End If
+
+If Not IsNull(rs!Aff_to_Client) Then
+With rstjournal
+.AddNew
+!filenum = rs![filenum]
+!EntryBy = "AUTO"
+!EntryDate = Now()
+!Entry = "Old Aff Default To Client: " & rs!Aff_to_Client
+.Update
+End With
+Set rstNote = CurrentDb.OpenRecordset("Notes", dbOpenDynaset, dbSeeChanges)
+With rstNote
+.AddNew
+!NoteText = "Old DOA to Client: " & rs!DocsSentClient
+!Enteredby = Environ("username")
+!DateEntered = Now()
+'!NoteType =
+!FileNumber = rs!filenum
+.Update
+End With
+rstNote.Close
+End If
+
+If Not IsNull(rs!affcert_to_client) Then
+With rstjournal
+.AddNew
+!filenum = rs![filenum]
+!EntryBy = "AUTO"
+!EntryDate = Now()
+!Entry = "Old Aff Cert To Client: " & rs!affcert_to_client
+.Update
+End With
+Set rstNote = CurrentDb.OpenRecordset("Notes", dbOpenDynaset, dbSeeChanges)
+With rstNote
+.AddNew
+!NoteText = "Old Aff Cert To Client: " & rs!affcert_to_client
+!Enteredby = Environ("username")
+!DateEntered = Now()
+'!NoteType =
+!FileNumber = rs!filenum
+.Update
+End With
+rstNote.Close
+End If
+
+If Not IsNull(rs!PAff_Sent) Then
+With rstjournal
+.AddNew
+!filenum = rs![filenum]
+!EntryBy = "AUTO"
+!EntryDate = Now()
+!Entry = "Old Prelim Aff To Client: " & rs!PAff_Sent
+.Update
+End With
+Set rstNote = CurrentDb.OpenRecordset("Notes", dbOpenDynaset, dbSeeChanges)
+With rstNote
+.AddNew
+!NoteText = "Old Prelim Aff To Client: " & rs!PAff_Sent
+!Enteredby = Environ("username")
+!DateEntered = Now()
+'!NoteType =
+!FileNumber = rs!filenum
+.Update
+End With
+rstNote.Close
+End If
+
+If Not IsNull(rs!FAff_Sent) Then
+With rstjournal
+.AddNew
+!filenum = rs![filenum]
+!EntryBy = "AUTO"
+!EntryDate = Now()
+!Entry = "Old Final Aff To Client: " & rs!FAff_Sent
+.Update
+End With
+Set rstNote = CurrentDb.OpenRecordset("Notes", dbOpenDynaset, dbSeeChanges)
+With rstNote
+.AddNew
+!NoteText = "Old Final Aff To Client: " & rs!FAff_Sent
+!Enteredby = Environ("username")
+!DateEntered = Now()
+'!NoteType =
+!FileNumber = rs!filenum
+.Update
+End With
+rstNote.Close
+End If
+
+rs.MoveNext
+Loop
+rstjournal.Close
+
+End Function
+
+Public Function PullImagedDocs()
+Dim f, f2, fs
+Dim rs As RecordSet
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+Dim DocToPull
+
+Set rs = CurrentDb.OpenRecordset("Query75")
+
+Do While Not rs.EOF
+
+    vFile = ""
+    fldr = ""
+    vFName = ""
+    VDt = #1/1/1989#
+    
+    fldr = GetDocPath(rs!filenum)
+    vFile = rs!filenum & "_RcdTrstDed_*"
+    
+    Set fs = CreateObject("Scripting.FileSystemObject")
+    Set f = fs.GetFolder(fldr)
+      
+    For Each f2 In f.Files
+        If f2.name Like vFile And f2.DateLastModified > VDt Then
+            vFName = f2.name
+            VDt = f2.DateLastModified
+        End If
+    Next
+    
+    If vFName <> "" Then
+        DocToPull = fldr & vFName
+        sourcefile = DocToPull
+        destinationfile = "\\rvdv-fs01\datatransfer\DeedsToPullAfterJan2009\" & vFName
+        FileCopy sourcefile, destinationfile
+    End If
+    
+    rs.MoveNext
+
+Loop
+
+End Function
+
+Public Function BULKDoc()
+docsfldr = "\\rvdv-fs01\datatransfer\BulkDocs\"
+
+'Type in Doc Name
+'VConvRpt = "AffDebtBlankBULK"
+'Call ConvertPDFBulk
+
+DoCmd.OutputTo acOutputReport, "AffDebtBlankBULK", acFormatRTF, "\\rvdv-fs01\datatransfer\BulkDocs\" & Forms![foreclosure database screen]!filenum & "_AffDebtBlankBULK.rtf"
+'VConvRpt = "AffidavitDefaultNoticeNewBulk"
+'Call ConvertPDFBulk
+
+End Function
+
+Public Function BulkOpenFC()
+
+Dim rs As RecordSet
+Dim rsCT As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("SPSDirBillingQry", dbOpenSnapshot)
+
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+    Dim stDocName As String
+
+    Dim stLinkCriteria As String
+    stDocName = "Foreclosure Database Screen"
+    stLinkCriteria = "[FileNum]=" & rs![filenum]
+    DoCmd.OpenForm stDocName, , , stLinkCriteria
+        
+'Pull Doc
+docsfldr = "T:\BulkDocs\SPSBills"
+'dumpname = Format(Forms![foreclosure database screen]!FileNum, "000000") & Format$(Now(), "yyyymmddhhnnss")
+VConvRpt = "Bill-Email-bulk"
+Call ConvertPDFALL
+sourcefile = pathuser() & "bill-email-bulk.pdf"
+destinationfile = docsfldr & "\" & rs!filenum & "_bill-email-bulk.pdf"
+FileCopy sourcefile, destinationfile
+
+'End
+
+    
+    DoCmd.Close acForm, stDocName
+    
+
+rs.MoveNext
+Loop
+
+   
+End Function
+
+Public Function prslBULK()
+Call ExportLNLLetters
+
+Call PRSLWalzBULK
+CopyDocToBGWWDocs "PRSL Letter", "PSRL", "_PRSLLtr.PDF"
+
+
+
+End Function
+
+Public Function PRSLWalzBULK()
+
+CurrentDb.Execute "DELETE * FROM walzxml;", dbFailOnError
+
+dumpname = Format(Forms![foreclosure database screen]!filenum, "000000") & Format$(Now(), "yyyymmddhhnnss")
+
+VConvRpt = "PRSL Letter"
+Call ConvertPDF
+VPDF = dumpname & "_" & VConvRpt & ".pdf"
+
+DoCmd.OpenQuery ("WalzAppendXMLTableBULK1N1")
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+VCntStart = 0
+
+Set rsnotice = CurrentDb.OpenRecordset("WalzXML", dbOpenDynaset, dbSeeChanges)
+Do While Not rsnotice.EOF
+With rsnotice
+.Edit
+VIDNo = GetAutoNumber("NextWalz")
+!pdffile = VPDF
+!reference = VIDNo
+!StartPage = VCntStart + 1
+VCntStart = VCntStart + 1
+!PageCount = 1
+.Update
+End With
+rsnotice.MoveNext
+Loop
+
+DoCmd.OpenQuery ("WalzupdatemoniesPRSL")
+
+Call CreateWalzXML
+Call CreateCompleteFile
+
+'MsgBox ("Letters Sent to Walz")
+'DoCmd.OpenReport ("PRSL Letter"), acViewPreview
+
+'Call PRSLDocs
+
+
+
+
+
+
+
+
+
+End Function
+Public Function RUNBulkDocuments()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("TrioTextTestDump", dbOpenSnapshot)
+
+rs.MoveFirst
+Do While Not rs.EOF
+
+    Dim stDocName As String
+    Dim stLinkCriteria As String
+    stDocName = "Foreclosure Database Screen"
+    stLinkCriteria = "[FileNum]=" & rs![filenum]
+    DoCmd.OpenForm stDocName, , , stLinkCriteria
+    
+    Call TrioNamesAddressesDataExport
+
+    
+rs.MoveNext
+Loop
+    
+End Function
+Public Function FinalLossMitAffBULK()
+
+Call AddToFCTracking
+
+VConvRpt = "Final Loss Mit Aff"
+
+Call ConvertPDFBulk
+
+End Function
+Public Function PreLossMitAffBULK()
+
+Call AddToFCTracking
+
+VConvRpt = "Preliminary Loss Mit Aff"
+Call ConvertPDFBulk
+VConvRpt = "Preliminary Loss Mit Aff Cover"
+
+Call ConvertPDFBulk
+End Function
+Public Function AffCertPreBULK()
+vsplenght = Len(Forms![foreclosure database screen]!longsecured)
+'MsgBox (vsplenght)
+If vsplenght > 100 Or Not IsNull(Forms![foreclosure database screen]!lastnamedebtor4) Or Not IsNull(Forms![foreclosure database screen]![lastnameo1]) Then
+VConvRpt = "affidavitcertownershipCLIENTLONG"
+Else
+VConvRpt = "affidavitcertownershipCLIENT"
+End If
+
+Call ConvertPDFBulk
+
+End Function
+Public Function AffDefNotPreBULK()
+vsplenght = Len(Forms![foreclosure database screen]!longsecured)
+'MsgBox (vsplenght)
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Then
+VConvRpt = "affidavitdefaultnotice"
+ElseIf (vsplenght > 100 Or Not IsNull(Forms![foreclosure database screen]!lastnamedebtor4)) Then
+VConvRpt = "affidavitdefaultnoticeLONG"
+Else
+VConvRpt = "affidavitdefaultnotice"
+End If
+
+Call ConvertPDFBulk
+
+End Function
+Public Function BulkNOCs()
+Dim rs As RecordSet
+Dim Rpt As Report
+Dim rsCT As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("Query20", dbOpenSnapshot)
+rs.MoveFirst
+
+docsfldr = "\\rvdv-fs01\datatransfer\NOC\"
+
+Do While Not rs.EOF
+Dim vFile
+vFile = rs!filenum
+
+strsql = "SELECT * from bulkNOC where filenum = " & rs!filenum & ";"
+Set rsCT = CurrentDb.OpenRecordset(strsql)
+If Not rsCT.EOF Then
+DoCmd.OpenReport "NoticeDocketBULK", acViewDesign
+Reports![NoticeDocketBULK].recordsource = strsql
+DoCmd.Close acReport, "NoticeDocketBULK", acSaveYes
+DoCmd.OutputTo acOutputReport, "NoticeDocketBULK", acFormatSNP, docsfldr & vFile & "_NOC.snp"
+End If
+rsCT.Close
+rs.MoveNext
+
+Loop
+
+
+
+End Function
+
+Public Function MotionDisNadel()
+
+
+If Forms![foreclosure database screen]!Propertycounty = "Prince George's" Then
+DoCmd.OpenReport "Motion_DismissPG-WIttstadt", acViewPreview
+
+Else
+DoCmd.OpenReport "Motion_Dismiss-WIttstadt", acViewPreview
+
+
+End If
+
+VDoc = BrowseFLDRJCS()
+FollowHyperlink VDoc
+
+
+
+End Function
+Public Function BulkOpenFCNadel()
+
+Dim rs As RecordSet
+Dim rsCT As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("BulkDocumentQRY", dbOpenSnapshot)
+
+docsfldr = "T:\BulkDocs\Wittstadt"
+
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+    Dim stDocName As String
+
+    Dim stLinkCriteria As String
+    stDocName = "Foreclosure Database Screen"
+    stLinkCriteria = "[FileNum]=" & rs![filenum]
+    DoCmd.OpenForm stDocName, , , stLinkCriteria
+        
+
+If Forms![foreclosure database screen]!Propertycounty = "Prince George's" Then
+VConvRpt = "Motion_DismissPG-WIttstadt"
+Call ConvertPDFALL
+sourcefile = pathuser() & "\Motion_DismissPG-WIttstadt.pdf"
+destinationfile = docsfldr & "\" & rs!filenum & "_Motion_DismissPG-WIttstad.pdf"
+FileCopy sourcefile, destinationfile
+
+Else
+
+VConvRpt = "Motion_Dismiss-WIttstadt"
+Call ConvertPDFALL
+sourcefile = pathuser() & "\Motion_Dismiss-WIttstadt.pdf"
+destinationfile = docsfldr & "\" & rs!filenum & "_Motion_Dismiss-WIttstadt.pdf"
+FileCopy sourcefile, destinationfile
+
+End If
+
+VDoc = BrowseFLDRJCS()
+If VDoc <> "" Then
+
+sourcefile = VDoc
+destinationfile = docsfldr & "\" & rs!filenum & "_JCSSearch.pdf"
+FileCopy sourcefile, destinationfile
+
+End If
+
+
+    
+    DoCmd.Close acForm, stDocName
+    
+
+rs.MoveNext
+Loop
+
+   
+End Function
+
+
+
+
+Public Function BULKDocCREATION()
+
+Dim rs As RecordSet
+Dim Rpt As Report
+Dim strsqlCty As String
+Dim rsCT As RecordSet
+
+'AffDebtBlank is Doc/Update this Doc Name to run another document
+
+Set rs = CurrentDb.OpenRecordset("BulkDocumentQRY", dbOpenSnapshot)
+rs.MoveFirst
+
+docsfldr = "T:\BulkDocs\Wittstadt"
+
+Do While Not rs.EOF
+
+strsql = "SELECT * from BulkDocumentQRY where filenum = " & rs!filenum & ";"
+Set rsCT = CurrentDb.OpenRecordset(strsql)
+If Not rsCT.EOF Then
+DoCmd.OpenReport "AffDebtBLANK", acViewDesign
+Reports![AffDebtBlank].recordsource = strsql
+DoCmd.Close acReport, "AffDebtBLANK", acSaveYes
+VConvRpt = "AffDebtBLANK"
+Call ConvertPDFALL
+sourcefile = "c:\4closure\AffDebtBLANK.pdf"
+destinationfile = docsfldr & "\" & rs!filenum & "AffDebtBLANK.pdf"
+FileCopy sourcefile, destinationfile
+End If
+
+
+rs.MoveNext
+
+
+Loop
+
+'BrowseFLDRJCS()
+
+
+End Function
+Public Function BulkDocsWORDMerge()
+
+Dim rs As RecordSet
+Dim Rpt As Report
+Dim strsqlCty As String
+Dim rsCT As RecordSet
+Dim oapp As Word.Application
+Dim oDoc As Word.document
+
+Set rs = CurrentDb.OpenRecordset("BulkDocumentQRY", dbOpenSnapshot)
+rs.MoveFirst
+
+'Docsfldr = "c:\4closure\BULKDocs\"
+
+Do While Not rs.EOF
+  Dim stDocName As String
+    Dim stLinkCriteria As String
+    stDocName = "Foreclosure Database Screen"
+    stLinkCriteria = "[FileNum]=" & rs![filenum]
+    DoCmd.OpenForm stDocName, , , stLinkCriteria
+    
+Call FCMerge
+
+Set oapp = CreateObject("word.application")
+Set oDoc = oapp.Documents.ADD("\\rvdv-fs01\DataTransfer\Templates\FC\AffDebtBlankClient.doc", , , True)
+VName1 = "AffDebt-" & Forms![foreclosure database screen]!filenum
+
+With oDoc.MailMerge
+.MainDocumentType = wdFormLetters
+.OpenDataSource name:=pathuser() & "\fcmerge.txt"
+End With
+With oDoc.MailMerge
+.destination = wdSendToNewDocument '; wdSendToFax; wdSendToEmail wdSendToPrinter
+.Execute Pause:=False
+End With
+oDoc.Close False
+oapp.ActiveDocument.SaveAs "\\rvdv-fs01\datatransfer\MergeDocs\PennyMac\" & VName1 & ".doc"
+oapp.Visible = False
+oapp.ActiveDocument.Close
+oapp.Quit
+Set oDoc = Nothing
+Set oapp = Nothing
+'---------------------------
+
+rs.MoveNext
+
+'As you are aware MD HB 472 went into effect 7/1/10.  In order to file 1st legals under the current law we need to file a loss mitigation affidavit.  Attached are 2 affidavits.  A preliminary loss mit affidavit and a final loss mit affidavit.  Pls review your loan and execute the affidavit that is applicable and return same to our office.  Thanks!
+
+Loop
+
+
+
+
+
+
+End Function
+
+
+Public Function BULKLODs()
+Dim rs As RecordSet
+Dim Rpt As Report
+
+'Call DebtorsPropBULK
+'Will have to run the above to run these reports when sending to Walz
+
+'Query MDJudNotFHAandNoPart2Filed ((checks to make sure that LOD to Snapshot is not filled in)
+'(When we have to run all the debtors we will have to update to ONLY the ones that lod to snapshot IS filled in))
+'Links up with the BulkAffCorrective query to create the DismissBulkRpt Query for this Module
+
+
+Dim strsqlCty As String
+Dim rsCT As RecordSet
+
+strsqlCty = "select * from jurisdiction where state = " & """" & "MD" & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsqlCty)
+rs.MoveFirst
+
+docsfldr = "c:\4closure\Dismissals\"
+
+Do While Not rs.EOF
+Dim VCty
+VCty = rs!County
+
+strsql = "SELECT * from DismissBulkrpt where propertycounty = " & """" & VCty & """" & " order by FileNum ASC;"
+Set rsCT = CurrentDb.OpenRecordset(strsql)
+If Not rsCT.EOF Then
+DoCmd.OpenReport "lineDISMISSBULKCourt", acViewDesign
+Reports![lineDISMISSBULKCourt].recordsource = strsql
+DoCmd.Close acReport, "lineDismissBULKCourt", acSaveYes
+DoCmd.OutputTo acOutputReport, "linedismissbulkCourt", acFormatSNP, docsfldr & VCty & "_.snp"
+End If
+rsCT.Close
+
+rs.MoveNext
+
+Loop
+
+
+End Function
+Public Function LookBackProjectBulkBills()
+
+Dim VarUpdate As String
+Dim rs As RecordSet
+Dim rsbill As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("Query37", dbOpenSnapshot)
+
+rs.MoveFirst
+
+Set rsbill = CurrentDb.OpenRecordset("Billing", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+
+With rsbill
+.AddNew
+!CustomerID = GetAutoNumber("NextBillNum")
+!filenum = rs![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+!feeothermoney = 100#
+!feeothertext = "Look back project"
+!Bill_Uploaded = Date
+!bill_processor = "LBP_Bill"
+!initials = "rac"
+![printed and sent] = Date
+'Zero Out Billing Monies
+!water = 0#
+!lien_citation_violation = 0#
+!post_mail_lma = 0#
+!prop_reg = 0#
+!estate_cost = 0#
+!estate_adm = 0#
+!dod_search = 0#
+!process_service = 0#
+!skip_trace = 0#
+!d_titlesearch = 0#
+![Attorney Fee] = 0#
+!fee_prepassignment = 0#
+![fee_recassignment] = 0#
+!d_recording = 0#
+!lien_citation_violation = 0#
+!cert_cpy_dot = 0#
+!lit_money1 = 0#
+!process_service = 0#
+!skip_trace = 0#
+!auct_NC = 0#
+!forbearance = 0#
+!motion_accept = 0#
+!l_att341 = 0#
+!d_process = 0#
+!re_recording = 0#
+!d_realestatetaxes = 0#
+!d_transfee = 0#
+!water = 0#
+!otherm1 = 0#
+!d_titleins = 0#
+!d_adv = 0#
+!d_auctfee = 0#
+!lit_money1 = 0#
+!d_bondprem = 0#
+!d_servbymail = 0#
+!d_liencert = 0#
+!d_filing = 0#
+!l_initial = 0#
+!l_preptitle = 0#
+!d_audfee = 0#
+!d_advnisi = 0#
+!add_court_costs = 0#
+!ps_liencert = 0#
+!l_prepabstract = 0#
+!otherm2 = 0#
+!otherm10 = 0#
+!fee_dismcase = 0#
+![fee_recpoweratt] = 0#
+!d_reqjud = 0#
+!l_dil = 0#
+!l_appearance = 0#
+!d_titlesearch = 0#
+!l_preppoc = 0#
+!add_court_costs = 0#
+!auct_NC = 0#
+![sheriff_fee] = 0#
+!writ_fee = 0#
+!evicdc_spnq = 0#
+!evicdc_comp = 0#
+!evicdc_usmf = 0#
+!evicmd_mjap = 0#
+!evicmd_pshco = 0#
+!evicdc_sps = 0#
+!evicva_UD = 0#
+.Update
+End With
+    
+ rs.MoveNext
+ Loop
+ 
+rs.Close
+rsbill.Close
+    
+DoCmd.OpenQuery ("LBPUpdateDocsBill")
+    
+    
+End Function
+Public Function BulkBillsNOI()
+Dim VarUpdate As String
+Dim rsbill As RecordSet, rsBillCheck As RecordSet, rsPL As RecordSet, rsclients As RecordSet
+Dim strsqlCheck As String, VEmpID As String, strPL As String, strsqlClients As String
+Dim VAddBill
+Dim VType
+
+VEmpID = ""
+VMailNotes = ""
+
+Set rs = CurrentDb.OpenRecordset("EddieMailed", dbOpenSnapshot)
+
+rs.MoveFirst
+
+Set rsbill = CurrentDb.OpenRecordset("Billing", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+
+    With rsbill
+    VINv = GetAutoNumber("NextBillNum")
+    .AddNew
+    !CustomerID = VINv
+    !billingdate = Date
+    !filenum = rs![BGWW#]
+    'NOI--
+    !l_prepabstract = 150#
+    '---
+    !Category = "Foreclosure"
+    !bill_processor = "auto032612"
+    !created_vdruser_id = "RBAYARD"
+    !d_titlesearch = 0#
+    ![Attorney Fee] = 0#
+    !fee_prepassignment = 0#
+    ![fee_recassignment] = 0#
+    !d_recording = 0#
+    !post_mail_lma = 0#
+    !prop_reg = 0#
+    !estate_cost = 0#
+!estate_adm = 0#
+!dod_search = 0#
+    !lien_citation_violation = 0#
+    !cert_cpy_dot = 0#
+    !lit_money1 = 0#
+    !process_service = 0#
+    !skip_trace = 0#
+    !auct_NC = 0#
+    !forbearance = 0#
+    !motion_accept = 0#
+    !l_att341 = 0#
+    !d_process = 0#
+    !re_recording = 0#
+    !d_realestatetaxes = 0#
+    !d_transfee = 0#
+    !water = 0#
+    !otherm1 = 0#
+    !d_titleins = 0#
+    !d_adv = 0#
+    !d_auctfee = 0#
+    !lit_money1 = 0#
+    !d_bondprem = 0#
+    !d_liencert = 0#
+    !d_filing = 0#
+    !l_initial = 0#
+    !l_preptitle = 0#
+    !d_audfee = 0#
+    !d_advnisi = 0#
+    !add_court_costs = 0#
+    !ps_liencert = 0#
+    !otherm2 = 0#
+    !feeothermoney = 0#
+    !otherm10 = 0#
+    !fee_dismcase = 0#
+    ![fee_recpoweratt] = 0#
+    !d_reqjud = 0#
+    !l_dil = 0#
+    !l_appearance = 0#
+    !d_titlesearch = 0#
+    !l_preppoc = 0#
+    !add_court_costs = 0#
+    !auct_NC = 0#
+    ![sheriff_fee] = 0#
+    !writ_fee = 0#
+    !evicdc_spnq = 0#
+    !evicdc_comp = 0#
+    !evicdc_usmf = 0#
+    !evicmd_mjap = 0#
+    !evicmd_pshco = 0#
+    !evicdc_sps = 0#
+    !evicva_UD = 0#
+
+    VMail = ((Vcnt) * 7.1)
+
+
+    ![balance due] = VMail + 150
+    !d_servbymail = VMail
+     .Update
+     End With
+     rs.MoveNext
+     Loop
+ 
+    rs.Close
+    rsbill.Close
+    
+End Function
+
+Public Function BulkBills()
+
+Dim VarUpdate As String
+Dim rs As RecordSet
+Dim rsbill As RecordSet
+
+Set rs = CurrentDb.OpenRecordset("EddieMailed", dbOpenSnapshot)
+
+rs.MoveFirst
+
+Set rsbill = CurrentDb.OpenRecordset("Billing", dbOpenDynaset, dbSeeChanges)
+
+Do While Not rs.EOF
+
+    If rs!TypeOfLoan Like "fha*" Then
+    VAttorneyFee = 255
+    ElseIf rs!TypeOfLoan Like "va*" Then
+    VAttorneyFee = 240
+    ElseIf rs!TypeOfLoan Like "fnma*" Then
+    VAttorneyFee = 0
+    Else
+    VAttorneyFee = 390
+    End If
+    
+    Vtotal = VAttorneyFee + vtitle + VRecAss + VprepAss + VDOARec
+    
+    With rsbill
+    VINv = GetAutoNumber("NextBillNum")
+    .AddNew
+    !CustomerID = VINv
+    !billingdate = Date
+    !filenum = rs![BGWW#]
+    !Category = "Foreclosure"
+    !bill_processor = "auto11911"
+    !created_vdruser_id = "RBAYARD"
+    !Interim = -1
+    
+    !Title_Co = rs!Title_Co
+    
+    !d_titlesearch = 225
+    ![Attorney Fee] = VAttorneyFee
+    !fee_prepassignment = VprepAss
+    ![fee_recassignment] = VRecAss
+    !d_recording = VDOARec
+    !post_mail_lma = 0#
+!prop_reg = 0#
+!estate_cost = 0#
+!estate_adm = 0#
+!dod_search = 0#
+    !lien_citation_violation = 0#
+    !cert_cpy_dot = 0#
+    !lit_money1 = 0#
+    !process_service = 0#
+    !skip_trace = 0#
+    !auct_NC = 0#
+    !forbearance = 0#
+    !motion_accept = 0#
+    !l_att341 = 0#
+    !d_process = 0#
+    !re_recording = 0#
+    !d_realestatetaxes = 0#
+    !d_transfee = 0#
+    !water = 0#
+    !otherm1 = 0#
+    !d_titleins = 0#
+    !d_adv = 0#
+    !d_auctfee = 0#
+    !lit_money1 = 0#
+    !d_bondprem = 0#
+    !d_servbymail = 0#
+    !d_liencert = 0#
+    !d_filing = 0#
+    !l_initial = 0#
+    !l_preptitle = 0#
+    !d_audfee = 0#
+    !d_advnisi = 0#
+    !add_court_costs = 0#
+    !ps_liencert = 0#
+    !l_prepabstract = 0#
+    !otherm2 = 0#
+    !feeothermoney = 0#
+    !otherm10 = 0#
+    !fee_dismcase = 0#
+    ![fee_recpoweratt] = 0#
+    !d_reqjud = 0#
+    !l_dil = 0#
+    !l_appearance = 0#
+    !d_titlesearch = 0#
+    !l_preppoc = 0#
+    !add_court_costs = 0#
+    !auct_NC = 0#
+    ![sheriff_fee] = 0#
+    !writ_fee = 0#
+    !evicdc_spnq = 0#
+    !evicdc_comp = 0#
+    !evicdc_usmf = 0#
+    !evicmd_mjap = 0#
+    !evicmd_pshco = 0#
+    !evicdc_sps = 0#
+    !evicva_UD = 0#
+     .Update
+     End With
+    
+ rs.MoveNext
+ Loop
+ 
+    rs.Close
+    rsbill.Close
+    
+End Function
+Public Function BulkAddBillAddToNewInvoice()
+'Fee/Cost/Mailing Monies
+MsgBox ("CALL Joleyn!!! 240-482-0767!!! Before creating!!")
+
+
+   Dim VUpdate, vClient, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VINv, VChk, DocName, VTypeLoan, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsni, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+   Dim DRC
+   Dim VEmp As String
+   Dim rs As RecordSet
+    Dim rsbill As RecordSet
+    Dim VMail
+    Dim VAttorneyFee
+    Dim vtitle
+    Dim Vtotal
+    Dim VprepAss
+    Dim VRecAss
+    Dim VDOARec
+    
+    Set rs = CurrentDb.OpenRecordset("interimwells", dbOpenDynaset, dbSeeChanges)
+   
+    Do While Not rs.EOF
+     Set rsbill = CurrentDb.OpenRecordset("Billing", dbOpenDynaset, dbSeeChanges)
+
+    If Not IsNull(rs!TitleReportOrdered) Or Not IsNull(rs!TitleReportRecieved) Then
+    If rs!Client Like "Ocwen*" Or rs!Client Like "bank of am*" Then
+    vtitle = 0
+    Else
+    vtitle = 225
+    End If
+    Else
+    vtitle = 0
+    End If
+    
+     
+    'If Not IsNull(rs!aom_sent) Then
+    'If rs!Client Like "GMAC*" Or rs!Client Like "bank of am*" Then
+    'VprepAss = 50
+    'Else
+    'VprepAss = 35
+    'End If
+    'Else
+    VprepAss = 0
+    'End If
+    
+    'If Not IsNull(rs!aom_sent) And Not IsNull(rs![aom recorded]) Then
+    'VRecAss = 29.5
+    'Else
+    VRecAss = 0
+    'End If
+    
+    'If Not IsNull(rs![DOA Recorded]) Then
+    'VDOARec = 36.5
+    'Else
+    VDOARec = 0
+    'End If
+    
+    If rs!TypeOfLoan Like "fha*" Then
+    VAttorneyFee = 255
+    ElseIf rs!TypeOfLoan Like "va*" Then
+    VAttorneyFee = 240
+    ElseIf rs!TypeOfLoan Like "fnma*" Then
+    VAttorneyFee = 0
+    Else
+    VAttorneyFee = 390
+    End If
+    
+    Vtotal = VAttorneyFee + vtitle + VRecAss + VprepAss + VDOARec
+    
+    With rsbill
+    VINv = GetAutoNumber("NextBillNum")
+    .AddNew
+    !CustomerID = VINv
+    !invoice_type_id = 809
+    !billingdate = Date
+    !filenum = rs!filenum
+    !Category = "Foreclosure"
+    !bill_processor = "auto11-8-11"
+    !created_vdruser_id = "RBAYARD"
+    !Interim = -1
+    
+    !Title_Co = ""
+    
+    !d_titlesearch = vtitle
+    ![Attorney Fee] = VAttorneyFee
+    !fee_prepassignment = VprepAss
+    ![fee_recassignment] = VRecAss
+    !d_recording = VDOARec
+    !post_mail_lma = 0#
+!prop_reg = 0#
+!estate_cost = 0#
+!estate_adm = 0#
+!dod_search = 0#
+    !lien_citation_violation = 0#
+    !cert_cpy_dot = 0#
+    !lit_money1 = 0#
+    !process_service = 0#
+    !skip_trace = 0#
+    !auct_NC = 0#
+    !forbearance = 0#
+    !motion_accept = 0#
+    !l_att341 = 0#
+    !d_process = 0#
+    !re_recording = 0#
+    !d_realestatetaxes = 0#
+    !d_transfee = 0#
+    !water = 0#
+    !otherm1 = 0#
+    !d_titleins = 0#
+    !d_adv = 0#
+    !d_auctfee = 0#
+    !lit_money1 = 0#
+    !d_bondprem = 0#
+    
+    !d_servbymail = 0#
+    !d_liencert = 0#
+    !d_filing = 0#
+    !l_initial = 0#
+    !l_preptitle = 0#
+    !d_audfee = 0#
+    !d_advnisi = 0#
+    !add_court_costs = 0#
+    !ps_liencert = 0#
+    !l_prepabstract = 0#
+    !otherm2 = 0#
+    !feeothermoney = 0#
+    !otherm10 = 0#
+    !fee_dismcase = 0#
+    ![fee_recpoweratt] = 0#
+    !d_reqjud = 0#
+    !l_dil = 0#
+    !l_appearance = 0#
+    !d_titlesearch = 0#
+    !l_preppoc = 0#
+    !add_court_costs = 0#
+    !auct_NC = 0#
+    ![sheriff_fee] = 0#
+    !writ_fee = 0#
+    !evicdc_spnq = 0#
+    !evicdc_comp = 0#
+    !evicdc_usmf = 0#
+    !evicmd_mjap = 0#
+    !evicmd_pshco = 0#
+    !evicdc_sps = 0#
+    !evicva_UD = 0#
+     .Update
+     .Close
+     End With
+    
+  
+vClient = rs![Client]
+strsqlClient = "SELECT * FROM clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+
+GblFilenum = rs![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenSnapshot)
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+Set rsni = CurrentDb.OpenRecordset("NewInvoice Table", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+
+If IsNull(rsClient![newinvoice billing]) Then
+MsgBox ("No New Invoice Coding for : " & rs!Client & ", will not add to New Invoice, exiting.")
+Exit Function
+Else
+
+VNI = rsClient![newinvoice billing]
+
+If IsNull(rsClient!servicer_id) Then
+MsgBox ("Servicer id for new invoice needs to be input in client screen")
+vServID = ""
+Else
+vServID = rsClient!servicer_id
+End If
+
+VInvID = 809
+
+strSQLInv = "Select * from [NI Invoice Types] where [invoice #] = " & """" & VInvID & """" & ";"
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv, dbOpenSnapshot)
+VDept = rsinv!Dept
+Dim VCont As String
+
+vbkchap = ""
+vbkcase = ""
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = ""
+vb362filed = ""
+Vsale = ""
+
+Dim VRefer
+If IsNull(rsCases!resume_recd) Then
+VRefer = rsCases![Date Recieved]
+Else
+VRefer = rsCases!resume_recd
+End If
+
+strsqlCounty = "Select * from jurisdiction where county = " & """" & rs![Propertycounty] & """" & " and state = " & """" & rs![PropertyState] & """" & ";"
+Set rsCounty = CurrentDb.OpenRecordset(strsqlCounty, dbOpenSnapshot)
+
+If rsCases!PropertyState = "VA" Then
+vcountyid = rsCounty!CountyID
+Else
+vCounty = ""
+End If
+rsCounty.Close
+
+If rsCases!PropertyState <> "VA" Then
+If rsCases!Propertycounty = "Baltimore City" Then
+vCounty = "Baltimore"
+Else
+vCounty = rsCases!Propertycounty
+End If
+End If
+
+If IsNull(rsCases![HUD/VANum]) Then
+VTypeLoan = rsCases![ClientRefNumber]
+Else
+VTypeLoan = rsCases![HUD/VANum]
+End If
+
+
+
+
+
+With rsni
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![Vendor ID] = "BIERMAN"
+
+![Invoice Number] = VINv
+
+![Invoice Date] = Date
+
+![Invoice Type] = "809"
+
+![Invoice Amount] = Vtotal
+
+![Servicer ID] = rsClient!servicer_id
+![Loan Number] = rsCases![ClientRefNumber]
+![Created by Vendor User ID] = "RBAYARD"
+![Department ID] = VDept
+![BK State] = rsCases![PropertyState]
+![Judicial Indicator] = "N"
+![Borrower Name] = UCase(rsCases![LastNameDebtor1] & ", " & rsCases![FirstNameDebtor1])
+If Len(rsCases!PropAddress) > 60 Then
+Exit Function
+Else
+![Property Address 1] = rsCases![PropAddress]
+
+End If
+
+![Property Address 2] = ""
+
+If Len(rsCases!PropertyCity) > 35 Then
+Exit Function
+Else
+![Property City] = rsCases!PropertyCity
+End If
+
+![Property County] = rsCases!Propertycounty
+![Property State] = rsCases!PropertyState
+
+Dim tempfields As Variant
+tempfields = Split(rsCases!propzip, "-")
+Dim A
+A = Split(rsCases!propzip, "-")
+
+If UBound(tempfields) = 1 Then
+![Property Zipcode] = StrConv(A(0), vbProperCase)
+Else
+On Error Resume Next
+![Property Zipcode] = rsCases!propzip
+End If
+
+![Property Zipcode Suffix] = ""
+
+If IsNull(rsCases!resume_recd) Then
+![Referral Date] = rsCases![Date Recieved]
+Else
+![Referral Date] = rsCases!resume_recd
+End If
+
+![BK Chapter] = ""
+![BK Case Number] = ""
+![BK Filed After Sale] = ""
+![BK Loan Current When Filed] = ""
+![BK Collateral Investment Property] = ""
+![BK Services Post-Confirmation] = ""
+![FC Sale Date] = Vsale
+![FC Sale Held Reason] = "X"
+![FC Sale Held Indicator] = ""
+![Legal Action Date] = vlegal
+![Vendor Reference Number] = rsCases!filenum
+![BK Services Pre-Confirmation] = ""
+![MFR Filed Date] = ""
+![BK Disposition] = ""
+![Date BK Filed] = ""
+![Writ Issued Date] = ""
+![Writ Issued Date] = ""
+!endofrecord = "X"
+.Update
+End With
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = VINv
+![Line Item] = 1.1
+!Note = ""
+If IsNull(rsCases!resume_recd) Then
+![Line Item Date] = rsCases![Date Recieved]
+Else
+![Line Item Date] = rsCases!resume_recd
+End If
+![Qty] = 1
+!Price = VAttorneyFee
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+
+If vtitle > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = VINv
+![Line Item] = 9.16
+If rs![TitleReportRecieved] = "" Or IsNull(rs![TitleReportRecieved]) Then
+![Line Item Date] = rs![TitleReportOrdered]
+Else
+![Line Item Date] = rs![TitleReportRecieved]
+End If
+![Qty] = 1
+!Note = ""
+!Price = vtitle
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+If VprepAss > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = VINv
+![Line Item] = 23.71
+!Note = "Preparation of Loan Assignment"
+![Line Item Date] = Date
+![Qty] = 1
+!Price = VprepAss
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If VRecAss > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = VINv
+
+If rs!Client Like "Seter*" Then
+![Line Item] = 3.6
+Else
+![Line Item] = 24.32
+End If
+
+!Note = "Assignment Recording Fee"
+![Line Item Date] = Date
+![Qty] = 1
+!Price = VRecAss
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If VDOARec > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = VINv
+If (rs!PropertyState = "DC" And _
+(rs!Client = "BAC Home Loans, Inc." Or _
+rsClient = "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP")) Then
+![Line Item] = 3.11
+Else
+![Line Item] = 3.5
+End If
+![Line Item Date] = Date
+![Qty] = 1
+!Note = ""
+!Price = VDOARec
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+'Postage
+'With rsLI
+'.AddNew
+'![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+'!PKey = GetAutoNumber("NextNIPKey")
+'![Invoice #] = VInv
+'![Line Item] = 4.7
+'![Line Item Date] = Date
+'![Qty] = 1
+'!Note = ""
+'!Price = VMail
+'![Util HOA Indicator] = ""
+'![Util Advance Date] = ""
+'![Util From Date] = ""
+'![Util to Date] = ""
+'![Util Base Amount] = 0
+'![Util Interest Amount] = 0
+'![Util Penalty Amount] = 0
+'!endofrecord = "0"
+'.Update
+'End With
+
+End If
+
+rs.MoveNext
+
+Loop
+
+
+rsLI.Close
+rsni.Close
+rsChkNI.Close
+rsFC.Close
+rsCases.Close
+rsClient.Close
+
+
+
+
+
+End Function
+Public Function InterimBillsUpdate()
+Dim strsql As String
+Dim rs As RecordSet
+Dim VComments
+
+strsql = "SELECT Comments.bill_comments FROM InterimBills INNER JOIN Comments ON InterimBills.FileNum = Comments.FileNum;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+If Not IsNull(rs!bill_comments) Then
+VComments = rs!bill_comments
+Else
+VComments = ""
+End If
+
+
+With rs
+.Edit
+If VComments = "" Then
+!bill_comments = "Interim bill prepared on : " & Date
+Else
+!bill_comments = VComments + "/ Interim bill prepared on : " & Date
+End If
+
+.Update
+.Close
+End With
+rs.MoveNext
+Loop
+
+
+End Function
+Public Function LODDismissed()
+Dim strsqlCty As String
+
+strsqlCty = "select * from jurisdiction where state = " & """" & "MD" & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsqlCty)
+rs.MoveFirst
+
+docsfldr = "\\rvdv-fs01\users\Geesing Open cases\Dismissals\"
+
+Do While Not rs.EOF
+Dim VCty
+VCty = rs!County
+
+strsql = "SELECT * from DismissBulkReport where propertycounty = " & """" & VCty & """" & ";"
+
+DoCmd.OpenReport "LODDismissed", acViewDesign
+Reports![LODDismissed].recordsource = strsql
+DoCmd.Close acReport, "LODDismissed", acSaveYes
+DoCmd.OutputTo acOutputReport, "LODDismissed", acFormatSNP, docsfldr & VCty & "_Spreadsheet.SNP"
+
+rs.MoveNext
+
+Loop
+
+End Function
+
+
+Public Function LODOpen()
+Dim strsqlCty As String
+
+strsqlCty = "select * from jurisdiction where state = " & """" & "MD" & """" & ";"
+
+Set rs = CurrentDb.OpenRecordset(strsqlCty)
+rs.MoveFirst
+
+docsfldr = "c:\4closure\Dismissals\Openfiles\"
+
+Do While Not rs.EOF
+Dim VCty
+VCty = rs!County
+
+strsql = "SELECT * from DismissBulkOPEN where court like " & """" & VCty & "*""" & ";"
+
+DoCmd.OpenReport "OpenFilesLOD", acViewDesign
+Reports![OpenFilesLOD].recordsource = strsql
+DoCmd.Close acReport, "OPENFilesLOD", acSaveYes
+DoCmd.OutputTo acOutputReport, "OpenFilesLOD", acFormatSNP, docsfldr & VCty & "_.SNP"
+
+rs.MoveNext
+
+Loop
+
+End Function
+

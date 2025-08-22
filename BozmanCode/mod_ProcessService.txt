@@ -1,0 +1,20 @@
+Attribute VB_Name = "ProcessService"
+Option Compare Database
+
+Public Function PSForm()
+If Forms![foreclosure database screen].Dirty = True Then
+DoCmd.RunCommand acCmdRefresh
+End If
+
+Dim rst As RecordSet
+Set rst = CurrentDb.OpenRecordset("select subfilenum from processservice where subfilenum=" & Forms![foreclosure database screen]!filenum, dbOpenDynaset, dbSeeChanges)
+If rst.EOF Then
+rst.AddNew
+rst!SubFileNum = Forms![foreclosure database screen]!filenum
+rst.Update
+rst.Close
+End If
+DoCmd.Restore
+
+DoCmd.OpenForm ("Processservform")
+End Function

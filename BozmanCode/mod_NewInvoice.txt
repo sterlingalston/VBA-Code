@@ -1,0 +1,6215 @@
+Attribute VB_Name = "NewInvoice"
+Option Compare Database
+Public Function NewInvQuotes()
+Dim strsql, empname As String
+Dim rs As RecordSet
+
+If Forms![BillNewInvPopUp]![Col1] = 0 And _
+Forms![BillNewInvPopUp]![Col2] = 0 And _
+Forms![BillNewInvPopUp]![Col3] = 0 And _
+Forms![BillNewInvPopUp]![Col4] = 0 Then
+NewInvQuotes = ""
+Else
+
+If Forms![BillNewInvPopUp]![Col1] = -1 Then
+strsql = "Select * from employees where employeeid = " & """" & Forms![BillNewInvPopUp]![quoteby] & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+empname = rs!FirstName & " " & rs!LastName
+NewInvQuotes = "Good Thru: " & Forms![BillNewInvPopUp]![Good_Thru] & ", Quoted By: " & empname & ", Date Quoted: " & Forms![BillNewInvPopUp]![quotedate]
+ElseIf Forms![BillNewInvPopUp]![Col2] = -1 Then
+strsql = "Select * from employees where employeeid = " & """" & Forms![BillNewInvPopUp]![quoteby] & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+empname = rs!FirstName & " " & rs!LastName
+NewInvQuotes = "Good Thru: " & Forms![BillNewInvPopUp]![good_thru2] & ", Quoted By: " & empname & ", Date Quoted: " & Forms![BillNewInvPopUp]![quotedate2]
+ElseIf Forms![BillNewInvPopUp]![Col3] = -1 Then
+strsql = "Select * from employees where employeeid = " & """" & Forms![BillNewInvPopUp]![quoteby] & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+empname = rs!FirstName & " " & rs!LastName
+NewInvQuotes = "Good Thru: " & Forms![BillNewInvPopUp]![good_thru3] & ", Quoted By: " & empname & ", Date Quoted: " & Forms![BillNewInvPopUp]![quotedate3]
+ElseIf Forms![BillNewInvPopUp]![Col4] = -1 Then
+strsql = "Select * from employees where employeeid = " & """" & Forms![BillNewInvPopUp]![quoteby] & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+empname = rs!FirstName & " " & rs!LastName
+NewInvQuotes = "Good Thru: " & Forms![BillNewInvPopUp]![Good_thru4] & ", Quoted By: " & empname & ", Date Quoted: " & Forms![BillNewInvPopUp]![quotedate4]
+End If
+
+End If
+
+
+
+End Function
+
+Public Function ExportNewInvoiceBK()
+
+Dim VUpdate, vClient, vbkreferral, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, sftrSQLCNI, VINv, VChk, DocName, VTypeLoan, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsni, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+   
+Dim tempfields As Variant
+
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+VNI = rsClient![newinvoice billing]
+VINv = Forms![billingmainedit-bk]![CustomerID]
+strSQLCNI = "select * from [NewInvoice Table] where [Invoice Number] = " & VINv
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI)
+
+If rsChkNI.RecordCount >= 1 Then
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to continue?", vbYesNo)
+Dim VB As String
+
+If VChk = vbYes Then
+VB = "YES"
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [newinvoice table] where [invoice number] = " & VINv)
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [lineitem] where [invoice #] = " & VINv)
+Else
+
+VB = "NO"
+End If
+
+Else
+VB = "NO"
+End If
+
+
+If VB = "YES" Or rsChkNI.RecordCount = 0 Then
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenDynaset, dbSeeChanges)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenDynaset, dbSeeChanges)
+
+'Update the Name to first and last names from Employee Database
+If IsNull(Forms![billingmainedit-bk]!created_vdruser_id) Then
+MsgBox ("Please input New Invoice Billing Codes")
+Exit Function
+Else
+VEmpID = [Forms]![billingmainedit-bk]![created_vdruser_id]
+
+End If
+
+
+'DoCmd.OpenReport docname, acViewNormal
+
+'Query on inputting record into the NewInvoice Table and Open table if Yes
+VUpdate = MsgBox("Input Bill Into NewInvoices Batch File?", vbYesNo)
+
+If VUpdate = vbYes Then
+[Forms]![billingmainedit-bk]![Sent] = Date
+Set rsni = CurrentDb.OpenRecordset("NewInvoice Table", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+
+'Servicer ID Identification and Dept
+
+If IsNull(rsClient!servicer_id) Then
+MsgBox ("Servicer id for new invoice needs to be input in client screen")
+vServID = ""
+Else
+vServID = rsClient!servicer_id
+End If
+
+VInvID = [Forms]![billingmainedit-bk]![invoice_type_id]
+strSQLInv = "Select * from [NI Invoice Types] where [invoice #] = " & """" & VInvID & """" & ";"
+
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv)
+
+VDept = "BK"
+Dim VCont As String
+
+If VDept = "BK" And Forms![foreclosure database screen]!Status <> "Bankruptcy" _
+And (IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![Date Filed]) Or _
+IsNull(BKChapter())) Then
+MsgBox ("Invoice Type Selected is a Bankruptcy Type BUT this file is not in Bankruptcy Status AND has No BK Filed Date or Chapter is Input, Will Exit Function.  " & vbCr & vbCr & "FILE NOT DUMPED FOR EXPORTING TO NEW INVOICE!!!")
+Exit Function
+End If
+
+strSQLServ = "SELECT * FROM [Servicer table] WHERE [Servicer id] = " & """" & vServID & """" & ";"
+Set rsServ = CurrentDb.OpenRecordset(strSQLServ)
+
+If IsNull(BKChapter()) Then
+MsgBox ("No Chapter input in the BK Screen for this BK")
+vbkchap = ""
+Else
+vbkchap = BKChapter()
+End If
+
+vbkcase = Forms!bankruptcymain!BankruptcySubForm.Form![BKY Case Number]
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = "X"
+vbkfiled = Forms!bankruptcymain!BankruptcySubForm.Form![Date Filed]
+
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![Mfr_requested]) And _
+IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![Poc_requested]) Then
+vbkreferral = rsCases![Date Recieved]
+ElseIf Forms!bankruptcymain!BankruptcySubForm.Form![Mfr_requested] <> "" Then
+vbkreferral = Forms!bankruptcymain!BankruptcySubForm.Form![Mfr_requested]
+ElseIf Forms!bankruptcymain!BankruptcySubForm.Form![Poc_requested] <> "" Then
+vbkreferral = Forms!bankruptcymain!BankruptcySubForm.Form![Poc_requested]
+End If
+
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![362MotionFiled]) Then
+vb362filed = ""
+Else
+vb362filed = Forms!bankruptcymain!BankruptcySubForm.Form![362MotionFiled]
+End If
+
+If [Forms]![billingmainedit-bk]!attn <> "Notice of Default" And [Forms]![billingmainedit-bk]!attn <> "Notice of Default - 2nd" And _
+[Forms]![billingmainedit-bk]!attn <> "Notice of Default - 3rd" And [Forms]![billingmainedit-bk]!attn <> "Preacipe" And _
+[Forms]![billingmainedit-bk]!attn <> "Motion for Relief Withdrawal" And [Forms]![billingmainedit-bk]!attn <> "Obtain Order Lift Stay" And _
+[Forms]![billingmainedit-bk]!attn <> "Obtain Order Lift Stay-2nd" And _
+[Forms]![billingmainedit-bk]!attn <> "Obtain Order Lift Stay-3rd" And _
+Forms![billingmainedit-bk]!attn <> "Attorney Fees/SCRA Active Military Search" And _
+[Forms]![billingmainedit-bk]!attn <> "Obtain Order Lift Stay-MFR" And _
+[Forms]![billingmainedit-bk]!attn <> "Filing Fees" And _
+[Forms]![billingmainedit-bk]!attn <> "Proposed Order" And _
+[Forms]![billingmainedit-bk]!attn <> "Notice of Appearance" And _
+[Forms]![billingmainedit-bk]!attn <> "Notice of Hearing" And _
+[Forms]![billingmainedit-bk]!attn <> "Objection to Plan" And _
+[Forms]![billingmainedit-bk]!attn <> "Objection to Amended Plan" And _
+[Forms]![billingmainedit-bk]!attn <> "Objection to Claim" And _
+[Forms]![billingmainedit-bk]!attn <> "Plan Review" And _
+[Forms]![billingmainedit-bk]!attn <> "Plan Review - Amended" And _
+[Forms]![billingmainedit-bk]!attn <> "Motion to Allow Late Filing of POC" And _
+[Forms]![billingmainedit-bk]!attn <> "Transfer of Claim" And _
+[Forms]![billingmainedit-bk]!attn <> "Transfer Fee" And _
+[Forms]![billingmainedit-bk]!attn <> "Title Search" And _
+[Forms]![billingmainedit-bk]!attn <> "Proof of Claim" And [Forms]![billingmainedit-bk]!attn <> "Reaffirmation" And _
+[Forms]![billingmainedit-bk]!attn <> "Amended POC" And [Forms]![billingmainedit-bk]!attn <> "Post-Sale Motion for Relief" And _
+[Forms]![billingmainedit-bk]!attn <> "Motion for Relief-Preparation" And _
+[Forms]![billingmainedit-bk]!attn <> "Litigation" And [Forms]![billingmainedit-bk]!attn <> "Attorney Notice/Letter" And _
+[Forms]![billingmainedit-bk]!attn <> "Objection to AOD" Then
+Exit Function
+
+Else
+
+With rsni
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![Vendor ID] = "BIERMAN"
+![Invoice Number] = [Forms]![billingmainedit-bk]![CustomerID]
+![Invoice Date] = [Forms]![billingmainedit-bk]![billingdate]
+![Invoice Type] = [Forms]![billingmainedit-bk]!invoice_type_id
+![Invoice Amount] = [Forms]![billingmainedit-bk]![billtotal]
+![Invoice Level Comment] = "Attorneys fees and costs for the " & _
+Forms![billingmainedit-bk]!attn
+![Servicer ID] = rsClient!servicer_id
+![Loan Number] = rsCases![ClientRefNumber]
+![Created by Vendor User ID] = [Forms]![billingmainedit-bk]!created_vdruser_id
+![Department ID] = VDept
+![BK State] = rsCases![PropertyState]
+![Judicial Indicator] = "N"
+![Borrower Name] = UCase(rsCases![LastNameDebtor1] & ", " & rsCases![FirstNameDebtor1])
+If [Forms]![billingmainedit-bk]!attn Like "Transfer Fee" Then
+![Referral Type] = "1 - Bankruptcy"
+End If
+
+If Len(rsCases!PropAddress) > 60 Then
+MsgBox (rsCases!PropAddress & " is more than 60 Characters this is not allowed in New Invoice, Please update Property Address on Screen and upload again.")
+Exit Function
+Else
+![Property Address 1] = rsCases![PropAddress]
+End If
+
+![Property Address 2] = ""
+
+If Len(rsCases!PropertyCity) > 35 Then
+MsgBox (rsCases!PropertyCity & " is more than 35 Characters this is not allowed in New Invoice, Please update City on Screen and upload again.")
+Exit Function
+Else
+![Property City] = rsCases!PropertyCity
+End If
+
+![Property County] = vCounty
+![Property State] = rsCases!PropertyState
+
+
+
+If IsNull(rsCases!propzip) Then
+MsgBox ("No zipcode will not batch!")
+Exit Function
+Else
+![Property Zipcode] = Left(rsCases!propzip, 5)
+End If
+
+![Property Zipcode Suffix] = ""
+![Referral Date] = vbkreferral
+![BK Chapter] = vbkchap
+![BK Case Number] = vbkcase
+![BK Filed After Sale] = vbkfas
+![BK Loan Current When Filed] = vbklcw
+![BK Collateral Investment Property] = vbkinv
+![BK Services Post-Confirmation] = vbksvc
+![FC Sale Date] = ""
+If IsNull([Forms]![billingmainedit-bk]![fc_saleheld_reason]) Or _
+[Forms]![billingmainedit-bk]![fc_saleheld_reason] = "" Then
+![FC Sale Held Reason] = "X"
+Else
+![FC Sale Held Reason] = [Forms]![billingmainedit-bk]![fc_saleheld_reason]
+End If
+![FC Sale Held Indicator] = ""
+![Legal Action Date] = ""
+![Vendor Reference Number] = [Forms]![foreclosure database screen]![filenum]
+![BK Services Pre-Confirmation] = vbksrvp
+![MFR Filed Date] = vb362filed
+![BK Disposition] = vbkdisp
+![Date BK Filed] = vbkfiled
+![Writ Issued Date] = ""
+![Writ Issued Date] = ""
+!endofrecord = "X"
+.Update
+End With
+
+
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainedit-bk]![CustomerID]
+
+If [Forms]![billingmainedit-bk]!attn Like "Transfer Fee" Then
+![Line Item] = "23.19"
+!Note = "Transfer Fee"
+
+ElseIf [Forms]![billingmainedit-bk]!attn Like "Notice of Default*" Then
+![Line Item] = 1.19
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Attorney Notice/Letter" Then
+![Line Item] = "1.310"
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Post-Sale Motion for Relief" Then
+If Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = "1.600"
+!Note = ""
+Else
+![Line Item] = 1.84
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!attn = "Litigation" Then
+![Line Item] = 1.11
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Reaffirmation" Then
+![Line Item] = 1.16
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Title Search" Then
+![Line Item] = 9.16
+!Note = "Title Search"
+ElseIf [Forms]![billingmainedit-bk]!attn = "Motion for Relief-Preparation" Then
+If Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = "1.600"
+!Note = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+![Line Item] = 1.208
+!Note = ""
+Else
+![Line Item] = 1.13
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!attn = "Preacipe" Then
+![Line Item] = 1.19
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Motion for Relief Withdrawal" Then
+If Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = "1.600"
+!Note = ""
+Else
+![Line Item] = 1.18
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!attn Like "Obtain*" Then
+![Line Item] = 1.13
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn Like "Proposed Order" Then
+![Line Item] = 1.13
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Filing Fees" Then
+![Line Item] = 2.12
+!Note = ""
+ElseIf Forms![billingmainedit-bk]!attn = "Attorney Fees/SCRA Active Military Search" Then
+![Line Item] = "1.390"
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Notice of Appearance" Then
+![Line Item] = 1.53
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Notice of Hearing" Then
+![Line Item] = 1.13
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Objection to Plan" Then
+![Line Item] = 1.15
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Objection to Amended Plan" Then
+![Line Item] = 1.15
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Objection to Claim" Then
+![Line Item] = 1.15
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn Like "Plan Review*" Then
+If Forms![foreclosure database screen]!Client Like "Homeward*" Then
+![Line Item] = 23.5
+!Note = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+![Line Item] = 1.353
+!Note = ""
+Else
+![Line Item] = 1.136
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!attn = "Transfer of Claim" Then
+![Line Item] = 1.99
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Proof of Claim" Then
+If Forms![foreclosure database screen]!Client Like "Homeward*" Or _
+Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = 23.46
+!Note = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+![Line Item] = 1.203
+!Note = ""
+Else
+![Line Item] = 1.12
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!attn = "Amended POC" Then
+![Line Item] = 1.99
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Objection to AOD" Then
+![Line Item] = 1.44
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!attn = "Motion to Allow Late Filing of POC" Then
+![Line Item] = 1.93
+!Note = ""
+End If
+
+![Line Item Date] = [Forms]![billingmainedit-bk]!services_rendereddate
+
+
+
+![Qty] = 1
+
+!Price = [Forms]![billingmainedit-bk]![fees1]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+'Fees2
+If Forms![billingmainedit-bk]!fees2 > 0 Then
+
+If [Forms]![billingmainedit-bk]!services_fees2 <> "Notice of Default" And [Forms]![billingmainedit-bk]!services_fees2 <> "Notice of Default - 2nd" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Notice of Default - 3rd" And [Forms]![billingmainedit-bk]!services_fees2 <> "Preacipe" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Motion for Relief Withdrawal" And [Forms]![billingmainedit-bk]!services_fees2 <> "Obtain Order Lift Stay" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Obtain Order Lift Stay-2nd" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Obtain Order Lift Stay-3rd" And _
+Forms![billingmainedit-bk]!services_fees2 <> "Attorney Fees/SCRA Active Military Search" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Obtain Order Lift Stay-MFR" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Filing Fees" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Proposed Order" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Notice of Appearance" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Notice of Hearing" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Objection to Plan" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Objection to Amended Plan" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Objection to Claim" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Plan Review" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Plan Review - Amended" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Motion to Allow Late Filing of POC" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Transfer of Claim" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Transfer Fee" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Title Search" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Proof of Claim" And [Forms]![billingmainedit-bk]!services_fees2 <> "Reaffirmation" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Amended POC" And [Forms]![billingmainedit-bk]!services_fees2 <> "Post-Sale Motion for Relief" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Motion for Relief-Preparation" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Litigation" And [Forms]![billingmainedit-bk]!services_fees2 <> "Attorney Notice/Letter" And _
+[Forms]![billingmainedit-bk]!services_fees2 <> "Objection to AOD" Then
+Exit Function
+
+Else
+
+With rsni
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![Vendor ID] = "BIERMAN"
+![Invoice Number] = [Forms]![billingmainedit-bk]![CustomerID]
+![Invoice Date] = [Forms]![billingmainedit-bk]![billingdate]
+![Invoice Type] = [Forms]![billingmainedit-bk]!invoice_type_id
+![Invoice Amount] = [Forms]![billingmainedit-bk]![billtotal]
+![Invoice Level Comment] = "Attorneys fees and costs for the " & _
+Forms![billingmainedit-bk]!services_fees2
+![Servicer ID] = rsClient!servicer_id
+![Loan Number] = rsCases![ClientRefNumber]
+![Created by Vendor User ID] = [Forms]![billingmainedit-bk]!created_vdruser_id
+![Department ID] = VDept
+![BK State] = rsCases![PropertyState]
+![Judicial Indicator] = "N"
+![Borrower Name] = UCase(rsCases![LastNameDebtor1] & ", " & rsCases![FirstNameDebtor1])
+If [Forms]![billingmainedit-bk]!services_fees2 Like "Transfer Fee" Then
+![Referral Type] = "1 - Bankruptcy"
+End If
+
+If Len(rsCases!PropAddress) > 60 Then
+MsgBox (rsCases!PropAddress & " is more than 60 Characters this is not allowed in New Invoice, Please update Property Address on Screen and upload again.")
+Exit Function
+Else
+![Property Address 1] = rsCases![PropAddress]
+End If
+
+![Property Address 2] = ""
+
+If Len(rsCases!PropertyCity) > 35 Then
+MsgBox (rsCases!PropertyCity & " is more than 35 Characters this is not allowed in New Invoice, Please update City on Screen and upload again.")
+Exit Function
+Else
+![Property City] = rsCases!PropertyCity
+End If
+
+![Property County] = vCounty
+![Property State] = rsCases!PropertyState
+
+
+If IsNull(rsCases!propzip) Then
+MsgBox ("No zipcode will not batch!")
+Exit Function
+Else
+![Property Zipcode] = Left(rsCases!propzip, 5)
+End If
+
+![Property Zipcode Suffix] = ""
+![Referral Date] = vbkreferral
+![BK Chapter] = vbkchap
+![BK Case Number] = vbkcase
+![BK Filed After Sale] = vbkfas
+![BK Loan Current When Filed] = vbklcw
+![BK Collateral Investment Property] = vbkinv
+![BK Services Post-Confirmation] = vbksvc
+![FC Sale Date] = ""
+If IsNull([Forms]![billingmainedit-bk]![fc_saleheld_reason]) Or _
+[Forms]![billingmainedit-bk]![fc_saleheld_reason] = "" Then
+![FC Sale Held Reason] = "X"
+Else
+![FC Sale Held Reason] = [Forms]![billingmainedit-bk]![fc_saleheld_reason]
+End If
+![FC Sale Held Indicator] = ""
+![Legal Action Date] = ""
+![Vendor Reference Number] = [Forms]![foreclosure database screen]![filenum]
+![BK Services Pre-Confirmation] = vbksrvp
+![MFR Filed Date] = vb362filed
+![BK Disposition] = vbkdisp
+![Date BK Filed] = vbkfiled
+![Writ Issued Date] = ""
+![Writ Issued Date] = ""
+!endofrecord = "X"
+.Update
+End With
+
+
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainedit-bk]![CustomerID]
+
+If [Forms]![billingmainedit-bk]!services_fees2 Like "Transfer Fee" Then
+![Line Item] = "23.19"
+!Note = "Transfer Fee"
+
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 Like "Notice of Default*" Then
+![Line Item] = 1.19
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Attorney Notice/Letter" Then
+![Line Item] = "1.310"
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Post-Sale Motion for Relief" Then
+If Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = "1.600"
+!Note = ""
+Else
+![Line Item] = 1.84
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Litigation" Then
+![Line Item] = 1.11
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Reaffirmation" Then
+![Line Item] = 1.16
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Title Search" Then
+![Line Item] = 9.16
+!Note = "Title Search"
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Motion for Relief-Preparation" Then
+If Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = "1.600"
+!Note = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+![Line Item] = 1.208
+!Note = ""
+Else
+![Line Item] = 1.13
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Preacipe" Then
+![Line Item] = 1.19
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Motion for Relief Withdrawal" Then
+If Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = "1.600"
+!Note = ""
+Else
+![Line Item] = 1.18
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 Like "Obtain*" Then
+![Line Item] = 1.13
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 Like "Proposed Order" Then
+![Line Item] = 1.13
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Filing Fees" Then
+![Line Item] = 2.12
+!Note = ""
+ElseIf Forms![billingmainedit-bk]!services_fees2 = "Attorney Fees/SCRA Active Military Search" Then
+![Line Item] = "1.390"
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Notice of Appearance" Then
+![Line Item] = 1.53
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Notice of Hearing" Then
+![Line Item] = 1.13
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Objection to Plan" Then
+![Line Item] = 1.15
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Objection to Amended Plan" Then
+![Line Item] = 1.15
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Objection to Claim" Then
+![Line Item] = 1.15
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 Like "Plan Review*" Then
+If Forms![foreclosure database screen]!Client Like "Homeward*" Then
+![Line Item] = 23.5
+!Note = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+![Line Item] = 1.353
+!Note = ""
+Else
+![Line Item] = 1.136
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Transfer of Claim" Then
+![Line Item] = 1.99
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Proof of Claim" Then
+If Forms![foreclosure database screen]!Client Like "Homeward*" Or _
+Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = 23.46
+!Note = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+![Line Item] = 1.203
+!Note = ""
+Else
+![Line Item] = 1.12
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Amended POC" Then
+![Line Item] = 1.99
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Objection to AOD" Then
+![Line Item] = 1.44
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees2 = "Motion to Allow Late Filing of POC" Then
+![Line Item] = 1.93
+!Note = ""
+End If
+
+![Line Item Date] = [Forms]![billingmainedit-bk]!services_rendered_fees2
+
+
+
+![Qty] = 1
+
+!Price = [Forms]![billingmainedit-bk]![fees2]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+End If
+
+'End Fees2
+'''
+'fees3
+If Forms![billingmainedit-bk]!fees3 > 0 Then
+
+If [Forms]![billingmainedit-bk]!services_fees3 <> "Notice of Default" And [Forms]![billingmainedit-bk]!services_fees3 <> "Notice of Default - 2nd" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Notice of Default - 3rd" And [Forms]![billingmainedit-bk]!services_fees3 <> "Preacipe" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Motion for Relief Withdrawal" And [Forms]![billingmainedit-bk]!services_fees3 <> "Obtain Order Lift Stay" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Obtain Order Lift Stay-2nd" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Obtain Order Lift Stay-3rd" And _
+Forms![billingmainedit-bk]!services_fees3 <> "Attorney Fees/SCRA Active Military Search" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Obtain Order Lift Stay-MFR" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Filing Fees" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Proposed Order" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Notice of Appearance" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Notice of Hearing" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Objection to Plan" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Objection to Amended Plan" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Objection to Claim" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Plan Review" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Plan Review - Amended" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Motion to Allow Late Filing of POC" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Transfer of Claim" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Transfer Fee" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Title Search" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Proof of Claim" And [Forms]![billingmainedit-bk]!services_fees3 <> "Reaffirmation" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Amended POC" And [Forms]![billingmainedit-bk]!services_fees3 <> "Post-Sale Motion for Relief" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Motion for Relief-Preparation" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Litigation" And [Forms]![billingmainedit-bk]!services_fees3 <> "Attorney Notice/Letter" And _
+[Forms]![billingmainedit-bk]!services_fees3 <> "Objection to AOD" Then
+Exit Function
+
+Else
+
+With rsni
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![Vendor ID] = "BIERMAN"
+![Invoice Number] = [Forms]![billingmainedit-bk]![CustomerID]
+![Invoice Date] = [Forms]![billingmainedit-bk]![billingdate]
+![Invoice Type] = [Forms]![billingmainedit-bk]!invoice_type_id
+![Invoice Amount] = [Forms]![billingmainedit-bk]![billtotal]
+![Invoice Level Comment] = "Attorneys fees and costs for the " & _
+Forms![billingmainedit-bk]!services_fees3
+![Servicer ID] = rsClient!servicer_id
+![Loan Number] = rsCases![ClientRefNumber]
+![Created by Vendor User ID] = [Forms]![billingmainedit-bk]!created_vdruser_id
+![Department ID] = VDept
+![BK State] = rsCases![PropertyState]
+![Judicial Indicator] = "N"
+![Borrower Name] = UCase(rsCases![LastNameDebtor1] & ", " & rsCases![FirstNameDebtor1])
+If [Forms]![billingmainedit-bk]!services_fees3 Like "Transfer Fee" Then
+![Referral Type] = "1 - Bankruptcy"
+End If
+
+If Len(rsCases!PropAddress) > 60 Then
+MsgBox (rsCases!PropAddress & " is more than 60 Characters this is not allowed in New Invoice, Please update Property Address on Screen and upload again.")
+Exit Function
+Else
+![Property Address 1] = rsCases![PropAddress]
+End If
+
+![Property Address 2] = ""
+
+If Len(rsCases!PropertyCity) > 35 Then
+MsgBox (rsCases!PropertyCity & " is more than 35 Characters this is not allowed in New Invoice, Please update City on Screen and upload again.")
+Exit Function
+Else
+![Property City] = rsCases!PropertyCity
+End If
+
+![Property County] = vCounty
+![Property State] = rsCases!PropertyState
+
+
+If IsNull(rsCases!propzip) Then
+MsgBox ("No zipcode will not batch!")
+Exit Function
+Else
+![Property Zipcode] = Left(rsCases!propzip, 5)
+End If
+
+![Property Zipcode Suffix] = ""
+![Referral Date] = vbkreferral
+![BK Chapter] = vbkchap
+![BK Case Number] = vbkcase
+![BK Filed After Sale] = vbkfas
+![BK Loan Current When Filed] = vbklcw
+![BK Collateral Investment Property] = vbkinv
+![BK Services Post-Confirmation] = vbksvc
+![FC Sale Date] = ""
+If IsNull([Forms]![billingmainedit-bk]![fc_saleheld_reason]) Or _
+[Forms]![billingmainedit-bk]![fc_saleheld_reason] = "" Then
+![FC Sale Held Reason] = "X"
+Else
+![FC Sale Held Reason] = [Forms]![billingmainedit-bk]![fc_saleheld_reason]
+End If
+![FC Sale Held Indicator] = ""
+![Legal Action Date] = ""
+![Vendor Reference Number] = [Forms]![foreclosure database screen]![filenum]
+![BK Services Pre-Confirmation] = vbksrvp
+![MFR Filed Date] = vb362filed
+![BK Disposition] = vbkdisp
+![Date BK Filed] = vbkfiled
+![Writ Issued Date] = ""
+![Writ Issued Date] = ""
+!endofrecord = "X"
+.Update
+End With
+
+
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainedit-bk]![CustomerID]
+
+If [Forms]![billingmainedit-bk]!services_fees3 Like "Transfer Fee" Then
+![Line Item] = "23.19"
+!Note = "Transfer Fee"
+
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 Like "Notice of Default*" Then
+![Line Item] = 1.19
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Attorney Notice/Letter" Then
+![Line Item] = "1.310"
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Post-Sale Motion for Relief" Then
+If Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = "1.600"
+!Note = ""
+Else
+![Line Item] = 1.84
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Litigation" Then
+![Line Item] = 1.11
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Reaffirmation" Then
+![Line Item] = 1.16
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Title Search" Then
+![Line Item] = 9.16
+!Note = "Title Search"
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Motion for Relief-Preparation" Then
+If Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = "1.600"
+!Note = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+![Line Item] = 1.208
+!Note = ""
+Else
+![Line Item] = 1.13
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Preacipe" Then
+![Line Item] = 1.19
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Motion for Relief Withdrawal" Then
+If Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = "1.600"
+!Note = ""
+Else
+![Line Item] = 1.18
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 Like "Obtain*" Then
+![Line Item] = 1.13
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 Like "Proposed Order" Then
+![Line Item] = 1.13
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Filing Fees" Then
+![Line Item] = 2.12
+!Note = ""
+ElseIf Forms![billingmainedit-bk]!services_fees3 = "Attorney Fees/SCRA Active Military Search" Then
+![Line Item] = "1.390"
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Notice of Appearance" Then
+![Line Item] = 1.53
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Notice of Hearing" Then
+![Line Item] = 1.13
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Objection to Plan" Then
+![Line Item] = 1.15
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Objection to Amended Plan" Then
+![Line Item] = 1.15
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Objection to Claim" Then
+![Line Item] = 1.15
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 Like "Plan Review*" Then
+If Forms![foreclosure database screen]!Client Like "Homeward*" Then
+![Line Item] = 23.5
+!Note = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+![Line Item] = 1.353
+!Note = ""
+Else
+![Line Item] = 1.136
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Transfer of Claim" Then
+![Line Item] = 1.99
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Proof of Claim" Then
+If Forms![foreclosure database screen]!Client Like "Homeward*" Or _
+Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = 23.46
+!Note = ""
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+![Line Item] = 1.203
+!Note = ""
+Else
+![Line Item] = 1.12
+!Note = ""
+End If
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Amended POC" Then
+![Line Item] = 1.99
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Objection to AOD" Then
+![Line Item] = 1.44
+!Note = ""
+ElseIf [Forms]![billingmainedit-bk]!services_fees3 = "Motion to Allow Late Filing of POC" Then
+![Line Item] = 1.93
+!Note = ""
+End If
+
+![Line Item Date] = [Forms]![billingmainedit-bk]!services_rendered_fees3
+
+
+
+![Qty] = 1
+
+!Price = [Forms]![billingmainedit-bk]![fees3]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+End If
+
+'End fees3
+'''
+
+
+
+If Forms![billingmainedit-bk]!costs1 <> 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainedit-bk]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = "2.600"
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+![Line Item] = 7.47
+Else
+![Line Item] = 2.1
+End If
+
+![Line Item Date] = [Forms]![billingmainedit-bk]!services_rendered_cost
+
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainedit-bk]![costs1]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If Forms![billingmainedit-bk]!costs2 <> 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainedit-bk]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "HSBC*" Then
+![Line Item] = "2.600"
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+![Line Item] = 7.47
+Else
+![Line Item] = 2.1
+End If
+
+![Line Item Date] = [Forms]![billingmainedit-bk]!services_rendered_costs2
+
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainedit-bk]![costs2]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+End If
+
+
+
+
+
+End If
+End If
+
+End Function
+Public Function EmailDone()
+Dim rsEmail As RecordSet
+Dim Vproc, VBody, VEmail
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+
+Set rsEmail = CurrentDb.OpenRecordset("NewInvoiceEMAIL")
+rsEmail.MoveFirst
+
+Vproc = rsEmail!initials
+'MsgBox ("1st initials:" & Vproc)
+
+Do While Not rsEmail.EOF
+
+'Vproc = rsEmail!initials
+
+If rsEmail!initials = Vproc Then
+VBody = VBody + "Invoice#: " & rsEmail!CustomerID & "/BWW#: " & rsEmail!filenum & "/DONE" & vbCr & vbCr
+VEmail = rsEmail!EmailName
+'MsgBox (Vproc & ":" & rsEmail!initials)
+
+Else
+
+'MsgBox (Vbody)
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VEmail
+MyMail.Subject = "Bills Batched"
+MyMail.body = VBody
+MyMail.Display
+Set MyMail = Nothing
+
+VBody = ""
+VEmail = rsEmail!EmailName
+VBody = "Invoice#: " & rsEmail!CustomerID & "/BWW#: " & rsEmail!filenum & "/DONE" & vbCr & vbCr
+Vproc = rsEmail!initials
+
+End If
+
+rsEmail.MoveNext
+Loop
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VEmail
+MyMail.Subject = "Bills Batched"
+MyMail.body = VBody
+MyMail.Display
+Set MyMail = Nothing
+
+
+End Function
+Public Function DeleteNewInvoice()
+
+'Call EmailDone
+
+Dim VDelNI As String
+'DoCmd.OutputTo acOutputReport, "NewInvoice Rpt", acFormatSNP, "\\rvdv-fs01\DataTransfer\NewInvoice\BackUps\" & Format$(Now(), "mmddyyyyhhnnss") & ".snp"
+
+VDelNI = MsgBox("Delete NewInvoice Tables?", vbYesNo)
+If VDelNI = vbYes Then
+
+DoCmd.OutputTo acOutputReport, "NewInvoiceRpt", acFormatSNP, "\\rvdv-fs01\DataTransfer2\NewInvoice\BackUps\" & Format$(Now(), "mmddyyyyhhnnss") & ".snp"
+Dim vtime As String
+Dim Vtime2 As Date
+Dim strsql, strsqlDetail As String
+Dim rs, rsDetail As RecordSet
+
+f = FreeFile(1)
+Open "\\rvdv-fs01\DataTransfer\NewInvoice\timetransaction.txt" For Input As #f
+Input #f, vtime
+Close #f
+
+Vtime2 = vtime
+DoCmd.SetWarnings False
+CurrentDb.Execute (" delete * from [NewInvoice Table] where timetransaction < #" & Vtime2 & "#;")
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [LineItem] where timetransaction < #" & Vtime2 & "#;")
+
+MsgBox ("All files not already uploaded to NewInvoice have been deleted from NewInvoice Tables")
+Else
+MsgBox ("The files are all still in the NewInvoice Tables")
+End If
+End Function
+Public Function ExportNINOI()
+'On Error GoTo ErrHandler:
+
+   Dim VUpdate, vClient, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VChk, DocName, VTypeLoan, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsni, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+   Dim DRC
+   Dim VEmp As String
+   
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+If Not IsNull(Forms![foreclosure database screen]!resume_recd) Or Forms![foreclosure database screen]!resume_recd <> "" Then
+vlegal = Forms![foreclosure database screen]!resume_recd
+Else
+vlegal = Forms![foreclosure database screen]![Date Recieved]
+End If
+
+Dim rsNOI As RecordSet
+Dim strsqlNOI As String
+strsqlNOI = "select * from NOI where subFileNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsNOI = CurrentDb.OpenRecordset(strsqlNOI, dbOpenSnapshot)
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenSnapshot)
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+Set rsni = CurrentDb.OpenRecordset("NewInvoice Table", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+
+If IsNull(rsClient![newinvoice billing]) Then
+MsgBox ("No New Invoice Coding for : " & Forms![foreclosure database screen]!Client & ", will not add to New Invoice, exiting.")
+Exit Function
+Else
+
+VNI = rsClient![newinvoice billing]
+
+'Vinv = rsNOI![InvNo]
+'MsgBox (VInv)
+
+strSQLCNI = "select * from [NewInvoice Table] where [Invoice Number] = " & VINv & ";"
+
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI, dbOpenSnapshot)
+Dim VRC
+VRC = rsChkNI.RecordCount
+rsChkNI.Close
+
+If VRC >= 1 Then
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to continue?", vbYesNo)
+Dim VB As String
+If VChk = vbYes Then
+VB = "YES"
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [newinvoice table] where [invoice number] = " & VINv)
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [lineitem] where [invoice #] = " & VINv)
+Else
+VB = "NO"
+End If
+Else
+VB = "NO"
+End If
+
+
+If VB = "YES" Or VRC = 0 Then
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+
+VUpdate = MsgBox("Input Bill Into NewInvoices Batch File?", vbYesNo)
+
+If VUpdate = vbNo Then
+MsgBox ("Not batched to New Invoice")
+Exit Function
+
+Else
+
+'[Forms]![billingmainedit]![Sent] = Date
+
+'Servicer ID Identification and Dept
+
+If IsNull(rsClient!servicer_id) Then
+MsgBox ("Servicer id for new invoice needs to be input in client screen")
+vServID = ""
+Else
+vServID = rsClient!servicer_id
+End If
+VInvID = 30
+
+strSQLInv = "Select * from [NI Invoice Types] where [invoice #] = " & """" & VInvID & """" & ";"
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv, dbOpenSnapshot)
+VDept = "FC"
+Dim VCont As String
+
+vbkchap = ""
+vbkcase = ""
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = ""
+vb362filed = ""
+Vsale = ""
+
+Dim VRefer
+If IsNull(rsCases!resume_recd) Then
+VRefer = rsCases![Date Recieved]
+Else
+VRefer = rsCases!resume_recd
+End If
+
+End If
+
+End If
+
+strsqlCounty = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]![Propertycounty] & """" & " and state = " & """" & Forms![foreclosure database screen]![PropertyState] & """" & ";"
+Set rsCounty = CurrentDb.OpenRecordset(strsqlCounty, dbOpenSnapshot)
+
+If rsCases!PropertyState = "VA" Then
+vcountyid = rsCounty!CountyID
+Else
+vCounty = ""
+End If
+rsCounty.Close
+
+If rsCases!PropertyState <> "VA" Then
+If rsCases!Propertycounty = "Baltimore City" Then
+vCounty = "Baltimore"
+Else
+vCounty = rsCases!Propertycounty
+End If
+End If
+
+If IsNull(rsCases![HUD/VANum]) Then
+VTypeLoan = rsCases![ClientRefNumber]
+Else
+VTypeLoan = rsCases![HUD/VANum]
+End If
+
+
+With rsni
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![Vendor ID] = "BIERMAN"
+![Invoice Number] = VINv
+![Invoice Date] = Date
+
+'If rsClient!OrganizationName Like "Select*" Then
+![Invoice Type] = "809"
+'ElseIf rsClient!Fidelity = 1 Or _
+'rsClient!OrganizationName like "Bank of Am*" Then
+'![Invoice Type] = "14"
+'Else
+'![Invoice Type] = "30"
+'End If
+
+![Invoice Amount] = rsNOI![balance due]
+![Servicer ID] = rsClient!servicer_id
+![Loan Number] = rsCases![ClientRefNumber]
+![Created by Vendor User ID] = rsNOI!created_vdruser_id
+![Department ID] = VDept
+![BK State] = rsCases![PropertyState]
+![Judicial Indicator] = "N"
+![Invoice Level Comment] = "New MD Legislation Requirement. Preparation of MD NOI"
+![Borrower Name] = UCase(rsCases![LastNameDebtor1] & ", " & rsCases![FirstNameDebtor1])
+If Len(rsCases!PropAddress) > 60 Then
+MsgBox (rsCases!PropAddress & " is more than 60 Characters this is not allowed in New Invoice, Please update Property Address on Screen and upload again.")
+Exit Function
+Else
+![Property Address 1] = rsCases![PropAddress]
+
+End If
+
+![Property Address 2] = ""
+
+If Len(rsCases!PropertyCity) > 35 Then
+MsgBox (rsCases!PropertyCity & " is more than 35 Characters this is not allowed in New Invoice, Please update City on Screen and upload again.")
+Exit Function
+Else
+![Property City] = rsCases!PropertyCity
+End If
+
+![Property County] = vCounty
+![Property State] = rsCases!PropertyState
+
+Dim tempfields As Variant
+tempfields = Split(rsCases!propzip, "-")
+Dim A
+A = Split(rsCases!propzip, "-")
+If UBound(tempfields) = 1 Then
+![Property Zipcode] = StrConv(A(0), vbProperCase)
+Else
+On Error Resume Next
+![Property Zipcode] = rsCases!propzip
+End If
+
+![Property Zipcode Suffix] = ""
+
+If IsNull(rsCases!resume_recd) Then
+![Referral Date] = rsCases![Date Recieved]
+Else
+![Referral Date] = rsCases!resume_recd
+End If
+
+![BK Chapter] = ""
+![BK Case Number] = ""
+![BK Filed After Sale] = ""
+![BK Loan Current When Filed] = ""
+![BK Collateral Investment Property] = ""
+![BK Services Post-Confirmation] = ""
+![FC Sale Date] = Vsale
+![FC Sale Held Reason] = "X"
+![FC Sale Held Indicator] = ""
+![Legal Action Date] = vlegal
+![Vendor Reference Number] = [Forms]![foreclosure database screen]![filenum]
+![BK Services Pre-Confirmation] = ""
+![MFR Filed Date] = ""
+![BK Disposition] = ""
+![Date BK Filed] = ""
+'![DIL Filed Date] = vb362filed
+![Writ Issued Date] = ""
+![Writ Issued Date] = ""
+!endofrecord = "X"
+.Update
+End With
+
+If Forms![foreclosure database screen]!Client Like "Select*" Then
+Else
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![INVOICE #] = VINv
+
+If rsClient!OrganizationName Like "Bank of Am*" Or _
+rsClient!OrganizationName Like "OneWest*" Or _
+rsClient!OrganizationName Like "HSBC*" Then
+![Line Item] = 24.31
+ElseIf rsClient!OrganizationName Like "PNC*" Then
+![Line Item] = "7.59"
+!Note = "NOI Statutory Mailing Costs"
+Else
+![Line Item] = 4.7
+End If
+
+![Line Item Date] = Date
+![Qty] = 1
+
+If rsClient!OrganizationName Like "OneWest*" Then
+!Note = "Statutory Mailings"
+Else
+!Note = VMailNotes
+End If
+
+'MsgBox (VSentWalz)
+!Price = VMail
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = VINv
+
+If (rsClient!OrganizationName = "HSBC Consumer Lending (USA) Inc." Or _
+rsClient!OrganizationName = "HSBC Mortgage Corporation  - NY" Or _
+rsClient!OrganizationName = "HSBC Mortgage Services Inc.") Then
+![Line Item] = 23.55
+ElseIf rsClient!OrganizationName Like "Bank of Am*" Or _
+rsClient!OrganizationName Like "HSBC*" Then
+![Line Item] = 23.66
+ElseIf rsClient!OrganizationName Like "OneWest*" Then
+![Line Item] = "1.229"
+ElseIf rsClient!OrganizationName Like "Seter*" Then
+![Line Item] = "1.126"
+ElseIf rsClient!OrganizationName Like "PNC*" Then
+![Line Item] = "1.601"
+!Note = "NOI Fees"
+Else
+![Line Item] = "1.65"
+End If
+
+![Line Item Date] = Date
+![Qty] = 1
+If rsClient!OrganizationName Like "OneWest*" Then
+!Note = "Notice of Intent"
+Else
+!Note = "Preparation of MD NOI"
+End If
+!Price = 200#
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+
+MsgBox (rsCases!ClientRefNumber & " has been added into the Batch File for NewInvoices")
+rsLI.Close
+rsni.Close
+rsChkNI.Close
+rsFC.Close
+rsCases.Close
+rsClient.Close
+
+End If
+
+
+ErrHandler:
+Dim MyError As Error
+'MsgBox Errors.Count
+For Each MyError In DBEngine.Errors
+With MyError
+'MsgBox Number & " " & Description
+End With
+Next MyError
+End Function
+Public Function ExportNewInvInd()
+   Dim VUpdate, vClient, VNI, vsheld, vsheldRes, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VINv, VChk, DocName, VTypeLoan, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsni, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+   Dim DRC
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenSnapshot)
+Set rsni = CurrentDb.OpenRecordset("NewInvoice Table", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+If Not IsNull(rsE!DateWritSent_RESTOFMD) Then
+VVar = rsE!DateWritSent_RESTOFMD
+Else
+VVar = Null
+End If
+
+If Not IsNull(rsE!WritFiledCourt) Then
+VVar2 = rsE!WritFiledCourt
+Else
+VVar2 = Null
+End If
+
+Else
+VVar = Null
+VVar2 = Null
+
+End If
+rsE.Close
+'End Eviction Code
+
+If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_rec_charge) Then
+    DRC = 55
+    Else
+    DRC = Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_rec_charge
+    End If
+    
+    If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!Buyer) Or _
+    Forms![foreclosure database screen]!PostsaleSubForm.Form!Buyer = "" Then
+    vsheld = "N"
+    vsheldRes = ""
+    Else
+    vsheld = "Y"
+    vsheldRes = "X"
+    End If
+    
+If IsNull(rsClient![newinvoice billing]) Then
+MsgBox ("No New Invoice Coding for : " & Forms![foreclosure database screen]!Client & ", will not add to New Invoice, exiting.")
+Exit Function
+Else
+
+VNI = rsClient![newinvoice billing]
+VINv = Forms![BillingMainEdit]![CustomerID]
+strSQLCNI = "select * from [NewInvoice Table] where [Invoice Number] = " & VINv
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI, dbOpenSnapshot)
+Dim VRC
+VRC = rsChkNI.RecordCount
+rsChkNI.Close
+If VRC >= 1 Then
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to continue?", vbYesNo)
+Dim VB As String
+If VChk = vbYes Then
+VB = "YES"
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [newinvoice table] where [invoice number] = " & VINv)
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [lineitem] where [invoice #] = " & VINv)
+Else
+VB = "NO"
+End If
+Else
+VB = "NO"
+End If
+
+
+If VB = "YES" Or VRC = 0 Then
+
+'Update the Name to first and last names from Employee Database
+VEmpID = [Forms]![BillingMainEdit]![created_vdruser_id]
+'Query on inputting record into the NewInvoice Table and Open table if Yes
+VUpdate = MsgBox("Input Bill Into NewInvoices Batch File?", vbYesNo)
+If VUpdate = vbYes Then
+[Forms]![BillingMainEdit]![Sent] = Date
+Set rsni = CurrentDb.OpenRecordset("NewInvoice Table", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+'Servicer ID Identification and Dept
+If IsNull(rsClient!servicer_id) Then
+MsgBox ("Servicer id for new invoice needs to be input in client screen")
+vServID = ""
+Else
+vServID = rsClient!servicer_id
+End If
+VInvID = [Forms]![BillingMainEdit]![invoice_type_id]
+strSQLInv = "Select * from [NI Invoice Types] where [invoice #] = " & """" & VInvID & """" & ";"
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv, dbOpenSnapshot)
+If rsinv.EOF Then
+MsgBox ("The Invoice TYPE Selected for the New Invoice Bill is Not listed in the drop down box, Will NOT BATCH")
+Exit Function
+End If
+
+VDept = rsinv!Dept
+Dim VCont As String
+If rsinv!Dept = "BK" And Forms![foreclosure database screen]!Status <> "Bankruptcy" _
+And (IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![Date Filed]) Or IsNull(BKChapter())) Then
+MsgBox ("Invoice Type Selected is a Bankruptcy Type BUT this file is not in Bankruptcy Status AND has No BK Filed Date or Chapter is Input, Will Exit Function.  " & vbCr & vbCr & "FILE NOT DUMPED FOR EXPORTING TO NEW INVOICE!!!")
+rsinv.Close
+Exit Function
+Else
+rsinv.Close
+End If
+
+If Forms![foreclosure database screen]!Status = "Bankruptcy" Then
+If IsNull(BKChapter()) Then
+vbkchap = ""
+Else
+vbkchap = BKChapter()
+End If
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![BKY Case Number]) Then
+vbkcase = ""
+Else
+vbkcase = Forms!bankruptcymain!BankruptcySubForm.Form![BKY Case Number]
+End If
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![Date Filed]) Then
+vbkfiled = ""
+Else
+vbkfiled = Forms!bankruptcymain!BankruptcySubForm.Form![Date Filed]
+End If
+
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![362MotionFiled]) Then
+vb362filed = ""
+Else
+vb362filed = Forms!bankruptcymain!BankruptcySubForm.Form![362MotionFiled]
+End If
+
+Else
+vbkchap = ""
+vbkcase = ""
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = ""
+vb362filed = ""
+End If
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate) Then
+Vsale = ""
+Else
+Vsale = Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+End If
+
+Dim VRefer
+If IsNull(rsCases!resume_recd) Then
+VRefer = rsCases![Date Recieved]
+Else
+VRefer = rsCases!resume_recd
+End If
+
+If rsCases!PropertyState <> "MD" Then
+If IsNull(rsFC![1st_ad]) Then
+vlegal = VRefer
+Else
+If VRefer < rsFC![1st_ad] Then
+vlegal = VRefer
+Else
+vlegal = rsFC![1st_ad]
+End If
+End If
+
+Else
+
+If rsCases!PropertyState <> "MD" Then
+If IsNull(rsFC!DocsSentCourt) Then
+vlegal = VRefer
+Else
+If VRefer < rsFC!DocsSentCourt Then
+vlegal = VRefer
+Else
+vlegal = rsFC![DocsSentCourt]
+End If
+End If
+End If
+
+If rsCases!PropertyState = "MD" Then
+If IsNull(FDFiled()) Or FDFiled() = "" Then
+vlegal = VRefer
+Else
+'If VRefer < FDFiled() Then
+'vlegal = VRefer
+'Else
+vlegal = FDFiled()
+'End If
+End If
+
+
+End If
+
+
+
+End If
+
+strsqlCounty = "Select * from jurisdiction where county = " & """" & rsCases![Propertycounty] & """" & " and state = " & """" & rsCases![PropertyState] & """" & ";"
+Set rsCounty = CurrentDb.OpenRecordset(strsqlCounty, dbOpenSnapshot)
+
+If rsCases!PropertyState = "VA" Then
+vcountyid = rsCounty!CountyID
+Else
+vCounty = ""
+End If
+rsCounty.Close
+
+If rsCases!PropertyState <> "VA" Then
+If rsCases!Propertycounty = "Baltimore City" Then
+vCounty = "Baltimore"
+Else
+vCounty = rsCases!Propertycounty
+End If
+End If
+
+If [Forms]![BillingMainEdit]![d_reqjud] > 0 Then
+vfiling = 13.2
+ElseIf Forms![foreclosure database screen]!Client Like "Chase*" Then
+vfiling = 2.1
+Else
+vfiling = 2.24
+End If
+
+If IsNull(rsCases![HUD/VANum]) Then
+VTypeLoan = rsCases![ClientRefNumber]
+Else
+VTypeLoan = rsCases![HUD/VANum]
+End If
+
+With rsni
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![Vendor ID] = "BIERMAN"
+![Invoice Number] = [Forms]![BillingMainEdit]![CustomerID]
+![Invoice Date] = [Forms]![BillingMainEdit]![billingdate]
+
+If [Forms]![BillingMainEdit]![feeothertext] = "Preparation of MD NOI" Or _
+Forms!BillingMainEdit!l_prepabstract > 0 Then
+
+If rsClient!OrganizationName Like "Select*" Then
+![Invoice Type] = "809"
+ElseIf rsClient!Fidelity = 1 Or _
+rsClient!OrganizationName Like "Bank of Am*" Then
+![Invoice Type] = "14"
+Else
+![Invoice Type] = "30"
+End If
+Else
+![Invoice Type] = [Forms]![BillingMainEdit]!invoice_type_id
+End If
+
+![Invoice Amount] = [Forms]![BillingMainEdit]![balance due]
+If Not IsNull(Forms![BillingMainEdit]!fc_saleheld_reason) Then
+Dim strsqlReason As String
+Dim rsReason As RecordSet
+
+strsqlReason = "SELECT * FROM [FC Reason Codes] where id = " & """" & Forms![BillingMainEdit]!fc_saleheld_reason & """" & ";"
+Set rsReason = CurrentDb.OpenRecordset(strsqlReason, dbOpenSnapshot)
+
+![Invoice Level Comment] = "Attorneys fees and costs for " & _
+Vsale & _
+" that was canceled due to " & rsReason![description]
+rsReason.Close
+Else
+![Invoice Level Comment] = "Attorneys fees and costs for sale date " & _
+Vsale
+End If
+![Servicer ID] = rsClient!servicer_id
+![Loan Number] = rsCases![ClientRefNumber]
+![Created by Vendor User ID] = [Forms]![BillingMainEdit]!created_vdruser_id
+![Department ID] = VDept
+If VDept = "FC" Then
+![Referral Type] = "2-Foreclosure"
+ElseIf VDept = "BK" Then
+![Referral Type] = "1-Bankruptcy"
+Else
+![Referral Type] = "3-Not BK or FC"
+End If
+
+![BK State] = rsCases![PropertyState]
+![Judicial Indicator] = "N"
+![Borrower Name] = UCase(rsCases![LastNameDebtor1] & ", " & rsCases![FirstNameDebtor1])
+If Len(rsCases!PropAddress) > 60 Then
+MsgBox (rsCases!PropAddress & " is more than 60 Characters this is not allowed in New Invoice, Please update Property Address on Screen and upload again.")
+Exit Function
+Else
+![Property Address 1] = rsCases![PropAddress]
+
+End If
+
+![Property Address 2] = ""
+
+If Len(rsCases!PropertyCity) > 35 Then
+MsgBox (rsCases!PropertyCity & " is more than 35 Characters this is not allowed in New Invoice, Please update City on Screen and upload again.")
+Exit Function
+Else
+![Property City] = rsCases!PropertyCity
+End If
+
+![Property County] = vCounty
+![Property State] = rsCases!PropertyState
+
+Dim tempfields As Variant
+tempfields = Split(rsCases!propzip, "-")
+Dim A
+A = Split(rsCases!propzip, "-")
+If UBound(tempfields) = 1 Then
+![Property Zipcode] = StrConv(A(0), vbProperCase)
+Else
+On Error Resume Next
+![Property Zipcode] = rsCases!propzip
+End If
+
+![Property Zipcode Suffix] = ""
+
+If IsNull(rsCases!resume_recd) Then
+![Referral Date] = rsCases![Date Recieved]
+Else
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!resume_DA = "Amend" Then
+![Referral Date] = rsCases![Date Recieved]
+Else
+![Referral Date] = rsCases!resume_recd
+End If
+End If
+
+![BK Chapter] = vbkchap
+![BK Case Number] = vbkcase
+![BK Filed After Sale] = vbkfas
+![BK Loan Current When Filed] = vbklcw
+![BK Collateral Investment Property] = vbkinv
+![BK Services Post-Confirmation] = vbksvc
+![FC Sale Date] = Vsale
+![FC Sale Held Reason] = [Forms]![BillingMainEdit]![fc_saleheld_reason]
+![FC Sale Held Indicator] = vsheld
+![FC Sale Result] = vsheldRes
+![Legal Action Date] = vlegal
+![Vendor Reference Number] = [Forms]![foreclosure database screen]![filenum]
+![BK Services Pre-Confirmation] = vbksrvp
+![MFR Filed Date] = vb362filed
+![BK Disposition] = vbkdisp
+![Date BK Filed] = vbkfiled
+'![DIL Filed Date] = vb362filed
+![Writ Issued Date] = VVar
+![Writ Issued Date] = VVar2
+!endofrecord = "X"
+.Update
+End With
+
+Call ExportNILineItems
+
+End If
+End If
+End If
+
+ErrHandler:
+Dim MyError As Error
+'MsgBox Errors.Count
+For Each MyError In DBEngine.Errors
+With MyError
+'MsgBox Number & " " & Description
+End With
+Next MyError
+End Function
+Public Function ExportNILineItems()
+
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+
+If [Forms]![BillingMainEdit]![d_reqjud] > 0 Then
+vfiling = 13.2
+ElseIf Forms![foreclosure database screen]!Client Like "Chase*" Then
+vfiling = 2.1
+Else
+vfiling = 2.24
+End If
+
+
+If [Forms]![BillingMainEdit]![l_appearance] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 2.27
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![l_appearance]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![post_mail_lma] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = "4.66"
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "Final Loss Mitigation Affidavit"
+!Price = [Forms]![BillingMainEdit]![post_mail_lma]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![l_dil] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 1.1
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "Attorney Fees"
+!Price = [Forms]![BillingMainEdit]![l_dil]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![d_reqjud] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 1.27
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![d_reqjud]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![writ_fee] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 13.5
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![writ_fee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![sheriff_fee] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 13.6
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![sheriff_fee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![d_process] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 4.2
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![d_process]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![Attorney Fee] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!resume_DA = "Amend" Then
+![Line Item] = 1.1
+!Note = "Restart Foreclosure"
+Else
+![Line Item] = 1.1
+!Note = ""
+End If
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+![Line Item Date] = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+![Line Item Date] = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+![Qty] = 1
+!Price = [Forms]![BillingMainEdit]![Attorney Fee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![estate_adm] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 1.3
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+![Line Item Date] = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+![Line Item Date] = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+![Qty] = 1
+!Price = [Forms]![BillingMainEdit]![estate_adm]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![lien_citation_violation] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = "3.33"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+![Line Item Date] = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+![Line Item Date] = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+![Qty] = 1
+!Price = [Forms]![BillingMainEdit]![lien_citation_violation]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![estate_cost] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = "3.59"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+![Line Item Date] = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+![Line Item Date] = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+![Qty] = 1
+!Price = [Forms]![BillingMainEdit]![estate_cost]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![dod_search] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = "1.390"
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+![Line Item Date] = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+![Line Item Date] = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+![Qty] = 1
+!Price = [Forms]![BillingMainEdit]![dod_search]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+If [Forms]![BillingMainEdit]![l_prepabstract] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+
+If (Client() = "HSBC Consumer Lending (USA) Inc." Or _
+Client() = "HSBC Mortgage Corporation  - NY" Or _
+Client() = "HSBC Mortgage Services Inc.") Or _
+Client() Like "Bank of Am*" Then
+![Line Item] = 23.55
+ElseIf Client() Like "PNC*" Then
+![Line Item] = "23.66"
+ElseIf Client() Like "Seter*" Then
+![Line Item] = "1.126"
+Else
+![Line Item] = "1.65"
+End If
+
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "Preparation of MD NOI"
+!Price = [Forms]![BillingMainEdit]![l_prepabstract]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![feeothermoney] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+
+If Forms![BillingMainEdit]!feeothertext Like "*797*" Then
+![Line Item] = 23.55 'changed from 1.3 per Evangeline on 9/23/08
+!Note = "VA SB797 Notices"
+ElseIf [Forms]![BillingMainEdit]![feeothertext] = "Preparation of MD NOI" Then
+
+If (Client() = "HSBC Consumer Lending (USA) Inc." Or _
+Client() = "HSBC Mortgage Corporation  - NY" Or _
+Client() = "HSBC Mortgage Services Inc.") Or _
+Client() Like "Bank of Am*" Then
+![Line Item] = 23.55
+!Note = "Preparation of MD NOI"
+ElseIf Client() Like "Seter*" Then
+![Line Item] = "1.126"
+ElseIf Client() Like "PNC*" Then
+![Line Item] = "23.66"
+
+Else
+![Line Item] = "1.65"
+!Note = "Preparation of MD NOI"
+End If
+
+Else
+![Line Item] = 1.1
+!Note = Forms!BillingMainEdit!feeothertext
+End If
+
+
+If IsNull(Forms![foreclosure database screen]!resume_recd) Then
+![Line Item Date] = Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy")
+Else
+![Line Item Date] = Format(Forms![foreclosure database screen]!resume_recd, "mm/dd/yy")
+End If
+
+![Qty] = 1
+!Price = [Forms]![BillingMainEdit]![feeothermoney]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+
+If [Forms]![BillingMainEdit]![process_service] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+
+If Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = 4.1
+Else
+![Line Item] = 4.31
+End If
+
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![process_service]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![skip_trace] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+If Client() Like "HSBC*" Then
+![Line Item] = 24.24
+Else
+![Line Item] = 4.9
+End If
+
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "Skip Trace/Search"
+!Price = [Forms]![BillingMainEdit]![skip_trace]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+
+If [Forms]![BillingMainEdit]![motion_accept] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 2.12
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![motion_accept]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![fee_recpoweratt] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 3.1
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![fee_recpoweratt]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+If [Forms]![BillingMainEdit]![fee_prepassignment] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+
+If Forms![foreclosure database screen]!Client Like "onewes*" And _
+Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF) Then
+![Line Item] = 23.1
+ElseIf Forms![foreclosure database screen]!Client Like "Special*" Then
+![Line Item] = 3.601
+Else
+![Line Item] = 23.71
+End If
+
+!Note = "Preparation of Loan Assignment"
+'!Note = ""
+
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+
+!Price = [Forms]![BillingMainEdit]![fee_prepassignment]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![fee_recassignment] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+
+If Forms![foreclosure database screen]!Client Like "Seter*" Then
+![Line Item] = 3.6
+ElseIf Forms![foreclosure database screen]!Client Like "onewes*" And _
+Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF) Then
+![Line Item] = 3.65
+Else
+![Line Item] = 24.32
+End If
+
+!Note = "Recording of Loan Assignment"
+'!Note = ""
+'![Line Item] = 3.6
+
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+
+!Price = [Forms]![BillingMainEdit]![fee_recassignment]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![fee_dismcase] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+
+If Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = "1.297"
+ElseIf Client() Like "HSBC*" Then
+![Line Item] = 24.2
+Else
+![Line Item] = 5.21
+End If
+
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![fee_dismcase]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![l_preptitle] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+If Client() Like "HSBC*" Then
+![Line Item] = 23.1
+Else
+![Line Item] = 1.125
+End If
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleClaimSent) Then
+![Line Item Date] = Forms!BillingMainEdit!billingdate
+Else
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form!TitleClaimSent
+End If
+![Qty] = 1
+!Note = "Preparation and drafting of title claim"
+!Price = [Forms]![BillingMainEdit]![l_preptitle]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![re_recording] > 0 Then
+
+If Forms![foreclosure database screen]!PropertyState = "DC" Or _
+Forms![foreclosure database screen]!Client Like "Bank of Am*" Or _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+![Line Item] = 3.1
+Else
+![Line Item] = 5.8
+End If
+
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!Note = "Abstractor Recording Fee"
+Else
+!Note = "Court Costs"
+End If
+
+!Price = 60#
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 3.48
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "Deed Recording Costs"
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Or _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+!Price = 55#
+Else
+!Price = 30#
+End If
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+Else
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+
+If Forms![foreclosure database screen]!Client Like "OneWest*" Then
+![Line Item] = 3.1
+Else
+![Line Item] = 3.48
+End If
+
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!Note = "60 Charge for Court Costs and " & DRC & " for Deed Recording Costs"
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+!Note = "40 Charge for Court Costs and " & DRC & " for Deed Recording Costs"
+Else
+!Note = "40 Charge for Court Costs and 30 for Deed Recording Costs"
+End If
+
+!Price = [Forms]![BillingMainEdit]![re_recording]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+End If
+
+End If
+
+
+If [Forms]![BillingMainEdit]![d_filing] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = vfiling
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "Line to Docket"
+!Price = [Forms]![BillingMainEdit]![d_filing]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+If [Forms]![BillingMainEdit]![d_recording] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+'If Forms![foreclosure database screen]!Client like "OneWest*" Then
+'![line item] = 3.1
+'Else
+
+If (Forms![foreclosure database screen]!PropertyState = "DC" And _
+(Forms![foreclosure database screen]!Client = "BAC Home Loans, Inc." Or Forms![foreclosure database screen]!Client = "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP")) Then
+![Line Item] = 3.11
+Else
+![Line Item] = 3.5
+End If
+
+'End If
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "Appointment of Substitute Trustee"
+!Price = [Forms]![BillingMainEdit]![d_recording]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![d_titlesearch] > 0 Then
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 9.16
+
+If Not IsNull([Forms]![BillingMainEdit]!bill_title) Then
+![Line Item Date] = Format([Forms]![BillingMainEdit]!bill_title, "mm/dd/yyyy")
+
+Else
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_ord = "" Or _
+IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!update_ord) Then
+
+If Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved] = "" Or IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved]) Then
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportOrdered]
+Else
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![TitleReportRecieved]
+End If
+
+Else
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_recd]) Then
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_ord]
+Else
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![update_recd]
+End If
+
+End If
+End If
+
+
+
+
+![Qty] = 1
+!Note = "Title Search"
+!Price = [Forms]![BillingMainEdit]![d_titlesearch]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![d_realestatetaxes] > 0 Then
+
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 8.1
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+![Line Item Date] = Forms!BillingMainEdit!billingdate
+Else
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+![Qty] = 1
+!Note = [Forms]![BillingMainEdit]![ret_notes]
+Dim VFROM, VTo As String
+VFROM = InputBox("Real Estate Taxes: Enter Utility Breakdown: From Date:")
+VTo = InputBox("Real Estate Taxes: Enter Utility Breakdown: To Date:")
+If IsNull(VFROM) Then
+![Util From Date] = ""
+Else
+![Util From Date] = Format(VFROM, "mm/dd/yy")
+End If
+If IsNull(VTo) Then
+![Util to Date] = ""
+Else
+![Util to Date] = Format(VTo, "mm/dd/yy")
+End If
+![Util Base Amount] = [Forms]![BillingMainEdit]![d_realestatetaxes]
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+![Util Advance Date] = Format(Date, "mm/dd/yy")
+
+!Price = [Forms]![BillingMainEdit]![d_realestatetaxes]
+!endofrecord = "0"
+
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![d_transfee] > 0 Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" And _
+(Forms!BillingMainEdit!shortage = 0 Or IsNull(Forms!BillingMainEdit!shortage)) Then
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "OneWest*" Then
+![Line Item] = 8.22
+ElseIf Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = 8.14
+Else
+![Line Item] = 8.5
+End If
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "Recordation Tax"
+'!Price = [Forms]![billingmainedit]![d_transfee]
+!Price = Forms![foreclosure database screen]![PostsaleSubForm].Form!staterecordationtax
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 8.7
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "State Transfer Tax"
+!Price = Forms![foreclosure database screen]![PostsaleSubForm].Form!statetransfertax
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+If MD_CountyTransferTax > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 8.6
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "County Transfer Tax"
+'!Price = [Forms]![billingmainedit]![d_transfee]
+!Price = Forms![foreclosure database screen]![PostsaleSubForm].Form!countytransfertax
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+Else
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "OneWest*" Then
+![Line Item] = 8.22
+ElseIf Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = 8.14
+Else
+![Line Item] = 8.5
+End If
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "Recordation Tax"
+!Price = [Forms]![BillingMainEdit]![d_transfee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+End If
+End If
+
+
+
+If [Forms]![BillingMainEdit]![d_auctfee] > 0 Then
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+If Forms![foreclosure database screen]!PropertyState = "VA" And Forms![foreclosure database screen]!Client <> "Bank of America, N.A. successor by merger to BAC Home Loans Servicing, LP fka Countrywide Home Loans Servicing, LP" Then
+![Line Item] = 6.25
+ElseIf Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = 6.2
+Else
+![Line Item] = 6.13
+End If
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![d_auctfee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![l_initial] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+
+If Client() Like "Bank of Am*" Then
+![Line Item] = 23.55
+ElseIf Client() Like "HSBC*" Then
+![Line Item] = 23.1
+Else
+![Line Item] = 1.126
+End If
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+If Client() Like "Bank of Am*" Then
+!Note = "Fee for preparation of Demand Letter"
+Else
+!Note = ""
+End If
+
+!Price = [Forms]![BillingMainEdit]![l_initial]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![forbearance] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 1.26
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![forbearance]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+If [Forms]![BillingMainEdit]![otherm10] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 1.1
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = [Forms]![BillingMainEdit]![othert10]
+!Price = [Forms]![BillingMainEdit]![otherm10]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![otherm2] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+
+If Forms!BillingMainEdit!otherm2 Like "Estate A*" Then
+![Line Item] = "1.3"
+![Util From Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+![Util Advance Date] = ""
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = [Forms]![BillingMainEdit]![othert2]
+!Price = [Forms]![BillingMainEdit]![otherm2]
+!endofrecord = "0"
+
+ElseIf Forms!BillingMainEdit!otherm2 Like "Estate C*" Then
+![Line Item] = "3.59"
+![Util From Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+![Util Advance Date] = ""
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = [Forms]![BillingMainEdit]![othert2]
+!Price = [Forms]![BillingMainEdit]![otherm2]
+!endofrecord = "0"
+
+ElseIf [Forms]![BillingMainEdit]!fee_cost1 = "Fee" Then
+![Line Item] = 1.1
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = [Forms]![BillingMainEdit]![othert2]
+!Price = [Forms]![BillingMainEdit]![otherm2]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+
+Else
+MsgBox ("This is a Miscellaneous Cost you will have to Manually update in New Invoice")
+End If
+
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![otherm1] > 0 Then
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+
+If Forms!BillingMainEdit!othert1 Like "water*" Then
+![Line Item] = 7.3
+!Note = "Water"
+VFROM = InputBox("Water Bill: Enter Utility Breakdown: From Date:")
+VTo = InputBox("Water Bill: Enter Utility Breakdown: To Date:")
+
+If IsNull(VFROM) Then
+![Util From Date] = ""
+Else
+![Util From Date] = Format(VFROM, "mm/dd/yy")
+End If
+
+If IsNull(VTo) Then
+![Util to Date] = ""
+Else
+![Util to Date] = Format(VTo, "mm/dd/yy")
+End If
+
+![Util Base Amount] = [Forms]![BillingMainEdit]!otherm1
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+![Util Advance Date] = Format(Date, "mm/dd/yy")
+
+ElseIf Forms!BillingMainEdit!otherm1 Like "Estate A*" Then
+![Line Item] = "1.3"
+![Util From Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+![Util Advance Date] = ""
+
+ElseIf Forms!BillingMainEdit!otherm1 Like "Estate C*" Then
+![Line Item] = "3.59"
+![Util From Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+![Util Advance Date] = ""
+
+ElseIf [Forms]![BillingMainEdit]!fee_cost1 = "Fee" Then
+![Line Item] = 1.1
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+Else
+MsgBox ("This is a Miscellaneous Cost you will have to Manually update in New Invoice")
+End If
+
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = [Forms]![BillingMainEdit]![othert1]
+!Price = [Forms]![BillingMainEdit]![otherm1]
+![Util HOA Indicator] = ""
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![add_court_costs] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 5.8
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+![Line Item Date] = Forms!BillingMainEdit!billingdate
+Else
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![add_court_costs]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![water] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 7.3
+VFROM = InputBox("Water Bill: Enter Utility Breakdown: From Date:")
+VTo = InputBox("Water Bill: Enter Utility Breakdown: To Date:")
+If IsNull(VFROM) Then
+![Util From Date] = ""
+Else
+![Util From Date] = Format(VFROM, "mm/dd/yy")
+End If
+If IsNull(VTo) Then
+![Util to Date] = ""
+Else
+![Util to Date] = Format(VTo, "mm/dd/yy")
+End If
+![Util Base Amount] = [Forms]![BillingMainEdit]!water
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+![Util Advance Date] = Format(Date, "mm/dd/yy")
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+'vwnote = InputBox("Enter New Invoice Note for Water Bill")
+'If vwnote = "" Then
+!Note = "Water"
+'Else
+'!Note = vwnote
+'End If
+!Price = [Forms]![BillingMainEdit]![water]
+![Util HOA Indicator] = ""
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![lien_citation_violation] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 8.11
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![lien_citation_violation]
+!Note = "Lien"
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![ps_liencert] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 9.2
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![ps_liencert]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![d_bondprem] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+![Line Item] = 5.8
+Else
+![Line Item] = 6.7
+End If
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = "Bond Premium"
+!Price = [Forms]![BillingMainEdit]![d_bondprem]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![d_audfee] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+![Line Item] = 6.16
+Else
+![Line Item] = "4.40"
+End If
+
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![d_audfee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![d_titleins] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 9.1
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![d_titleins]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![d_adv] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+![Line Item] = 6.11
+Else
+![Line Item] = 4.5
+End If
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad]) Then
+![Line Item Date] = Forms!BillingMainEdit!billingdate
+Else
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad] - 3
+End If
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![d_adv]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![d_advnisi] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = 4.5
+Else
+![Line Item] = 4.27
+End If
+
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+![Line Item Date] = Forms!BillingMainEdit!billingdate
+Else
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![d_advnisi]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![BillingMainEdit]![d_liencert] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 9.9
+![Line Item Date] = [Forms]![BillingMainEdit]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![BillingMainEdit]![d_liencert]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![BillingMainEdit]![d_servbymail] > 0# Then
+
+If Forms![foreclosure database screen]!Client Like "OneWest*" And _
+[Forms]![BillingMainEdit]![d_servbymail] > 125# Then
+
+Dim VServTotal As Double
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 4.7
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]) Then
+![Line Item Date] = Forms!BillingMainEdit!billingdate
+Else
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]
+End If
+![Qty] = 1
+!Note = "Statutory Mailings"
+!Price = 125#
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+VServTotal = [Forms]![BillingMainEdit]![d_servbymail] - 125#
+
+Do While VServTotal > 0#
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 4.7
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]) Then
+![Line Item Date] = Forms!BillingMainEdit!billingdate
+Else
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]
+End If
+![Qty] = 1
+!Note = "Statutory Mailings"
+If VServTotal > 125# Then
+!Price = 125#
+Else
+!Price = Format(VServTotal, "$###,##0.00")
+End If
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+If VServTotal > 125# Then
+VServTotal = VServTotal - 125
+Else
+VServTotal = VServTotal - VServTotal
+End If
+Loop
+
+Else
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![INVOICE #] = [Forms]![BillingMainEdit]![CustomerID]
+![Line Item] = 4.7
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]) Then
+![Line Item Date] = Forms!BillingMainEdit!billingdate
+Else
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![noticesent]
+End If
+![Qty] = 1
+!Note = "Statutory Mailings"
+!Price = [Forms]![BillingMainEdit]![d_servbymail]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+End If
+End If
+
+
+
+
+MsgBox (Forms![foreclosure database screen]!ClientRefNumber & " has been added into the Batch File for NewInvoices")
+rsLI.Close
+
+
+
+End Function
+Public Function ExportNewInvIndEVIC()
+
+On Error GoTo ErrHandler:
+
+   Dim VUpdate, vClient, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VINv, VChk, DocName, VTypeLoan, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsni, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+   
+   
+If IsNull(Forms![foreclosure database screen]!Client) Then
+MsgBox ("NO Client INPUT, exiting....")
+Exit Function
+
+Else
+
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+VNI = rsClient![newinvoice billing]
+VINv = Forms![billingmainediteviction]![CustomerID]
+strSQLCNI = "select * from [NewInvoice Table] where [Invoice Number] = " & VINv
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI, dbOpenSnapshot)
+Dim VRC
+VRC = rsChkNI.RecordCount
+rsChkNI.Close
+
+'Eviction Code
+Dim strsqlE, VVar, VVar2, VVar3, VVar4, VVar5
+Dim rsE As RecordSet
+strsqlE = "Select * from eviction where subfilenum = " & Forms![foreclosure database screen]![filenum]
+Set rsE = CurrentDb.OpenRecordset(strsqlE, dbOpenSnapshot)
+If Not rsE.EOF Then
+If Not IsNull(rsE!LPS_Asset) Then
+VVar = rsE!LPS_Asset
+Else
+VVar = Null
+End If
+
+If Not IsNull(rsE!DateWritSent_RESTOFMD) Then
+VVar2 = rsE!DateWritSent_RESTOFMD
+Else
+VVar2 = Null
+End If
+
+If Not IsNull(rsE!WritFiledCourt) Then
+VVar3 = rsE!WritFiledCourt
+Else
+VVar3 = Null
+End If
+
+Else
+VVar = Null
+VVar2 = Null
+VVar3 = Null
+
+End If
+rsE.Close
+'End Eviction Code
+
+If VRC >= 1 Then
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to continue?", vbYesNo)
+Dim VB As String
+If VChk = vbYes Then
+VB = "YES"
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [newinvoice table] where [invoice number] = " & VINv)
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [lineitem] where [invoice #] = " & VINv)
+Else
+VB = "NO"
+End If
+
+Else
+VB = "NO"
+End If
+
+
+
+If VB = "YES" Or VRC = 0 Then
+
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenSnapshot)
+
+If rsFC.EOF Then
+MsgBox ("NO Foreclosure info in Foreclosure Table, File will not upload")
+End If
+
+'Update the Name to first and last names from Employee Database
+VEmpID = [Forms]![billingmainediteviction]![created_vdruser_id]
+
+'DoCmd.OpenReport docname, acViewNormal
+
+'Query on inputting record into the NewInvoice Table and Open table if Yes
+VUpdate = MsgBox("Input Bill Into NewInvoices Batch File?", vbYesNo)
+
+''HERE Is the beginning of the Dump to New Invoice
+
+If VUpdate = vbYes Then
+[Forms]![billingmainediteviction]![Sent] = Date
+Set rsni = CurrentDb.OpenRecordset("NewInvoice Table", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+
+'Servicer ID Identification and Dept
+
+If IsNull(rsClient!servicer_id) Then
+MsgBox ("Servicer id for new invoice needs to be input in client screen")
+vServID = ""
+Else
+vServID = rsClient!servicer_id
+End If
+VInvID = [Forms]![billingmainediteviction]![invoice_type_id]
+strSQLInv = "Select * from [NI Invoice Types] where [invoice #] = " & """" & VInvID & """" & ";"
+
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv, dbOpenSnapshot)
+If rsinv.EOF Then
+MsgBox ("No Invoice Type listed in New Invoice")
+End If
+
+VDept = rsinv!Dept
+Dim VCont As String
+
+If rsinv!Dept = "BK" And Forms![foreclosure database screen]!Status <> "Bankruptcy" _
+And (IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![Date Filed]) Or IsNull(BKChapter())) Then
+MsgBox ("Invoice Type Selected is a Bankruptcy Type BUT this file is not in Bankruptcy Status AND has No BK Filed Date or Chapter is Input, Will Exit Function.  " & vbCr & vbCr & "FILE NOT DUMPED FOR EXPORTING TO NEW INVOICE!!!")
+Exit Function
+End If
+
+strSQLServ = "SELECT * FROM [Servicer table] WHERE [Servicer id] = " & """" & vServID & """" & ";"
+Set rsServ = CurrentDb.OpenRecordset(strSQLServ, dbOpenSnapshot)
+If rsServ.EOF Then
+MsgBox ("No servicer ID in New Invoice Servicer table.  Notify IT")
+End If
+
+'Set up Foreclosure, Cases, Postsale and Bankruptcy databases
+If Forms![foreclosure database screen]!Status = "Bankruptcy" Then
+If IsNull(BKChapter()) Then
+vbkchap = ""
+Else
+vbkchap = BKChapter()
+End If
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![BKY Case Number]) Then
+vbkcase = ""
+Else
+vbkcase = Forms!bankruptcymain!BankruptcySubForm.Form![BKY Case Number]
+End If
+
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![Date Filed]) Then
+vbkfiled = ""
+Else
+vbkfiled = Forms!bankruptcymain!BankruptcySubForm.Form![Date Filed]
+End If
+
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![362MotionFiled]) Then
+vb362filed = ""
+Else
+vb362filed = Forms!bankruptcymain!BankruptcySubForm.Form![362MotionFiled]
+End If
+
+Else
+vbkchap = ""
+vbkcase = ""
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = ""
+vb362filed = ""
+End If
+
+If IsNull(rsFC!SaleDate) Then
+Vsale = ""
+Else
+Vsale = rsFC!SaleDate
+End If
+
+If rsCases!PropertyState <> "MD" Then
+'If IsNull(rsFC![1ST_ad]) Then
+If IsNull(rsFC![1st_ad]) Then
+vlegal = rsCases![Date Recieved]
+Else
+vlegal = rsFC![1st_ad]
+End If
+
+Else
+If IsNull(rsFC!DocsSentCourt) Then
+vlegal = rsCases![Date Recieved]
+Else
+vlegal = rsFC![DocsSentCourt]
+End If
+
+End If
+
+strsqlCounty = "Select * from jurisdiction where county = " & """" & rsCases![Propertycounty] & """" & " and state = " & """" & rsCases![PropertyState] & """" & ";"
+Set rsCounty = CurrentDb.OpenRecordset(strsqlCounty, dbOpenSnapshot)
+
+If rsCases!PropertyState = "VA" Then
+vcountyid = rsCounty!CountyID
+Else
+vCounty = ""
+End If
+rsCounty.Close
+
+If rsCases!PropertyState <> "VA" Then
+If rsCases!Propertycounty = "Baltimore City" Then
+vCounty = "Baltimore"
+Else
+vCounty = rsCases!Propertycounty
+End If
+End If
+
+'If [Forms]![billingmainediteviction]![d_reqjud] > 0 Then
+'vfiling = 13.2
+'Else
+vfiling = "2.10"
+'End If
+
+If IsNull(rsCases![HUD/VANum]) Then
+VTypeLoan = rsCases![ClientRefNumber]
+Else
+VTypeLoan = rsCases![HUD/VANum]
+End If
+
+'MsgBox ("Adding to New Invoice....1st Step")
+
+With rsni
+.AddNew
+
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![Vendor ID] = "BIERMAN"
+![Invoice Number] = [Forms]![billingmainediteviction]![CustomerID]
+![Invoice Date] = [Forms]![billingmainediteviction]![billingdate]
+![Invoice Type] = [Forms]![billingmainediteviction]!invoice_type_id
+![Invoice Amount] = [Forms]![billingmainediteviction]![balance due]
+
+If Not IsNull(Forms![billingmainediteviction]!fc_saleheld_reason) Then
+Dim strsqlReason As String
+Dim rsReason As RecordSet
+
+strsqlReason = "SELECT * FROM [FC Reason Codes] where id = " & """" & Forms![billingmainediteviction]!fc_saleheld_reason & """" & ";"
+Set rsReason = CurrentDb.OpenRecordset(strsqlReason, dbOpenSnapshot)
+If rsReason.EOF Then
+MsgBox ("No Reason Code listed in New Invoice Table")
+End If
+
+![Invoice Level Comment] = "Attorneys fees and costs for " & _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate & _
+" that was canceled due to " & rsReason![description]
+rsReason.Close
+
+Else
+![Invoice Level Comment] = "Attorneys fees and costs for sale date " & _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate
+
+End If
+
+![Servicer ID] = rsClient!servicer_id
+'Input LPS Asset#
+
+If IsNull(VVar) Or _
+VVar = "" Then
+![Loan Number] = rsCases![ClientRefNumber]
+Else
+![Loan Number] = VVar
+End If
+
+![Created by Vendor User ID] = [Forms]![billingmainediteviction]!created_vdruser_id
+![Department ID] = VDept
+![BK State] = rsCases![PropertyState]
+![Judicial Indicator] = "N"
+![Borrower Name] = UCase(rsCases![LastNameDebtor1] & ", " & rsCases![FirstNameDebtor1])
+
+
+If Len(rsCases!PropAddress) > 60 Then
+MsgBox (rsCases!PropAddress & " is more than 60 Characters this is not allowed in New Invoice, Please update Property Address on Screen and upload again.")
+Exit Function
+Else
+![Property Address 1] = rsCases![PropAddress]
+End If
+
+![Property Address 2] = ""
+
+If Len(rsCases!PropertyCity) > 35 Then
+MsgBox (rsCases!PropertyCity & " is more than 35 Characters this is not allowed in New Invoice, Please update City on Screen and upload again.")
+Exit Function
+Else
+![Property City] = rsCases!PropertyCity
+End If
+
+![Property County] = vCounty
+![Property State] = rsCases!PropertyState
+
+If IsNull(rsCases!propzip) Then
+MsgBox ("NO ZIPCODE INPUT")
+Exit Function
+End If
+
+Dim tempfields As Variant
+tempfields = Split(rsCases!propzip, "-")
+Dim A
+A = Split(rsCases!propzip, "-")
+If UBound(tempfields) = 1 Then
+![Property Zipcode] = StrConv(A(0), vbProperCase)
+Else
+On Error Resume Next
+![Property Zipcode] = rsCases!propzip
+End If
+
+![Property Zipcode Suffix] = ""
+
+If IsNull(rsCases!resume_recd) Then
+![Referral Date] = rsCases![Date Recieved]
+Else
+![Referral Date] = rsCases!resume_recd
+End If
+
+![BK Chapter] = vbkchap
+![BK Case Number] = vbkcase
+![BK Filed After Sale] = vbkfas
+![BK Loan Current When Filed] = vbklcw
+![BK Collateral Investment Property] = vbkinv
+![BK Services Post-Confirmation] = vbksvc
+![FC Sale Date] = Vsale
+![FC Sale Held Reason] = [Forms]![billingmainediteviction]![fc_saleheld_reason]
+![FC Sale Held Indicator] = vsheld
+![Legal Action Date] = vlegal
+![Vendor Reference Number] = [Forms]![foreclosure database screen]![filenum]
+![BK Services Pre-Confirmation] = vbksrvp
+![MFR Filed Date] = vb362filed
+![BK Disposition] = vbkdisp
+![Date BK Filed] = vbkfiled
+'![DIL Filed Date] = vb362filed
+![Writ Issued Date] = VVar2
+![Writ Issued Date] = VVar3
+!endofrecord = "X"
+.Update
+End With
+
+If [Forms]![billingmainediteviction]![evicva_UD] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+![Line Item] = vfiling
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainediteviction]![evicva_UD]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]![process_service] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = 4.1
+Else
+![Line Item] = 4.31
+End If
+
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainediteviction]![process_service]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]![evicmd_mjap] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+![Line Item] = 2.17
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainediteviction]![evicmd_mjap]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmainediteviction]![evicdc_comp] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+![Line Item] = vfiling
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainediteviction]![evicdc_comp]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]![feeothermoney] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+![Line Item] = 1.1
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = [Forms]![billingmainediteviction]![feeothertext]
+!Price = [Forms]![billingmainediteviction]![feeothermoney]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmainediteviction]![otherm10] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+![Line Item] = 1.1
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = [Forms]![billingmainediteviction]![othert10]
+!Price = [Forms]![billingmainediteviction]![otherm10]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmainediteviction]![otherm2] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+If [Forms]![billingmainediteviction]!fee_cost1 = "Fee" Then
+![Line Item] = 1.1
+Else
+MsgBox ("This is a Miscellaneous Cost you will have to Manually update in New Invoice")
+End If
+
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = [Forms]![billingmainediteviction]![othert2]
+!Price = [Forms]![billingmainediteviction]![otherm2]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]![otherm1] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+If [Forms]![billingmainediteviction]!fee_cost1 = "Fee" Then
+![Line Item] = 1.1
+Else
+MsgBox ("This is a Miscellaneous Cost you will have to Manually update in New Invoice")
+End If
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = [Forms]![billingmainediteviction]![othert1]
+!Price = [Forms]![billingmainediteviction]![otherm1]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]![d_reqjud] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+![Line Item] = 1.27
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainediteviction]![d_reqjud]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmainediteviction]![writ_fee] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+![Line Item] = 13.5
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainediteviction]![writ_fee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmainediteviction]![sheriff_fee] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+![Line Item] = 13.6
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainediteviction]![sheriff_fee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmainediteviction]![evicdc_spnq] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+![Line Item] = 4.2
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainediteviction]![evicdc_spnq]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]![evicdc_sps] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+![Line Item] = 4.2
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainediteviction]![evicdc_sps]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]![evicmd_pshco] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = 4.1
+Else
+![Line Item] = 4.31
+End If
+
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainediteviction]![evicmd_pshco]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmainediteviction]![evicdc_usmf] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmainediteviction]![CustomerID]
+![Line Item] = vfiling
+![Line Item Date] = [Forms]![billingmainediteviction]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmainediteviction]![evicdc_usmf]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+MsgBox (rsCases!ClientRefNumber & " has been added into the Batch File for NewInvoices")
+
+rsLI.Close
+rsni.Close
+rsClient.Close
+rsFC.Close
+rsCases.Close
+End If
+
+
+
+End If
+
+End If
+
+ErrHandler:
+Dim MyError As Error
+'MsgBox Errors.Count
+For Each MyError In DBEngine.Errors
+With MyError
+MsgBox .Number & " " & .description
+End With
+Next MyError
+
+
+
+End Function
+
+
+Public Sub ExportNewInvoiceData()
+
+Dim vARDate As Date
+Dim rs, rsHeader, rsDetail, rsSummary As RecordSet
+Dim strsql, vfiletime, Vxml As String
+
+TransCount = 0
+
+vARDate = Date - 1
+
+vfiletime = "\\rvdv-fs01\DataTransfer\NewInvoice\TimeTransaction.txt"
+Open vfiletime For Output As #1
+Print #1, (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+Close #1
+
+Dim vinput2 As String
+
+vinput2 = MsgBox("Are you ready to Export all your New Invoices Records?", vbYesNo)
+If vinput2 = vbYes Then
+DoCmd.OpenQuery "LineItemMKTbl"
+DoCmd.OpenQuery "NewInvoiceMKTbl"
+DoCmd.OpenQuery "NewInvoiceUpdateDate"
+DoCmd.SetWarnings False
+CurrentDb.Execute ("alter table LineItemExport alter column [ReceiptImageDesc] text;")
+
+DoCmd.OpenQuery ("NewInvoiceUpdateToNull")
+
+
+DoCmd.TransferText acExportDelim, "NISpecification", "NewInvoiceExport", "\\rvdv-fs01\Datatransfer\NewInvoice\" & (Format$(Now(), "mmddyyyy hhnnss")) & "_Header.txt"
+DoCmd.TransferText acExportDelim, "LISpecification", "LineItemExport", "\\rvdv-fs01\Datatransfer\NewInvoice\" & (Format$(Now(), "mmddyyyy hhnnss")) & "_LineItems.txt"
+
+End If
+
+
+End Sub
+Public Function ExportNewInvSLM()
+
+On Error GoTo ErrHandler:
+
+   Dim VUpdate, vClient, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VINv, VChk, DocName, VTypeLoan, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsni, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+   Dim DRC
+   
+   If IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_rec_charge) Then
+    DRC = 55
+    Else
+    DRC = Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_rec_charge
+    End If
+    
+
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+
+If IsNull(rsClient![newinvoice billing]) Then
+MsgBox ("No New Invoice Coding for : " & Forms![foreclosure database screen]!Client & ", will not add to New Invoice, exiting.")
+Exit Function
+Else
+
+VNI = rsClient![newinvoice billing]
+VINv = Forms![billingmaineditslm]![CustomerID]
+strSQLCNI = "select * from [NewInvoice Table] where [Invoice Number] = " & VINv
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI, dbOpenSnapshot)
+Dim VRC
+VRC = rsChkNI.RecordCount
+rsChkNI.Close
+If VRC >= 1 Then
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to continue?", vbYesNo)
+Dim VB As String
+If VChk = vbYes Then
+VB = "YES"
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [newinvoice table] where [invoice number] = " & VINv)
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [lineitem] where [invoice #] = " & VINv)
+Else
+VB = "NO"
+End If
+Else
+VB = "NO"
+End If
+
+
+If VB = "YES" Or VRC = 0 Then
+
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenSnapshot)
+
+'Update the Name to first and last names from Employee Database
+VEmpID = [Forms]![billingmaineditslm]![created_vdruser_id]
+
+'DoCmd.OpenReport docname, acViewNormal
+
+'Query on inputting record into the NewInvoice Table and Open table if Yes
+VUpdate = MsgBox("Input Bill Into NewInvoices Batch File?", vbYesNo)
+
+If VUpdate = vbYes Then
+[Forms]![billingmaineditslm]![Sent] = Date
+Set rsni = CurrentDb.OpenRecordset("NewInvoice Table", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+
+'Servicer ID Identification and Dept
+
+If IsNull(rsClient!servicer_id) Then
+MsgBox ("Servicer id for new invoice needs to be input in client screen")
+vServID = ""
+Else
+vServID = rsClient!servicer_id
+End If
+VInvID = [Forms]![billingmaineditslm]![invoice_type_id]
+strSQLInv = "Select * from [NI Invoice Types] where [invoice #] = " & """" & VInvID & """" & ";"
+
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv, dbOpenSnapshot)
+VDept = rsinv!Dept
+Dim VCont As String
+
+If rsinv!Dept = "BK" And Forms![foreclosure database screen]!Status <> "Bankruptcy" _
+And (IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![Date Filed]) Or IsNull(BKChapter())) Then
+MsgBox ("Invoice Type Selected is a Bankruptcy Type BUT this file is not in Bankruptcy Status AND has No BK Filed Date or Chapter is Input, Will Exit Function.  " & vbCr & vbCr & "FILE NOT DUMPED FOR EXPORTING TO NEW INVOICE!!!")
+rsinv.Close
+Exit Function
+Else
+rsinv.Close
+End If
+
+'strSQLServ = "SELECT * FROM [Servicer table] WHERE [Servicer id] = " & """" & vServID & """" & ";"
+'Set rsServ = CurrentDb.OpenRecordset(strSQLServ, dbopensnapshot)
+'Set up Foreclosure, Cases, Postsale and Bankruptcy databases
+
+If Forms![foreclosure database screen]!Status = "Bankruptcy" Then
+If IsNull(BKChapter()) Then
+vbkchap = ""
+Else
+vbkchap = BKChapter()
+End If
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![BKY Case Number]) Then
+vbkcase = ""
+Else
+vbkcase = Forms!bankruptcymain!BankruptcySubForm.Form![BKY Case Number]
+End If
+
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![Date Filed]) Then
+vbkfiled = ""
+Else
+vbkfiled = Forms!bankruptcymain!BankruptcySubForm.Form![Date Filed]
+End If
+
+If IsNull(Forms!bankruptcymain!BankruptcySubForm.Form![362MotionFiled]) Then
+vb362filed = ""
+Else
+vb362filed = Forms!bankruptcymain!BankruptcySubForm.Form![362MotionFiled]
+End If
+
+Else
+vbkchap = ""
+vbkcase = ""
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = ""
+vb362filed = ""
+End If
+
+If IsNull(rsFC!SaleDate) Then
+Vsale = ""
+Else
+Vsale = rsFC!SaleDate
+End If
+
+Dim VRefer
+If IsNull(rsCases!resume_recd) Then
+VRefer = rsCases![Date Recieved]
+Else
+VRefer = rsCases!resume_recd
+End If
+
+If rsCases!PropertyState <> "MD" Then
+
+If IsNull(rsFC![1st_ad]) Then
+
+vlegal = VRefer
+
+Else
+If VRefer < rsFC![1st_ad] Then
+vlegal = VRefer
+Else
+vlegal = rsFC![1st_ad]
+End If
+
+End If
+
+Else
+
+If IsNull(rsFC!DocsSentCourt) Then
+
+vlegal = VRefer
+
+Else
+If VRefer < rsFC!DocsSentCourt Then
+vlegal = VRefer
+Else
+vlegal = rsFC![DocsSentCourt]
+End If
+
+End If
+
+End If
+
+strsqlCounty = "Select * from jurisdiction where county = " & """" & rsCases![Propertycounty] & """" & " and state = " & """" & rsCases![PropertyState] & """" & ";"
+Set rsCounty = CurrentDb.OpenRecordset(strsqlCounty, dbOpenSnapshot)
+
+If rsCases!PropertyState = "VA" Then
+vcountyid = rsCounty!CountyID
+Else
+vCounty = ""
+End If
+rsCounty.Close
+
+If rsCases!PropertyState <> "VA" Then
+If rsCases!Propertycounty = "Baltimore City" Then
+vCounty = "Baltimore"
+Else
+vCounty = rsCases!Propertycounty
+End If
+End If
+
+If [Forms]![billingmaineditslm]![d_reqjud] > 0 Then
+vfiling = 13.2
+ElseIf Forms![foreclosure database screen]!Client Like "Chase*" Then
+vfiling = 2.1
+Else
+vfiling = 2.24
+End If
+
+If IsNull(rsCases![HUD/VANum]) Then
+VTypeLoan = rsCases![ClientRefNumber]
+Else
+VTypeLoan = rsCases![HUD/VANum]
+End If
+
+With rsni
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![Vendor ID] = "BIERMAN"
+![Invoice Number] = [Forms]![billingmaineditslm]![CustomerID]
+![Invoice Date] = [Forms]![billingmaineditslm]![billingdate]
+![Invoice Type] = [Forms]![billingmaineditslm]!invoice_type_id
+![Invoice Amount] = [Forms]![billingmaineditslm]![balance due]
+If Not IsNull(Forms![billingmaineditslm]!fc_saleheld_reason) Then
+Dim strsqlReason As String
+Dim rsReason As RecordSet
+
+strsqlReason = "SELECT * FROM [FC Reason Codes] where id = " & """" & Forms![billingmaineditslm]!fc_saleheld_reason & """" & ";"
+Set rsReason = CurrentDb.OpenRecordset(strsqlReason, dbOpenSnapshot)
+
+![Invoice Level Comment] = "Attorneys fees and costs for " & _
+Vsale & _
+" that was canceled due to " & rsReason![description]
+rsReason.Close
+Else
+![Invoice Level Comment] = "Attorneys fees and costs for sale date " & _
+Vsale
+End If
+![Servicer ID] = rsClient!servicer_id
+![Loan Number] = rsCases![ClientRefNumber]
+![Created by Vendor User ID] = [Forms]![billingmaineditslm]!created_vdruser_id
+![Department ID] = VDept
+![BK State] = rsCases![PropertyState]
+![Judicial Indicator] = "N"
+![Borrower Name] = UCase(rsCases![LastNameDebtor1] & ", " & rsCases![FirstNameDebtor1])
+If Len(rsCases!PropAddress) > 60 Then
+MsgBox (rsCases!PropAddress & " is more than 60 Characters this is not allowed in New Invoice, Please update Property Address on Screen and upload again.")
+Exit Function
+Else
+![Property Address 1] = rsCases![PropAddress]
+
+End If
+
+![Property Address 2] = ""
+
+If Len(rsCases!PropertyCity) > 35 Then
+MsgBox (rsCases!PropertyCity & " is more than 35 Characters this is not allowed in New Invoice, Please update City on Screen and upload again.")
+Exit Function
+Else
+![Property City] = rsCases!PropertyCity
+End If
+
+![Property County] = vCounty
+![Property State] = rsCases!PropertyState
+
+Dim tempfields As Variant
+tempfields = Split(rsCases!propzip, "-")
+Dim A
+A = Split(rsCases!propzip, "-")
+If UBound(tempfields) = 1 Then
+![Property Zipcode] = StrConv(A(0), vbProperCase)
+Else
+On Error Resume Next
+![Property Zipcode] = rsCases!propzip
+End If
+
+![Property Zipcode Suffix] = ""
+
+If IsNull(rsCases!resume_recd) Then
+![Referral Date] = rsCases![Date Recieved]
+Else
+![Referral Date] = rsCases!resume_recd
+End If
+
+![BK Chapter] = vbkchap
+![BK Case Number] = vbkcase
+![BK Filed After Sale] = vbkfas
+![BK Loan Current When Filed] = vbklcw
+![BK Collateral Investment Property] = vbkinv
+![BK Services Post-Confirmation] = vbksvc
+![FC Sale Date] = Vsale
+![FC Sale Held Reason] = [Forms]![billingmaineditslm]![fc_saleheld_reason]
+![FC Sale Held Indicator] = vsheld
+![Legal Action Date] = vlegal
+![Vendor Reference Number] = [Forms]![foreclosure database screen]![filenum]
+![BK Services Pre-Confirmation] = vbksrvp
+![MFR Filed Date] = vb362filed
+![BK Disposition] = vbkdisp
+![Date BK Filed] = vbkfiled
+'![DIL Filed Date] = vb362filed
+'![Writ Issued Date] = Forms![foreclosure database screen]!EvictionSubFormMD.Form!DateWritSent_RESTOFMD
+'![Writ Issued Date] = Forms![foreclosure database screen]!EvictionSubFormMD.Form!WritFiledCourt
+!endofrecord = "X"
+.Update
+End With
+
+If [Forms]![billingmaineditslm]![Attorney Fee] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 1.1
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![Attorney Fee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![slm_fee] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+If rsClient!OrganizationName Like "Bank of Am*" Then
+![Line Item] = 1.355
+Else
+![Line Item] = 1.171
+End If
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Senior Lien Monitoring Fee"
+!Price = [Forms]![billingmaineditslm]![slm_fee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![slm_bid] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+If rsClient!OrganizationName Like "Bank of Am*" Then
+![Line Item] = 1.354
+Else
+![Line Item] = 1.174
+End If
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Bidding on Senior Lien"
+!Price = [Forms]![billingmaineditslm]![slm_bid]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![slm_motion] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 1.173
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Motion to Intervene"
+!Price = [Forms]![billingmaineditslm]![slm_motion]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![motion_accept] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 2.12
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![motion_accept]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![fee_recpoweratt] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 3.1
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![fee_recpoweratt]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+If [Forms]![billingmaineditslm]![fee_prepassignment] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 1.23
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Preparation of Loan Assignment"
+!Price = [Forms]![billingmaineditslm]![fee_prepassignment]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![fee_recassignment] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 3.6
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Recording of Loan Assignment"
+!Price = [Forms]![billingmaineditslm]![fee_recassignment]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![fee_dismcase] > 0 Then
+With rsLI
+
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = "1.297"
+Else
+![Line Item] = 5.21
+End If
+
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![fee_dismcase]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![l_preptitle] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 1.125
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Preparation and drafting of title claim"
+!Price = [Forms]![billingmaineditslm]![l_preptitle]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![re_recording] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "OneWest*" Then
+![Line Item] = 3.1
+Else
+![Line Item] = 3.48
+End If
+
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+!Note = "60 Charge for Court Costs and " & DRC & " for Deed Recording Costs"
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+!Note = "40 Charge for Court Costs and " & DRC & " for Deed Recording Costs"
+Else
+!Note = "40 Charge for Court Costs and 30 for Deed Recording Costs"
+End If
+
+!Price = [Forms]![billingmaineditslm]![re_recording]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![d_filing] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = vfiling
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Line to Docket"
+!Price = [Forms]![billingmaineditslm]![d_filing]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+If [Forms]![billingmaineditslm]![d_recording] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 3.5
+'End If
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Appointment of Substitute Trustee"
+!Price = [Forms]![billingmaineditslm]![d_recording]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![d_titlesearch] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 9.16
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Title Search"
+!Price = [Forms]![billingmaineditslm]![d_titlesearch]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![d_realestatetaxes] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 8.1
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+Dim VFROM, VTo As String
+VFROM = InputBox("Enter Utility Breakdown: From Date:")
+VTo = InputBox("Enter Utility Breakdown: To Date:")
+If IsNull(VFROM) Then
+![Util From Date] = ""
+Else
+![Util From Date] = Format(VFROM, "mm/dd/yy")
+End If
+If IsNull(VTo) Then
+![Util to Date] = ""
+Else
+![Util to Date] = Format(VTo, "mm/dd/yy")
+End If
+![Util Base Amount] = [Forms]![billingmaineditslm]![d_realestatetaxes]
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+![Util Advance Date] = Format(Date, "mm/dd/yy")
+
+!Price = [Forms]![billingmaineditslm]![d_realestatetaxes]
+!endofrecord = "0"
+
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![d_transfee] > 0 Then
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "OneWest*" Then
+![Line Item] = 8.22
+ElseIf Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = 8.14
+Else
+![Line Item] = 8.5
+End If
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Recordation Tax"
+'!Price = [Forms]![billingmaineditSLM]![d_transfee]
+!Price = Forms![foreclosure database screen]![PostsaleSubForm].Form!staterecordationtax
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 8.7
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "State Transfer Tax"
+!Price = Forms![foreclosure database screen]![PostsaleSubForm].Form!statetransfertax
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+If MD_CountyTransferTax > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 8.6
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "County Transfer Tax"
+'!Price = [Forms]![billingmaineditSLM]![d_transfee]
+!Price = Forms![foreclosure database screen]![PostsaleSubForm].Form!countytransfertax
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+Else
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "OneWest*" Then
+![Line Item] = 8.22
+ElseIf Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = 8.14
+Else
+![Line Item] = 8.5
+End If
+
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Recordation Tax"
+!Price = [Forms]![billingmaineditslm]![d_transfee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+End If
+End If
+
+
+
+If [Forms]![billingmaineditslm]![d_auctfee] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+'If rsCases!PropertyState = "VA" Then
+'![line item] = 6.25
+'Else
+If Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = 6.2
+Else
+![Line Item] = 6.13
+End If
+
+'End If
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![d_auctfee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![l_initial] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+If rsClient!OrganizationName Like "Bank of Am*" Then
+![Line Item] = 23.55
+Else
+![Line Item] = 1.126
+End If
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+If rsClient!OrganizationName Like "Bank of Am*" Then
+!Note = "Fee for preparation of Demand Letter"
+Else
+!Note = ""
+End If
+!Price = [Forms]![billingmaineditslm]![l_initial]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![forbearance] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 1.26
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![forbearance]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![feeothermoney] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 1.1
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = [Forms]![billingmaineditslm]![feeothertext]
+!Price = [Forms]![billingmaineditslm]![feeothermoney]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![otherm10] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 1.1
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = [Forms]![billingmaineditslm]![othert10]
+!Price = [Forms]![billingmaineditslm]![otherm10]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![otherm2] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+If [Forms]![billingmaineditslm]!fee_cost1 = "Fee" Then
+![Line Item] = 1.1
+Else
+MsgBox ("This is a Miscellaneous Cost you will have to Manually update in New Invoice")
+End If
+
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = [Forms]![billingmaineditslm]![othert2]
+!Price = [Forms]![billingmaineditslm]![otherm2]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![otherm1] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+
+If Forms!billingmaineditslm!othert1 Like "water*" Then
+![Line Item] = 7.3
+!Note = "Water"
+VFROM = InputBox("Enter Utility Breakdown: From Date:")
+VTo = InputBox("Enter Utility Breakdown: To Date:")
+If IsNull(VFROM) Then
+![Util From Date] = ""
+Else
+![Util From Date] = Format(VFROM, "mm/dd/yy")
+End If
+If IsNull(VTo) Then
+![Util to Date] = ""
+Else
+![Util to Date] = Format(VTo, "mm/dd/yy")
+End If
+
+![Util Base Amount] = [Forms]![billingmaineditslm]!otherm1
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+![Util Advance Date] = Format(Date, "mm/dd/yy")
+
+
+ElseIf [Forms]![billingmaineditslm]!fee_cost1 = "Fee" Then
+![Line Item] = 1.1
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+Else
+MsgBox ("This is a Miscellaneous Cost you will have to Manually update in New Invoice")
+End If
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = [Forms]![billingmaineditslm]![othert1]
+!Price = [Forms]![billingmaineditslm]![otherm1]
+![Util HOA Indicator] = ""
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![add_court_costs] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 5.8
+If IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]) Then
+![Line Item Date] = Forms!BillingMainEdit!billingdate
+Else
+![Line Item Date] = Forms![foreclosure database screen]!ForeclosureSubForm.Form![SaleDate]
+End If
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![add_court_costs]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![ps_liencert] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 9.9
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![ps_liencert]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+
+If [Forms]![billingmaineditslm]![d_bondprem] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 6.7
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Bond Premium"
+!Price = [Forms]![billingmaineditslm]![d_bondprem]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![d_audfee] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+If rsCases!PropertyState = "VA" Then
+![Line Item] = 6.16
+Else
+![Line Item] = "4.40"
+End If
+
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![d_audfee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![d_titleins] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 9.1
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![d_titleins]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![d_adv] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+If rsCases!PropertyState = "VA" Then
+![Line Item] = 6.11
+Else
+![Line Item] = 4.5
+End If
+
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![d_adv]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![d_advnisi] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+If Forms![foreclosure database screen]!Client Like "Chase*" Then
+![Line Item] = 4.5
+Else
+![Line Item] = 4.27
+End If
+
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![d_advnisi]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![d_liencert] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 9.9
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![d_liencert]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+If [Forms]![billingmaineditslm]![d_servbymail] > 0 Then
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+
+![Line Item] = 4.7
+
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = "Statutory Mailings"
+!Price = [Forms]![billingmaineditslm]![d_servbymail]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![l_appearance] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 2.27
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![l_appearance]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![l_dil] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 1.1
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![l_dil]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![d_reqjud] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 1.27
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![d_reqjud]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![writ_fee] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 13.5
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![writ_fee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![sheriff_fee] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 13.6
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![sheriff_fee]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+If [Forms]![billingmaineditslm]![d_process] > 0 Then
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = [Forms]![billingmaineditslm]![CustomerID]
+![Line Item] = 4.2
+![Line Item Date] = [Forms]![billingmaineditslm]![billingdate]
+![Qty] = 1
+!Note = ""
+!Price = [Forms]![billingmaineditslm]![d_process]
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+MsgBox (rsCases!ClientRefNumber & " has been added into the Batch File for NewInvoices")
+rsLI.Close
+rsni.Close
+rsChkNI.Close
+rsFC.Close
+rsCases.Close
+rsClient.Close
+
+
+
+End If
+
+
+
+End If
+
+
+End If
+
+ErrHandler:
+Dim MyError As Error
+'MsgBox Errors.Count
+For Each MyError In DBEngine.Errors
+With MyError
+'MsgBox Number & " " & Description
+End With
+Next MyError
+End Function
+
+Public Function ExportNIACL()
+'On Error GoTo ErrHandler:
+
+   Dim VUpdate, vClient, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VINv, VChk, DocName, VTypeLoan, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsni, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+   Dim DRC
+   Dim VEmp As String
+   
+   If Not IsNull(Forms![foreclosure database screen]!resume_recd) Or Forms![foreclosure database screen]!resume_recd <> "" Then
+vlegal = Forms![foreclosure database screen]!resume_recd
+Else
+vlegal = Forms![foreclosure database screen]![Date Recieved]
+End If
+   
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenSnapshot)
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+Set rsni = CurrentDb.OpenRecordset("NewInvoice Table", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+
+If IsNull(rsClient![newinvoice billing]) Then
+MsgBox ("No New Invoice Coding for : " & Forms![foreclosure database screen]!Client & ", will not add to New Invoice, exiting.")
+Exit Function
+Else
+
+VNI = rsClient![newinvoice billing]
+
+VINv = Forms!aclmain!ACLSubform.Form![InvNo]
+
+strSQLCNI = "select * from [NewInvoice Table] where [Invoice Number] = " & VINv
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI, dbOpenSnapshot)
+Dim VRC
+VRC = rsChkNI.RecordCount
+rsChkNI.Close
+
+If VRC >= 1 Then
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to continue?", vbYesNo)
+Dim VB As String
+If VChk = vbYes Then
+VB = "YES"
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [newinvoice table] where [invoice number] = " & VINv)
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [lineitem] where [invoice #] = " & VINv)
+Else
+VB = "NO"
+End If
+Else
+VB = "NO"
+End If
+
+
+If VB = "YES" Or VRC = 0 Then
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+
+VUpdate = MsgBox("Input Bill Into NewInvoices Batch File?", vbYesNo)
+
+If VUpdate = vbNo Then
+MsgBox ("Not batched to New Invoice")
+Exit Function
+
+Else
+
+If IsNull(rsClient!servicer_id) Then
+MsgBox ("Servicer id for new invoice needs to be input in client screen")
+vServID = ""
+Else
+vServID = rsClient!servicer_id
+End If
+
+VInvID = 29
+
+strSQLInv = "Select * from [NI Invoice Types] where [invoice #] = " & """" & VInvID & """" & ";"
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv, dbOpenSnapshot)
+VDept = rsinv!Dept
+Dim VCont As String
+
+vbkchap = ""
+vbkcase = ""
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = ""
+vb362filed = ""
+Vsale = ""
+
+Dim VRefer
+If IsNull(rsCases!resume_recd) Then
+VRefer = rsCases![Date Recieved]
+Else
+VRefer = rsCases!resume_recd
+End If
+
+End If
+
+End If
+
+strsqlCounty = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]![Propertycounty] & """" & " and state = " & """" & Forms![foreclosure database screen]![PropertyState] & """" & ";"
+Set rsCounty = CurrentDb.OpenRecordset(strsqlCounty, dbOpenSnapshot)
+
+If rsCases!PropertyState = "VA" Then
+vcountyid = rsCounty!CountyID
+Else
+vCounty = ""
+End If
+rsCounty.Close
+
+If rsCases!PropertyState <> "VA" Then
+If rsCases!Propertycounty = "Baltimore City" Then
+vCounty = "Baltimore"
+Else
+vCounty = rsCases!Propertycounty
+End If
+End If
+
+If IsNull(rsCases![HUD/VANum]) Then
+VTypeLoan = rsCases![ClientRefNumber]
+Else
+VTypeLoan = rsCases![HUD/VANum]
+End If
+
+
+With rsni
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![Vendor ID] = "BIERMAN"
+
+![Invoice Number] = [Forms]!aclmain!ACLSubform.Form![InvNo]
+
+![Invoice Date] = Date
+
+![Invoice Type] = "29"
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+![Invoice Amount] = 40#
+Else
+![Invoice Amount] = 50# + CountNoticeTableACL()
+End If
+![Servicer ID] = rsClient!servicer_id
+![Loan Number] = rsCases![ClientRefNumber]
+![Created by Vendor User ID] = [Forms]!aclmain!ACLSubform.Form!created_vdruser_id
+![Department ID] = VDept
+![BK State] = rsCases![PropertyState]
+![Judicial Indicator] = "N"
+![Invoice Level Comment] = "Demand Letter"
+![Borrower Name] = UCase(rsCases![LastNameDebtor1] & ", " & rsCases![FirstNameDebtor1])
+If Len(rsCases!PropAddress) > 60 Then
+MsgBox (rsCases!PropAddress & " is more than 60 Characters this is not allowed in New Invoice, Please update Property Address on Screen and upload again.")
+Exit Function
+Else
+![Property Address 1] = rsCases![PropAddress]
+
+End If
+
+![Property Address 2] = ""
+
+If Len(rsCases!PropertyCity) > 35 Then
+MsgBox (rsCases!PropertyCity & " is more than 35 Characters this is not allowed in New Invoice, Please update City on Screen and upload again.")
+Exit Function
+Else
+![Property City] = rsCases!PropertyCity
+End If
+
+![Property County] = vCounty
+![Property State] = rsCases!PropertyState
+
+Dim tempfields As Variant
+tempfields = Split(rsCases!propzip, "-")
+Dim A
+A = Split(rsCases!propzip, "-")
+If UBound(tempfields) = 1 Then
+![Property Zipcode] = StrConv(A(0), vbProperCase)
+Else
+On Error Resume Next
+![Property Zipcode] = rsCases!propzip
+End If
+
+![Property Zipcode Suffix] = ""
+
+If IsNull(rsCases!resume_recd) Then
+![Referral Date] = rsCases![Date Recieved]
+Else
+![Referral Date] = rsCases!resume_recd
+End If
+
+![BK Chapter] = ""
+![BK Case Number] = ""
+![BK Filed After Sale] = ""
+![BK Loan Current When Filed] = ""
+![BK Collateral Investment Property] = ""
+![BK Services Post-Confirmation] = ""
+![FC Sale Date] = Vsale
+![FC Sale Held Reason] = "X"
+![FC Sale Held Indicator] = ""
+![Legal Action Date] = vlegal
+![Vendor Reference Number] = [Forms]![foreclosure database screen]![filenum]
+![BK Services Pre-Confirmation] = ""
+![MFR Filed Date] = ""
+![BK Disposition] = ""
+![Date BK Filed] = ""
+![Writ Issued Date] = ""
+![Writ Issued Date] = ""
+!endofrecord = "X"
+.Update
+End With
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+Else
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![INVOICE #] = VINv
+
+![Line Item] = 4.7
+
+![Line Item Date] = Date
+![Qty] = 1
+!Note = "Statutory Mailings"
+!Price = CountNoticeTableACL()
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = VINv
+![Line Item] = 23.55
+![Line Item Date] = Date
+![Qty] = 1
+!Note = "Preparation of Demand Letter"
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+!Price = 40#
+Else
+!Price = 50#
+End If
+
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+
+MsgBox (rsCases!ClientRefNumber & " has been added into the Batch File for NewInvoices")
+rsLI.Close
+rsni.Close
+rsChkNI.Close
+rsFC.Close
+rsCases.Close
+rsClient.Close
+
+End If
+
+
+ErrHandler:
+Dim MyError As Error
+'MsgBox Errors.Count
+For Each MyError In DBEngine.Errors
+With MyError
+'MsgBox Number & " " & Description
+End With
+Next MyError
+End Function
+
+Public Function ExportNIVASB()
+'On Error GoTo ErrHandler:
+
+   Dim VUpdate, vClient, VNI, vsheld, strsqlClient, VEmpID As String
+   Dim Vsale, vfiling, vServID, vDeptID, VInvID, strSQLServ, VDept, strSQLInv As String
+   Dim strsqlfc, strsqlPS, strsqlCases, strsqlBK, vbkchap As String
+   Dim strsqlCounty, vcountyid, strSQLCNI, VINv, VChk, DocName, VTypeLoan, vWM, vlegal, vCounty As String
+   Dim vbkfas, vbkcase, vbklcw, vbkinv, vbksvc, vbksrvp, vbkdisp, vbkfiled, vb362filed As String
+   Dim rsCounty, rsEmp, rsni, rsServ, rsFC, rsPS, rsCases, rsinv, rsClient, rsBK, rsLI, rsChkNI As RecordSet
+   Dim DRC
+   Dim VEmp As String
+   
+vClient = [Forms]![foreclosure database screen]![Client]
+strsqlClient = "SELECT * FROM Clients WHERE [OrganizationName] = " & """" & vClient & """" & ";"
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+Set rsCases = CurrentDb.OpenRecordset(strsqlCases, dbOpenSnapshot)
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+Set rsni = CurrentDb.OpenRecordset("NewInvoice Table", dbOpenDynaset, dbSeeChanges)
+Set rsLI = CurrentDb.OpenRecordset("LineItem", dbOpenDynaset, dbSeeChanges)
+
+If IsNull(rsClient![newinvoice billing]) Then
+MsgBox ("No New Invoice Coding for : " & Forms![foreclosure database screen]!Client & ", will not add to New Invoice, exiting.")
+Exit Function
+Else
+
+VNI = rsClient![newinvoice billing]
+
+VINv = [Forms]![VA SB797 Notice]![ACLSubform].[Form]![InvNo]
+
+strSQLCNI = "select * from [NewInvoice Table] where [Invoice Number] = " & VINv
+Set rsChkNI = CurrentDb.OpenRecordset(strSQLCNI, dbOpenSnapshot)
+Dim VRC
+VRC = rsChkNI.RecordCount
+rsChkNI.Close
+
+If VRC >= 1 Then
+VChk = MsgBox("Invoice #: " & VINv & " is already in the batch file are you sure you want to continue?", vbYesNo)
+Dim VB As String
+If VChk = vbYes Then
+VB = "YES"
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [newinvoice table] where [invoice number] = " & VINv)
+DoCmd.SetWarnings False
+CurrentDb.Execute ("delete * from [lineitem] where [invoice #] = " & VINv)
+Else
+VB = "NO"
+End If
+Else
+VB = "NO"
+End If
+
+
+If VB = "YES" Or VRC = 0 Then
+
+GblFilenum = Forms![foreclosure database screen]![filenum]
+strsqlfc = "select * from foreclosure where subfilenum = " & GblFilenum
+strsqlCases = "select * from cases where filenum = " & GblFilenum
+
+
+VUpdate = MsgBox("Input Bill Into NewInvoices Batch File?", vbYesNo)
+
+If VUpdate = vbNo Then
+MsgBox ("Not batched to New Invoice")
+Exit Function
+
+Else
+
+If IsNull(rsClient!servicer_id) Then
+MsgBox ("Servicer id for new invoice needs to be input in client screen")
+vServID = ""
+Else
+vServID = rsClient!servicer_id
+End If
+
+VInvID = 29
+
+strSQLInv = "Select * from [NI Invoice Types] where [invoice #] = " & """" & VInvID & """" & ";"
+Set rsinv = CurrentDb.OpenRecordset(strSQLInv, dbOpenSnapshot)
+VDept = rsinv!Dept
+Dim VCont As String
+
+vbkchap = ""
+vbkcase = ""
+vbklcw = ""
+vbkfas = ""
+vbkinv = ""
+vbksvc = ""
+vbksrvp = ""
+vbkdisp = ""
+vbkfiled = ""
+vb362filed = ""
+Vsale = ""
+
+Dim VRefer
+If IsNull(rsCases!resume_recd) Then
+VRefer = rsCases![Date Recieved]
+Else
+VRefer = rsCases!resume_recd
+End If
+
+End If
+
+End If
+
+strsqlCounty = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]![Propertycounty] & """" & " and state = " & """" & Forms![foreclosure database screen]![PropertyState] & """" & ";"
+Set rsCounty = CurrentDb.OpenRecordset(strsqlCounty, dbOpenSnapshot)
+
+If rsCases!PropertyState = "VA" Then
+vcountyid = rsCounty!CountyID
+Else
+vCounty = ""
+End If
+rsCounty.Close
+
+If rsCases!PropertyState <> "VA" Then
+If rsCases!Propertycounty = "Baltimore City" Then
+vCounty = "Baltimore"
+Else
+vCounty = rsCases!Propertycounty
+End If
+End If
+
+If IsNull(rsCases![HUD/VANum]) Then
+VTypeLoan = rsCases![ClientRefNumber]
+Else
+VTypeLoan = rsCases![HUD/VANum]
+End If
+
+
+With rsni
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![Vendor ID] = "BIERMAN"
+
+![Invoice Number] = VINv
+
+![Invoice Date] = Date
+
+![Invoice Type] = "29"
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+![Invoice Amount] = 25#
+Else
+![Invoice Amount] = 25# + CountVASB()
+End If
+![Servicer ID] = rsClient!servicer_id
+![Loan Number] = rsCases![ClientRefNumber]
+![Created by Vendor User ID] = [Forms]![VA SB797 Notice]![ACLSubform].[Form]!created_vdruser_id_vasb
+![Department ID] = VDept
+![BK State] = rsCases![PropertyState]
+![Judicial Indicator] = "N"
+![Invoice Level Comment] = "VASB Letter"
+![Borrower Name] = UCase(rsCases![LastNameDebtor1] & ", " & rsCases![FirstNameDebtor1])
+If Len(rsCases!PropAddress) > 60 Then
+MsgBox (rsCases!PropAddress & " is more than 60 Characters this is not allowed in New Invoice, Please update Property Address on Screen and upload again.")
+Exit Function
+Else
+![Property Address 1] = rsCases![PropAddress]
+
+End If
+
+![Property Address 2] = ""
+
+If Len(rsCases!PropertyCity) > 35 Then
+MsgBox (rsCases!PropertyCity & " is more than 35 Characters this is not allowed in New Invoice, Please update City on Screen and upload again.")
+Exit Function
+Else
+![Property City] = rsCases!PropertyCity
+End If
+
+![Property County] = vCounty
+![Property State] = rsCases!PropertyState
+
+Dim tempfields As Variant
+tempfields = Split(rsCases!propzip, "-")
+Dim A
+A = Split(rsCases!propzip, "-")
+If UBound(tempfields) = 1 Then
+![Property Zipcode] = StrConv(A(0), vbProperCase)
+Else
+On Error Resume Next
+![Property Zipcode] = rsCases!propzip
+End If
+
+![Property Zipcode Suffix] = ""
+
+If IsNull(rsCases!resume_recd) Then
+![Referral Date] = rsCases![Date Recieved]
+Else
+![Referral Date] = rsCases!resume_recd
+End If
+
+![BK Chapter] = ""
+![BK Case Number] = ""
+![BK Filed After Sale] = ""
+![BK Loan Current When Filed] = ""
+![BK Collateral Investment Property] = ""
+![BK Services Post-Confirmation] = ""
+![FC Sale Date] = Vsale
+![FC Sale Held Reason] = "X"
+![FC Sale Held Indicator] = ""
+![Legal Action Date] = vlegal
+![Vendor Reference Number] = [Forms]![foreclosure database screen]![filenum]
+![BK Services Pre-Confirmation] = ""
+![MFR Filed Date] = ""
+![BK Disposition] = ""
+![Date BK Filed] = ""
+![Writ Issued Date] = ""
+![Writ Issued Date] = ""
+!endofrecord = "X"
+.Update
+End With
+
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+
+With rsLI
+.AddNew
+!PKey = GetAutoNumber("NextNIPKey")
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+![INVOICE #] = VINv
+
+![Line Item] = 4.7
+
+![Line Item Date] = Date
+![Qty] = 1
+!Note = "Statutory Mailings"
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+!Price = 0
+Else
+!Price = CountVASB()
+End If
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+End If
+
+
+With rsLI
+.AddNew
+![TimeTransaction] = (Format$(Now(), "mm/dd/yyyy hh:nn:ss"))
+!PKey = GetAutoNumber("NextNIPKey")
+![INVOICE #] = VINv
+![Line Item] = 23.55 'changed from 1.3 per Evangeline on 9/23/08
+![Line Item Date] = Date
+![Qty] = 1
+!Note = "Preparation of VASB Letter"
+If Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+!Price = 25#
+End If
+
+![Util HOA Indicator] = ""
+![Util Advance Date] = ""
+![Util From Date] = ""
+![Util to Date] = ""
+![Util Base Amount] = 0
+![Util Interest Amount] = 0
+![Util Penalty Amount] = 0
+!endofrecord = "0"
+.Update
+End With
+
+
+MsgBox (rsCases!ClientRefNumber & " has been added into the Batch File for NewInvoices")
+rsLI.Close
+rsni.Close
+rsChkNI.Close
+rsFC.Close
+rsCases.Close
+rsClient.Close
+
+End If
+
+
+ErrHandler:
+Dim MyError As Error
+'MsgBox Errors.Count
+For Each MyError In DBEngine.Errors
+With MyError
+'MsgBox Number & " " & Description
+End With
+Next MyError
+End Function
+

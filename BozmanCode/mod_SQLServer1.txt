@@ -1,0 +1,84 @@
+Attribute VB_Name = "SQLServer1"
+Option Compare Database
+Option Explicit
+
+Const ODBC_ADD_DSN = 1
+Const ODBC_ADD_SYS_DSN = 4
+Private Declare Function SQLConfigDataSource Lib "ODBCCP32.DLL" _
+          (ByVal hwndParent As Long, ByVal fRequest As Long, _
+          ByVal lpszDriver As String, ByVal lpszAttributes As String) _
+          As Long
+
+Public Sub CheckSQL()
+Dim rstData As RecordSet, ErrCnt As Integer, db As String
+
+On Error GoTo CheckSQLErr
+db = "Acc"
+ErrCnt = 0
+If UCase$(ReadDSNserver("BGW_Accounting")) <> "SQLSERVER" Then Call CreateDSN(db)
+Set rstData = CurrentDb.OpenRecordset("SELECT TOP 1 AccountID FROM Acc_Accounts;", dbOpenSnapshot)
+rstData.Close
+
+db = "FC"
+ErrCnt = 0
+If UCase$(ReadDSNserver("BGW_Foreclosure")) <> "SQLSERVER" Then Call CreateDSN(db)
+Set rstData = CurrentDb.OpenRecordset("SELECT TOP 1 attorney1 FROM attorneys;", dbOpenSnapshot)
+rstData.Close
+
+db = "Documents"
+ErrCnt = 0
+If UCase$(ReadDSNserver("BGW_Documents")) <> "SQLSERVER" Then Call CreateDSN(db)
+Set rstData = CurrentDb.OpenRecordset("SELECT TOP 1 DocID FROM DocList;", dbOpenSnapshot)
+rstData.Close
+
+Set rstData = Nothing
+
+Exit Sub
+
+CheckSQLErr:
+If ErrCnt > 2 Then
+    MsgBox "Repeated attempts to access database have failed:" & vbNewLine & Err.description, vbExclamation
+    Exit Sub
+End If
+If Err.Number = 3151 Then
+    ErrCnt = ErrCnt + 1
+    If CreateDSN(db) Then
+        Resume
+    Else
+        MsgBox "Cannot create connection to database", vbCritical
+    End If
+Else
+    MsgBox "Error " & Err.Number & ": " & Err.description
+End If
+End Sub
+
+Public Function CreateDSN(WhichDB As String) As Boolean
+
+Dim strDriver As String, strAttributes As String
+
+Select Case WhichDB
+    Case "Acc"
+        strDriver = "SQL Server"
+        strAttributes = "SERVER=SQLServer" & Chr$(0)
+        strAttributes = strAttributes & "DESCRIPTION=BGW Accounting" & Chr$(0)
+        strAttributes = strAttributes & "DSN=BGW_Accounting" & Chr$(0)
+        strAttributes = strAttributes & "DATABASE=Accounting" & Chr$(0)
+        strAttributes = strAttributes & "Trusted_Connection=Yes" & Chr$(0)
+    Case "FC"
+        strDriver = "SQL Server"
+        strAttributes = "SERVER=SQLServer" & Chr$(0)
+        strAttributes = strAttributes & "DESCRIPTION=BGW Foreclosure" & Chr$(0)
+        strAttributes = strAttributes & "DSN=BGW_Foreclosure" & Chr$(0)
+        strAttributes = strAttributes & "DATABASE=Foreclosure" & Chr$(0)
+        strAttributes = strAttributes & "Trusted_Connection=Yes" & Chr$(0)
+    Case "Documents"
+        strDriver = "SQL Server"
+        strAttributes = "SERVER=SQLServer" & Chr$(0)
+        strAttributes = strAttributes & "DESCRIPTION=BGW Documents" & Chr$(0)
+        strAttributes = strAttributes & "DSN=BGW_Documents" & Chr$(0)
+        strAttributes = strAttributes & "DATABASE=BGW_Documents" & Chr$(0)
+        strAttributes = strAttributes & "Trusted_Connection=Yes" & Chr$(0)
+End Select
+CreateDSN = SQLConfigDataSource(0, ODBC_ADD_DSN, strDriver, strAttributes)
+End Function
+

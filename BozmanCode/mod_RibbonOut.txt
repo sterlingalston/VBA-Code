@@ -1,0 +1,91 @@
+Attribute VB_Name = "RibbonOut"
+Option Compare Database
+Option Explicit
+
+Sub ribbongen()
+
+Dim control As Object
+Dim ctrl As Integer
+Dim menu, ribbontxt, ribbonid, styler As String
+Dim fso As FileSystemObject
+Dim stream As TextStream
+
+Set fso = New FileSystemObject
+Set stream = fso.CreateTextFile("C:\MatthewAlston\ribbon\ribbonout.txt", True)
+
+
+
+'Set controlthing = Application.CommandBars("Foreclosure Menu").Controls("documents").Controls("Pre-sale documents").Controls(1)
+menu = "testing"
+'set the menu where you'd like your ribbon controls
+Set control = Application.CommandBars("Foreclosure Menu").Controls(menu) '.Controls("managers tools").Controls("Productivity")
+For ctrl = 1 To control.Controls.Count
+On Error GoTo handler
+With control
+'    ribbonid = .Controls(2).caption
+    
+styler = .Controls(ctrl).Style
+ribbonid = .Controls(ctrl).Caption
+ribbonid = menu & "_" & ribbonid
+ribbonid = Replace(ribbonid, " ", "")
+ribbonid = Replace(ribbonid, "-", "")
+ribbonid = Replace(ribbonid, "/", "")
+ribbonid = Replace(ribbonid, "(", "")
+ribbonid = Replace(ribbonid, ")", "")
+ribbonid = Replace(ribbonid, ":", "")
+ribbonid = Replace(ribbonid, "#", "No")
+ribbonid = Replace(ribbonid, "'", "")
+
+ribbontxt = "strOut = strOut & " & """" & "<button id=" & """""" & ribbonid & """""" & " label=" & """""" & .Controls(ctrl).Caption & _
+    """""" & " onAction=" & """""" & "=" & ribbonid & "()" & """""" & _
+    " screentip=" & """""" & .Controls(ctrl).TooltipText & """""" & "/>"""
+'stream.WriteLine ribbontxt
+'If styler <> "No" Then Debug.Print ribbontxt
+If styler <> "No" Then stream.WriteLine ribbontxt & _
+    IIf(Len(.Controls(ctrl).OnAction) > 0, "'" & "OnAction property: " & .Controls(ctrl).OnAction, "")
+
+End With
+Next ctrl
+
+Exit Sub
+'MsgBox ribbonid
+'Debug.Print ribbontxt
+
+handler:
+With control
+styler = "No"
+ribbonid = ""
+ribbonid = .Controls(ctrl).Caption
+ribbonid = menu & "_" & ribbonid
+ribbonid = Replace(ribbonid, " ", "")
+ribbonid = Replace(ribbonid, "-", "")
+ribbonid = Replace(ribbonid, "/", "")
+ribbonid = Replace(ribbonid, "(", "")
+ribbonid = Replace(ribbonid, ")", "")
+ribbonid = Replace(ribbonid, ":", "")
+ribbonid = Replace(ribbonid, "#", "No")
+ribbonid = Replace(ribbonid, "'", "")
+
+
+ribbontxt = "strOut = strOut & " & """" & "<menu id=" & """""" & ribbonid & """""" & " label=" & """""" & .Controls(ctrl).Caption & _
+    """""" & " itemSize=" & """""" & "normal" & """""" & ">"""
+    'strOut = strOut & "</menu>"
+End With
+'stream.WriteLine "This line uses the WriteLine method."
+'Debug.Print ribbontxt
+'Debug.Print "strOut = strOut & " & """" & "</menu>"""
+
+stream.WriteLine ribbontxt
+stream.WriteLine "strOut = strOut & " & """" & "</menu>"""
+Resume Next
+
+
+
+Exit Sub
+
+End Sub
+
+
+
+
+

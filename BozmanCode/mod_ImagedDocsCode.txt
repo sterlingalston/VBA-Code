@@ -1,0 +1,1192 @@
+Attribute VB_Name = "ImagedDocsCode"
+Option Compare Database
+
+Public Function CopyToAlexCooperFTP(docpath As String)
+
+Dim alexcooperftp As String
+Dim DocName As String
+Dim destination As String
+
+alexcooperftp = "\\FTPSERVER\ftp\AlexCooper\Sent_to_Cooper\"
+DocName = GetFilenameFromPath(docpath)
+destination = alexcooperftp & DocName
+
+FileCopy docpath, destination
+
+End Function
+
+Function GetFilenameFromPath(ByVal strPath As String) As String
+' Returns the rightmost characters of a string upto but not including the rightmost '\'
+' e.g. 'c:\winnt\win.ini' returns 'win.ini'
+
+    If Right$(strPath, 1) <> "\" And Len(strPath) > 0 Then
+        GetFilenameFromPath = GetFilenameFromPath(Left$(strPath, Len(strPath) - 1)) + Right$(strPath, 1)
+    End If
+End Function
+
+Public Function BondVerUpdateImage()
+
+DoCmd.OpenQuery "BondVerUpdateImage"
+MsgBox ("Updated")
+
+
+End Function
+Public Function RptSaleStampedUpdate()
+
+DoCmd.OpenQuery "RptSaleStampedUpdate"
+MsgBox ("Updated")
+
+End Function
+Public Function CopyDocToBGWWDocsBILL(VarDoc, VarSubFldr, VarType)
+
+CreateFldrType (VarSubFldr)
+
+'VConvRpt = VarDoc
+'Call ConvertPDFALL
+docsfldr = AutoIndexPathUser & username() & "\" & VarSubFldr & "\"
+'sourcefile = PathUSER() & "NOI.pdf"
+
+'sourcefile = PathUSER() & VConvRpt & ".PDF"
+sourcefile = pathuser() & VarDoc & ".pdf"
+destinationfile = docsfldr & GblFilenum & VarType
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+
+
+End Function
+
+Public Function CopyDocToBGWWDocs(VarDoc, VarSubFldr, VarType)
+
+CreateFldrType (VarSubFldr)
+
+VConvRpt = VarDoc
+Call ConvertPDFALL
+docsfldr = AutoIndexPathUser & username() & "\" & VarSubFldr & "\"
+
+sourcefile = pathuser() & "\" & VConvRpt & ".PDF"
+destinationfile = docsfldr & GblFilenum & VarType
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+
+End Function
+
+Public Function CopyPDFToBGWWDocs(VarDoc, VarSubFldr, VarType)
+
+CreateFldrType (VarSubFldr)
+
+VConvRpt = VarDoc
+'Call ConvertPDFALL
+docsfldr = AutoIndexPathUser & username() & "\" & VarSubFldr & "\"
+
+sourcefile = VConvRpt
+destinationfile = docsfldr & GblFilenum & VarType
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+
+End Function
+
+Public Function BillImagedDoc()
+
+gFile = ""
+gFName = ""
+Dim VDocChk As String
+
+If gTypeDoc = "BondInv" Then
+VDocChk = ""
+ElseIf gTypeDoc = "WalzInv" Then
+VDocChk = "*_WalzInv_*"
+ElseIf gTypeDoc = "AdInv" Then
+VDocChk = "*_PubCostInv_*"
+ElseIf gTypeDoc = "REInv" Then
+VDocChk = "*_TaxBill_*"
+ElseIf gTypeDoc = "TrioInv" Then
+VDocChk = "*_TrioInvoic_*"
+End If
+
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+
+If gTypeDoc = "TitleInv" Then
+
+If f2.name Like "*_TitlInvoic_*" Or f2.name Like "*_ASAPInv_*" Then
+gFName = f2.name
+End If
+Else
+If f2.name Like VDocChk Then
+gFName = f2.name
+End If
+End If
+
+Next
+
+If gFName = "" Then
+gFile = ""
+Else
+gFile = fldr & gFName
+End If
+
+If gFile <> "" Then
+Dim txtname As String
+If gFName Like "*rtf" Then
+txtname = Forms![foreclosure database screen]!filenum & "_" & gTypeDoc & ".rtf"
+Else
+txtname = Forms![foreclosure database screen]!filenum & "_" & gTypeDoc & ".pdf"
+End If
+
+sourcefile = gFile
+destinationfile = DTLocation & "\NewInvoice\ImagedDocs\" & txtname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+End If
+
+
+End Function
+Public Function BrowseTitle()
+  
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_TitlSearch_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+    If f2.name Like vFile And f2.DateLastModified > VDt Then
+        vFName = f2.name
+        VDt = f2.DateLastModified
+    End If
+Next
+
+If vFName = "" Then
+    BrowseTitle = ""
+    MsgBox ("NO Title in Documents Folder")
+    Exit Function
+Else
+    BrowseTitle = fldr & vFName
+End If
+End Function
+
+Public Function BrowseClt()
+  
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_Part1Pkg*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+    If f2.name Like vFile And f2.DateLastModified > VDt Then
+        vFName = f2.name
+        VDt = f2.DateLastModified
+    End If
+Next
+
+If vFName = "" Then
+    BrowseClt = ""
+    MsgBox ("NO Part 1 Package in Documents Folder")
+    Exit Function
+Else
+    BrowseClt = fldr & vFName
+End If
+
+End Function
+
+Public Function AuctAddForm()
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vname As String
+
+docsfldr = AutoIndexPath & "AuctMD\"
+'DocsFldr = "\\rvdv-fs01\datatransfer\AuctMD\"
+
+Set rs = CurrentDb.OpenRecordset("MDSalesAuctNEW")
+
+Do While Not rs.EOF
+strsql = "Select * from MDSalesAuctNew where filenum = " & rs!filenum & ";"
+Vname = rs!filenum & "_AuctMD.snp"
+DoCmd.OpenReport "Auct-MDAttachSSSIMAGED", acViewDesign, , , acHidden
+Reports![Auct-MDAttachSSSIMAGED].recordsource = strsql
+DoCmd.Close acReport, "Auct-MDAttachSSSIMAGED", acSaveYes
+DoCmd.OutputTo acOutputReport, "Auct-MDAttachSSSIMAGED", acFormatSNP, docsfldr & Vname
+
+rs.MoveNext
+Loop
+
+rs.Close
+
+
+End Function
+
+Public Function AuctAddFormNC()
+'Auct-MDAttachSSSNCAll
+Dim rs As RecordSet
+Dim strsql As String
+Dim Vname As String
+
+docsfldr = AutoIndexPath & "AuctMD\"
+'DocsFldr = "\\rvdv-fs01\datatransfer\AuctMD\"
+
+Set rs = CurrentDb.OpenRecordset("MDSalesAuctNEWOcwen")
+
+Do While Not rs.EOF
+strsql = "Select * from MDSalesAuctNew where filenum = " & rs!filenum & ";"
+Vname = rs!filenum & "_AuctMD.snp"
+DoCmd.OpenReport "Auct-MDAttachSSSNCAll", acViewDesign, , , acHidden
+Reports![Auct-MDAttachSSSNCAll].recordsource = strsql
+DoCmd.Close acReport, "Auct-MDAttachSSSNCAll", acSaveYes
+DoCmd.OutputTo acOutputReport, "Auct-MDAttachSSSNCAll", acFormatSNP, docsfldr & Vname
+
+rs.MoveNext
+Loop
+
+rs.Close
+
+End Function
+Public Function ImageNOI()
+
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+Dim rs As RecordSet
+Dim VNOIFile
+
+Set rs = CurrentDb.OpenRecordset("GMACNoiPull2", dbOpenSnapshot)
+
+Do While Not rs.EOF
+VNOIFile = ""
+vFName = ""
+
+fldr = GetDocPath(rs!filenum)
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like "*NOI*" Then
+vFName = f2.name
+'VDt = f2.DateLastModified
+End If
+Next
+
+If vFName = "" Then
+VNOIFile = ""
+Else
+VNOIFile = fldr & vFName
+End If
+
+If VNOIFile <> "" Then
+Dim txtname As String
+If vFName Like "*rtf" Then
+txtname = rs!filenum & "NOI.rtf"
+Else
+txtname = rs!filenum & "NOI.pdf"
+End If
+
+sourcefile = VNOIFile
+destinationfile = DTLocation & "\NOIFiles\" & txtname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+End If
+
+rs.MoveNext
+Loop
+
+
+
+End Function
+
+Public Function ImageVAIEmail()
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+vFile = BrowseFLDRDoaX()
+
+If IsNull(vFile) Or vFile = "" Then
+vimageXML = "NO"
+MsgBox ("No DOAx file in Imaged Docs")
+
+Exit Function
+Else
+vimageXML = "YES"
+
+Dim txtname As String
+
+txtname = Forms![foreclosure database screen]!filenum & "_DOA.pdf"
+sourcefile = vFile
+destinationfile = pathuser() & "\" & txtname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+End If
+
+End If
+
+End Function
+
+
+Public Function ImageVAI()
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+vFile = BrowseFLDRDoaX()
+
+If IsNull(vFile) Or vFile = "" Then
+vimageXML = "NO"
+Exit Function
+Else
+vimageXML = "YES"
+
+Dim txtname As String
+
+txtname = dumpname & "_DOA.pdf"
+sourcefile = vFile
+destinationfile = DTLocation & "\WALZ\ToWalz\" & txtname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+VPDFxml = txtname
+
+'MsgBox (VPDFxml)
+
+End If
+
+End If
+
+End Function
+Public Function ImageHud()
+
+Dim VFileTimeDownload, vfiletime As Date
+Dim vtime As String
+
+Dim txtname As String
+
+txtname = dumpname & "_HUDAttachment.pdf"
+
+sourcefile = "\\rvdv-fs01\datatransfer\attachments\HUDAttachment.pdf"
+destinationfile = DTLocation & "\WALZ\ToWalz\" & txtname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+vHUD1 = txtname
+
+
+End Function
+Public Function ImageBidChecklist()
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_BidCheck_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set f = fs.GetFolder(fldr)
+ 
+For Each f2 In f.Files
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+If vFName = "" Then
+ImageBidChecklist = ""
+MsgBox ("NO BidChecklist in Documents Folder")
+Else
+ImageBidChecklist = fldr & vFName
+End If
+
+
+
+End Function
+Public Function ImageNTQVAHomeward()
+Dim txtname As String
+
+txtname = dumpname & "_NTQVAAttach.pdf"
+
+sourcefile = "\\rvdv-fs01\datatransfer\attachments\HomewardAttachment.PDF"
+destinationfile = DTLocation & "\WALZ\ToWalz\" & txtname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+VPDFxml = txtname
+
+End Function
+Public Function ImageNTQMd()
+
+Dim txtname As String
+
+txtname = dumpname & "_NTQMDAttach.pdf"
+
+If Forms![foreclosure database screen]!EvictionSubFormMD.Form![eviction_company_name] = "Fannie Mae" Then
+Else
+
+sourcefile = "\\rvdv-fs01\datatransfer\attachments\EvictionMDAttachment.PDF"
+
+
+destinationfile = DTLocation & "\WALZ\ToWalz\" & txtname
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+VPDFxml = txtname
+End If
+
+'Aldridge/OneWest
+Dim txtname2
+
+If Forms![foreclosure database screen]!Client Like "OneWes*" Or _
+Forms![foreclosure database screen]!Client Like "Wells*" Then
+
+txtname2 = dumpname & "_NTQMDAttach2.pdf"
+
+If Forms![foreclosure database screen]!Client Like "OneWes*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\attachments\OWBSCRANotice.pdf"
+ElseIf Forms![foreclosure database screen]!Client Like "Wells*" Then
+sourcefile = "\\rvdv-fs01\datatransfer\attachments\WellsSCRANotice.pdf"
+End If
+
+
+destinationfile = DTLocation & "\WALZ\ToWalz\" & txtname2
+FileCopy sourcefile, destinationfile    ' Copy source to target.
+
+VPDFxml = VPDFxml & ";" & txtname2
+
+End If
+
+
+End Function
+
+Public Function BrowseFLDRJCS()
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_JCSSearch_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+If vFName = "" Then
+BrowseFLDRJCS = ""
+MsgBox ("NO JCS Search in Documents Folder")
+Else
+BrowseFLDRJCS = fldr & vFName
+End If
+
+End Function
+
+Public Function BrowseFLDFairDebt()
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_FairDebLtr_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+
+
+If vFName = "" Then
+BrowseFLDFairDebt = ""
+MsgBox ("NO Fair Debt Letter in Documents Folder")
+Else
+BrowseFLDFairDebt = fldr & vFName
+End If
+
+End Function
+
+Public Function BrowseFLDRNote()
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_OrgNote_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+If vFName = "" Then
+BrowseFLDRNote = ""
+
+vFile = Forms![foreclosure database screen]!filenum & "_Note_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+End If
+
+If vFName = "" Then
+BrowseFLDRNote = ""
+MsgBox ("NO Org Note in Documents Folder")
+Else
+BrowseFLDRNote = fldr & vFName
+End If
+
+End Function
+
+Public Function BrowseFLDDecree()
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms!dcsetsales!filenum)
+vFile = Forms![dcsetsales]!filenum & "_DecrFrSI_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+If vFName = "" Then
+BrowseFLDDecree = ""
+MsgBox ("NO Decree of Sale in Documents Folder")
+Else
+BrowseFLDDecree = fldr & vFName
+End If
+
+End Function
+
+
+Public Function BrowseFLDJudgmentDC()
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms!dcsetsales!filenum)
+vFile = Forms![dcsetsales]!filenum & "_Judgment_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+If vFName = "" Then
+BrowseFLDJudgmentDC = ""
+MsgBox ("NO Judgment in Documents Folder")
+Else
+BrowseFLDJudgmentDC = fldr & vFName
+End If
+
+End Function
+
+Public Function BrowseFLDOrdDC()
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms!dcsetsales!filenum)
+vFile = Forms![dcsetsales]!filenum & "_Order_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+If vFName = "" Then
+BrowseFLDOrdDC = ""
+MsgBox ("NO Order in Documents Folder")
+Else
+BrowseFLDOrdDC = fldr & vFName
+End If
+
+End Function
+
+Public Function BrowseFLDDOTDc()
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms!dcsetsales!filenum)
+vFile = Forms![dcsetsales]!filenum & "_RecorddDOT_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+If vFName = "" Then
+BrowseFLDDOTDc = ""
+
+vFile = Forms!dcsetsales!filenum & "_DeedOTrust_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+End If
+
+If vFName = "" Then
+BrowseFLDDOTDc = ""
+MsgBox ("NO Recorded DOT in Documents Folder")
+Else
+BrowseFLDDOTDc = fldr & vFName
+End If
+
+End Function
+
+Public Function BrowseFLDRRDOT()
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_RecorddDOT_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+If vFName = "" Then
+BrowseFLDRRDOT = ""
+
+vFile = Forms![foreclosure database screen]!filenum & "_DeedOTrust_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+End If
+
+If vFName = "" Then
+BrowseFLDRRDOT = ""
+MsgBox ("NO Recorded DOT in Documents Folder")
+Else
+BrowseFLDRRDOT = fldr & vFName
+End If
+
+End Function
+
+Public Function BrowseFLDRClosing()
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_3PyPrchNot_*"
+'MsgBox (VFile)
+
+'105692_3PyPrchNot_01.pdf
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+If vFName = "" Then
+BrowseFLDRClosing = ""
+MsgBox ("No Closing Letter in Imaged Docs")
+
+Else
+BrowseFLDRClosing = fldr & vFName
+FollowHyperlink (BrowseFLDRClosing)
+
+End If
+
+End Function
+
+Public Function BrowseFLDROrdRat()
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_OrdRatific_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+
+If vFName = "" Then
+BrowseFLDROrdRat = ""
+Else
+BrowseFLDROrdRat = fldr & vFName
+End If
+
+End Function
+
+Public Function BrowseFLDRPart2()
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_Part2Pkg_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+
+
+If vFName = "" Then
+BrowseFLDRPart2 = ""
+MsgBox ("NO Part 2 Package in Documents Folder")
+Else
+BrowseFLDRPart2 = fldr & vFName
+End If
+
+
+End Function
+
+
+
+Public Function BrowseFLDRDoaX()
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_DOAX_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+If vFName = "" Then
+BrowseFLDRDoaX = ""
+MsgBox ("NO DOA in Documents Folder")
+Else
+BrowseFLDRDoaX = fldr & vFName
+End If
+
+End Function
+
+Public Function BrowseFLDR()
+  
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_Part1Pkg*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+    If f2.name Like vFile And f2.DateLastModified > VDt Then
+        vFName = f2.name
+        VDt = f2.DateLastModified
+    End If
+Next
+
+If vFName = "" Then
+    BrowseFLDR = ""
+    MsgBox ("NO Part 1 Package in Documents Folder")
+Else
+    BrowseFLDR = fldr & vFName
+End If
+' MsgBox Val_Open
+
+End Function
+
+Public Function BrowseFldrLEGAL()
+  
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_LegalDesc_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+    If f2.name Like vFile And f2.DateLastModified > VDt Then
+        vFName = f2.name
+        VDt = f2.DateLastModified
+    End If
+Next
+
+If vFName = "" Then
+    BrowseFldrLEGAL = ""
+    MsgBox ("No Legal Description in Imaged Docs Folder")
+Else
+    BrowseFldrLEGAL = fldr & vFName
+End If
+ 
+FollowHyperlink (BrowseFldrLEGAL)
+
+
+End Function
+
+Public Function BrowseFLDRCS()
+  
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_SaleCtrct_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+    If f2.name Like vFile And f2.DateLastModified > VDt Then
+        vFName = f2.name
+        VDt = f2.DateLastModified
+    End If
+Next
+
+If vFName = "" Then
+    BrowseFLDRCS = ""
+    MsgBox ("NO Contract of Sale in Documents Folder")
+Else
+    BrowseFLDRCS = fldr & vFName
+End If
+ 
+'MsgBox Val_Open
+
+End Function
+
+Public Function BrowseFLDRHUD1()
+  
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_HUD*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+    If f2.name Like vFile And f2.DateLastModified > VDt Then
+        vFName = f2.name
+        VDt = f2.DateLastModified
+    End If
+Next
+
+If vFName = "" Then
+    BrowseFLDRHUD1 = ""
+    MsgBox ("NO HUD 1 Documents Folder")
+Else
+    BrowseFLDRHUD1 = fldr & vFName
+End If
+ 
+'MsgBox Val_Open
+
+End Function
+
+Public Function BrowseFLDREvicMotPoss()
+
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_MotJgmtPos*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set f = fs.GetFolder(fldr)
+
+For Each f2 In f.Files
+    If f2.name Like vFile And f2.DateLastModified > VDt Then
+        vFName = f2.name
+        VDt = f2.DateLastModified
+    End If
+Next
+
+If vFName = "" Then
+    BrowseFLDREvicMotPoss = ""
+    MsgBox ("NO Eviction Motion for Possession in Documents Folder")
+Else
+    BrowseFLDREvicMotPoss = fldr & vFName
+End If
+
+End Function
+Public Function BrowseFLDRPO()
+
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_PayoffQuot_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+If vFName = "" Then
+BrowseFLDRPO = ""
+MsgBox ("NO Quote in Documents Folder")
+Else
+BrowseFLDRPO = fldr & vFName
+End If
+
+End Function
+Public Function BrowseFLDRRein()
+
+Dim f, f2, fs
+  
+Dim fldr, VDt, vFName, vFile
+  
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_ReinstQuot_*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+  
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+  
+If f2.name Like vFile And f2.DateLastModified > VDt Then
+vFName = f2.name
+VDt = f2.DateLastModified
+End If
+
+Next
+If vFName = "" Then
+BrowseFLDRRein = ""
+MsgBox ("NO Quote in Documents Folder")
+Else
+BrowseFLDRRein = fldr & vFName
+End If
+
+End Function
+
+Public Function BrowseFLDREvicNTQ()
+
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_EvNtc2Quit*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set f = fs.GetFolder(fldr)
+
+For Each f2 In f.Files
+    If f2.name Like vFile And f2.DateLastModified > VDt Then
+        vFName = f2.name
+        VDt = f2.DateLastModified
+    End If
+Next
+
+If vFName = "" Then
+    BrowseFLDREvicNTQ = ""
+    MsgBox ("NO Eviction Notice to Quit in Documents Folder")
+Else
+    BrowseFLDREvicNTQ = fldr & vFName
+End If
+
+End Function
+
+Public Function BrowseFLDREvic()
+  
+Dim f, f2, fs
+Dim fldr, VDt, vFName, vFile
+Dim Val_Open, xlApp
+  
+fldr = GetDocPath(Forms![foreclosure database screen]!filenum)
+vFile = Forms![foreclosure database screen]!filenum & "_EvictPrt1*"
+
+Set fs = CreateObject("Scripting.FileSystemObject")
+Set f = fs.GetFolder(fldr)
+  
+For Each f2 In f.Files
+    If f2.name Like vFile And f2.DateLastModified > VDt Then
+        vFName = f2.name
+        VDt = f2.DateLastModified
+    End If
+Next
+If vFName = "" Then
+    BrowseFLDREvic = ""
+    MsgBox ("NO Eviction Part 1 Package in Documents Folder")
+Else
+    BrowseFLDREvic = fldr & vFName
+End If
+'MsgBox Val_Open
+
+End Function
+
+

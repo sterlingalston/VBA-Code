@@ -1,0 +1,576 @@
+Attribute VB_Name = "Chronology"
+Option Compare Database
+Public Function ChronoMergeScreen()
+VTypeMerge = "Chronology"
+Call ChronoMerge
+
+Dim oapp As Word.Application
+Dim oDoc As Word.document
+Set oapp = CreateObject("word.application")
+
+Set oDoc = oapp.Documents.ADD("\\rvdv-fs01\DataTransfer\Templates\FC\ChronologyVA.doc", , , True)
+
+With oDoc.MailMerge
+.MainDocumentType = wdFormLetters
+.OpenDataSource name:=pathuser() & "fcmerge.txt"
+End With
+
+With oDoc.MailMerge
+.destination = wdSendToNewDocument '; wdSendToFax; wdSendToEmail wdSendToPrinter
+.Execute Pause:=False
+oDoc.Close False
+oapp.Visible = True
+End With
+
+End Function
+Public Function ChronoMerge()
+
+ 
+
+CurrentDb.Execute "Delete * from fcmerge;", dbFailOnError
+DoCmd.OpenQuery ("fcbasicmergechrono")
+Dim rsMerge As RecordSet
+
+
+
+Set rsMerge = CurrentDb.OpenRecordset("FCMerge", dbOpenDynaset, dbSeeChanges)
+strsql = "SELECT Chrono_Selection.*, chron_data, chron_Notes, Chronology.Chron_Date, Chronology.FileNum " & _
+" FROM Chronology INNER JOIN Chrono_Selection ON Chronology.Chron_Data = Chrono_Selection.DropDown " & _
+" WHERE (CHRONO_selection.state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & " or chrono_selection.state = " & """" & "A" & """" & ") and Chronology.Chron_ltr_Date = #" & [Forms]![Chronology]![PrtDate] & "# AND Chronology.FileNum = " & [Forms]![foreclosure database screen]![filenum] & " order by chron_date ASC;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlClient = "Select * from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rsClient = CurrentDb.OpenRecordset(strsqlClient, dbOpenSnapshot)
+
+Dim VMessage1
+Dim VMessage2
+
+'Account #: 0210148078
+'Borrower(s): Shirley A. Beard and Morris B. Beard, II
+'Property Address: 603 Compton Road, Colonial Heights, VA 23834
+
+'Following is a chronology for the above-referenced loan:
+
+VMessage1 = "Account #: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr & "Borrower(s): " & debtorsFORE() & vbCr & "Property Address: " & PROP() & vbCr & vbCr & "Following is a chronology for the above-referenced loan:"
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+If rs!Chron_data = "Trustee Rec’d date" Then
+VPRTOut = "Trustees deed recorded " & liberfolio()
+Else
+VPRTOut = rs!PrintOut
+End If
+
+
+If Not IsNull(rs!Chron_Notes) Then
+If VPRTOut Like "Foreclosure Restart*" Then
+VMessage2 = VMessage2 & vbCr & Format(rs!chron_date, "mm/dd/yy") & ":     " & VPRTOut & rs!Chron_Notes & vbCr
+Else
+VMessage2 = VMessage2 & Format(rs!chron_date, "mm/dd/yy") & ":     " & VPRTOut & rs!Chron_Notes & vbCr
+End If
+
+Else
+If VPRTOut Like "Foreclosure Restart*" Then
+VMessage2 = VMessage2 & vbCr & Format(rs!chron_date, "mm/dd/yy") & ":     " & VPRTOut & vbCr
+Else
+VMessage2 = VMessage2 & Format(rs!chron_date, "mm/dd/yy") & ":     " & VPRTOut & vbCr
+End If
+End If
+rs.MoveNext
+Loop
+
+End If
+
+With rsMerge
+
+.Edit
+!extralang1 = VMessage1
+!extralang2 = VMessage2
+
+!Letter_Date = Format(Date, "mmmm dd, yyyy")
+
+.Update
+.Close
+
+End With
+
+DoCmd.TransferText acExportDelim, , "Fcmerge", pathuser() & "fcmerge.txt", True
+
+DoCmd.RunMacro ("exportfcmerge")
+
+
+End Function
+Public Function ChronologyLtr()
+VTypeMerge = "Chronology"
+Call FCMerge
+
+Dim oapp As Word.Application
+Dim oDoc As Word.document
+Set oapp = CreateObject("word.application")
+
+Set oDoc = oapp.Documents.ADD("\\rvdv-fs01\DataTransfer\Templates\FC\Chronology.doc", , , True)
+
+With oDoc.MailMerge
+.MainDocumentType = wdFormLetters
+.OpenDataSource name:=pathuser() & "fcmerge.txt"
+End With
+
+With oDoc.MailMerge
+.destination = wdSendToNewDocument '; wdSendToFax; wdSendToEmail wdSendToPrinter
+.Execute Pause:=False
+oDoc.Close False
+oapp.Visible = True
+End With
+
+
+
+End Function
+Public Function EmailChronScrn()
+Dim emailsubject As String
+Dim emailmessage As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+Dim strsql As String
+Dim rs As RecordSet
+Dim EmailMessageFirst As String
+Dim VPRTOut
+
+
+If Forms!Chronology!PrtDate = "1" Then
+Dim VDt
+VDt = MsgBox("Letter Date for Chronology creation is not filled in.")
+Exit Function
+End If
+
+strsql = "SELECT Chrono_Selection.*, chron_data, chron_Notes, Chronology.Chron_Date, Chronology.FileNum " & _
+" FROM Chronology INNER JOIN Chrono_Selection ON Chronology.Chron_Data = Chrono_Selection.DropDown " & _
+" WHERE (CHRONO_selection.state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & " or chrono_selection.state = " & """" & "A" & """" & ") and Chronology.Chron_ltr_Date = #" & [Forms]![Chronology]![PrtDate] & "# AND Chronology.FileNum = " & [Forms]![foreclosure database screen]![filenum] & " order by chron_date ASC;"
+
+
+'strsql = "select * from chronology where chron_ltr_date = #" & Forms!Chronology!PrtDate & "# and filenum = " & Forms("foreclosure database screen").controls("filenum") & " order by chron_date ASC;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+EmailMessageFirst = "Please find the chronology below in reference to the above-captioned matter." & vbCr & vbCr & "Account #: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr & "Borrower(s): " & debtorsFORE() & vbCr & "Property Address: " & PROP() & vbCr & vbCr & ", " & Client()
+
+If Not rs.EOF Then
+Do While Not rs.EOF
+
+If rs!Chron_data = "Trustee Rec’d date" Then
+VPRTOut = "Trustees deed recorded " & liberfolio()
+'ElseIf rs!Chron_Data = "Pending Ratification" Then
+'VPRTOut = "Ratification"
+
+Else
+
+VPRTOut = rs!PrintOut
+
+End If
+
+
+If Not IsNull(rs!Chron_Notes) Then
+
+If VPRTOut Like "Foreclosure Restart*" Then
+emailmessage = emailmessage & vbCr & Format(rs!chron_date, "mm/dd/yy") & ":     " & VPRTOut & rs!Chron_Notes & vbCr
+Else
+emailmessage = emailmessage & Format(rs!chron_date, "mm/dd/yy") & ":     " & VPRTOut & rs!Chron_Notes & vbCr
+End If
+
+Else
+If VPRTOut Like "Foreclosure Restart*" Then
+emailmessage = emailmessage & vbCr & Format(rs!chron_date, "mm/dd/yy") & ":     " & VPRTOut & vbCr
+Else
+emailmessage = emailmessage & Format(rs!chron_date, "mm/dd/yy") & ":     " & VPRTOut & vbCr
+End If
+
+End If
+
+
+rs.MoveNext
+Loop
+
+
+emailsubject = "Chronology for " & Forms![foreclosure database screen]!FirstNameDebtor1 & " " & Forms![foreclosure database screen]!LastNameDebtor1 & ", " & Client()
+
+
+Dim VFooter
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+If Forms![foreclosure database screen]!Client Like "JPM*" Then
+'
+VFooter = vbCr & vbCr & "___________________________________________________________________________________________" & vbCr & "Overall general delay for Chase files through March 2012:" & vbCr & "Due to changes to the foreclosure statutes in Maryland in July 2010, foreclosure files were delayed pending Chase's review and implementation of the new legislation.  Chase Notices of Intent to Foreclose (NOIs) became compliant in August 2012 but the affidavit templates required for processing Maryland foreclosure files were not finalized by Chase until August 24, 2012; at that time, Chase foreclosure files went back into production. " & _
+ vbCr & vbCr & "Delays due to state NOI Changes effective October 1, 2012:" & vbCr & _
+ "The requirements for the Maryland NOI changed again on October 1, 2012 and Chase put NOI production on hold in order to gain compliance with the new format.  Chase put the NOIs back into production on January 24, 2013 and a new NOI was requested from Chase on ________." & _
+ vbCr & vbCr & "Delays on NOIs post January 24, 2013:" & vbCr & _
+"Chase put the NOIs back into production on January 24, 2013 but there were additional issues with the NOI due to occupancy status and the state mandated foreclosure timeline that must be included with the NOI; that issue was resolved on April 24, 2013 when Chase decided to send only owner-occupied NOIs and a new NOI was requested from Chase on _________" & _
+ vbCr & vbCr & "Delays from May 2013 through August 2013:" & vbCr & _
+"On May 10, 2013, Chase eliminated the required Collateral File Package process in LPS and lifted approximately 1,000 holds.  Two weeks prior, the issues surrounding the changes to the NOI from October 2012 had been remediated by Chase and approximately 1,000 files required new NOIs to be requested from Chase." & _
+ vbCr & vbCr & "Bulleted Dates:" & vbCr & _
+"   July 1, 2010: Chase files placed on hold due to changes to the Maryland Foreclosure Statutes" & vbCr & _
+ "   March 27, 2012: Chase Notices of Intent to Foreclose remediated" & vbCr & _
+ "   August 24, 2012: Required foreclosure affidavits finalized and produced by Chase" & vbCr & _
+ "   October 1, 2012: Chase NOIs placed on hold due to additional state mandated changes to the NOI" & vbCr & _
+ "   January 24, 2013: Chase NOIs remediated for Owner Occupied NOIs" & vbCr & _
+ "   April 24, 2013: All Chase NOIs remediated as Chase opted to send only Owner Occupied NOIs" & vbCr & _
+ "  May 10, 2013: Collateral File Package requirements in LPS eliminated"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust*" Then
+VFooter = vbCr & vbCr & "___________________________________________________________________________________________" & vbCr & "SunTrust Mortgage Chronology tips:" & vbCr & vbCr & "October 2010 – STM held processing affidavits in" & vbCr & vbCr & _
+"11/9/10 - they notified us they were going to have us dismiss all opn MD cases that had not ratified and we would get loan level lists." & _
+vbCr & vbCr & "11/30/10 - we recd the lists from Rachel Dominquez at STM and we filed Motions to dismiss their open cases that had not yet ratified.  They were then to restart same and we sent all open cases affs to STM November 30, 2010." & vbCr & vbCr & "Document processing was on hold pending new STM doc exec procedures" & vbCr & vbCr & "Cases were then on hold due to an STM assignment project to get assignments completed on all of their files." & _
+vbCr & vbCr & "July 2011-STM requested Carrie come do onsite training for their team that would be executing the MD affs and to bring a case list of o/s loans that were pending 1st legal needing affs and other docs (AOM; properly endorsed note etc)" & _
+vbCr & vbCr & "8/23/211 – Carrie went onsite  to their Richmond office with a list of 800 plus loans and trained their team.  Was notified by Nicole Rossi and Carmella Norman it would take some time to process." & _
+vbCr & vbCr & "December 2011 still no cases with all the affs returned.  We did a project with STM whereby we sent per their request individual emails on the 800 plus cases attaching all the needed affs.  They were going to work them from Nicole Mason’s email box." & _
+vbCr & vbCr & "February 2012, Baltimore City issued a directive that they would not accept 1st legals with a MD 45 day NOI issued prior to 7/1/10" & _
+vbCr & vbCr & "February 2012 - Suntrust legal dept decided that for any case in any county with a MD 45 day NOI issued prior to 2/4/12 a new NOI would need to be sent.  We sent them a  spreadsheet of all loans that needed MD 45 day NOI info – it took them 1 week to 3 months to return the loan level detail for the loans."
+ElseIf Forms![foreclosure database screen]!Client Like "CitiMortgage*" Then
+VFooter = vbCr & vbCr & "___________________________________________________________________________________________" & vbCr & "Citi Mortgage Chronology Tips" & vbCr & vbCr & "File on hold pending receipt of compliant MD 45 day NOI; PENDING CITI REVIEW OF MD 45 DAY NOI AND MD PROCESS; Citi has not processed MD files since this date."
+ElseIf Forms![foreclosure database screen]!Client Like "Bank of Amer*" Then
+VFooter = vbCr & vbCr & "___________________________________________________________________________________________" & vbCr & "BANA Chronology tips:" & vbCr & vbCr & "1)    July 2010 – June 2013:  BANA unable to provide a compliant NOI" & vbCr & vbCr & "2)    June 2013:  BOA gave BWW approval to issue NOIs on 140loans.  However, BANA could not confirm the addresses were accurate.   Those 140 still holding as of 9/30/2013" & _
+vbCr & vbCr & "3)    June 2013: cases without a valid NOI, and not included in the 140 that were sent by BWW, were on hold for a validated template from Paul Knauss.  As of 9/30/2013, still pending." & _
+vbCr & vbCr & "4)    9/24/2013:  firms are no longer allowed to send the BANA NOIs so we are back to needing a compliant MD 45 day NOI from BOA on all of their referrals" & _
+vbCr & vbCr & "5)    As of 10/24/13 add this line item:" & _
+vbCr & "      10/24/13:     Per BOA and BWW,  effective 10/24 – BWW will execute Aff Default on all MD 45 day NOIs issued by BWW"
+Else
+VFooter = ""
+End If
+End If
+
+ 
+ 
+ 
+
+
+MyMail.To = ""
+MyMail.Subject = emailsubject
+MyMail.body = EmailMessageFirst + emailmessage + VFooter
+MyMail.Display
+
+Set MyMail = Nothing
+End If
+
+End Function
+Public Function ChronScreen()
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+Dim VRun
+VRun = InputBox("Create New Chronology (type YES to proceed otherwise return to view previous Chronologies)")
+
+If VRun = "YES" Then
+
+DoCmd.OpenQuery ("ChronAppendReferral")
+DoCmd.OpenQuery ("ChronAppendnoiexp")
+DoCmd.OpenQuery ("ChronAppendsaledate")
+DoCmd.OpenQuery ("ChronAppendsaledateheld")
+DoCmd.OpenQuery ("ChronAppend1stpub")
+DoCmd.OpenQuery ("ChronAppendRatDate")
+DoCmd.OpenQuery ("ChronAppendServiceComplete")
+DoCmd.OpenQuery ("ChronAppendMedReq")
+DoCmd.OpenQuery ("ChronAppendMedHearing")
+DoCmd.OpenQuery ("ChronAppendresume")
+DoCmd.OpenQuery ("ChronAppenddeedrec")
+DoCmd.OpenQuery ("ChronAppenddeedsentrec")
+DoCmd.OpenQuery ("ChronAppendNewReferral")
+'New Queries
+DoCmd.OpenQuery ("ChronAppendRatDateBlank")
+
+DoCmd.OpenQuery ("ChronAppendNOISent")
+DoCmd.OpenQuery ("ChronAppendSOTrecd")
+DoCmd.OpenQuery ("ChronAppenddocketprepared")
+DoCmd.OpenQuery ("ChronAppendaffdefsent")
+DoCmd.OpenQuery ("ChronAppendaffdefrec")
+DoCmd.OpenQuery ("ChronAppendaffownsent")
+DoCmd.OpenQuery ("ChronAppendaffownrec")
+DoCmd.OpenQuery ("ChronAppendaffdebtsent")
+DoCmd.OpenQuery ("ChronAppendaffdebtrec")
+DoCmd.OpenQuery ("ChronAppendmilaffsent")
+DoCmd.OpenQuery ("ChronAppendmilaffrec")
+DoCmd.OpenQuery ("ChronAppendpaffsent")
+DoCmd.OpenQuery ("ChronAppendpaffrec")
+DoCmd.OpenQuery ("ChronAppendfaffsent")
+DoCmd.OpenQuery ("ChronAppendfaffrec")
+DoCmd.OpenQuery ("ChronAppendsotcourt")
+DoCmd.OpenQuery ("ChronAppendpresentservice")
+DoCmd.OpenQuery ("ChronAppendprefiled")
+DoCmd.OpenQuery ("ChronAppendfinalsentservice")
+DoCmd.OpenQuery ("ChronAppendfinalfiled")
+DoCmd.OpenQuery ("ChronAppendorgnoterecd")
+DoCmd.OpenQuery ("ChronAppendpart1filed")
+DoCmd.OpenQuery ("ChronAppendqc3complete")
+DoCmd.OpenQuery ("ChronAppendfinallmaresent")
+DoCmd.OpenQuery ("ChronAppendfinalLMAfiled")
+
+DoCmd.OpenQuery ("ChronAppendFinalLMAFiledHoldEnds")
+DoCmd.OpenQuery ("ChronAppendprefiledHoldEnds")
+DoCmd.OpenQuery ("ChronAppendServiceCompleteHoldEnds")
+
+End If
+
+'Removed per Christine Andersons email per Carrie
+'DoCmd.OpenQuery ("ChronAppendFDLSent")
+'DoCmd.OpenQuery ("ChronAppendSOTSent")
+'DoCmd.OpenQuery ("ChronAppendtitleord")
+'DoCmd.OpenQuery ("ChronAppendtitlerec")
+'DoCmd.OpenQuery ("ChronAppendfinallmacourt")
+'DoCmd.OpenQuery ("ChronAppendfinallmamailed")
+'DoCmd.OpenQuery ("ChronAppendprecourt")
+'DoCmd.OpenQuery ("ChronAppendfinalcourt")
+
+
+
+Else
+
+'Dim VDel
+'VDel = MsgBox("Delete any info in the Chronology screen for BWW#: " & Forms("foreclosure database screen").controls("filenum") & "?", vbYesNo)
+
+'If VDel = vbYes Then
+DoCmd.RunSQL "DELETE * from Chronology WHERE filenum = " & Forms("foreclosure database screen").Controls("filenum") & ";"
+'MsgBox ("Deleted")
+
+
+
+
+DoCmd.OpenQuery ("ChronAppendReferral")
+DoCmd.OpenQuery ("ChronAppend1stpub")
+DoCmd.OpenQuery ("ChronAppendresumeva")
+DoCmd.OpenQuery ("ChronAppendNewReferral")
+DoCmd.OpenQuery ("ChronAppendFDLSent")
+DoCmd.OpenQuery ("ChronAppendSOTSent")
+DoCmd.OpenQuery ("ChronAppendSOTrecd")
+DoCmd.OpenQuery ("ChronAppendsotcourtVA")
+DoCmd.OpenQuery ("ChronAppendSOTrecordedV")
+DoCmd.OpenQuery ("ChronAppendorgnoterecd")
+DoCmd.OpenQuery ("ChronAppendtitleord")
+DoCmd.OpenQuery ("ChronAppendtitlerec")
+DoCmd.OpenQuery ("ChronAppendAdProof")
+DoCmd.OpenQuery ("ChronAppendFHACert")
+DoCmd.OpenQuery ("ChronAppendSaleCancelled")
+DoCmd.OpenQuery ("ChronAppendPRSL")
+DoCmd.OpenQuery ("ChronAppendHUDOccSent")
+DoCmd.OpenQuery ("ChronAppendDateFiledBK")
+DoCmd.OpenQuery ("ChronAppendHUDPOA")
+DoCmd.OpenQuery ("ChronAppendLNA")
+DoCmd.OpenQuery ("ChronAppendAOM")
+DoCmd.OpenQuery ("ChronAppendAdProofPrev")
+DoCmd.OpenQuery ("ChronAppendVAApprOrd")
+DoCmd.OpenQuery ("ChronAppendsaledateva")
+DoCmd.OpenQuery ("ChronAppendsaledateheld")
+DoCmd.OpenQuery ("ChronAppendSaleCancelledPrev")
+DoCmd.OpenQuery ("ChronAppendSaleDatePrevva")
+
+DoCmd.OpenQuery ("ChronAppend1stpubPrev")
+DoCmd.OpenQuery ("ChronAppendResumePrev")
+DoCmd.OpenQuery ("ChronAppendHUDOccSentPrev")
+
+DoCmd.OpenQuery ("ChronAppendMNoteVa1")
+DoCmd.OpenQuery ("ChronAppendMNoteVa2")
+DoCmd.OpenQuery ("ChronAppendMNoteVa3")
+DoCmd.OpenQuery ("ChronAppendMNoteVa4")
+DoCmd.OpenQuery ("ChronAppendSOTVa4")
+DoCmd.OpenQuery ("ChronAppendSOTVa3")
+DoCmd.OpenQuery ("ChronAppendSOTVa2")
+
+'DoCmd.OpenQuery ("ChronAppendSOTVa1")
+
+DoCmd.OpenQuery ("ChronAppendFHAVa4")
+DoCmd.OpenQuery ("ChronAppendFHAVa3")
+DoCmd.OpenQuery ("ChronAppendFHAVa2")
+DoCmd.OpenQuery ("ChronAppendFHAVa1")
+
+DoCmd.OpenQuery ("ChronAppendAssVa4")
+DoCmd.OpenQuery ("ChronAppendAssVa3")
+DoCmd.OpenQuery ("ChronAppendAssVa2")
+DoCmd.OpenQuery ("ChronAppendAssVa1")
+
+DoCmd.OpenQuery ("ChronAppendTitleVa4")
+DoCmd.OpenQuery ("ChronAppendTitleVa3")
+DoCmd.OpenQuery ("ChronAppendTitleVa2")
+
+DoCmd.OpenQuery ("ChronAppendBreechVa1")
+DoCmd.OpenQuery ("ChronAppendBreechVa2")
+DoCmd.OpenQuery ("ChronAppendBreechVa3")
+DoCmd.OpenQuery ("ChronAppendBreechVa4")
+End If
+
+
+
+
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+DoCmd.OpenQuery "ChronologyDateUpdateVA"
+
+Else
+Dim VChronDate
+VChronDate = MsgBox("Enter a future date for your Chronology Email/Letter or Click No", vbYesNo)
+If VChronDate = vbYes Then
+DoCmd.OpenQuery "ChronologyDateUpdate"
+
+End If
+End If
+
+DoCmd.OpenForm ("Chronology")
+
+End Function
+
+Public Function EmailChron()
+Dim emailsubject As String
+Dim emailmessage As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+Dim emailmessageRESUME As String
+Dim strsql As String
+Dim rs As RecordSet
+Dim VresumRecd
+Dim VNisi
+Dim VRat
+Dim VDeedSent
+Dim VDeedRec
+Dim emailmessageLast
+Dim vNOI
+Dim strsqlfc As String
+Dim rsFC As RecordSet
+
+strsql = "select * from resumes where filenum = " & Forms("foreclosure database screen").Controls("filenum") & " order by saledate ASC;"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+strsqlfc = "select * from fctracking where filenum = " & Forms("foreclosure database screen").Controls("filenum") & ";"
+Set rsFC = CurrentDb.OpenRecordset(strsqlfc, dbOpenSnapshot)
+
+If Not IsNull(Forms![foreclosure database screen]!resume_recd) Then
+VresumRecd = "Resume Rec'd: " & Forms![foreclosure database screen]!resume_recd & vbCr
+Else
+VresumRecd = ""
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!DateNisiExpires) Then
+VNisi = "Date NISI Expires: " & Forms![foreclosure database screen]!PostsaleSubForm.Form!DateNisiExpires & vbCr
+Else
+VNisi = ""
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!RatDateMD) Then
+VRat = "Ratification Date: " & Forms![foreclosure database screen]!PostsaleSubForm.Form!RatDateMD & vbCr
+Else
+VRat = ""
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_sent_recording) Then
+VDeedSent = "Deed Sent for Recording: " & Forms![foreclosure database screen]!PostsaleSubForm.Form!deed_sent_recording & vbCr
+Else
+VDeedSent = ""
+End If
+
+If Not IsNull(Forms![foreclosure database screen]!PostsaleSubForm.Form!DeedRecorded) Then
+VDeedRec = "Deed Recorded: " & Forms![foreclosure database screen]!PostsaleSubForm.Form!DeedRecorded & vbCr
+Else
+VDeedRec = ""
+End If
+
+Dim Vfap
+If Not IsNull(rsFC!pre_docket_filed) And Not IsNull(rsFC!final_LMA_filed) Then
+Vfap = Format(rsFC!final_LMA_filed + 28, "mm/dd/yy")
+Else
+Vfap = Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!service_complete + 28, "mm/dd/yy")
+End If
+
+emailsubject = "Chronology for " & Forms![foreclosure database screen]!FirstNameDebtor1 & " " & Forms![foreclosure database screen]!LastNameDebtor1
+
+If Not IsNull(rsFC!pre_docket_filed) Then
+emailmessageLast = "Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr _
+& "DOR: " & Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy") & vbCr _
+& "NOI Sent: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent, "mm/dd/yy") & vbCr _
+& "NOI Expired: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent + 45, "mm/dd/yy") & vbCr _
+& "First Legal: " & FirstLegal() & vbCr _
+& "Service Complete: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!service_complete, "mm/dd/yy") & vbCr _
+& "1st Legal filed with PLMA; file on 28-day HB728 hold: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!service_complete + 28, "mm/dd/yy") & vbCr _
+& "Final LMA Filed: " & Format(rsFC!final_LMA_filed, "mm/dd/yy") & vbCr _
+& "File on MD HB 472 Hold until: " & Vfap & vbCr _
+& "First Pub: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad], "mm/dd/yy") & vbCr _
+& "Sale Date: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate, "mm/dd/yy") & vbCr
+
+'& VNisi & VRat & VDeedSent & VDeedRec & VresumRecd
+
+Else
+emailmessageLast = "Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & vbCr _
+& "DOR: " & Format(Forms![foreclosure database screen]![Date Recieved], "mm/dd/yy") & vbCr _
+& "NOI Sent: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent, "mm/dd/yy") & vbCr _
+& "NOI Expired: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!noi_sent + 45, "mm/dd/yy") & vbCr _
+& "First Legal: " & FirstLegal() & vbCr _
+& "Service Complete: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!service_complete, "mm/dd/yy") & vbCr _
+& "File on MD HB 472 Hold until: " & Vfap & vbCr _
+& "First Pub: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form![1st_ad], "mm/dd/yy") & vbCr _
+& "Sale Date: " & Format(Forms![foreclosure database screen]!ForeclosureSubForm.Form!SaleDate, "mm/dd/yy") & vbCr
+
+'VNisi & VRat & VDeedSent & VDeedRec & VresumRecd
+
+
+End If
+
+rsFC.Close
+
+If Not rs.EOF Then
+Dim VScan
+Dim VRes
+Dim vad
+Dim V1legal
+Dim VSCom
+
+
+Do While Not rs.EOF
+
+If Not IsNull(rs!sale_cancelreason) Then
+VScan = " " & rs!sale_cancelreason
+Else
+VScan = ""
+End If
+
+If Not IsNull(rs!resume_DA) Then
+vad = " (" & rs!resume_DA & ")"
+Else
+vad = ""
+End If
+
+If Not IsNull(rs!resume_recd) Then
+VRes = "FCL Resumed: " & Format(rs![resume_recd], "mm/dd/yy") & vad & vbCr
+Else
+VRes = ""
+End If
+
+'If Not IsNull(rs!noi_sent) Then
+'VNOI = "NOI Sent: " & Format(rs![noi_sent], "mm/dd/yy") & vbCr & "NOI Exp: " & Format(rs![noi_sent] + 45, "mm/dd/yy") & vbCr
+'Else
+'VNOI = ""
+'End If
+
+
+If Not IsNull(rs![1ST Legal]) Then
+V1legal = "First Legal: " & Format(rs![1ST Legal], "mm/dd/yy") & vbCr
+Else
+V1legal = ""
+End If
+
+If Not IsNull(rs![service_complete]) Then
+VSCom = "Service Complete: " & Format(rs![service_complete], "mm/dd/yy") & vbCr
+Else
+VSCom = ""
+End If
+
+emailmessage = emailmessage & VRes & V1legal & VSCom _
+& "First Pub:" & rs![1st_ad] & vbCr _
+& "Sale Date: " & rs!SaleDate & VScan & vbCr & vbCr
+rs.MoveNext
+Loop
+
+End If
+
+
+
+MyMail.To = ""
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage + emailmessageLast
+MyMail.Display
+
+Set MyMail = Nothing
+End Function
+

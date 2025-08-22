@@ -1,0 +1,1632 @@
+Attribute VB_Name = "AddressToNoticeTable"
+Option Compare Database
+
+
+Public Function CertTrio()
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+Call CertDebtorsOwnersAttRecExtra
+Call CertMailingNOIROChecked
+End Function
+Public Function CertDCLienholdersALL()
+'prtcoopernotice
+Dim rsLienHolders As RecordSet, rsnotice As RecordSet
+Dim strsqlLIEN As String
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlLIEN = "SELECT * FROM creditors WHERE creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+'!LastName = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+rsLienHolders.MoveNext
+Loop
+rsnotice.Close
+rsLienHolders.Close
+
+End If
+End Function
+
+Public Function CertDCLienholderServe()
+'prtcoopernotice
+Dim rsLienHolders As RecordSet, rsnotice As RecordSet
+Dim strsqlLIEN As String
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlLIEN = "SELECT * FROM creditors WHERE (Creditors.[serve] = -1 or creditors.[serve] = 1) And creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+'!LastName = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+rsLienHolders.MoveNext
+Loop
+rsnotice.Close
+rsLienHolders.Close
+
+End If
+End Function
+
+Public Function CertDCLienholder()
+'prtcoopernotice
+Dim rsLienHolders As RecordSet, rsnotice As RecordSet
+Dim strsqlLIEN As String
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlLIEN = "SELECT * FROM creditors WHERE (Creditors.[prtcoopernotice] = -1 or creditors.[prtcoopernotice] = 1) And creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!LastName = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+rsLienHolders.MoveNext
+Loop
+rsnotice.Close
+rsLienHolders.Close
+
+End If
+End Function
+Public Function CertServiceCheckedDC()
+
+If Forms![foreclosure database screen]!LastNameDebtor1 <> "" Then
+DoCmd.OpenQuery ("DCServeCert1")
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor2 <> "" Then
+DoCmd.OpenQuery ("DCServeCert2")
+End If
+
+If Forms![foreclosure database screen]!LastNameDebtor3 <> "" Then
+DoCmd.OpenQuery ("DCServeCert3")
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor4 <> "" Then
+DoCmd.OpenQuery ("DCServeCert4")
+End If
+
+If Forms![foreclosure database screen]!lastnamedebtor5 <> "" Then
+DoCmd.OpenQuery ("DCServeCert5")
+End If
+
+If Forms![foreclosure database screen]!lastnameo1 <> "" Then
+DoCmd.OpenQuery ("DCServeCert01")
+End If
+
+If Forms![foreclosure database screen]!lastnameo2 <> "" Then
+DoCmd.OpenQuery ("DCServeCerto2")
+End If
+
+If Forms![foreclosure database screen]!lastnameo3 <> "" Then
+DoCmd.OpenQuery ("DCServeCerto3")
+End If
+
+End Function
+
+
+Public Function CertDebtorsOwnersDCLien()
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+Call DebtorsAddressMailings
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+Call CertDCLienholder
+
+End Function
+Public Function CertDebtorsOwnersAttRecExtra()
+'working here
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+Call DebtorsAddressMailingsNotDeceased
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+Call CertMailingOwnerRecChecked
+Call CertMailingAttRecord
+Call CertMailingExtra
+Call CertPurchaser
+
+End Function
+Public Function CertDebtorsOwnersCtyAttOccupantLienholdersNo3rdParty()
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+Call CertCountyAtt
+Call CertMailingOCCUPANT
+Call DebtorsAddressMailings
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+Call LienholdersMailingsNo3rdParty
+
+
+End Function
+
+Public Function CertDebtorsOwnersCtyAttOccupantLienholders()
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+Call CertCountyAtt
+Call CertMailingOCCUPANT
+Call DebtorsAddressMailings
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+Call LienholdersMailings
+
+End Function
+Public Function CertDebtorsAttRec()
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+Call CertMailingAttRecord
+Call DebtorsAddressMailings
+Call CertMailingExtra
+
+
+End Function
+Public Function CertDebtorsOwnersAttRecExtraNotDeceased()
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+Call DebtorsAddressMailingsNotDeceased
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+Call CertMailingAttRecord
+Call CertMailingExtra
+Call CertPurchaser
+Call CertMailingOwnerRecChecked
+
+'IRS
+
+End Function
+Public Function CertDebtorsOwnersNOTDeceased()
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+Call DebtorsAddressMailingsNotDeceased
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+Call CertMailingExtra
+
+End Function
+Public Function CertServiceBOND()
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+Call DebtorsAddressMailingsNotDeceased
+'Owner1PropOnly all are NOT property address only
+
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+Call CertBKAtt
+Call CertTrustees
+Call CertPurchaser
+Call CertLexington
+
+End Function
+Public Function CertDebtorsOwners()
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+Call DebtorsAddressMailings
+Call Owner1PropOnly
+Call Owner2PropOnly
+Call Owner3PropOnly
+Call CertMailingExtra
+
+End Function
+Public Function CertMailingOwnerRecChecked()
+Dim rsLienHolders As RecordSet, rsnotice As RecordSet
+Dim strsqlLIEN As String
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlLIEN = "SELECT * FROM creditors WHERE (creditors.[record_owner] = -1 or creditors.[record_owner] = 1) And creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+rsLienHolders.MoveNext
+Loop
+rsnotice.Close
+rsLienHolders.Close
+
+End If
+End Function
+
+Public Function CertMailingNOIROChecked()
+Dim rsLienHolders As RecordSet, rsnotice As RecordSet
+Dim strsqlLIEN As String
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlLIEN = "SELECT * FROM creditors WHERE (creditors.[record_owner] = -1 or creditors.[record_owner] = 1 or Creditors.[noi] = -1 or creditors.[noi] = 1) And creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+rsLienHolders.MoveNext
+Loop
+rsnotice.Close
+rsLienHolders.Close
+
+End If
+End Function
+Public Function CertIRS()
+Dim rsLienHolders As RecordSet, rsnotice As RecordSet
+Dim strsqlLIEN As String
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+With rsnotice
+.AddNew
+!NoticeTo = "Department of the Treasury"
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = "Internal Revenue Service, Technical Services Division"
+!NoticeAdd2 = "31 Hopkins Plaza, 11th Floor, Room 1150"
+!NoticeCSZ = "Baltimore, MD 21201"
+.Update
+End With
+
+rsnotice.Close
+
+
+End Function
+
+Public Function CertMailingExtra()
+Dim rsLienHolders As RecordSet, rsnotice As RecordSet
+Dim strsqlLIEN As String
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlLIEN = "SELECT * FROM creditors WHERE (Creditors.[cert_service] = -1 or creditors.[cert_service] = 1) And creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+rsLienHolders.MoveNext
+Loop
+rsnotice.Close
+rsLienHolders.Close
+
+End If
+End Function
+Public Function CertMailingOCCUPANT()
+
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!NoticeTo = "OCCUPANT"
+!filenum = Forms![foreclosure database screen]!filenum
+If IsNull(Forms![foreclosure database screen]![unit_no]) Or _
+Forms![foreclosure database screen]![unit_no] = "" Then
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress]
+Else
+!NoticeAdd = Forms![foreclosure database screen]![PropAddress] & ", Unit # " & Forms![foreclosure database screen]![unit_no]
+End If
+!NoticeAdd2 = Forms![foreclosure database screen]!propaddress2
+!NoticeCSZ = Forms![foreclosure database screen]!PropertyCity & ", " & Forms![foreclosure database screen]!PropertyState & "  " & Forms![foreclosure database screen]!propzip
+!extra = Forms![foreclosure database screen]![PropAddress]
+.Update
+.Close
+
+End With
+End Function
+Public Function CertBKAtt()
+
+If [Forms]![foreclosure database screen]![BankruptcySubForm].Form![Attorney] <> "Pro Se" Then
+
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+If Not IsNull(BKAtt()) And _
+(Not IsNull(Forms![foreclosure database screen]![BankruptcySubForm].Form![Jurisdiction]) Or _
+Forms![foreclosure database screen]![BankruptcySubForm].Form![Jurisdiction] <> "") Then
+With rs
+.AddNew
+!NoticeTo = BKAtt()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = BKAttAdd1()
+!NoticeAdd2 = BKAttAdd2()
+!NoticeCSZ = BKAttCSZ()
+.Update
+.Close
+End With
+End If
+
+End If
+
+End Function
+Public Function CertTrustees()
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+If Not IsNull(Trustees()) And _
+(Not IsNull(Forms![foreclosure database screen]![BankruptcySubForm].Form![Jurisdiction]) Or _
+Forms![foreclosure database screen]![BankruptcySubForm].Form![Jurisdiction] <> "") Then
+With rs
+.AddNew
+!NoticeTo = Trustees() & ", Trustee"
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = trusteeadd()
+!NoticeCSZ = trusteecsz()
+.Update
+.Close
+End With
+End If
+
+End Function
+Public Function CertPurchaser()
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+If Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party] = 1 Or _
+Forms![foreclosure database screen]!PostsaleSubForm.Form![3rd_party] = -1 Then
+With rs
+.AddNew
+!NoticeTo = Purchaser()
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = purchaseradd3rd()
+!NoticeCSZ = purchasercsz3rd()
+.Update
+.Close
+End With
+End If
+
+End Function
+Public Function CertLexington()
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+With rs
+.AddNew
+!NoticeTo = "Lexington National Insurance Corporation"
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = "Attention Vicki S. Shinsky"
+!NoticeAdd2 = "P.O. Box 6098"
+!NoticeCSZ = "Lutherville, MD  21094"
+.Update
+.Close
+End With
+
+End Function
+
+
+Public Function CertCountySupervisorTreasurer()
+
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlCounty = ("Select * from Jurisdiction where County = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and State = " & """" & Forms![foreclosure database screen]!PropertyState & """")
+Set rsCounty = CurrentDb.OpenRecordset(strsqlCounty, dbOpenSnapshot)
+
+If Not rsCounty.EOF Then
+With rs
+.AddNew
+!NoticeTo = rsCounty![treasurer]
+!filenum = Forms![foreclosure database screen]!filenum
+
+!NoticeAdd = rsCounty!treasurer_add
+If Not IsNull(rsCounty!treasurer_add2) Then
+!NoticeAdd2 = rsCounty!treasurer_add & ", " & rsCounty!treasurer_add2
+Else
+!NoticeAdd2 = rsCounty!treasurer_add
+End If
+!NoticeCSZ = rsCounty!Treas_City & ", " & rsCounty!Treas_State & "  " & rsCounty!Treas_Zip
+.Update
+.Close
+End With
+End If
+
+End Function
+
+
+Public Function CertCountyAtt()
+
+Set rs = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlCounty = ("Select * from Jurisdiction where County = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and State = " & """" & Forms![foreclosure database screen]!PropertyState & """")
+Set rsCounty = CurrentDb.OpenRecordset(strsqlCounty, dbOpenSnapshot)
+
+If Not rsCounty.EOF Then
+With rs
+.AddNew
+!NoticeTo = rsCounty![county att]
+!filenum = Forms![foreclosure database screen]!filenum
+
+!NoticeAdd = rsCounty!countyadd1
+If Not IsNull(rsCounty!countyadd3) Then
+!NoticeAdd2 = rsCounty!countyadd2 & ", " & rsCounty!countyadd3
+Else
+!NoticeAdd2 = rsCounty!countyadd2
+End If
+!NoticeCSZ = rsCounty!countyadd4
+.Update
+.Close
+End With
+End If
+
+End Function
+Public Function CertMailingAttRecordAUTHLtr()
+Dim rsLienHolders As RecordSet, rsnotice As RecordSet
+Dim strsqlLIEN As String
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlLIEN = "SELECT * FROM creditors WHERE (Creditors.[ta-do] = -1 or creditors.[ta-do] = 1) And creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+
+Do While Not rsLienHolders.EOF
+vborr1 = ""
+vborr2 = ""
+vborr3 = ""
+vborr4 = ""
+vborr5 = ""
+vown1 = ""
+vown2 = ""
+vborr = ""
+b1Att = ""
+b2Att = ""
+b3att = ""
+b4att = ""
+b5att = ""
+o1Att = ""
+o2Att = ""
+o3att = ""
+
+
+'MsgBox (Forms![attorney authorized letter]!b1Att & "/ID Tbl: " & rsLienHolders!ContactID)
+
+
+If Forms![attorney authorized letter]!b1Att = rsLienHolders!ContactID Then
+vborr1 = firstdebtor()
+'MsgBox ("Borr1: " & vborr1)
+'MsgBox (Forms![attorney authorized letter]!b1Att & "/ID Tbl: " & rsLienHolders!ContactID)
+End If
+
+If Forms![attorney authorized letter]!b2Att = rsLienHolders!ContactID Then
+vborr2 = secondDebtor()
+'MsgBox ("Borr2: " & vborr2)
+End If
+
+If Forms![attorney authorized letter]!b3att = rsLienHolders!ContactID Then
+vborr3 = thirddebtor()
+End If
+If Forms![attorney authorized letter]!b4att = rsLienHolders!ContactID Then
+vborr4 = fourthdebtor()
+End If
+If Forms![attorney authorized letter]!b5att = rsLienHolders!ContactID Then
+vborr5 = fifthdebtor()
+End If
+
+If Forms![attorney authorized letter]!o1Att = rsLienHolders!ContactID Then
+vborr1 = owner1()
+End If
+If Forms![attorney authorized letter]!o2Att = rsLienHolders!ContactID Then
+vborr1 = owner3()
+End If
+If Forms![attorney authorized letter]!o3att = rsLienHolders!ContactID Then
+vborr1 = owner3()
+End If
+
+If vborr1 <> "" And vborr2 <> "" And vborr3 = "" And vborr4 = "" And vborr5 = "" Then
+fs = " and "
+ElseIf vborr1 <> "" And vborr2 = "" And vborr3 <> "" And vborr4 = "" And vborr5 = "" Then
+fs = " and "
+ElseIf vborr1 <> "" And vborr2 = "" And vborr3 = "" And vborr4 <> "" And vborr5 = "" Then
+fs = " and "
+ElseIf vborr1 <> "" And vborr2 = "" And vborr3 = "" And vborr4 = "" And vborr5 <> "" Then
+fs = " and "
+ElseIf vborr1 = "" Then
+fs = ""
+End If
+
+If vborr1 <> "" And vborr2 <> "" And (vborr3 <> "" Or vborr4 <> "" Or vborr5 <> "") Then
+fs = ", "
+ElseIf vborr1 <> "" And vborr3 <> "" And (vborr2 <> "" Or vborr4 <> "" Or vborr5 <> "") Then
+fs = ", "
+ElseIf vborr1 <> "" And vborr4 <> "" And (vborr3 <> "" Or vborr2 <> "" Or vborr5 <> "") Then
+fs = ", "
+ElseIf vborr1 <> "" And vborr5 <> "" And (vborr2 <> "" Or vborr3 <> "" Or vborr4 <> "") Then
+fs = ","
+End If
+
+If vborr2 <> "" And vborr3 <> "" And vborr4 = "" And vborr5 = "" Then
+st = " and "
+ElseIf vborr2 <> "" And vborr3 = "" And vborr4 <> "" And vborr5 = "" Then
+st = " and "
+ElseIf vborr2 <> "" And vborr3 = "" And vborr4 = "" And vborr5 <> "" Then
+st = " and "
+ElseIf vborr2 <> "" And vborr3 = "" And vborr4 = "" And vborr5 = "" Then
+st = ""
+ElseIf vborr2 = "" Then
+st = ""
+End If
+
+If vborr2 <> "" And (vborr3 <> "" Or vborr4 <> "" Or vborr5 <> "") Then
+st = ", "
+End If
+
+If vborr3 <> "" And vborr4 <> "" And vborr5 <> "" Then
+tf = ", "
+ElseIf vborr3 <> "" And vborr4 = "" And vborr5 <> "" Then
+tf = " and "
+ElseIf vborr3 <> "" And vborr4 <> "" And vborr5 = "" Then
+tf = " and "
+ElseIf vborr3 = "" Then
+tf = ""
+End If
+
+If vborr4 <> "" And vborr5 <> "" Then
+FF = " and "
+Else
+FF = ""
+End If
+
+vborr = vborr1 & fs & vborr2 & st & vborr3 & tf & vborr4 & FF & vborr5
+
+If vown1 <> "" And vown2 = "" And vown3 = "" Then
+vborr = vown1 & ", " & vborr1 & fs & vborr2 & st & vborr3 & tf & vborr4 & FF & vborr5
+ElseIf vown1 <> "" And vown2 <> "" And vown3 = "" Then
+vborr = vown1 & ", " & vown2 & ", " & vborr1 & fs & vborr2 & st & vborr3 & tf & vborr4 & FF & vborr5
+ElseIf vown1 <> "" And vown2 <> "" And vown3 <> "" Then
+vborr = vown1 & ", " & vown2 & ", " & ", " & vown3 & ", " & vborr1 & fs & vborr2 & st & vborr3 & tf & vborr4 & FF & vborr5
+End If
+
+
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+!extra = vborr
+.Update
+End With
+rsLienHolders.MoveNext
+Loop
+rsnotice.Close
+rsLienHolders.Close
+
+End If
+End Function
+
+Public Function CertMailingAttRecord()
+Dim rsLienHolders As RecordSet, rsnotice As RecordSet
+Dim strsqlLIEN As String
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlLIEN = "SELECT * FROM creditors WHERE (Creditors.[ta-do] = -1 or creditors.[ta-do] = 1) And creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+rsLienHolders.MoveNext
+Loop
+rsnotice.Close
+rsLienHolders.Close
+
+End If
+End Function
+Public Function LienholdersMailingsNo3rdParty()
+
+Dim rsLienHolders As RecordSet, rsnotice As RecordSet
+Dim strsqlLIEN As String
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlLIEN = "SELECT * FROM creditors WHERE creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+If rsLienHolders!OrganizationName <> Forms![foreclosure database screen]!PostsaleSubForm.Form!Buyer Then
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+End If
+
+rsLienHolders.MoveNext
+Loop
+rsnotice.Close
+rsLienHolders.Close
+
+End If
+End Function
+
+Public Function LienholdersMailings()
+
+Dim rsLienHolders As RecordSet, rsnotice As RecordSet
+Dim strsqlLIEN As String
+
+Set rsnotice = CurrentDb.OpenRecordset("notices", dbOpenDynaset, dbSeeChanges)
+
+strsqlLIEN = "SELECT * FROM creditors WHERE creditors.FIleNum = " & [Forms]![foreclosure database screen]![filenum] & ";"
+Set rsLienHolders = CurrentDb.OpenRecordset(strsqlLIEN, dbOpenSnapshot)
+
+If rsLienHolders.EOF Then
+rsLienHolders.Close
+Else
+Do While Not rsLienHolders.EOF
+With rsnotice
+.AddNew
+!NoticeTo = rsLienHolders!OrganizationName
+!filenum = Forms![foreclosure database screen]!filenum
+!NoticeAdd = rsLienHolders!Address
+If Not IsNull(rsLienHolders!Address2) Then
+!NoticeAdd2 = rsLienHolders!Address2
+Else
+!NoticeAdd2 = ""
+End If
+!NoticeCSZ = rsLienHolders!City & ", " & rsLienHolders!State & "  " & rsLienHolders!PostalCode
+.Update
+End With
+rsLienHolders.MoveNext
+Loop
+rsnotice.Close
+rsLienHolders.Close
+
+End If
+End Function
+
+Public Function DebtorsAddressMailings()
+Dim rsnotice As RecordSet
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from cases where filenum = " & Forms!DILForm!filenum
+Else
+'If AppType = "" Or AppType = "foreclosure database screen" Or AppType = "" Or AppType Like "Certificate*" Or AppType = "Creditors" Then
+strsql = "select * from cases where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsnotice = CurrentDb.OpenRecordset("Notices", dbOpenDynaset, dbSeeChanges)
+
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor1 & " " & rs!MiddleNameDebtor1 & " " & rs!LastNameDebtor1
+!filenum = rs!filenum
+If IsNull(rs![unit_no]) Or _
+rs![unit_no] = "" Then
+!NoticeAdd = rs![PropAddress]
+Else
+!NoticeAdd = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+!NoticeAdd2 = rs!propaddress2
+!NoticeCSZ = rs!PropertyCity & ", " & rs!PropertyState & "  " & rs!propzip
+!extra = rs![PropAddress]
+.Update
+End With
+
+If Not IsNull(rs![SDatAddress]) And (MailSDat = "Grantor1" Or MailSDat = "All" Or MailSDat = "All Grantors") Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor1 & " " & rs!MiddleNameDebtor1 & " " & rs!LastNameDebtor1
+!filenum = rs!filenum
+!NoticeAdd = rs![SDatAddress]
+!NoticeAdd2 = rs![SDatAddress2]
+!NoticeCSZ = rs![SDatCity] & ", " & rs![SDatState] & "  " & rs![SDatZip]
+!extra = rs![SDatAddress]
+.Update
+End With
+End If
+
+
+If Not IsNull(rs![Mailing Address]) Then
+
+If IsNull(rs!MailA_To) Or rs!MailA_To = "Grantor1" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All Grantors" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor1 & " " & rs!MiddleNameDebtor1 & " " & rs!LastNameDebtor1
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing Address]
+!NoticeAdd2 = rs![Mailing Address2]
+!NoticeCSZ = rs![Mailing City] & ", " & rs![Mailing State] & "  " & rs![Mailing Zip]
+!extra = rs![Mailing Address]
+.Update
+End With
+End If
+
+End If
+
+
+If Not IsNull(rs![Mailing AddressB]) Then
+
+If IsNull(rs!MailtB_To) Or rs!MailtB_To = "Grantor1" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All Grantors" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor1 & " " & rs!MiddleNameDebtor1 & " " & rs!LastNameDebtor1
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing AddressB]
+!NoticeAdd2 = rs![Mailing Address2B]
+!NoticeCSZ = rs![Mailing CityB] & ", " & rs![Mailing StateB] & "  " & rs![Mailing ZipB]
+!extra = rs![Mailing AddressB]
+.Update
+End With
+End If
+End If
+
+
+If Not IsNull(rs!LastNameDebtor2) Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor2 & " " & rs!MiddleNameDebtor2 & " " & rs!LastNameDebtor2
+!filenum = rs!filenum
+If IsNull(rs![unit_no]) Or rs![unit_no] = "" Then
+!NoticeAdd = rs![PropAddress]
+Else
+!NoticeAdd = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+!NoticeAdd2 = rs!propaddress2
+!NoticeCSZ = rs!PropertyCity & ", " & rs!PropertyState & "  " & rs!propzip
+!extra = rs![PropAddress]
+.Update
+End With
+
+If Not IsNull(rs![SDatAddress]) And (MailSDat = "Grantor2" Or MailSDat = "All" Or MailSDat = "All Grantors") Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor2 & " " & rs!MiddleNameDebtor2 & " " & rs!LastNameDebtor2
+!filenum = rs!filenum
+!NoticeAdd = rs![SDatAddress]
+!NoticeAdd2 = rs![SDatAddress2]
+!NoticeCSZ = rs![SDatCity] & ", " & rs![SDatState] & "  " & rs![SDatZip]
+!extra = rs![SDatAddress]
+.Update
+End With
+End If
+
+If Not IsNull(rs![Mailing Address]) Then
+
+If IsNull(rs!MailA_To) Or rs!MailA_To = "Grantor2" Or rs!MailA_To = "All Grantors" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor2 & " " & rs!MiddleNameDebtor2 & " " & rs!LastNameDebtor2
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing Address]
+!NoticeAdd2 = rs![Mailing Address2]
+!NoticeCSZ = rs![Mailing City] & ", " & rs![Mailing State] & "  " & rs![Mailing Zip]
+!extra = rs![Mailing Address]
+.Update
+End With
+End If
+End If
+
+If Not IsNull(rs![Mailing AddressB]) Then
+
+If IsNull(rs!MailtB_To) Or rs!MailtB_To = "Grantor2" Or rs!MailtB_To = "All Grantors" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor2 & " " & rs!MiddleNameDebtor2 & " " & rs!LastNameDebtor2
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing AddressB]
+!NoticeAdd2 = rs![Mailing Address2B]
+!NoticeCSZ = rs![Mailing CityB] & ", " & rs![Mailing StateB] & "  " & rs![Mailing ZipB]
+!extra = rs![Mailing AddressB]
+
+.Update
+End With
+End If
+End If
+End If
+
+If Not IsNull(rs!LastNameDebtor3) Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor3 & " " & rs!MiddleNameDebtor3 & " " & rs!LastNameDebtor3
+!filenum = rs!filenum
+If IsNull(rs![unit_no]) Or rs![unit_no] = "" Then
+!NoticeAdd = rs![PropAddress]
+Else
+!NoticeAdd = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+!NoticeAdd2 = rs!propaddress2
+!NoticeCSZ = rs!PropertyCity & ", " & rs!PropertyState & "  " & rs!propzip
+!extra = rs![PropAddress]
+
+.Update
+End With
+
+If Not IsNull(rs![SDatAddress]) And (MailSDat = "Grantor3" Or MailSDat = "All" Or MailSDat = "All Grantors") Then
+With rsnotice
+.AddNew
+!filenum = rs!filenum
+!NoticeTo = rs!FirstNameDebtor3 & " " & rs!MiddleNameDebtor3 & " " & rs!LastNameDebtor3
+!NoticeAdd = rs![SDatAddress]
+!NoticeAdd2 = rs![SDatAddress2]
+!NoticeCSZ = rs![SDatCity] & ", " & rs![SDatState] & "  " & rs![SDatZip]
+!extra = rs![SDatAddress]
+.Update
+End With
+End If
+
+If Not IsNull(rs![Mailing Address]) Then
+
+If IsNull(rs!MailA_To) Or rs!MailA_To = "Grantor3" Or rs!MailA_To = "All Grantors" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor3 & " " & rs!MiddleNameDebtor3 & " " & rs!LastNameDebtor3
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing Address]
+!NoticeAdd2 = rs![Mailing Address2]
+!NoticeCSZ = rs![Mailing City] & ", " & rs![Mailing State] & "  " & rs![Mailing Zip]
+!extra = rs![Mailing Address]
+.Update
+End With
+End If
+End If
+
+
+If Not IsNull(rs![Mailing AddressB]) Then
+
+If IsNull(rs!MailtB_To) Or rs!MailtB_To = "Grantor3" Or rs!MailtB_To = "All Grantors" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor3 & " " & rs!MiddleNameDebtor3 & " " & rs!LastNameDebtor3
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing AddressB]
+!NoticeAdd2 = rs![Mailing Address2B]
+!NoticeCSZ = rs![Mailing CityB] & ", " & rs![Mailing StateB] & "  " & rs![Mailing ZipB]
+!extra = rs![Mailing AddressB]
+.Update
+End With
+End If
+End If
+End If
+
+If Not IsNull(rs!lastnamedebtor4) Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor4 & " " & rs!middlenamedebtor4 & " " & rs!lastnamedebtor4
+!filenum = rs!filenum
+If IsNull(rs![unit_no]) Or rs![unit_no] = "" Then
+!NoticeAdd = rs![PropAddress]
+Else
+!NoticeAdd = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+!NoticeAdd2 = rs!propaddress2
+!NoticeCSZ = rs!PropertyCity & ", " & rs!PropertyState & "  " & rs!propzip
+!extra = rs![PropAddress]
+.Update
+End With
+
+If Not IsNull(rs![SDatAddress]) And (MailSDat = "Grantor4" Or MailSDat = "All" Or MailSDat = "All Grantors") Then
+With rsnotice
+.AddNew
+!filenum = rs!filenum
+!NoticeTo = rs!firstnamedebtor4 & " " & rs!middlenamedebtor4 & " " & rs!lastnamedebtor4
+!NoticeAdd = rs![SDatAddress]
+!NoticeAdd2 = rs![SDatAddress2]
+!NoticeCSZ = rs![SDatCity] & ", " & rs![SDatState] & "  " & rs![SDatZip]
+!extra = rs![SDatAddress]
+.Update
+End With
+End If
+
+If Not IsNull(rs![Mailing Address]) Then
+
+If IsNull(rs!MailA_To) Or rs!MailA_To = "Grantor4" Or rs!MailA_To = "All Grantors" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor4 & " " & rs!middlenamedebtor4 & " " & rs!lastnamedebtor4
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing Address]
+!NoticeAdd2 = rs![Mailing Address2]
+!NoticeCSZ = rs![Mailing City] & ", " & rs![Mailing State] & "  " & rs![Mailing Zip]
+!extra = rs![Mailing Address]
+
+.Update
+End With
+End If
+End If
+
+If Not IsNull(rs![Mailing AddressB]) Then
+
+If IsNull(rs!MailtB_To) Or rs!MailtB_To = "Grantor4" Or rs!MailtB_To = "All Grantors" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor4 & " " & rs!middlenamedebtor4 & " " & rs!lastnamedebtor4
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing AddressB]
+!NoticeAdd2 = rs![Mailing Address2B]
+!NoticeCSZ = rs![Mailing CityB] & ", " & rs![Mailing StateB] & "  " & rs![Mailing ZipB]
+!extra = rs![Mailing AddressB]
+
+.Update
+End With
+End If
+End If
+End If
+
+
+If Not IsNull(rs!lastnamedebtor5) Or _
+rs!lastnamedebtor5 <> "" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor5 & " " & rs!middlenamedebtor5 & " " & rs!lastnamedebtor5
+!filenum = rs!filenum
+If IsNull(rs![unit_no]) Or rs![unit_no] = "" Then
+!NoticeAdd = rs![PropAddress]
+Else
+!NoticeAdd = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+!NoticeAdd2 = rs!propaddress2
+!NoticeCSZ = rs!PropertyCity & ", " & rs!PropertyState & "  " & rs!propzip
+!extra = rs![PropAddress]
+.Update
+End With
+
+If Not IsNull(rs![SDatAddress]) And (MailSDat = "Grantor5" Or MailSDat = "All" Or MailSDat = "All Grantors") Then
+With rsnotice
+.AddNew
+!filenum = rs!filenum
+!NoticeTo = rs!firstnamedebtor5 & " " & rs!middlenamedebtor5 & " " & rs!lastnamedebtor5
+!NoticeAdd = rs![SDatAddress]
+!NoticeAdd2 = rs![SDatAddress2]
+!NoticeCSZ = rs![SDatCity] & ", " & rs![SDatState] & "  " & rs![SDatZip]
+!extra = rs![SDatAddress]
+.Update
+End With
+End If
+
+If Not IsNull(rs![Mailing Address]) Then
+
+If IsNull(rs!MailA_To) Or rs!MailA_To = "Grantor5" Or rs!MailA_To = "All Grantors" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor5 & " " & rs!middlenamedebtor5 & " " & rs!lastnamedebtor5
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing Address]
+!NoticeAdd2 = rs![Mailing Address2]
+!NoticeCSZ = rs![Mailing City] & ", " & rs![Mailing State] & "  " & rs![Mailing Zip]
+!extra = rs![Mailing Address]
+
+.Update
+End With
+End If
+End If
+
+If Not IsNull(rs![Mailing AddressB]) Then
+
+If IsNull(rs!MailtB_To) Or rs!MailtB_To = "Grantor5" Or rs!MailtB_To = "All Grantors" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor5 & " " & rs!middlenamedebtor5 & " " & rs!lastnamedebtor5
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing AddressB]
+!NoticeAdd2 = rs![Mailing Address2B]
+!NoticeCSZ = rs![Mailing CityB] & ", " & rs![Mailing StateB] & "  " & rs![Mailing ZipB]
+!extra = rs![Mailing AddressB]
+
+.Update
+End With
+End If
+End If
+End If
+
+rs.Close
+rsnotice.Close
+
+End Function
+
+Public Function DebtorsAddressMailingsNotDeceased()
+Dim rsnotice As RecordSet
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from cases where filenum = " & Forms!DILForm!filenum
+Else
+'If AppType = "" Or AppType = "foreclosure database screen" Or AppType = "" Or AppType Like "Certificate*" Or AppType = "Creditors" Then
+strsql = "select * from cases where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsnotice = CurrentDb.OpenRecordset("Notices", dbOpenDynaset, dbSeeChanges)
+
+If rs!dec1 = 0 Or IsNull(rs!dec1) Then
+
+
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor1 & " " & rs!MiddleNameDebtor1 & " " & rs!LastNameDebtor1
+!filenum = rs!filenum
+If IsNull(rs![unit_no]) Or _
+rs![unit_no] = "" Then
+!NoticeAdd = rs![PropAddress]
+Else
+!NoticeAdd = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+!NoticeAdd2 = rs!propaddress2
+!NoticeCSZ = rs!PropertyCity & ", " & rs!PropertyState & "  " & rs!propzip
+!extra = rs![PropAddress]
+.Update
+End With
+
+If Not IsNull(rs![SDatAddress]) And (MailSDat = "Grantor1" Or MailSDat = "All" Or MailSDat = "All Grantors") Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor1 & " " & rs!MiddleNameDebtor1 & " " & rs!LastNameDebtor1
+!filenum = rs!filenum
+!NoticeAdd = rs![SDatAddress]
+!NoticeAdd2 = rs![SDatAddress2]
+!NoticeCSZ = rs![SDatCity] & ", " & rs![SDatState] & "  " & rs![SDatZip]
+!extra = rs![SDatAddress]
+.Update
+End With
+End If
+
+
+If Not IsNull(rs![Mailing Address]) Then
+
+If IsNull(rs!MailA_To) Or rs!MailA_To = "Grantor1" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All Grantors" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor1 & " " & rs!MiddleNameDebtor1 & " " & rs!LastNameDebtor1
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing Address]
+!NoticeAdd2 = rs![Mailing Address2]
+!NoticeCSZ = rs![Mailing City] & ", " & rs![Mailing State] & "  " & rs![Mailing Zip]
+!extra = rs![Mailing Address]
+.Update
+End With
+End If
+
+End If
+
+
+If Not IsNull(rs![Mailing AddressB]) Then
+
+If IsNull(rs!MailtB_To) Or rs!MailtB_To = "Grantor1" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All Grantors" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor1 & " " & rs!MiddleNameDebtor1 & " " & rs!LastNameDebtor1
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing AddressB]
+!NoticeAdd2 = rs![Mailing Address2B]
+!NoticeCSZ = rs![Mailing CityB] & ", " & rs![Mailing StateB] & "  " & rs![Mailing ZipB]
+!extra = rs![Mailing AddressB]
+.Update
+End With
+End If
+End If
+
+End If
+
+If rs!dec2 = 0 Or IsNull(rs!dec2) Then
+
+If IsNull(rs!LastNameDebtor2) Or rs!LastNameDebtor2 = "" Then
+Else
+
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor2 & " " & rs!MiddleNameDebtor2 & " " & rs!LastNameDebtor2
+!filenum = rs!filenum
+If IsNull(rs![unit_no]) Or rs![unit_no] = "" Then
+!NoticeAdd = rs![PropAddress]
+Else
+!NoticeAdd = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+!NoticeAdd2 = rs!propaddress2
+!NoticeCSZ = rs!PropertyCity & ", " & rs!PropertyState & "  " & rs!propzip
+!extra = rs![PropAddress]
+.Update
+End With
+
+If Not IsNull(rs![SDatAddress]) And (MailSDat = "Grantor2" Or MailSDat = "All" Or MailSDat = "All Grantors") Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor2 & " " & rs!MiddleNameDebtor2 & " " & rs!LastNameDebtor2
+!filenum = rs!filenum
+!NoticeAdd = rs![SDatAddress]
+!NoticeAdd2 = rs![SDatAddress2]
+!NoticeCSZ = rs![SDatCity] & ", " & rs![SDatState] & "  " & rs![SDatZip]
+!extra = rs![SDatAddress]
+.Update
+End With
+End If
+
+If Not IsNull(rs![Mailing Address]) Then
+
+If IsNull(rs!MailA_To) Or rs!MailA_To = "Grantor2" Or rs!MailA_To = "All Grantors" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor2 & " " & rs!MiddleNameDebtor2 & " " & rs!LastNameDebtor2
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing Address]
+!NoticeAdd2 = rs![Mailing Address2]
+!NoticeCSZ = rs![Mailing City] & ", " & rs![Mailing State] & "  " & rs![Mailing Zip]
+!extra = rs![Mailing Address]
+.Update
+End With
+End If
+End If
+
+If Not IsNull(rs![Mailing AddressB]) Then
+
+If IsNull(rs!MailtB_To) Or rs!MailtB_To = "Grantor2" Or rs!MailtB_To = "All Grantors" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor2 & " " & rs!MiddleNameDebtor2 & " " & rs!LastNameDebtor2
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing AddressB]
+!NoticeAdd2 = rs![Mailing Address2B]
+!NoticeCSZ = rs![Mailing CityB] & ", " & rs![Mailing StateB] & "  " & rs![Mailing ZipB]
+!extra = rs![Mailing AddressB]
+
+.Update
+End With
+End If
+End If
+
+End If
+End If
+
+If rs!dec3 = 0 Or IsNull(rs!dec3) Then
+
+If IsNull(rs!LastNameDebtor3) Or rs!LastNameDebtor3 = "" Then
+
+Else
+
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor3 & " " & rs!MiddleNameDebtor3 & " " & rs!LastNameDebtor3
+!filenum = rs!filenum
+If IsNull(rs![unit_no]) Or rs![unit_no] = "" Then
+!NoticeAdd = rs![PropAddress]
+Else
+!NoticeAdd = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+!NoticeAdd2 = rs!propaddress2
+!NoticeCSZ = rs!PropertyCity & ", " & rs!PropertyState & "  " & rs!propzip
+!extra = rs![PropAddress]
+
+.Update
+End With
+
+If Not IsNull(rs![SDatAddress]) And (MailSDat = "Grantor3" Or MailSDat = "All" Or MailSDat = "All Grantors") Then
+With rsnotice
+.AddNew
+!filenum = rs!filenum
+!NoticeTo = rs!FirstNameDebtor3 & " " & rs!MiddleNameDebtor3 & " " & rs!LastNameDebtor3
+!NoticeAdd = rs![SDatAddress]
+!NoticeAdd2 = rs![SDatAddress2]
+!NoticeCSZ = rs![SDatCity] & ", " & rs![SDatState] & "  " & rs![SDatZip]
+!extra = rs![SDatAddress]
+.Update
+End With
+End If
+
+If Not IsNull(rs![Mailing Address]) Then
+
+If IsNull(rs!MailA_To) Or rs!MailA_To = "Grantor3" Or rs!MailA_To = "All Grantors" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor3 & " " & rs!MiddleNameDebtor3 & " " & rs!LastNameDebtor3
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing Address]
+!NoticeAdd2 = rs![Mailing Address2]
+!NoticeCSZ = rs![Mailing City] & ", " & rs![Mailing State] & "  " & rs![Mailing Zip]
+!extra = rs![Mailing Address]
+.Update
+End With
+End If
+End If
+
+
+If Not IsNull(rs![Mailing AddressB]) Then
+
+If IsNull(rs!MailtB_To) Or rs!MailtB_To = "Grantor3" Or rs!MailtB_To = "All Grantors" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!FirstNameDebtor3 & " " & rs!MiddleNameDebtor3 & " " & rs!LastNameDebtor3
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing AddressB]
+!NoticeAdd2 = rs![Mailing Address2B]
+!NoticeCSZ = rs![Mailing CityB] & ", " & rs![Mailing StateB] & "  " & rs![Mailing ZipB]
+!extra = rs![Mailing AddressB]
+.Update
+End With
+End If
+End If
+End If
+End If
+
+
+If rs!dec4 = 0 Or IsNull(rs!dec4) Then
+If IsNull(rs!lastnamedebtor4) Or rs!lastnamedebtor4 = "" Then
+Else
+
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor4 & " " & rs!middlenamedebtor4 & " " & rs!lastnamedebtor4
+!filenum = rs!filenum
+If IsNull(rs![unit_no]) Or rs![unit_no] = "" Then
+!NoticeAdd = rs![PropAddress]
+Else
+!NoticeAdd = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+!NoticeAdd2 = rs!propaddress2
+!NoticeCSZ = rs!PropertyCity & ", " & rs!PropertyState & "  " & rs!propzip
+!extra = rs![PropAddress]
+.Update
+End With
+
+If Not IsNull(rs![SDatAddress]) And (MailSDat = "Grantor4" Or MailSDat = "All" Or MailSDat = "All Grantors") Then
+With rsnotice
+.AddNew
+!filenum = rs!filenum
+!NoticeTo = rs!firstnamedebtor4 & " " & rs!middlenamedebtor4 & " " & rs!lastnamedebtor4
+!NoticeAdd = rs![SDatAddress]
+!NoticeAdd2 = rs![SDatAddress2]
+!NoticeCSZ = rs![SDatCity] & ", " & rs![SDatState] & "  " & rs![SDatZip]
+!extra = rs![SDatAddress]
+.Update
+End With
+End If
+
+If Not IsNull(rs![Mailing Address]) Then
+
+If IsNull(rs!MailA_To) Or rs!MailA_To = "Grantor4" Or rs!MailA_To = "All Grantors" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor4 & " " & rs!middlenamedebtor4 & " " & rs!lastnamedebtor4
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing Address]
+!NoticeAdd2 = rs![Mailing Address2]
+!NoticeCSZ = rs![Mailing City] & ", " & rs![Mailing State] & "  " & rs![Mailing Zip]
+!extra = rs![Mailing Address]
+
+.Update
+End With
+End If
+End If
+
+If Not IsNull(rs![Mailing AddressB]) Then
+
+If IsNull(rs!MailtB_To) Or rs!MailtB_To = "Grantor4" Or rs!MailtB_To = "All Grantors" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor4 & " " & rs!middlenamedebtor4 & " " & rs!lastnamedebtor4
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing AddressB]
+!NoticeAdd2 = rs![Mailing Address2B]
+!NoticeCSZ = rs![Mailing CityB] & ", " & rs![Mailing StateB] & "  " & rs![Mailing ZipB]
+!extra = rs![Mailing AddressB]
+
+.Update
+End With
+End If
+End If
+End If
+End If
+
+If rs!dec5 = 0 Or IsNull(rs!dec5) Then
+
+If IsNull(rs!lastnamedebtor5) Or rs!lastnamedebtor5 = "" Then
+Else
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor5 & " " & rs!middlenamedebtor5 & " " & rs!lastnamedebtor5
+!filenum = rs!filenum
+If IsNull(rs![unit_no]) Or rs![unit_no] = "" Then
+!NoticeAdd = rs![PropAddress]
+Else
+!NoticeAdd = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+!NoticeAdd2 = rs!propaddress2
+!NoticeCSZ = rs!PropertyCity & ", " & rs!PropertyState & "  " & rs!propzip
+!extra = rs![PropAddress]
+.Update
+End With
+
+If Not IsNull(rs![SDatAddress]) And (MailSDat = "Grantor5" Or MailSDat = "All" Or MailSDat = "All Grantors") Then
+With rsnotice
+.AddNew
+!filenum = rs!filenum
+!NoticeTo = rs!firstnamedebtor5 & " " & rs!middlenamedebtor5 & " " & rs!lastnamedebtor5
+!NoticeAdd = rs![SDatAddress]
+!NoticeAdd2 = rs![SDatAddress2]
+!NoticeCSZ = rs![SDatCity] & ", " & rs![SDatState] & "  " & rs![SDatZip]
+!extra = rs![SDatAddress]
+.Update
+End With
+End If
+
+If Not IsNull(rs![Mailing Address]) Then
+
+If IsNull(rs!MailA_To) Or rs!MailA_To = "Grantor5" Or rs!MailA_To = "All Grantors" Or rs!MailA_To = "Grantors/Owners" Or rs!MailA_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor5 & " " & rs!middlenamedebtor5 & " " & rs!lastnamedebtor5
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing Address]
+!NoticeAdd2 = rs![Mailing Address2]
+!NoticeCSZ = rs![Mailing City] & ", " & rs![Mailing State] & "  " & rs![Mailing Zip]
+!extra = rs![Mailing Address]
+
+.Update
+End With
+End If
+End If
+
+If Not IsNull(rs![Mailing AddressB]) Then
+
+If IsNull(rs!MailtB_To) Or rs!MailtB_To = "Grantor5" Or rs!MailtB_To = "All Grantors" Or rs!MailtB_To = "Grantors/Owners" Or rs!MailtB_To = "All" Then
+With rsnotice
+.AddNew
+!NoticeTo = rs!firstnamedebtor5 & " " & rs!middlenamedebtor5 & " " & rs!lastnamedebtor5
+!filenum = rs!filenum
+!NoticeAdd = rs![Mailing AddressB]
+!NoticeAdd2 = rs![Mailing Address2B]
+!NoticeCSZ = rs![Mailing CityB] & ", " & rs![Mailing StateB] & "  " & rs![Mailing ZipB]
+!extra = rs![Mailing AddressB]
+
+.Update
+End With
+End If
+End If
+End If
+End If
+
+rs.Close
+rsnotice.Close
+
+End Function
+
+Public Function AllBorrowersLtrAdd()
+Dim rsnotice As RecordSet
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from cases where filenum = " & Forms!DILForm!filenum
+Else
+'If AppType = "" Or AppType = "foreclosure database screen" Or AppType = "" Or AppType Like "Certificate*" Or AppType = "Creditors" Then
+strsql = "select * from cases where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+VDilSelectAdd = 0
+
+If Not IsNull(rs![Mailing AddressB]) And _
+ Not IsNull(rs![Mailing Address]) Then
+VDilSelectAdd = InputBox("There are 2 Mailing Addresses for this file: " & vbCr & vbCr & "1. " & rs![Mailing Address] & vbCr & "2. " & rs![Mailing AddressB] & vbCr & vbCr & "input 1 or 2")
+End If
+
+If VDilSelectAdd = 2 Then
+AllBorrowersLtrAdd = rs![Mailing AddressB]
+
+ElseIf VDilSelectAdd = 1 Or VDilSelectAdd = 0 Then
+
+If Not IsNull(rs![Mailing Address]) Or rs![Mailing Address] <> "" Then
+AllBorrowersLtrAdd = rs![Mailing Address]
+
+Else
+
+If IsNull(rs![unit_no]) Or _
+rs![unit_no] = "" Then
+AllBorrowersLtrAdd = rs![PropAddress]
+Else
+AllBorrowersLtrAdd = rs![PropAddress] & ", Unit # " & rs![unit_no]
+End If
+End If
+
+
+End If
+
+
+
+
+
+rs.Close
+
+
+End Function
+
+Public Function AllBorrowersLtrAdd2()
+Dim rsnotice As RecordSet
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from cases where filenum = " & Forms!DILForm!filenum
+Else
+'If AppType = "" Or AppType = "foreclosure database screen" Or AppType = "" Or AppType Like "Certificate*" Or AppType = "Creditors" Then
+strsql = "select * from cases where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If VDilSelectAdd = 2 Then
+
+AllBorrowersLtrAdd2 = rs![Mailing Address2B]
+
+
+ElseIf VDilSelectAdd = 1 Or VDilSelectAdd = 0 Then
+
+If Not IsNull(rs![Mailing Address]) Or rs![Mailing Address] <> "" Then
+AllBorrowersLtrAdd2 = rs![Mailing Address2]
+
+Else
+
+AllBorrowersLtrAdd2 = rs![propaddress2]
+
+End If
+
+
+End If
+
+
+
+
+rs.Close
+
+
+
+
+
+End Function
+
+Public Function AllBorrowersLtrCSZ()
+Dim rsnotice As RecordSet
+Dim strsql As String
+Dim rs As RecordSet
+
+If AppType = "DILForm" Then
+strsql = "select * from cases where filenum = " & Forms!DILForm!filenum
+Else
+'If AppType = "" Or AppType = "foreclosure database screen" Or AppType = "" Or AppType Like "Certificate*" Or AppType = "Creditors" Then
+strsql = "select * from cases where filenum = " & Forms![foreclosure database screen]!filenum
+End If
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If VDilSelectAdd = 2 Then
+AllBorrowersLtrCSZ = rs![Mailing CityB] & ", " & rs![Mailing StateB] & "  " & rs![Mailing ZipB]
+
+ElseIf VDilSelectAdd = 1 Or VDilSelectAdd = 0 Then
+
+If Not IsNull(rs![Mailing Address]) Or rs![Mailing Address] <> "" Then
+AllBorrowersLtrCSZ = rs![Mailing City] & ", " & rs![Mailing State] & "  " & rs![Mailing Zip]
+
+Else
+
+AllBorrowersLtrCSZ = rs!PropertyCity & ", " & rs!PropertyState & "  " & rs!propzip
+
+End If
+
+
+End If
+
+
+
+
+
+rs.Close
+
+
+End Function

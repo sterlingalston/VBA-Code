@@ -1,0 +1,334 @@
+Attribute VB_Name = "Journal"
+Option Compare Database
+Option Explicit
+Public Function AddtoJournalAssNote()
+Dim rstjournal As RecordSet
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!EntryBy = Environ("username")
+!EntryDate = Now()
+!Entry = Environ("username") & ": Assignment Comments: " & Forms![assignmentformmd]!aom_comments
+.Update
+.Close
+
+End With
+
+
+
+End Function
+
+Public Function AddtoJournalStatus()
+Dim rstjournal As RecordSet
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!EntryBy = Environ("username")
+!EntryDate = Now()
+!Entry = Environ("username") & ": Updated Status to " & Forms![foreclosure database screen]!Status & " on File"
+.Update
+.Close
+End With
+
+
+End Function
+Public Function AddtoJournalDR()
+Dim rstjournal As RecordSet
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+Dim Vreason
+Vreason = InputBox("Enter Reason you are clicking Do Not Record button:")
+If Vreason = "" Then
+Vreason = "Did not enter a reason when prompted."
+End If
+
+With rstjournal
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!EntryBy = Environ("username")
+!EntryDate = Now()
+!Entry = Environ("username") & ": Pressed do not send Deed to record button. " & Vreason
+.Update
+.Close
+
+End With
+
+'New Notes Screen Entry
+Dim rstNote As RecordSet
+Set rstNote = CurrentDb.OpenRecordset("Notes", dbOpenDynaset, dbSeeChanges)
+With rstNote
+.AddNew
+!NoteText = Environ("username") & ": Pressed do not send Deed to record button"
+!Enteredby = Environ("username")
+!DateEntered = Now()
+'!NoteType =
+!FileNumber = Forms![foreclosure database screen]!filenum
+.Update
+End With
+rstNote.Close
+
+End Function
+
+Public Function AddtoJournalResume()
+
+Dim rstjournal As RecordSet
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!EntryBy = Environ("username")
+!EntryDate = Now()
+!Entry = "Resumed File"
+.Update
+.Close
+End With
+
+
+End Function
+Public Function AddtoJournalServe()
+Dim rs As RecordSet, rstjournal As RecordSet
+
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = Forms![creditors]!filenum
+!EntryBy = Environ("username")
+!EntryDate = Now()
+!Entry = "SERVE button has been checked on Lienholder Screen by: " & Environ("username")
+.Update
+.Close
+End With
+
+rstjournal.Close
+
+'New Notes Screen Entry
+Dim rstNote As RecordSet
+Set rstNote = CurrentDb.OpenRecordset("Notes", dbOpenDynaset, dbSeeChanges)
+With rstNote
+.AddNew
+!NoteText = "SERVE button has been checked on Lienholder Screen by: " & Environ("username")
+!Enteredby = Environ("username")
+!DateEntered = Now()
+'!NoteType =
+!FileNumber = Forms![creditors]!filenum
+.Update
+End With
+rstNote.Close
+
+
+End Function
+
+Public Function AddtoJournalServiceRel()
+Dim rs As RecordSet, rstjournal As RecordSet
+
+
+Dim strsql As String
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!EntryBy = Environ("username")
+!EntryDate = Now()
+!Entry = Forms![foreclosure database screen]!Client & ": Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & _
+": SOT sent to client: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentClient & "/" _
+& "SOT recd from client: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsRecClient & "/" _
+& "Aff of Default sent to client: " & rs!Aff_to_Client & "/" _
+& "Aff of Default recd from client: " & rs!Aff_Recd_Client & "/" _
+& "Aff of Cert. of Ownership sent to client: " & rs!affcert_to_client & "/" _
+& "Aff of Cert. of Ownership recd from client: " & rs!affcert_recd_client & "/" _
+& "Aff of Debt sent to client: " & rs!affdebt_to_client & "/" _
+& "Aff of Debt recd from client: " & rs!affdebt_from_client & "/" _
+& "Prelim Aff sent to client: " & rs!PAff_Sent & "/" _
+& "Prelim Aff recd from client: " & rs!PAff_Retd & "/" _
+& "Final Aff sent to client: " & rs!FAff_Sent & "/" _
+& "Final Aff recd from client: " & rs!FAff_Retd & "/"
+
+.Update
+.Close
+
+End With
+
+
+
+Dim rstNote As RecordSet
+Set rstNote = CurrentDb.OpenRecordset("Notes", dbOpenDynaset, dbSeeChanges)
+With rstNote
+.AddNew
+!NoteText = Forms![foreclosure database screen]!Client & ": Loan#: " & Forms![foreclosure database screen]!ClientRefNumber & _
+": SOT sent to client: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentClient & "/" _
+& "SOT recd from client: " & Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsRecClient & "/" _
+& "Aff of Default sent to client: " & rs!Aff_to_Client & "/" _
+& "Aff of Default recd from client: " & rs!Aff_Recd_Client & "/" _
+& "Aff of Cert. of Ownership sent to client: " & rs!affcert_to_client & "/" _
+& "Aff of Cert. of Ownership recd from client: " & rs!affcert_recd_client & "/" _
+& "Aff of Debt sent to client: " & rs!affdebt_to_client & "/" _
+& "Aff of Debt recd from client: " & rs!affdebt_from_client & "/" _
+& "Prelim Aff sent to client: " & rs!PAff_Sent & "/" _
+& "Prelim Aff recd from client: " & rs!PAff_Retd & "/" _
+& "Final Aff sent to client: " & rs!FAff_Sent & "/" _
+& "Final Aff recd from client: " & rs!FAff_Retd & "/"
+
+!Enteredby = Environ("username")
+!DateEntered = Now()
+'!NoteType =
+!FileNumber = Forms![foreclosure database screen]!filenum
+.Update
+End With
+rstNote.Close
+rs.Close
+
+strsql = "select * from fctracking where filenum = " & Forms![foreclosure database screen]!filenum
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+With rs
+.Edit
+!Aff_to_Client = Null
+!Aff_Recd_Client = Null
+!affcert_to_client = Null
+!affcert_recd_client = Null
+!affdebt_to_client = Null
+!PAff_Sent = Null
+!PAff_Retd = Null
+!FAff_Sent = Null
+!FAff_Retd = Null
+.Update
+.Close
+End With
+
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentClient = Null
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsRecClient = Null
+
+
+MsgBox ("Affidavit Memo added and data in fields deleted")
+
+End Function
+
+Public Function AddtoJournalLITIGATION()
+Dim rs As RecordSet, rstjournal As RecordSet
+
+
+'LITIGATION CODE
+
+strsql = "Select * from litigation where subfilenum = " & Forms![foreclosure database screen]![SubFileNum]
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!EntryBy = Environ("username")
+!EntryDate = Now()
+!Entry = "COMPLETED: Litigation Deadline: Date: " & rs!deadline1 & "/Deadline: " & rs!deadline1_txt & "/BY: " & Environ("username")
+
+.Update
+.Close
+
+End With
+
+
+Dim rstNote As RecordSet
+Set rstNote = CurrentDb.OpenRecordset("Notes", dbOpenDynaset, dbSeeChanges)
+With rstNote
+.AddNew
+!NoteText = "COMPLETED: Litigation Deadline: Date: " & rs!deadline1 & "/Deadline: " & rs!deadline1_txt & "/BY: " & Environ("username")
+!Enteredby = Environ("username")
+!DateEntered = Now()
+'!NoteType =
+!FileNumber = Forms![foreclosure database screen]!filenum
+.Update
+End With
+rstNote.Close
+
+Dim VNotes
+VNotes = rs!Notes
+
+VNotes = VNotes & vbCr & "COMPLETED: Litigation Deadline: Date: " & rs!deadline1 & "/Deadline: " & rs!deadline1_txt & "/BY: " & Environ("username")
+
+
+rs!Notes = VNotes
+End If
+
+
+rs.Close
+
+End Function
+
+Public Sub AddJournalEntry(filenum As Long, Entry As String)
+Dim rstjournal As RecordSet
+
+On Error GoTo AddJournalEntryErr
+
+If gblUserName = "" Then Call username
+
+Set rstjournal = CurrentDb.OpenRecordset("select top 1 * from Journal", dbOpenDynaset, dbSeeChanges)
+rstjournal.AddNew
+rstjournal!filenum = filenum
+rstjournal!EntryBy = gblUserName
+rstjournal!EntryDate = Now()
+rstjournal!Entry = Entry
+rstjournal.Update
+rstjournal.Close
+
+Exit Sub
+
+AddJournalEntryErr:
+MsgBox "Unable to add to Memo: " & Err.description
+
+End Sub
+Public Function AddJTest()
+Call AddJournalEntryONLY(GblFilenum, "Restarted File")
+
+
+End Function
+Public Function AddJournalEntryONLY(filenum As Long, Entry As String)
+Dim rstjournal As RecordSet
+
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+With rstjournal
+.AddNew
+!filenum = filenum
+!EntryBy = Environ("username")
+!EntryDate = Now()
+!Entry = Entry
+.Update
+Close
+End With
+
+End Function
+
+Public Function GetJournal(filenum As Long, Optional OldestFirst As Boolean = True) As String
+Dim rstjournal As RecordSet
+
+Set rstjournal = CurrentDb.OpenRecordset("SELECT * FROM Journal WHERE FileNum=" & filenum & " ORDER BY EntryDate" & IIf(OldestFirst, "", " DESC"), dbOpenSnapshot)
+If rstjournal.EOF Then
+    GetJournal = "(No Entries)"
+Else
+    GetJournal = ""
+    Do While Not rstjournal.EOF
+        GetJournal = GetJournal & Format$(rstjournal!EntryDate, "m/d/yyyy h:nn am/pm") & _
+            "  by " & rstjournal!EntryBy & vbNewLine & vbNewLine & _
+            rstjournal!Entry & vbNewLine & "----- End of Entry -----" & vbNewLine & vbNewLine
+        rstjournal.MoveNext
+    Loop
+End If
+rstjournal.Close
+
+End Function

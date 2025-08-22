@@ -1,0 +1,336 @@
+Attribute VB_Name = "Reporting24"
+Option Compare Database
+
+Public Function Run24MonthReport()
+
+Call CleanTables
+Call WarningsNowFalse
+
+Dim BegDate As Date: BegDate = InputBox("Enter Beginning Referral Date", "Enter Date")
+Dim EndDate As Date: EndDate = InputBox("Enter Ending Referral Date", "Enter Date")
+Dim clienter As String: clienter = InputBox("Enter Client or hit ENTER for ALL", "Enter Client")
+Dim filepath As String: filepath = "\\rvdv-fs01\DataTransfer\Templates\Excel\"
+Dim spreadsht As String: spreadsht = "Reporting24.xls"
+Dim savepath As String
+Dim queryname As String
+
+'foreclosure24_filecounttbl
+'bankruptcy24_filecounttbl
+'eviction24_filecounttbl
+
+On Error Resume Next
+    CurrentDb.Execute ("drop table eviction24_filecounttbl")
+    CurrentDb.Execute ("drop table bankruptcy24_filecounttbl")
+    CurrentDb.Execute ("drop table foreclosure24_filecounttbl")
+    CurrentDb.Execute ("drop table lossmit24_filecounttbl")
+On Error GoTo 0
+
+On Error GoTo handler
+
+'FORECLOSURE query foreclosure24appendqry
+
+With CurrentDb.QueryDefs("foreclosure24appendqry")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+
+'BANKRUPTCY query functions
+Call getTotalBKReferred(BegDate, EndDate, clienter)
+Call getTotalBKReferralsComplete(BegDate, EndDate, clienter)
+Call getTotalBKReferralsPending(clienter, BegDate, EndDate)
+
+'EVICTION query eviction24appendqry
+
+Call getTotalEvictionReferralsPending(clienter)
+
+With CurrentDb.QueryDefs("eviction24appendqry")
+    .Parameters("Enter beginning eviction requested date") = DateValue(BegDate)
+    .Parameters("Enter ending eviction requested date") = DateValue(EndDate)
+    .Parameters("Please Enter Client") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("lossmit24appendqry")
+    .Parameters("Enter Beginning DIL Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending DIL Referral Date") = DateValue(EndDate)
+    .Parameters("Please Enter Client") = clienter
+    .Execute
+End With
+
+
+Call RemoveSheetsExcel(filepath, spreadsht, "MainData")
+'DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    "reporting24unionqry", "\\rvdv-fs01\DataTransfer\Templates\Excel\" & "Reporting24" & ".xls", True, "MainData"
+queryname = "reporting24unionqry"
+Application.FileDialog(msoFileDialogSaveAs).Show
+
+savepath = Application.FileDialog(msoFileDialogFilePicker).SelectedItems(1)
+savepath = Replace(savepath, ".xls", "") & ".xls"
+
+sourcefile = filepath & spreadsht
+
+FileCopy sourcefile, savepath    ' Copy source to target.
+
+DoCmd.TransferSpreadsheet acExport, acSpreadsheetTypeExcel9, _
+    queryname, savepath, True, "MainData"
+    
+ShellExecuteFileOpen (savepath)
+
+Exit Function
+
+handler:
+
+MsgBox "Action ended. Report not generated", vbCritical, "Report Error"
+
+End Function
+
+Public Function getTotalBKReferred(BegDate As Date, EndDate As Date, clienter As String)
+
+CurrentDb.Execute "DELETE * FROM BKReportTBL;", dbFailOnError
+
+'Loan Modifications
+
+With CurrentDb.QueryDefs("bkrpt-lmr_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+'Plan Reviews
+
+With CurrentDb.QueryDefs("BKRpt-prr_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+'Motion for Relief
+
+With CurrentDb.QueryDefs("bkrpt-mfrref_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+'Proof of Claim
+
+With CurrentDb.QueryDefs("bkrpt-pocref_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+'NOD dates
+
+With CurrentDb.QueryDefs("bkrpt-nodref_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("bkrpt-nodref2_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("bkrpt-nodref3_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+'bankruptcy_totalnumberofmattersreferred24_filecount
+
+DoCmd.OpenQuery ("bankruptcy24referralsappendqry")
+
+End Function
+Public Function getTotalBKReferralsComplete(BegDate As Date, EndDate As Date, clienter As String)
+
+
+
+CurrentDb.Execute "DELETE * FROM BKReportTBL;", dbFailOnError
+
+With CurrentDb.QueryDefs("BKRpt-mfr_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+
+With CurrentDb.QueryDefs("BKRpt-poc_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("BKRpt-of_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("bkrpt-mnf_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+
+With CurrentDb.QueryDefs("bkrpt-dnf_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+
+With CurrentDb.QueryDefs("bkrpt-dnf2_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("bkrpt-dnf3_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("bkrpt-pcn_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("bkrpt-ppfn_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("bkrpt-nofc_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("bkrpt-rf_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("bkrpt-mrf_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("bkrpt-toc_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("bkrpt-apoc_bankruptcy")
+    .Parameters("Enter Beginning Referral Date") = DateValue(BegDate)
+    .Parameters("Enter Ending Referral Date") = DateValue(EndDate)
+    .Parameters("Enter Client or hit ENTER for ALL") = clienter
+    .Execute
+End With
+
+'bankruptcy_totalnumberofmatterscompleted24_filecount
+
+DoCmd.OpenQuery ("bankruptcy24completedappendqry")
+
+End Function
+
+Public Function getTotalBKReferralsPending(clienter As String, BegDate As Date, EndDate As Date)
+'AllFilesEnterClientStatusState
+CurrentDb.Execute "Delete * from BKQueryClientStatus;", dbFailOnError
+
+With CurrentDb.QueryDefs("AllFilesEnterClientStatusStateBK-Bankruptcy")
+    .Parameters("Please Enter Client") = clienter
+    .Execute
+End With
+
+'DoCmd.OpenQuery "AllFilesEnterClientStatusStateBK-Bankruptcy"
+DoCmd.OpenQuery "BKQryLoanMod"
+DoCmd.OpenQuery "BKQryReaffirmation"
+DoCmd.OpenQuery "BKQryBKMort"
+DoCmd.OpenQuery "BKQryBKPPFees"
+DoCmd.OpenQuery "BKQryNODResolution"
+DoCmd.OpenQuery "BKUpdateMax"
+DoCmd.OpenQuery "BKUpdateMax2"
+DoCmd.OpenQuery "BKUpdateMax3"
+DoCmd.OpenQuery "BKUpdateMax4"
+DoCmd.OpenQuery "BKUpdateMax5"
+DoCmd.OpenQuery "BKUpdateMax6"
+DoCmd.OpenQuery "BKUpdateMax7"
+DoCmd.OpenQuery "BKUpdateMax8"
+DoCmd.OpenQuery "BKUpdateMax9"
+DoCmd.OpenQuery "BKUpdateMax10"
+DoCmd.OpenQuery "BKUpdateMax11"
+DoCmd.OpenQuery "BKUpdateMax12"
+DoCmd.OpenQuery "BKUpdateMax13"
+DoCmd.OpenQuery "BKUpdateMax14"
+
+ With CurrentDb.QueryDefs("bankruptcy24pendingappendqry")
+    .Parameters("Enter beginning Referral Date") = DateSerial(1950, 1, 1)
+    .Parameters("Enter ending Referral Date") = Date
+    .Execute
+ End With
+
+End Function
+
+Public Function getTotalEvictionReferralsPending(clienter As String)
+
+Call WarningsNowFalse
+
+On Error Resume Next
+    CurrentDb.Execute ("drop table EvicMDRpt")
+    CurrentDb.Execute ("delete from [EvictionReport]")
+
+On Error GoTo 0
+
+With CurrentDb.QueryDefs("Eviction Query Table")
+    .Parameters("Enter Type of Loan or Return for all") = "*"
+    .Parameters("Which Client Report Do You Wish To See?") = clienter & "*"
+    .Execute
+End With
+
+'DoCmd.OpenQuery "EvicMDTblCase"
+
+With CurrentDb.QueryDefs("Eviction Query VA")
+    .Parameters("Which Client Report Do You Wish To See?") = clienter & "*"
+    .Parameters("Enter County") = ""
+    .Parameters("Enter Client Contact") = ""
+    .Execute
+End With
+
+'eviction_totalnumberofmatterscurrentlypending24_filecount
+
+End Function

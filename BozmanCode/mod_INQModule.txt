@@ -1,0 +1,132 @@
+Attribute VB_Name = "INQModule"
+Option Compare Database
+
+Public Function DumpToINQ()
+
+'Create TempRegister table:
+'BillingLinkForRegisterDump() this module you can adjusted as needed it will:
+'Accumulate data as needed
+'Check the Register table and input the monies for each BWW# and dumps to a temp table
+'Updates the TempRegisterChk table with the monies for each register entry
+'Previews a report if needed or you can manipulate the table in a query to view
+'Deletes all records that have zero in the register
+
+'-----------------------------------------------------
+
+'To input data into INQ you have to take the data and append to INQTempRegister _
+Already created a query: INQAppendTempRegister _
+then you can dump that to TBLACDC using INQDump query
+
+
+End Function
+Public Function BillingLinkForRegisterDump()
+
+ 
+
+CurrentDb.Execute "DELETE * FROM tempregisterchk;", dbFailOnError
+CurrentDb.Execute "DELETE * FROM INQTempTblRegister;", dbFailOnError
+
+Dim rs, rsTemp As RecordSet
+
+Dim enterdate
+
+enterdate = InputBox("Enter Date to pull data from billing.  Bill Paid BEFORE: ")
+
+
+strsql = "SELECT billing.customerid, Billing.d_recording, billing.compass_pd, billing.landsafe_pd, billing.compass_id, billing.d_titlesearch, billing.title_co, Billing.bill_paid, Cases.FileNum, " _
+& "Cases.Client, cases.status, Cases.ClientRefNumber, cases.unit_no, cases.[date recieved], Cases.propertycounty, Cases.FirstNameDebtor1, Cases.LastNameDebtor1, " _
+& " Cases.PropAddress, Cases.PropertyState, Cases.PropertyCity, Cases.PropZip " _
+& " FROM Billing INNER JOIN Cases ON Billing.FileNum = Cases.FileNum " _
+& " WHERE (Billing.bill_paid Is Not Null and bill_paid <= #" & enterdate & "#);"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+Set rsTemp = CurrentDb.OpenRecordset("tempregisterchk", dbOpenDynaset, dbSeeChanges)
+
+If Not rs.EOF Then
+rs.MoveFirst
+End If
+
+Do While Not rs.EOF
+With rsTemp
+.AddNew
+!InvNo = rs!CustomerID
+!filenum = rs!filenum
+!LastNameDebtor1 = rs!LastNameDebtor1
+!PropAddress = rs!PropAddress
+!ClientRefNumber = rs!ClientRefNumber
+!Client = rs!Client
+!PropertyState = rs!PropertyState
+!Propertycounty = rs!Propertycounty
+!propzip = rs!propzip
+!Status = rs!Status
+!Rec_fee = rs!d_recording
+!bill_paid = rs!bill_paid
+!Title_search = rs!d_titlesearch
+!title_co_from_Bill = rs!Title_Co
+!Compass_pd_bill = rs!compass_pd
+!landsafe_pd_bill = rs!landsafe_pd
+!compass_id = rs!compass_id
+If Not IsNull(rs![Date Recieved]) Then
+!referraldate = rs![Date Recieved]
+End If
+
+.Update
+End With
+rs.MoveNext
+Loop
+rsTemp.Close
+rs.Close
+
+Call INQCreateTempRegisterTable
+
+DoCmd.OpenQuery ("RegisterUpdate")
+DoCmd.OpenQuery ("INQDeleteZeroRegister")
+'DoCmd.OpenReport "RegisterDeedRecBilling", acViewPreview
+End Function
+
+
+Public Function INQCreateTempRegisterTable()
+Dim rs As RecordSet, RsReg As RecordSet, rsTemp
+Dim strsql As String, VRegister As String
+
+Dim VBal
+
+CurrentDb.Execute "DELETE * FROM tempcomm;", dbFailOnError
+Set rs = CurrentDb.OpenRecordset("tempregisterchk")
+rs.MoveFirst
+
+Do While Not rs.EOF
+strsql = "select * from Register where FileID = " & rs!filenum & ";"
+VRegister = ""
+VBal = 0
+Set RsReg = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If Not RsReg.EOF Then
+RsReg.MoveFirst
+GblFilenum = RsReg!FileID
+Do While Not RsReg.EOF
+VRegister = RsReg!AccountShortName
+VBal = RsReg!TransAmount + VBal
+RsReg.MoveNext
+Loop
+
+If VBal <> 0 Then
+Set rsTemp = CurrentDb.OpenRecordset("tempcomm")
+With rsTemp
+.AddNew
+!filenum = GblFilenum
+!register = VRegister
+'!Register = VRegister
+!Bal_Money = VBal
+.Update
+.Close
+End With
+End If
+End If
+
+
+rs.MoveNext
+Loop
+
+
+End Function
+

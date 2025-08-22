@@ -1,0 +1,390 @@
+Attribute VB_Name = "LetterModules"
+Option Compare Database
+
+Public Function FDLPreview()
+
+If Not CurrentProject.AllForms("foreclosure database screen").IsLoaded Then
+DoCmd.OpenForm "Foreclosure Database Screen", , , "[Filenum] = " & GblFilenum
+End If
+
+
+'FDL Preview Add to ClientTracking Table
+Dim rsClient As RecordSet
+Set rsClient = CurrentDb.OpenRecordset("clienttracking", dbOpenDynaset, dbSeeChanges)
+
+With rsClient
+.AddNew
+!filenum = Forms![foreclosure database screen]!filenum
+!username = username()
+!DateNoted = Date
+!FDLPreview = Date
+.Update
+.Close
+End With
+Set rsClient = Nothing
+
+'End FDL Preview Add to ClientTracking Table
+
+
+DoCmd.OpenReport "Fairdebt Letter", acViewPreview
+
+If Forms![foreclosure database screen]!Client Like "Champion*" And _
+Forms![foreclosure database screen]![ForeclosureSubFormVA].Form![VASubAss].Form!reason_default Like "Move Ou*" Then
+RFD = 1
+End If
+
+If RFD = 1 Then
+
+VTypeMerge = "ChampionFDL"
+Call LtrMerge
+Dim oapp As Word.Application
+Dim oDoc As Word.document
+Dim oMMDoc As Word.document
+Set oapp = CreateObject("word.application")
+Set oDoc = oapp.Documents.ADD("\\rvdv-fs01\DataTransfer\Templates\FC\DC\DCReverseNon-occ.doc", , , True)
+
+
+destinationfile = pathuser() & Forms![foreclosure database screen]!filenum & "_" & Format$(Now(), "yyyymmddhhnnss") & "_FDLChampion"
+destinationfileview = pathuser() & Forms![foreclosure database screen]!filenum & "_" & Format$(Now(), "yyyymmddhhnnss") & "_FDLChampion.pdf"
+
+With oDoc.MailMerge
+.MainDocumentType = wdFormLetters
+.OpenDataSource name:=pathuser() & "ltrmerge.txt"
+End With
+With oDoc.MailMerge
+.destination = wdSendToNewDocument '; wdSendToFax; wdSendToEmail wdSendToPrinter
+.Execute Pause:=False
+oDoc.Close False
+oapp.Visible = False
+End With
+
+Call WordMerge3PDF(oapp, destinationfile)
+MsgBox (destinationfile)
+MsgBox (destinationfileview)
+
+Application.FollowHyperlink (destinationfileview)
+End If
+
+If Forms![foreclosure database screen]!PropertyState <> "MD" And Forms![foreclosure database screen]!Client <> "Champion Mortgage Company" And _
+((Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) _
+Or (Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1)) Then
+
+
+
+If (Forms![foreclosure database screen]!Client <> "Financial Freedom Acquisition, LLC" And _
+(Forms![foreclosure database screen]!Client <> "OneWest Bank, FSB" And _
+(Forms![foreclosure database screen]!FF = -1 Or Forms![foreclosure database screen]!FF = 1))) Then
+
+
+If (Forms![foreclosure database screen]!PropertyState = "DC" Or Forms![foreclosure database screen]!PropertyState = "VA") Then
+DoCmd.OpenReport "Fairdebt-HUD-VA", acViewPreview
+Else
+DoCmd.OpenReport "Fairdebt-HUD", acViewPreview
+End If
+
+End If
+End If
+
+
+'PRSL Letter for all other client....
+
+If Forms![foreclosure database screen]!Client Like "Wells*" Or _
+Forms![foreclosure database screen]!Client Like "JPM*" Or _
+Forms![foreclosure database screen]!Client Like "Suntrust Bank*" Or _
+((Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]![TypeOfLoan] = "FHLMC") And _
+[Forms]![foreclosure database screen]![Client] Like "Specializ*") Then
+DoCmd.OpenReport "AttachmentPRSL", acViewPreview
+End If
+
+    
+    
+End Function
+
+Public Function RegistrationLetters()
+'Begin Reg Forms
+
+Dim VConvRpt
+VConvRpt = ""
+
+If Forms![foreclosure database screen]![Propertycounty] = "Prince George's" Then
+
+VConvRpt = "PGRegLetter"
+''Call SetPGReg
+DoCmd.OpenReport VConvRpt, acViewPreview
+
+
+
+End If
+
+If Forms![foreclosure database screen]![PropertyCity] = "Laurel" Then
+
+VTo = "Pratima.Lele@bww-law.com"
+VFROM = "bgw@bww-law.com"
+VCCTo = ""
+
+emailsubject = "BWW#: " & Forms![foreclosure database screen]!filenum & "/ " & Client() & ", CITY OF LAUREL"
+emailmessage = ""
+
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+End If
+
+If Forms![foreclosure database screen]![PropertyCity] = "Poolesville" Then
+
+VConvRpt = "PoolRegLetter"
+GblFilenum = Forms![foreclosure database screen]!filenum
+DoCmd.OpenReport VConvRpt, acViewPreview
+
+VTo = "Pratima.Lele@bww-law.com"
+VFROM = "bgw@bww-law.com"
+VCCTo = ""
+
+emailsubject = "BWW#: " & Forms![foreclosure database screen]!filenum & "/ " & Client() & ", POOLESVILLE"
+emailmessage = ""
+
+
+
+
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+If Forms![foreclosure database screen]![PropertyCity] = "Annapolis" Then
+VConvRpt = "AnnRegLetter"
+'Call SetPGReg
+GblFilenum = Forms![foreclosure database screen]!filenum
+DoCmd.OpenReport VConvRpt, acViewPreview
+
+VTo = "Pratima.Lele@bww-law.com"
+VFROM = "bgw@bww-law.com"
+VCCTo = ""
+
+emailsubject = "BWW#: " & Forms![foreclosure database screen]!filenum & "/ " & Client() & ", ANNAPOLIS"
+emailmessage = ""
+
+
+
+
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+If Forms![foreclosure database screen]![PropertyCity] = "College Park" Then
+VConvRpt = "CPRegLetter"
+'Call SetPGReg
+GblFilenum = Forms![foreclosure database screen]!filenum
+DoCmd.OpenReport VConvRpt, acViewPreview
+
+VTo = "Pratima.Lele@bww-law.com"
+VFROM = "bgw@bww-law.com"
+VCCTo = ""
+
+emailsubject = "BWW#: " & Forms![foreclosure database screen]!filenum & "/ " & Client() & ", COLLEGE PARK"
+emailmessage = ""
+
+
+
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+If Forms![foreclosure database screen]![PropertyCity] = "Salisbury" Then
+Call Salisbury
+'Call SetPGReg
+GblFilenum = Forms![foreclosure database screen]!filenum
+DoCmd.OpenReport VConvRpt, acViewPreview
+
+VTo = "Pratima.Lele@bww-law.com"
+VFROM = "bgw@bww-law.com"
+VCCTo = ""
+
+emailsubject = "BWW#: " & Forms![foreclosure database screen]!filenum & "/ " & Client() & ", SALISBURY"
+emailmessage = ""
+
+
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+End If
+
+
+
+End Function
+Public Function FNMAFHLMCLtr()
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+Call ExportFDLLetters
+DoCmd.OpenReport ("FDLAttachmentFNMAFHLMC"), acViewPreview
+
+Dim VWalz
+VWalz = InputBox("Send Via Walz? (type YES)")
+If VWalz Like "y*" Then
+Call FNMAFHLMCWalz
+End If
+
+End Function
+Private Function SaveVerificationLtr()
+If Forms![foreclosure database screen]!TypeOfLoan Like "FNMA" Then
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label].Visible = True
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr].Visible = True
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label2].Visible = True
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr2].Visible = True
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label].Visible = True
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr].Visible = True
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label2].Visible = True
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr2].Visible = True
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label].Visible = True
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr].Visible = True
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label2].Visible = True
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr2].Visible = True
+End If
+Else
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label].Visible = False
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr].Visible = False
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label2].Visible = False
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr2].Visible = False
+
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label].Visible = False
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr].Visible = False
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label2].Visible = False
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr2].Visible = False
+ElseIf Forms![foreclosure database screen]!PropertyState = "VA" Then
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label].Visible = False
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr].Visible = False
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_label2].Visible = False
+Forms![foreclosure database screen]!ForeclosureSubForm.Form![verification_ltr2].Visible = False
+
+End If
+End If
+
+
+End Function
+Public Function VendorscapeLtr()
+
+If Forms![foreclosure database screen]!Client Like "Citimo*" Then
+
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Or _
+Forms![foreclosure database screen]!TypeOfLoan = "VA" Or _
+Forms![foreclosure database screen]!ClientRefNumber Like "20-0051*" Then
+
+If Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or Forms![foreclosure database screen]!fha = -1 Or Forms![foreclosure database screen]!fha = 1 Or _
+Forms![foreclosure database screen]!TypeOfLoan = "VA" Then
+MsgBox ("Loan type is: " & Forms![foreclosure database screen]!TypeOfLoan & ", letter will not print")
+End If
+
+If Forms![foreclosure database screen]!ClientRefNumber Like "20-0051*" Then
+MsgBox ("Loan Number for CitiMortgage is: " & Forms![foreclosure database screen]!ClientRefNumber & ", letter will not print")
+End If
+
+Exit Function
+Else
+DoCmd.OpenReport ("VendorscapeLtr"), acViewPreview
+Dim Vyes3
+
+Vyes3 = MsgBox("Send to BWW Docs", vbYesNo)
+If Vyes3 = vbYes Then
+CopyDocToBGWWDocs "Vendorscapeltr", "LossMitPlt", "_LossMitPilot.PDF"
+End If
+
+VSel = MsgBox("Create new Bill for Loss Mit Letter?", vbYesNo)
+If VSel = vbYes Then
+
+VINv = GetAutoNumber("NextBillNum")
+
+Set rsbill = CurrentDb.OpenRecordset("billing", dbOpenDynaset, dbSeeChanges)
+With rsbill
+.AddNew
+!CustomerID = VINv
+!filenum = Forms![foreclosure database screen]![filenum]
+!billingdate = Date
+!Category = "Foreclosure"
+!feeothertext = "Preparation of Loss Mit Letter"
+!feeothermoney = 75#
+'!d_servbymail = CountNoticeTableACL()
+!created_vdruser_id = "Cward"
+!initials = "cmw"
+!process_service = 0
+!skip_trace = 0
+!water = 0#
+!lien_citation_violation = 0#
+!post_mail_lma = 0#
+!process_service = 0#
+'If NIFile() = "YES" Or IClearFile() = "YES" Then
+'![bill_uploaded] = Date
+'Else
+'![printed and sent] = Date
+'End If
+'If IClearFile() = "YES" Then
+'!IClear_Misc1 = "11121"
+'End If
+.Update
+.Close
+End With
+
+MsgBox ("Bill added in the amount of $75.00 for the Loss Mit Letter.")
+
+Else
+Exit Function
+End If
+
+
+End If
+Else
+MsgBox ("Not a CitiMortgage file will not print")
+End If
+
+
+
+End Function
+

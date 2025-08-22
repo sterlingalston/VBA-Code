@@ -1,0 +1,2728 @@
+Attribute VB_Name = "SignatureBlocks"
+Option Compare Database
+
+
+Public Function SOTSignatureMD1()
+
+If Client() Like "Shellpoin*" Or Client() Like "Ditech*" Or Client() Like "Ocwen*" Or (Client() Like "Seterus*" And Forms![foreclosure database screen]!TypeOfLoan = "FNMA") Then
+SOTSignatureMD1 = PartOneSignatureAff1()
+ElseIf Client() Like "Suntrust M*" And [Forms]![foreclosure database screen]![longsecured] = "Suntrust Bank" Then
+SOTSignatureMD1 = "Suntrust Bank"
+ElseIf Client() Like "OneWest Bank, F.S.B. (d/b/a Financial*" Then
+SOTSignatureMD1 = "OneWest Bank, FSB"
+ElseIf Client() Like "Special*" Or Client() Like "Seteru*" Then
+SOTSignatureMD1 = SignsSP()
+ElseIf Client() Like "Bank of A*" And Forms![foreclosure database screen]![TypeOfLoan] <> "FNMA" Then
+SOTSignatureMD1 = LSecured()
+ElseIf Forms![foreclosure database screen]![SPsigns] = -1 Or Forms![foreclosure database screen]![SPsigns] = 1 Or (Client() = "OneWest Bank, FSB" And Forms![foreclosure database screen]![SPsameasCl] = 0) Then
+SOTSignatureMD1 = LSecured()
+ElseIf Not IsNull(Forms![foreclosure database screen]![servicer]) Then
+SOTSignatureMD1 = Forms![foreclosure database screen]![servicer]
+Else
+SOTSignatureMD1 = Client()
+End If
+
+If Client() Like "Dov*" And Forms![foreclosure database screen]![TypeOfLoan] = "FNMA" Then
+SOTSignatureMD1 = SOTSignatureMD1 & " by " & Client() & ", as attorney in fact"
+End If
+
+'If Client() Like "Ocwen*" And Not IsNull([Forms]![foreclosure database screen]![signature block]) Then
+'SOTSignatureMD1 = SOTSignatureMD1 & [Forms]![foreclosure database screen]![signature block]
+'End If
+'MsgBox (SOTSignatureMD1)
+
+End Function
+
+Public Function SOTSignatureMD2()
+
+If Client() = "OneWest Bank, FSB" And _
+(Forms![foreclosure database screen]![SPsameasCl] = 0 Or IsNull(Forms![foreclosure database screen]![SPsameasCl])) Then
+SOTSignatureMD2 = "By: " & [Client] & ", by Attorney in Fact"
+End If
+
+
+End Function
+Public Function SignsSP()
+
+If (Forms![foreclosure database screen]!SPsameasCl = 0 Or _
+IsNull(Forms![foreclosure database screen]!SPsameasCl)) Then
+If Forms![foreclosure database screen]!Client Like "Seter*" Then
+SignsSP = LSecured() & " by " & Client() & ", as its Attorney In Fact"
+Else
+SignsSP = Client() & ", as servicer for " & LSecured()
+End If
+
+Else
+SignsSP = Client()
+End If
+
+End Function
+Public Function PartOneSignatureDOA1() As String
+Dim VP1
+
+If (Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "GNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FHLMC") And _
+Client() <> "Wells Fargo Bank, NA" And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+If Client() Like "Seter*" Then
+PartOneSignatureDOA1 = Client() & ", as servicer for " & LoanInvestor()
+ElseIf Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FHLMC" Then
+PartOneSignatureDOA1 = Client()
+Else
+PartOneSignatureDOA1 = Client() & ", authorized servicer for " & LoanInvestor()
+End If
+
+Else
+
+If Forms![foreclosure database screen]!SPsigns = -1 _
+Or (Forms![foreclosure database screen]!SPsameasCl = -1 Or IsNull(Forms![foreclosure database screen]!SPsameasCl)) Or _
+Not IsNull(Forms![foreclosure database screen]!longsecured) Then
+
+If IsNull(LSecured) Then
+MsgBox ("No Secured Party Input")
+PartOneSignatureDOA1 = Client()
+ElseIf (Forms![foreclosure database screen]!Client Like "Pennym*" And _
+Forms![foreclosure database screen]!longsecured Like "American General Mortgage Loan Trust*") Then
+PartOneSignatureDOA1 = Client()
+Else
+PartOneSignatureDOA1 = VP1 & LSecured()
+End If
+
+Else
+
+PartOneSignatureDOA1 = Client()
+End If
+
+End If
+'MsgBox (PartOneSignatureDOA1)
+
+
+End Function
+Public Function DOANotary()
+
+If Client() Like "Seter*" Then
+DOANotary = "______________________________, authorized agent of " & Client() & ", as attorney-in-fact for Federal National Mortgage Association (" & """" & "FNMA" & """" & "), personally appeared before me in the jurisdiction aforesaid and executed the foregoing Appointment of Substitute Trustee."
+
+ElseIf Forms![foreclosure database screen]![TypeOfLoan] = "GNMA" And _
+[Forms]![foreclosure database screen]![PropertyState] = "MD" Then
+DOANotary = "___________________ of " & servicer() & ", authorized servicer for " & LoanInvestor() & ", personally appeared before me in the jurisdiction aforesaid and executed the foregoing Appointment of Substitute Trustee."
+
+ElseIf Forms![foreclosure database screen]![TypeOfLoan] = "FNMA" Or _
+Forms![foreclosure database screen]![TypeOfLoan] = "FHLMC" Then
+DOANotary = "___________________ of " & Client() & ", personally appeared before me in the jurisdiction aforesaid and executed the foregoing Appointment of Substitute Trustee."
+
+
+ElseIf Client() Like "HomEq*" Or Client() Like "Wells*" Then
+DOANotary = DOANotaryHomEq()
+
+ElseIf Client() Like "Ocwen*" Then
+DOANotary = DOANotaryOcwen()
+
+ElseIf Client() Like "MGC*" Then
+DOANotary = PartOneDOA1() & ", " & PartOneDOA2() & " "
+
+ElseIf Forms![foreclosure database screen]!SPsigns = -1 Or _
+Forms![foreclosure database screen]!SPsigns = 1 Then
+
+D1 = "_______________________________" & ", authorized agent of " & LSecured()
+
+DOANotary = D1 + ", personally appeared before me in the jurisdiction aforesaid and executed the foregoing Appointment of Substitute Trustee."
+
+Else
+
+D1 = "_______________________________" & ", authorized agent of " & Client()
+
+
+DOANotary = D1 + ", personally appeared before me in the jurisdiction aforesaid and executed the foregoing Appointment of Substitute Trustee."
+
+
+End If
+
+End Function
+Public Function PartOneSignature1() As String
+Dim VP1
+
+If (Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "GNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FHLMC") And _
+Client() <> "Wells Fargo Bank, NA" And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+
+If Client() Like "Seter*" Then
+PartOneSignature1 = Client() & ", as servicer for " & LoanInvestor()
+ElseIf (Forms![foreclosure database screen]!Client Like "Pennym*" And _
+Forms![foreclosure database screen]!longsecured Like "American General Mortgage Loan Trust*") Then
+PartOneSignature1 = Client()
+ElseIf Client() Like "Homeward*" And Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+PartOneSignature1 = Client()
+Else
+PartOneSignature1 = Client() & ", authorized servicer for " & LoanInvestor()
+End If
+
+Else
+
+If Forms![foreclosure database screen]!SPsigns = -1 _
+Or (Forms![foreclosure database screen]!SPsameasCl = -1 Or _
+IsNull(Forms![foreclosure database screen]!SPsameasCl)) Or _
+Not IsNull(Forms![foreclosure database screen]!longsecured) Then
+
+If Forms![foreclosure database screen]!Client Like "OneW*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+PartOneSignature1 = Client() & " as servicer for " & LSecured()
+ElseIf (Forms![foreclosure database screen]!Client Like "Pennym*" And _
+Forms![foreclosure database screen]!longsecured Like "American General Mortgage Loan Trust*") Then
+PartOneSignature1 = Client()
+ElseIf IsNull(LSecured) Then
+MsgBox ("No Secured Party Input")
+PartOneSignature1 = Client()
+Else
+PartOneSignature1 = VP1 & LSecured()
+End If
+
+Else
+
+PartOneSignature1 = Client()
+End If
+
+End If
+
+'MsgBox (PartOneSignature1)
+
+End Function
+
+Public Function PartOneSignatureAff2() As String
+
+If (Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan Like "FHA*" Or _
+Forms![foreclosure database screen]!fha = -1 Or _
+Forms![foreclosure database screen]!fha = 1 Or _
+Forms![foreclosure database screen]!TypeOfLoan = "GNMA") And _
+Client() <> "Wells Fargo Bank, NA" And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+'If Forms![foreclosure database screen]!TypeOfLoan = "GNMA" Then
+'PartOneSignatureAff2 = "By: " & servicersig()
+'Else
+PartOneSignatureAff2 = ""
+'End If
+
+Else
+
+If (Forms![foreclosure database screen]!SPsigns = 0 Or _
+IsNull(Forms![foreclosure database screen]!SPsigns)) And _
+Not IsNull(Forms![foreclosure database screen]!longsecured) And _
+(Forms![foreclosure database screen]!SPsameasCl = 0 Or _
+IsNull(Forms![foreclosure database screen]!SPsameasCl)) Then
+'PartOneSignatureAff2 = " by: " & Client() & ", authorized servicer"
+
+If Client() Like "HomEq*" Or (Client() Like "Wells*" And Forms![foreclosure database screen]!Asc_wff = 1) Then
+PartOneSignatureAff2 = "By: " & Forms![foreclosure database screen]![signature block]
+ElseIf Forms![foreclosure database screen]!Client Like "Shellpoint*" Then
+PartOneSignatureAff2 = " by: New Penn Financial, LLC d/b/a Shellpoint Mortgage Servicing " & Forms![foreclosure database screen]![signature block]
+Else
+PartOneSignatureAff2 = " by: " & Client() & Forms![foreclosure database screen]![signature block]
+End If
+
+Else
+PartOneSignatureAff2 = ""
+End If
+
+End If
+
+End Function
+Public Function PartOneSignatureAff1() As String
+
+If Client() Like "Wells*" Then
+
+If Forms![foreclosure database screen]!Asc_wff = 2 Then
+
+PartOneSignatureAff1 = "Wells Fargo Bank, NA, as servicer for Wells Fargo Financial Maryland, Inc."
+ElseIf Forms![foreclosure database screen]!SPsameasCl = -1 Or Forms![foreclosure database screen]!SPsameasCl = 1 Then
+PartOneSignatureAff1 = "Wells Fargo Bank, NA"
+Else
+If Forms![foreclosure database screen]!PropertyState <> "DC" Then
+PartOneSignatureAff1 = "Wells Fargo Bank, NA, as servicer for " & LSecured()
+Else
+PartOneSignatureAff1 = "Wells Fargo Bank, NA, as authorized agent for " & LSecured()
+End If
+
+End If
+
+ElseIf Client() Like "Nationstar*" Then
+If Forms![foreclosure database screen]!SPsameasCl = -1 Or Forms![foreclosure database screen]!SPsameasCl = 1 Then
+PartOneSignatureAff1 = Client()
+Else
+PartOneSignatureAff1 = Client() & ", as attorney-in-fact for " & LSecured()
+End If
+
+'MsgBox (PartOneSignatureAff1)
+
+Else
+
+Dim VServ
+
+If Not IsNull(Forms![foreclosure database screen]!servicer) Then
+VServ = Forms![foreclosure database screen]!servicer
+
+ElseIf Forms![foreclosure database screen]!TypeOfLoan = "FNMA" And Client() Like "Seteru*" Then
+VServ = "Seterus, Inc., as authorized subservicer for Federal National Mortgage Association (" & """" & "Fannie Mae" & """" & "), a corporation organized and existing under the laws of the United States of America"
+Else
+VServ = Client()
+End If
+
+If Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+
+If (Forms![foreclosure database screen]!SPsameasCl = 1 Or _
+Forms![foreclosure database screen]!SPsameasCl = -1 Or Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or Forms![foreclosure database screen]!TypeOfLoan = "FHLMC") Then
+PartOneSignatureAff1 = "OCWEN Loan Servicing, LLC"
+Else
+PartOneSignatureAff1 = "OCWEN Loan Servicing, LLC, as servicer for " & LSecured()
+End If
+
+ElseIf Forms![foreclosure database screen]!Client Like "Shellpoint*" Then
+
+If (Forms![foreclosure database screen]!SPsameasCl = 1 Or _
+Forms![foreclosure database screen]!SPsameasCl = -1) Then
+PartOneSignatureAff1 = "New Penn Financial, LLC d/b/a Shellpoint Mortgage Servicing"
+Else
+PartOneSignatureAff1 = "New Penn Financial, LLC d/b/a Shellpoint Mortgage Servicing, as servicer for " & LSecured()
+End If
+
+
+ElseIf Client() Like "OneWest Bank, F.S.B. (d/b/a Financial*" Then
+PartOneSignatureAff1 = "OneWest Bank, FSB"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust Mortgag*" And _
+Forms![foreclosure database screen]!longsecured = "Suntrust Bank" Then
+PartOneSignatureAff1 = "Suntrust Bank"
+
+ElseIf (Forms![foreclosure database screen]!Client Like "Pennym*" And _
+Forms![foreclosure database screen]!longsecured Like "American General Mortgage Loan Trust*") Then
+PartOneSignatureAff1 = Client()
+
+ElseIf (Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "GNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FHLMC") And _
+Client() <> "Wells Fargo Bank, NA" And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+If Client() Like "PNC*" Or Client() Like "Homeward*" Or Client() Like "EverB*" Then
+PartOneSignatureAff1 = VServ
+
+ElseIf Client() Like "Seteru*" And Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Then
+PartOneSignatureAff1 = VServ
+
+Else
+PartOneSignatureAff1 = VServ & ", as servicer for " & LoanInvestor()
+End If
+
+
+Else
+
+If ((Forms![foreclosure database screen]!SPsigns = 0 Or _
+IsNull(Forms![foreclosure database screen]!SPsigns)) And _
+(Forms![foreclosure database screen]!SPsameasCl = 0 Or _
+IsNull(Forms![foreclosure database screen]!SPsameasCl))) And _
+Not IsNull(Forms![foreclosure database screen]!longsecured) Then
+
+If Forms![foreclosure database screen]!Client Like "PNC*" Then
+PartOneSignatureAff1 = VServ
+Else
+PartOneSignatureAff1 = VServ & ", as servicer for " & LSecured()
+End If
+
+ElseIf (Forms![foreclosure database screen]!SPsigns = 1 Or _
+Forms![foreclosure database screen]!SPsigns = -1) Then
+PartOneSignatureAff1 = LSecured()
+
+Else
+PartOneSignatureAff1 = VServ
+End If
+
+End If
+
+
+End If
+
+'MsgBox (PartOneSignatureAff1)
+
+
+End Function
+
+Public Function NewInvestor()
+NewInvestor = InputBox("Enter New Investor")
+Forms![foreclosure database screen]!NewInvestor = NewInvestor
+VNewInv = Forms![foreclosure database screen]!NewInvestor
+
+End Function
+Public Function SignatureNewInvestor() As String
+
+Call NewInvestor
+
+If Client() Like "Wells*" Then
+
+If Forms![foreclosure database screen]!Asc_wff = 2 Then
+
+SignatureNewInvestor = "Wells Fargo Bank, NA, as servicer for Wells Fargo Financial Maryland, Inc."
+ElseIf Forms![foreclosure database screen]!SPsameasCl = -1 Or Forms![foreclosure database screen]!SPsameasCl = 1 Then
+SignatureNewInvestor = "Wells Fargo Bank, NA"
+Else
+SignatureNewInvestor = "Wells Fargo Bank, NA, as servicer for " & VNewInv
+
+End If
+
+Else
+
+Dim VServ
+
+If Not IsNull(Forms![foreclosure database screen]!servicer) Then
+VServ = Forms![foreclosure database screen]!servicer
+Else
+VServ = Client()
+End If
+
+If Forms![foreclosure database screen]!Client Like "Ocwen*" Then
+
+If (Forms![foreclosure database screen]!SPsameasCl = 1 Or _
+Forms![foreclosure database screen]!SPsameasCl = -1) Then
+SignatureNewInvestor = "OCWEN Loan Servicing, LLC"
+Else
+SignatureNewInvestor = "OCWEN Loan Servicing, LLC, as servicer for " & VNewInv
+End If
+
+ElseIf Client() Like "OneWest Bank, F.S.B. (d/b/a Financial*" Then
+SignatureNewInvestor = "OneWest Bank, FSB"
+
+ElseIf Forms![foreclosure database screen]!Client Like "Suntrust Mortgag*" And _
+Forms![foreclosure database screen]!longsecured = "Suntrust Bank" Then
+SignatureNewInvestor = "Suntrust Bank"
+
+ElseIf (Forms![foreclosure database screen]!Client Like "Pennym*" And _
+Forms![foreclosure database screen]!longsecured Like "American General Mortgage Loan Trust*") Then
+SignatureNewInvestor = Client()
+
+ElseIf (Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "GNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "FHLMC") And _
+Client() <> "Wells Fargo Bank, NA" And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+
+If Client() Like "PNC*" Or Client() Like "Homeward*" Or Client() Like "EverB*" Then
+SignatureNewInvestor = VServ
+Else
+SignatureNewInvestor = VServ & ", as servicer for " & LoanInvestor()
+End If
+
+
+Else
+
+If ((Forms![foreclosure database screen]!SPsigns = 0 Or _
+IsNull(Forms![foreclosure database screen]!SPsigns)) And _
+(Forms![foreclosure database screen]!SPsameasCl = 0 Or _
+IsNull(Forms![foreclosure database screen]!SPsameasCl))) And _
+Not IsNull(Forms![foreclosure database screen]!longsecured) Then
+
+SignatureNewInvestor = VServ & ", as servicer for " & VNewInv
+
+ElseIf (Forms![foreclosure database screen]!SPsigns = 1 Or _
+Forms![foreclosure database screen]!SPsigns = -1) Then
+SignatureNewInvestor = VNewInv
+
+Else
+SignatureNewInvestor = VServ
+End If
+
+End If
+
+
+End If
+
+'MsgBox (SignatureNewInvestor)
+
+
+End Function
+Public Function PartOneSignatureAff3() As String
+
+'If Forms![foreclosure database screen]!SPsigns = -1 Or _
+Forms![foreclosure database screen]!SPsameasCl = -1 Or _
+Forms![foreclosure database screen]!SPsameasCl = 1 Or _
+Forms![foreclosure database screen]!SPsigns = 1 Or _
+Not IsNull(Forms![foreclosure database screen]!LongSecured) Then
+
+strsql = "select masign1, doasign1, have_docs from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs![masign1]) Then
+PartOneSignatureAff3 = "Name:   ___________________________"
+Else
+PartOneSignatureAff3 = rs![masign1]
+End If
+'Else
+'PartOneSignatureAff3 = ""
+
+'End If
+
+End Function
+Public Function PartOneDOA1()
+
+'If Forms![foreclosure database screen]!SPsigns = -1 Or _
+Forms![foreclosure database screen]!SPsameasCl = -1 Or _
+Forms![foreclosure database screen]!SPsameasCl = 1 Or _
+Forms![foreclosure database screen]!SPsigns = 1 Or _
+Not IsNull(Forms![foreclosure database screen]!LongSecured) Then
+
+strsql = "select doasign1, have_docs from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs![doaSign1]) Then
+PartOneDOA1 = "Name:   ___________________________"
+Else
+PartOneDOA1 = rs![doaSign1]
+End If
+
+End Function
+Public Function PartOneDOA2()
+'If Forms![foreclosure database screen]!SPsigns = -1 Or _
+Forms![foreclosure database screen]!SPsameasCl = -1 Or _
+Forms![foreclosure database screen]!SPsameasCl = 1 Or _
+Forms![foreclosure database screen]!SPsigns = 1 Or _
+Not IsNull(Forms![foreclosure database screen]!LongSecured) Then
+
+strsql = "select title1, have_docs from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs![Title1]) Then
+PartOneDOA2 = "Name:   ___________________________"
+'ElseIf Client Like "Ocwen*" Then
+'PartOneDOA2 = rs!Title1 & DOANotaryOcwen()
+Else
+PartOneDOA2 = rs![Title1]
+End If
+End Function
+Public Function PartOneSignatureAff4() As String
+
+'If Forms![foreclosure database screen]!SPsigns = -1 Or _
+Forms![foreclosure database screen]!SPsameasCl = -1 Or _
+Forms![foreclosure database screen]!SPsameasCl = 1 Or _
+Forms![foreclosure database screen]!SPsigns = 1 Or _
+Not IsNull(Forms![foreclosure database screen]!LongSecured) Then
+
+strsql = "select matitle1, doasign1, have_docs from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs![matitle1]) Then
+PartOneSignatureAff4 = "Title:   ___________________________"
+
+ElseIf Client() = "OCWEN Loan Servicing, LLC" Then
+
+If Forms![foreclosure database screen]!SPsigns = -1 Or _
+Forms![foreclosure database screen]!SPsameasCl = -1 Or _
+Forms![foreclosure database screen]!SPsameasCl = 1 Or _
+Forms![foreclosure database screen]!SPsigns = 1 Or _
+Forms![foreclosure database screen]![signature block] Like "*Authorized Servicing*" Then
+PartOneSignatureAff4 = rs![matitle1] & " of " & Client()
+Else
+PartOneSignatureAff4 = rs![matitle1] & " of " & Client() & ", Attorney-in-Fact for"
+End If
+
+Else
+PartOneSignatureAff4 = rs![matitle1] & " of"
+End If
+'Else
+'PartOneSignatureAff4 = ""
+
+'End If
+
+End Function
+Public Function PartOneSignature2AFF() As String
+
+If (Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "GNMA") And _
+Client() <> "Wells Fargo Bank, NA" And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+'If Forms![foreclosure database screen]!TypeOfLoan = "GNMA" Then
+'PartOneSignature2AFF = "By: " & servicersig()
+'Else
+PartOneSignature2AFF = ""
+'End If
+
+Else
+
+
+If Forms![foreclosure database screen]!SPsigns = -1 Or _
+Forms![foreclosure database screen]![SPsameasCl] = -1 Then
+PartOneSignature2AFF = ""
+
+Else
+
+
+
+If Forms![foreclosure database screen]!Client Like "OneW*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+PartOneSignature2AFF = ""
+
+Else
+
+If Forms![foreclosure database screen]![SPsameasCl] = 0 Or _
+IsNull(Forms![foreclosure database screen]!SPsameasCl) Then
+
+If Client() Like "HomEq*" Or (Client() Like "Wells*" And Forms![foreclosure database screen]!Asc_wff = 1) Then
+PartOneSignature2AFF = "By: " & Forms![foreclosure database screen]![signature block]
+'ElseIf Client() like "Bank of Am*" Then
+'PartOneSignature2AFF = "By:  " & "Rachel Bayard, attorney in fact for " & Client()
+Else
+PartOneSignature2AFF = "By:  " & UCase(servicer())
+End If
+
+End If
+End If
+
+
+If Forms![foreclosure database screen]![signature block] <> "" Then
+
+
+
+If Forms![foreclosure database screen]!Client Like "OneW*" And _
+(Forms![foreclosure database screen]!FF = 0 Or IsNull(Forms![foreclosure database screen]!FF)) Then
+PartOneSignature2AFF = ""
+ElseIf Client() Like "HomEq*" Or (Client() Like "Wells*" And Forms![foreclosure database screen]!Asc_wff = 1) Then
+PartOneSignature2AFF = "By: " & Forms![foreclosure database screen]![signature block]
+Else
+PartOneSignature2AFF = "By:  " & servicer() & Forms![foreclosure database screen]![signature block]
+End If
+
+'End If
+
+End If
+
+
+End If
+
+End If
+
+End Function
+
+Public Function PartOneSignature2() As String
+
+If (Forms![foreclosure database screen]!TypeOfLoan = "FNMA" Or _
+Forms![foreclosure database screen]!TypeOfLoan = "GNMA") And _
+Client() <> "Wells Fargo Bank, NA" And _
+Forms![foreclosure database screen]!PropertyState = "MD" Then
+'If Forms![foreclosure database screen]!TypeOfLoan = "GNMA" Then
+'PartOneSignature2 = "By: " & servicersig()
+'Else
+PartOneSignature2 = ""
+'End If
+
+Else
+
+
+If Forms![foreclosure database screen]!SPsigns = -1 Or _
+Forms![foreclosure database screen]![SPsameasCl] = -1 Then
+PartOneSignature2 = ""
+
+Else
+
+If Forms![foreclosure database screen]![SPsameasCl] = 0 Or _
+IsNull(Forms![foreclosure database screen]!SPsameasCl) Then
+
+If Client() Like "HomEq*" Or (Client() Like "Wells*" And Forms![foreclosure database screen]!Asc_wff = 1) Then
+PartOneSignature2 = "By: " & Forms![foreclosure database screen]![signature block]
+'ElseIf Client() like "Bank of Am*" Then
+'PartOneSignature2 = "By:  " & "Rachel Bayard, attorney in fact for " & Client()
+Else
+PartOneSignature2 = "By:  " & UCase(Client())
+End If
+
+End If
+
+If Forms![foreclosure database screen]![signature block] <> "" Then
+
+If Forms![foreclosure database screen]!Client Like "JPM*" Then
+PartOneSignature2 = "By:  " & Client() & ", as Attorney in Fact"
+ElseIf Client() Like "HomEq*" Or (Client() Like "Wells*" And Forms![foreclosure database screen]!Asc_wff = 1) Then
+PartOneSignature2 = "By: " & Forms![foreclosure database screen]![signature block]
+Else
+PartOneSignature2 = "By:  " & Client() & Forms![foreclosure database screen]![signature block]
+End If
+
+'End If
+
+End If
+
+
+End If
+
+End If
+
+End Function
+Public Function PartOneSignatureAIF()
+'If Forms![foreclosure database screen]!PropertyCounty = "Fairfax" Then
+'If Forms![foreclosure database screen]!LongSecured Like "*Attorney in Fact" Then
+'PartOneSignatureAIF = "Pursuant to an autorized Mortage Servicing Agreement"
+'Else
+PartOneSignatureAIF = ""
+'End If
+'End If
+
+End Function
+Public Function PartOneLine() As String
+
+PartOneLine = "__________________________________"
+
+End Function
+Public Function PartOneSignature3() As String
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "select masign1, doasign1, have_docs from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+If (Forms![foreclosure database screen]!SPsigns = -1 Or _
+Forms![foreclosure database screen]!SPsigns = 1) Or _
+(IsNull(rs![doaSign1]) And IsNull(rs!masign1)) Then
+
+If Client() Like "OCwen*" Then
+If AppType Like "DOA*" Then
+
+If Not IsNull(rs!doaSign1) Then
+PartOneSignature3 = rs![doaSign1]
+Else
+PartOneSignature3 = "Name:  ___________________________"
+End If
+
+Else
+If IsNull(rs!masign1) Then
+PartOneSignature3 = "Name:  ___________________________"
+Else
+PartOneSignature3 = rs!masign1
+End If
+
+End If
+Else
+
+PartOneSignature3 = "Name:  ___________________________"
+End If
+
+Else
+
+If AppType Like "DOA*" Then
+
+If Client() Like "OCwen*" Then
+PartOneSignature3 = rs![doaSign1]
+ElseIf IsNull(rs![doaSign1]) Then
+PartOneSignature3 = "Name:  ___________________________"
+Else
+PartOneSignature3 = rs![doaSign1]
+End If
+
+Else
+
+
+If IsNull(rs![masign1]) Or Client() Like "Select*" Then
+PartOneSignature3 = "Name:  ___________________________"
+Else
+PartOneSignature3 = rs![masign1]
+End If
+
+
+
+End If
+
+
+End If
+
+
+rs.Close
+
+
+End Function
+Public Function PartOneSignature4() As String
+Dim strsql As String
+Dim rs As RecordSet
+strsql = "select matitle1, have_docs, title1 from clients where organizationname = " & """" & Forms![foreclosure database screen]!Client & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If AppType Like "DOA*" Then
+
+If Client() Like "Homecomings*" Or Client() Like "Ocwen*" Then
+If Client() Like "Homecomings*" Then
+PartOneSignature4 = "Title:     Default Services Junior Officer"
+Else
+If Not IsNull(rs!Title1) Then
+PartOneSignature4 = rs!Title1
+Else
+PartOneSignature4 = "Title:     ___________________________"
+End If
+
+End If
+
+Else
+
+If IsNull(rs![Title1]) Then
+PartOneSignature4 = "Title:     ___________________________"
+Else
+PartOneSignature4 = rs![Title1]
+End If
+End If
+
+Else
+
+If Client() Like "OCwen*" Then
+If IsNull(rs!matitle1) Then
+PartOneSignature4 = "Title: ________________________"
+Else
+PartOneSignature4 = rs!matitle1
+End If
+
+ElseIf IsNull(rs![matitle1]) _
+Or Forms![foreclosure database screen]!SPsigns = -1 Or Forms![foreclosure database screen]!SPsigns = 1 Then
+PartOneSignature4 = "Title:     ___________________________"
+ElseIf Forms![foreclosure database screen]!Client Like "MGC*" Then
+PartOneSignature4 = rs![matitle1] & ", " & Client() & ", as loan servicer for " & Forms![foreclosure database screen]!longsecured & " and authorized representative"
+Else
+PartOneSignature4 = rs![matitle1]
+End If
+
+
+End If
+
+
+
+
+rs.Close
+
+End Function
+Public Function signscomplaint() As String
+Dim att1, att2 As String
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "Select * from attorneys"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Forms!Complaint!signs_complaint = -1 Then
+att1 = rs!Attorney1
+Else
+att1 = ""
+End If
+
+If Forms!Complaint!signs_complaint2 = -1 Then
+If att1 = "" Then
+att1 = rs!Attorney2
+Else
+att2 = rs!Attorney2
+End If
+End If
+
+If Forms!Complaint!signs_complaint3 = -1 Then
+If att1 = "" Then
+att1 = rs!Attorney7
+Else
+att2 = rs!Attorney7
+End If
+End If
+
+If Forms!Complaint!signs_complaint4 = 1 Then
+If att1 = "" Then
+att1 = rs!Attorney4
+Else
+att1 = rs!Attorney4
+End If
+End If
+
+
+If Forms!Complaint!signs_complaint5 = -1 Then
+If att1 = "" Then
+att1 = rs!Attorney5
+Else
+att2 = rs!Attorney5
+End If
+End If
+
+If Forms!Complaint!signs_complaint6 = -1 Then
+If att1 = "" Then
+att1 = rs!Attorney6
+Else
+att2 = rs!Attorney6
+End If
+End If
+
+If Forms!Complaint!signs_complaint7 = -1 Then
+If att1 = "" Then
+att1 = rs!Attorney7
+Else
+att2 = rs!Attorney7
+End If
+End If
+
+If Forms!Complaint!signs_complaint8 = -1 Then
+If att1 = "" Then
+att1 = rs!Attorney8
+Else
+att2 = rs!Attorney8
+End If
+End If
+
+If Forms!Complaint!Signs_complaint9 = -1 Then
+If att1 = "" Then
+att1 = rs!Attorney9
+Else
+att2 = rs!Attorney9
+End If
+End If
+
+If att2 <> "" Then
+signscomplaint = att1 & " and " & att2
+Else
+signscomplaint = att1
+End If
+
+
+rs.Close
+
+End Function
+Public Function SignsRptSale()
+
+Dim att1, att2 As String
+Dim strsql As String
+Dim rs As RecordSet
+strsql = "Select * from attorneys"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If Forms![foreclosure database screen]!PostsaleSubForm.[Form]!HB = -1 Then
+SignsRptSale = rs!Attorney1
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.[Form]!JG = -1 Then
+SignsRptSale = rs!Attorney2
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.[Form]!KM = -1 Then
+SignsRptSale = rs!Attorney7
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.[Form]!NA = -1 Then
+SignsRptSale = rs!Attorney4
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.[Form]!att5 = -1 Then
+SignsRptSale = rs!Attorney9
+ElseIf Forms![foreclosure database screen]!PostsaleSubForm.[Form]!ts = -1 Then
+SignsRptSale = Forms![foreclosure database screen]!PostsaleSubForm.[Form]!trusteename
+Else
+SignsRptSale = rs!Attorney1
+End If
+rs.Close
+
+End Function
+Public Function trustees2() As String
+
+Call VarTrusteeSelection
+
+Dim SubTRUSTEES, DocName, trusteename As String
+Dim message, Title As String
+
+'Title = "Substitute Trustee Selection"
+'message = ("SubTrustees: " & (Chr(13)) & _
+"A(Howie/Jake/Carrie): " & (Chr(13)) & _
+"B(Howie/Jake/Carrie/Ralph): " & (Chr(13)) & "")
+
+'SubTrustees = InputBox(message, Title)
+SubTRUSTEES = "A"
+
+If IsNull(Forms![foreclosure database screen]![Trustee].Form![Trustee]) Then
+trusteename = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![Trustee].Form![trustee2]) Then
+trusteename = Forms![foreclosure database screen]![Trustee].Form![Trustee_First] & " " & Forms![foreclosure database screen]![Trustee].Form![Trustee]
+Else
+
+If VarTrustee = 1 Then
+trusteename = Forms![foreclosure database screen]![Trustee].Form![Trustee_First] & " " & Forms![foreclosure database screen]![Trustee].Form![Trustee]
+ElseIf VarTrustee = 2 Then
+trusteename = Forms![foreclosure database screen]![Trustee].Form![trustee2_first] & " " & Forms![foreclosure database screen]![Trustee].Form![trustee2]
+ElseIf VarTrustee = 3 Then
+trusteename = Forms![foreclosure database screen]![Trustee].Form![Trustee_First] & " " & Forms![foreclosure database screen]![Trustee].Form![Trustee] & " and " & Forms![foreclosure database screen]![Trustee].Form![trustee2_first] & " " & Forms![foreclosure database screen]![Trustee].Form![trustee2]
+End If
+End If
+
+End If
+
+'SubTrustees = "A"
+
+If SubTRUSTEES = "B" Then
+Forms![foreclosure database screen]![line3] = "__________________________________"
+Forms![foreclosure database screen]![sign3] = "Carrie M. Ward"
+Forms![foreclosure database screen]![line4] = "__________________________________"
+Forms![foreclosure database screen]![sign4] = "Ralph J. DiPietro"
+If trusteename <> "" Then
+If VarTrustee = 3 Then
+Forms![foreclosure database screen]![trustees2] = "Howard N. Bierman, Jacob Geesing, Carrie M. Ward, Ralph J. DiPietro, " & trusteename
+Else
+Forms![foreclosure database screen]![trustees2] = "Howard N. Bierman, Jacob Geesing, Carrie M. Ward, Ralph J. DiPietro and " & trusteename
+End If
+Else
+Forms![foreclosure database screen]![trustees2] = "Howard N. Bierman, Jacob Geesing, Carrie M. Ward and Ralph J. DiPietro"
+End If
+End If
+
+If SubTRUSTEES = "A" Then
+Forms![foreclosure database screen]![line3] = "__________________________________"
+Forms![foreclosure database screen]![sign3] = "Carrie M. Ward"
+Forms![foreclosure database screen]![line4] = ""
+Forms![foreclosure database screen]![sign4] = ""
+
+If trusteename <> "" Then
+If VarTrustee = 3 Then
+Forms![foreclosure database screen]![trustees2] = "Howard N. Bierman, Jacob Geesing, Carrie M. Ward, " & trusteename
+Else
+Forms![foreclosure database screen]![trustees2] = "Howard N. Bierman, Jacob Geesing, Carrie M. Ward and " & trusteename
+End If
+Else
+Forms![foreclosure database screen]![trustees2] = "Howard N. Bierman, Jacob Geesing and Carrie M. Ward"
+End If
+End If
+
+End Function
+Public Function trusteesSubDeed() As String
+Dim SubTRUSTEES, DocName, trusteename As String
+Dim message, Title As String
+
+'Title = "Substitute Trustee Selection"
+'message = ("SubTrustees: " & (Chr(13)) & _
+"A(Howie/Jake/Carrie): " & (Chr(13)) & _
+"B(Howie/Jake/Carrie/Ralph): " & (Chr(13)) & "")
+
+SubTRUSTEES = "A"
+
+   
+If SubTRUSTEES = "B" Then
+Forms![foreclosure database screen]![line3] = "__________________________________"
+Forms![foreclosure database screen]![sign3] = "Carrie M. Ward"
+Forms![foreclosure database screen]![line4] = "__________________________________"
+Forms![foreclosure database screen]![sign4] = "Ralph J. DiPietro"
+
+Forms![foreclosure database screen]![trustees2] = "Howard N. Bierman, Jacob Geesing, Carrie M. Ward and Ralph J. DiPietro"
+End If
+
+If SubTRUSTEES = "A" Then
+'Forms![foreclosure database screen]![line3] = "__________________________________"
+'Forms![foreclosure database screen]![sign3] = "Carrie M. Ward"
+'Forms![foreclosure database screen]![line4] = ""
+'Forms![foreclosure database screen]![sign4] = ""
+
+Forms![foreclosure database screen]![trustees2] = "Howard N. Bierman, Jacob Geesing and Carrie M. Ward"
+End If
+
+
+End Function
+Public Function attorneysigns() As String
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att9] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att9] = 1 Then
+
+attorneysigns = att![Attorney5]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att8] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att8] = 1 Then
+
+attorneysigns = att![attorney24]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att7] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att7] = 1 Then
+
+attorneysigns = att![attorney15]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att6] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att6] = 1 Then
+
+attorneysigns = att![Attorney6]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att5] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att5] = 1 Then
+
+attorneysigns = att![attorney17]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att4] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att4] = 1 Then
+
+attorneysigns = att![Attorney34]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att3] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att3] = 1 Then
+attorneysigns = att![Attorney3]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att2] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att2] = 1 Then
+attorneysigns = att![attorney25]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att1] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att1] = 1 Then
+attorneysigns = att![Attorney1]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att10] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att10] = 1 Then
+attorneysigns = att![attorney12]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att11] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att11] = 1 Then
+'MsgBox ("No attorney associated with this button")
+attorneysigns = att![Attorney10]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att12] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att12] = 1 Then
+attorneysigns = att![attorney18]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att13] = -1 Or _
+[Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att13] = 1 Then
+attorneysigns = att![attorney14]
+End If
+
+
+'MsgBox (attorneysigns)
+
+att.Close
+
+End Function
+Public Function DeedPurchaser()
+Dim VSecured
+
+VSecured = Forms![foreclosure database screen]!SecuredParty
+
+If ([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] = "REO" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last = "REO") And _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] <> "REO Prop*" Then
+
+
+If Forms![foreclosure database screen]!SPsameasCl = -1 Or Forms![foreclosure database screen]!SPsameasCl = 1 Then
+If IsNull(VSecured) Then
+DeedPurchaser = LSecured() & " (" & Client() & ")"
+Else
+DeedPurchaser = LSecured() & " (" & VSecured & ")"
+End If
+
+Else
+DeedPurchaser = LSecured() & " (" & VSecured & ")"
+End If
+
+Else
+
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Purchaser_Last]) Then
+DeedPurchaser = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer]
+Else
+DeedPurchaser = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] & " " & [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Purchaser_Last]
+End If
+
+End If
+
+End Function
+Public Function DeedPurchaserSign()
+
+If ([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] = "REO" _
+Or [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]!Purchaser_Last = "REO") And _
+[Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] <> "REO Prop*" Then
+
+DeedPurchaserSign = LSecured() & " (" & Forms![foreclosure database screen]!SecuredParty & ")"
+
+Else
+
+If IsNull([Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Purchaser_Last]) Then
+DeedPurchaserSign = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer]
+Else
+DeedPurchaserSign = [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Buyer] & " " & [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![Purchaser_Last]
+End If
+
+End If
+
+End Function
+
+
+Public Function TrusteeSignCSZ() As String
+If IsNull(Forms![foreclosure database screen]![Trustee].Form![Trustee]) Then
+TrusteeSignCSZ = ""
+Else
+
+If IsNull(Forms![foreclosure database screen]![Trustee].Form![trustee2]) Then
+TrusteeSignCSZ = Forms![foreclosure database screen]![Trustee].Form![trustee citystatezip]
+Else
+If VarTrustee = 1 Then
+TrusteeSignCSZ = Forms![foreclosure database screen]![Trustee].Form![trustee citystatezip]
+ElseIf VarTrustee = 2 Then
+TrusteeSignCSZ = Forms![foreclosure database screen]![Trustee].Form![trustee2_csz]
+ElseIf VarTrustee = 3 Then
+TrusteeSignCSZ = Forms![foreclosure database screen]![Trustee].Form![trustee citystatezip]
+End If
+End If
+
+End If
+
+End Function
+
+Public Function Part1Trustees() As String
+
+Dim VSubT
+VSubT = ""
+
+
+If Forms![foreclosure database screen]!PropertyState = "DC" Then
+
+If IsNull(Forms![foreclosure database screen]!AttorneyCAPFIELD) Or _
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "" Then
+
+VSel = 0
+VSel = InputBox("Selection for Trustees for DC BWW#: " & Forms![foreclosure database screen]!filenum & vbCr & vbCr & "1. Howard N. Bierman and Carrie M.Ward" & vbCr & _
+"2. Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Jason T. Kutcher, Joshua P. Coleman and Joseph A. Delozier" & vbCr & _
+"3. Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Jason T. Kutcher, Joshua P. Coleman, Joseph A. Delozier, Andrew Brenner and Angela Dawkins")
+
+End If
+
+If VSel = 1 Or Forms![foreclosure database screen]!AttorneyCAPFIELD = "2 TrusteesDC" Then
+Part1Trustees = "Howard N. Bierman and Carrie M.Ward"
+VSubT = "how, cmw"
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "2 TrusteesDC"
+mySendKeys ("{F9}"), True ': DoEvents
+
+ElseIf VSel = 2 Or Forms![foreclosure database screen]!AttorneyCAPFIELD = "6 TrusteesDC" Then
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Jason T. Kutcher, Joshua P. Coleman and Joseph A. Delozier"
+VSubT = "cmw, how, jak, jtk, jcc, jad"
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "6 TrusteesDC"
+Else
+
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Jason T. Kutcher, Joshua P. Coleman, Joseph A. Delozier, Andrew J. Brenner and Angela M. Dawkins"
+VSubT = "cmw, how, jak, jtk, jcc, jad, axd, ajb"
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "8 TrusteesDC"
+
+
+
+
+mySendKeys ("{F9}"), True ': DoEvents
+
+
+End If
+Exit Function
+End If
+
+
+Call VarTrusteeSelection
+
+If Forms![foreclosure database screen]!PropertyState = "MD" Then
+If IsNull(Forms![foreclosure database screen]![Trustee].Form![Trustee]) Then
+trusteename = ""
+
+ElseIf IsNull(Forms![foreclosure database screen]![Trustee].Form![trustee2]) And Not IsNull(Forms![foreclosure database screen]![Trustee].Form![Trustee]) Then
+trusteename = Forms![foreclosure database screen]![Trustee].Form![Trustee_First] & " " & Forms![foreclosure database screen]![Trustee].Form![Trustee]
+
+Else
+
+If VarTrustee = 1 Then
+trusteename = Forms![foreclosure database screen]![Trustee].Form![Trustee_First] & " " & Forms![foreclosure database screen]![Trustee].Form![Trustee]
+
+ElseIf VarTrustee = 2 Then
+trusteename = Forms![foreclosure database screen]![Trustee].Form![trustee2_first] & " " & Forms![foreclosure database screen]![Trustee].Form![trustee2]
+
+ElseIf VarTrustee = 3 Then
+trusteename = Forms![foreclosure database screen]![Trustee].Form![Trustee_First] & " " & Forms![foreclosure database screen]![Trustee].Form![Trustee] & " and " & Forms![foreclosure database screen]![Trustee].Form![trustee2_first] & " " & Forms![foreclosure database screen]![Trustee].Form![trustee2]
+
+End If
+
+End If
+
+
+If trusteename = "" Then
+
+If Forms![foreclosure database screen]!AttorneyCAPFIELD = "12 Trustees" Or _
+IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentClient) Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentClient >= #10/1/2015# Or _
+(IsNull(Forms![foreclosure database screen]!AttorneyCAPFIELD) And _
+Forms![foreclosure database screen]![Date Recieved] >= #10/1/2015#) Then
+
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Joshua Coleman, Richard R. Goldsmith, Jr., Ludeen McCartney-Green, Jason Kutcher, Elizabeth C. Jones, Nicholas Derdock, Andrew J. Brenner and Angela M. Dawkins"
+VSubT = "cmw, how, jak, pl, jc, cpb, lmg, rrg, jtk, ecj, nd, AJB, AxD"
+If Forms![foreclosure database screen]!AttorneyCAPFIELD <> "12 Trustees" Then
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "12 Trustees"
+End If
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "12 Trustees" Then
+
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Joshua Coleman, Richard R. Goldsmith, Jr., Ludeen McCartney-Green, Jason Kutcher, Elizabeth C. Jones and Nicholas Derdock"
+VSubT = "cmw, how, jak, pl, jc, cpb, lmg, rrg, jtk, ecj, nd"
+
+'MsgBox (Part1Trustees)
+
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "12 Trustees"
+'Forms![foreclosure database screen].Refresh
+'SendKeys ("{f9}")
+Exit Function
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "10 Trustees" Then
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Joshua Coleman, Richard R. Goldsmith, Jr., Ludeen McCartney-Green, Jason Kutcher, Elizabeth C. Jones and Nicholas Derdock"
+VSubT = "cmw, how, jak, pl, tcm, jc, cpb, lmg, rrg"
+
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "10 Trustees"
+Forms![foreclosure database screen].Refresh
+
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "9 Trustees" Then
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Tayyaba C. Monto, Joshua Coleman, Richard R. Goldsmith, Jr. and Ludeen McCartney-Green"
+VSubT = "cmw, how, jak, pl, tcm, jc, cpb, lmg, rrg"
+
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "9 Trustees"
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "6 Trustees" Then
+
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Tayyaba C. Monto and Joshua Coleman"
+VSubT = "cmw, how, jak, pl, tcm, jc"
+
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "6 Trustees"
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD Like "*Ward" Then
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman and Jacob Geesing"
+VSubT = "cmw, how, jak"
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD Like "*Geesing*" Then
+Part1Trustees = "Howard N. Bierman, Jacob Geesing and Carrie M. Ward"
+VSubT = "how, jak, cmw"
+
+End If
+
+Else
+
+If Forms![foreclosure database screen]!AttorneyCAPFIELD = "12 Trustees" Or _
+IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentClient) Or _
+Forms![foreclosure database screen]!ForeclosureSubForm.Form!DocsSentClient >= #10/1/2015# Or _
+(IsNull(Forms![foreclosure database screen]!AttorneyCAPFIELD) And _
+Forms![foreclosure database screen]![Date Recieved] >= #10/1/2015#) Then
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Joshua Coleman, Richard R. Goldsmith, Jr., Ludeen McCartney-Green, Jason Kutcher, Elizabeth C. Jones, Nicholas Derdock, Andrew J. Brenner, Angela M.Dawkins and " & trusteename
+VSubT = "cmw, how, jak, pl, jc, cpb, lmg, rrg, jtk, ecj, nd, AJB, AxD"
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "12 Trustees" Then
+Forms![foreclosure database screen].Refresh
+
+'MsgBox (Part1Trustees)
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "10 Trustees" Then
+
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Joshua Coleman, Richard R. Goldsmith, Jr., Ludeen McCartney-Green, Jason Kutcher, Elizabeth C. Jones, Nicholas Derdock and " & trusteename
+VSubT = "cmw, how, jak, pl, jc, cpb, lmg, rrg, jtk, ecj, nd"
+
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "10 Trustees"
+Forms![foreclosure database screen].Refresh
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "9 Trustees" Then
+
+
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Tayyaba C. Monto, Joshua Coleman, Richard R. Goldsmith, Jr., Ludeen McCartney-Green and " & trusteename
+VSubT = "cmw, how, jak, pl, tcm, jc, cpb, lmg, rrg, " & trusteename
+
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "9 Trustees"
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD = "6 Trustees" Then
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Tayyaba C. Monto, Joshua Coleman and " & trusteename
+VSubT = "cmw, how, jak, pl, tcm, jc, " & trusteename
+
+Forms![foreclosure database screen]!AttorneyCAPFIELD = "6 Trustees"
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD Like "*Ward" Then
+Part1Trustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing and " & trusteename
+VSubT = "cmw, how, jak, " & trusteename
+
+ElseIf Forms![foreclosure database screen]!AttorneyCAPFIELD Like "*Geesing*" Then
+Part1Trustees = "Howard N. Bierman, Jacob Geesing, Carrie M. Ward and " & trusteename
+VSubT = "how, jak, cmw, " & trusteename
+
+End If
+
+End If
+
+Forms![foreclosure database screen]!SubTRUSTEES = VSubT
+
+End If
+
+'MsgBox (Part1Trustees)
+
+End Function
+
+Public Function PartnersDeed()
+If Forms![foreclosure database screen]![PropertyState] = "DC" Then
+PartnersDeed = "Matt Cohen or Ralph DiPietro"
+Else
+PartnersDeed = "Howard N. Bierman, Jacob Geesing or Carrie M. Ward"
+End If
+
+End Function
+Public Function Partners()
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+Partners = "Howard N. Bierman or Stephen B. Wood"
+Else
+PartnersDeed = "Howard N. Bierman or Carrie M. Ward"
+End If
+
+End Function
+Public Function trusteenoncooper()
+
+If [Forms]![foreclosure database screen]![PropertyState] = "MD" And _
+  (Forms![foreclosure database screen]![Propertycounty] = "Allegany" _
+Or Forms![foreclosure database screen]![Propertycounty] = "Dorchester" _
+Or Forms![foreclosure database screen]![Propertycounty] = "Garrett" _
+Or Forms![foreclosure database screen]![Propertycounty] = "Somerset" _
+Or Forms![foreclosure database screen]![Propertycounty] = "Wicomico" _
+Or Forms![foreclosure database screen]![Propertycounty] = "Worcester") Then
+
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+'MsgBox (rs!Trustee_First & " " & rs!Trustee)
+'MsgBox (rs!trustee2)
+
+If IsNull(rs!trustee2) And IsNull(rs!trustee3) Then
+trusteenoncooper = rs!Trustee_First & " " & rs!Trustee
+Else
+
+Call VarTrusteeSelection
+
+'If Forms![foreclosure database screen]![propertycounty] = "Allegany" _
+'Or Forms![foreclosure database screen]![propertycounty] = "Garrett" Then
+'trusteenoncooper = rs!Trustee_First & " " & rs!Trustee
+'Call trusteenoncooper2
+'End If
+
+If VarTrustee = 1 Then
+trusteenoncooper = rs!Trustee_First & " " & rs!Trustee
+
+ElseIf VarTrustee = 2 Then
+trusteenoncooper = rs!trustee2_first & " " & rs!trustee2
+
+ElseIf VarTrustee = 3 Then
+trusteenoncooper = rs!Trustee_First & " " & rs!Trustee
+Call trusteenoncooper2
+
+End If
+End If
+
+End If
+'rs.Close
+End Function
+Public Function trusteenoncooper2()
+
+If VarTrustee = 3 Then
+strsql = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+trusteenoncooper2 = rs!trustee2_first & " " & rs!trustee2
+Else
+trusteenoncooper2 = ""
+End If
+'rs.Close
+
+
+End Function
+Public Function Trusteenoncooper2nd()
+
+strsql = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!trustee2) Or (rs!County <> "Garrett" And rs!County <> "Allegany") Then
+Trusteenoncooper2nd = ""
+Else
+Trusteenoncooper2nd = rs!trustee2_first & " " & rs!trustee2
+End If
+'rs.Close
+
+End Function
+Public Function TrusteesMdSales()
+
+If [Forms]![MDSetSales]![PropertyState] = "MD" And _
+  (Forms![MDSetSales]![Propertycounty] = "Allegany" _
+Or Forms![MDSetSales]![Propertycounty] = "Dorchester" _
+Or Forms![MDSetSales]![Propertycounty] = "Garrett" _
+Or Forms![MDSetSales]![Propertycounty] = "Somerset" _
+Or Forms![MDSetSales]![Propertycounty] = "Wicomico" _
+Or Forms![MDSetSales]![Propertycounty] = "Worcester") Then
+
+Dim strsql As String
+Dim rs As RecordSet
+
+strsql = "Select * from jurisdiction where county = " & """" & Forms![MDSetSales]!Propertycounty & """" & " and state = " & """" & Forms![MDSetSales]!PropertyState & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!trustee2) And IsNull(rs!trustee3) Then
+TrusteesMdSales = vattorneys & rs!Trustee_First & " " & rs!Trustee
+Else
+Call VarTrusteeSelectionMDSales
+
+If Forms![MDSetSales]![Propertycounty] = "Allegany" _
+Or Forms![MDSetSales]![Propertycounty] = "Garrett" Then
+TrusteesMdSales = vattorneys & rs!Trustee_First & " " & rs!Trustee
+Call TrusteesMDSales2
+End If
+
+If VarTrustee = 1 Then
+TrusteesMdSales = vattorneys & rs!Trustee_First & " " & rs!Trustee
+ElseIf VarTrustee = 2 Then
+TrusteesMdSales = vattorneys & rs!trustee2_first & " " & rs!trustee2
+ElseIf VarTrustee = 3 Then
+TrusteesMdSales = vattorneys & rs!Trustee_First & " " & rs!Trustee
+Call TrusteesMDSales2
+
+End If
+End If
+
+Else
+
+TrusteesMdSales = "Howard N. Bierman, Jacob Geesing and Carrie M. Ward"
+
+
+End If
+
+End Function
+Public Function TrusteesMDSales2()
+Call VarTrusteeSelectionMDSales
+Dim VTrustee2
+
+strsql = "Select * from jurisdiction where county = " & """" & Forms![MDSetSales]!Propertycounty & """" & " and state = " & """" & Forms![MDSetSales]!PropertyState & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If IsNull(rs!trustee2) Or (rs!County <> "Garrett" And rs!County <> "Allegany") Then
+VTrustee2 = ""
+Else
+VTrustee2 = rs!trustee2_first & " " & rs!trustee2
+End If
+
+If VTrustee2 = "" Then
+TrusteesMDSales2 = "Howard N. Bierman, Jacob Geesing, Carrie M. Ward"
+Else
+TrusteesMDSales2 = "Howard N. Bierman, Jacob Geesing, Carrie M. Ward and " & vtruste2e2
+End If
+
+'rs.Close
+
+End Function
+Function VarTrusteeSelectionMDSales()
+
+strsql = "Select * from jurisdiction where county = " & """" & Forms![MDSetSales]!Propertycounty & """" & " and state = " & """" & Forms![MDSetSales]!PropertyState & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+'If IsNull(Forms![MDSetSales]![Trustee].Form![trustee2]) Then
+VarTrustee = 1
+'If Forms![MDSetSales]!PropertyCounty = "Garrett" Or _
+'Forms![MDSetSales]!PropertyCounty = "Allegany" Then
+'VarTrustee = 3
+'Else
+Dim Vt1, Vt2, Vt3 As String
+Vt1 = rs![Trustee_First] & " " & rs![Trustee]
+Vt2 = rs!trustee2_first & " " & rs![trustee2]
+If IsNull(rs!trustee3) Then
+Vt3 = ""
+Else
+Vt3 = rs!trustee3_first & " " & rs!trustee3
+End If
+If IsNull(rs!trustee3) Then
+VarTrustee = InputBox("There is more than 1 Trustee for this Jurisdiction: " & vbCr & _
+"Please Select " & vbCr & "1. " & Vt1 _
+& " or " & vbCr & "2. " & Vt2 _
+& " or " & vbCr & "3. BOTH")
+
+Else
+VarTrustee = InputBox("There is more than 1 Trustee for this Jurisdiction: " & vbCr & _
+"Please Select " & vbCr & "1. " & Vt1 _
+& " or " & vbCr & "2. " & Vt2 _
+& " or " & vbCr & "3. " & Vt3 _
+& " or " & vbCr & "4. BOTH")
+End If
+
+'End If
+rs.Close
+
+End Function
+
+Public Function MDFedBar()
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att10] = -1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDFedBar = ", MD Fed. Bar No. " & att!MDBar12
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction = "D.C." Then
+MDFedBar = ", DC Bar No. " & att!dcbar12
+End If
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att9] = -1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDFedBar = ", MD Fed. Bar No. " & att!MDBar5
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction = "D.C." Then
+MDFedBar = ", DC Bar No. " & att!dcbar5
+End If
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att8] = -1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDFedBar = ", MD Fed. Bar No. " & att!MDBar24
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction = "D.C." Then
+MDFedBar = ", DC Bar No. " & att!dcbar24
+End If
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att7] = -1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDFedBar = ", MD Fed. Bar No. " & att!MDBar15
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction = "D.C." Then
+MDFedBar = ", DC Bar No. " & att!dcbar15
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att6] = -1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDFedBar = ", MD Fed. Bar No. " & att!MDBar6
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction = "D.C." Then
+MDFedBar = ", DC Bar No. " & att!dcbar6
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att5] = -1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDFedBar = ", MD Fed. Bar No. " & att!MDBar17
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction = "D.C." Then
+MDFedBar = ", DC Bar No. " & att!dcbar17
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att4] = -1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDFedBar = ", MD Fed. Bar No. " & att!MDBar4
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction = "D.C." Then
+MDFedBar = ", DC Bar No. " & att!dcbar4
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att3] = -1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDFedBar = ", MD Fed. Bar No. " & att!MDBar3
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction = "D.C." Then
+MDFedBar = ", DC Bar No. " & att!dcbar3
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att2] = -1 Then
+'If [Forms]![foreclosure database screen]![BankruptcySubform].[Form]!Jurisdiction Like "*MD" Then
+'MDFedBar = ", MD Fed. Bar No. " & att!MDBar14
+'ElseIf [Forms]![foreclosure database screen]![BankruptcySubform].[Form]!Jurisdiction = "D.C." Then
+'MDFedBar = ", DC Bar No. " & att!dcbar14
+'Virginia Attorney
+MDFedBar = ""
+'End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att1] = -1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDFedBar = ", MD Fed. Bar No. " & att!MDBar1
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction = "D.C." Then
+MDFedBar = ", DC Bar No. " & att!dcbar1
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att11] = -1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDFedBar = ", MD Fed. Bar No. " & att!MDBar10
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction = "D.C." Then
+MDFedBar = ", DC Bar No. " & att!dcbar10
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att12] = -1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDFedBar = ", MD Fed. Bar No. " & att!MDBar18
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction = "D.C." Then
+MDFedBar = ", DC Bar No. " & att!dcbar18
+End If
+
+End If
+'MsgBox (attorneysigns)
+
+att.Close
+
+End Function
+Public Function AttorneyFax()
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att9] = -1 Then
+AttorneyFax = att![att5fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att8] = -1 Then
+AttorneyFax = att![att24fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att7] = -1 Then
+AttorneyFax = att![att15fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att6] = -1 Then
+AttorneyFax = att![att6fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att5] = -1 Then
+AttorneyFax = att![att17fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att4] = -1 Then
+AttorneyFax = att![att34fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att3] = -1 Then
+AttorneyFax = att![att3fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att2] = -1 Then
+AttorneyFax = att![att14fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att1] = -1 Then
+AttorneyFax = att![att1fax]
+
+End If
+'MsgBox (attorneyfax)
+
+att.Close
+End Function
+Public Function AttorneyEmail()
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att9] = -1 Then
+AttorneyEmail = att![att5email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att8] = -1 Then
+AttorneyEmail = att![att24email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att7] = -1 Then
+AttorneyEmail = att![att15email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att6] = -1 Then
+AttorneyEmail = att![att6email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att5] = -1 Then
+AttorneyEmail = att![att17email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att4] = -1 Then
+AttorneyEmail = att![att34email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att3] = -1 Then
+AttorneyEmail = att![att3email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att2] = -1 Then
+AttorneyEmail = att![att15email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att1] = -1 Then
+AttorneyEmail = att![att1email]
+
+End If
+'MsgBox (attorneyemail)
+
+att.Close
+End Function
+Public Function SLAttSigns()
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+
+If [Forms]![foreclosure database screen]![Senior Lien SaleSubForm].[Form]![att1] = -1 Then
+SLAttSigns = att![Attorney1]
+ElseIf [Forms]![foreclosure database screen]![Senior Lien SaleSubForm].[Form]![att2] = -1 Then
+SLAttSigns = att![Attorney2]
+ElseIf [Forms]![foreclosure database screen]![Senior Lien SaleSubForm].[Form]![att3] = -1 Then
+SLAttSigns = att![Attorney3]
+ElseIf [Forms]![foreclosure database screen]![Senior Lien SaleSubForm].[Form]![att4] = -1 Then
+SLAttSigns = att![Attorney4]
+ElseIf [Forms]![foreclosure database screen]![Senior Lien SaleSubForm].[Form]![att5] = -1 Then
+SLAttSigns = att![Attorney5]
+ElseIf [Forms]![foreclosure database screen]![Senior Lien SaleSubForm].[Form]![att6] = -1 Then
+SLAttSigns = att![Attorney6]
+ElseIf [Forms]![foreclosure database screen]![Senior Lien SaleSubForm].[Form]![att7] = -1 Then
+SLAttSigns = att![Attorney7]
+ElseIf [Forms]![foreclosure database screen]![Senior Lien SaleSubForm].[Form]![att8] = -1 Then
+SLAttSigns = att![Attorney8]
+ElseIf [Forms]![foreclosure database screen]![Senior Lien SaleSubForm].[Form]![att9] = -1 Then
+SLAttSigns = att![Attorney9]
+Else
+SLAttSigns = att!Attorney1
+
+End If
+att.Close
+End Function
+Public Function attorneysigns2() As String
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att1] = -1 _
+And attorneysigns <> att!Attorney1 Then
+attorneysigns2 = att![Attorney1]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att2] = -1 _
+And attorneysigns <> att!Attorney2 Then
+attorneysigns2 = att![Attorney2]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att3] = -1 _
+And attorneysigns <> att!Attorney3 Then
+attorneysigns2 = att![Attorney3]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att4] = -1 _
+And attorneysigns <> att!Attorney34 Then
+attorneysigns2 = att![Attorney34]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att5] = -1 _
+And attorneysigns <> att!attorney17 Then
+attorneysigns2 = att![attorney17]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att6] = -1 _
+And attorneysigns <> att!Attorney6 Then
+attorneysigns2 = att![Attorney6]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att7] = -1 _
+And attorneysigns <> att!Attorney7 Then
+attorneysigns2 = att![Attorney7]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att8] = -1 _
+And attorneysigns <> att!attorney24 Then
+attorneysigns2 = att![attorney24]
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att9] = -1 _
+And attorneysigns <> att!Attorney9 Then
+attorneysigns2 = att![Attorney9]
+
+
+Else
+attorneysigns2 = ""
+End If
+'MsgBox (attorneysigns2)
+att.Close
+End Function
+Public Function MDBar2()
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att1] = -1 _
+And attorneysigns <> att!Attorney1 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDBar2 = ", Fed. Bar No. " & att!MDBar1
+Else
+MDBar2 = ""
+End If
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att2] = -1 _
+And attorneysigns <> att!Attorney2 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDBar2 = ", Fed. Bar No. " & att!MDBar2
+Else
+MDBar2 = ""
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att3] = -1 _
+And attorneysigns <> att!Attorney3 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDBar2 = ", Fed. Bar No. " & att!MDBar3
+Else
+MDBar2 = ""
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att4] = -1 _
+And attorneysigns <> att!Attorney34 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDBar2 = ", Fed. Bar No. " & att!MDBar4
+Else
+MDBar2 = ""
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att5] = -1 _
+And attorneysigns <> att!attorney17 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDBar2 = ", Fed. Bar No. " & att!MDBar17
+Else
+MDBar2 = ""
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att6] = -1 _
+And attorneysigns <> att!Attorney6 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDBar2 = ", Fed. Bar No. " & att!MDBar6
+Else
+MDBar2 = ""
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att7] = -1 _
+And attorneysigns <> att!Attorney7 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDBar2 = ", Fed. Bar No. " & att!MDBar7
+Else
+MDBar2 = ""
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att8] = -1 _
+And attorneysigns <> att!attorney24 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDBar2 = ", Fed. Bar No. " & att!MDBar24
+Else
+MDBar2 = ""
+End If
+
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att9] = -1 _
+And attorneysigns <> att!Attorney9 Then
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]!Jurisdiction Like "*MD" Then
+MDBar2 = ", Fed. Bar No. " & att!MDBar9
+Else
+MDBar2 = ""
+End If
+
+
+Else
+MDBar2 = ""
+End If
+'MsgBox (MDBar2)
+att.Close
+End Function
+Public Function attorneyfax2()
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att1] = -1 _
+And attorneysigns <> att!Attorney1 Then
+attorneyfax2 = att![att1fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att2] = -1 _
+And attorneysigns <> att!Attorney2 Then
+attorneyfax2 = att![att2fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att3] = -1 _
+And attorneysigns <> att!Attorney3 Then
+attorneyfax2 = att![att3fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att4] = -1 _
+And attorneysigns <> att!Attorney34 Then
+attorneyfax2 = att![att34fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att5] = -1 _
+And attorneysigns <> att!attorney17 Then
+attorneyfax2 = att![att17fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att6] = -1 _
+And attorneysigns <> att!Attorney6 Then
+attorneyfax2 = att![att6fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att7] = -1 _
+And attorneysigns <> att!Attorney7 Then
+attorneyfax2 = att![att7fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att8] = -1 _
+And attorneysigns <> att!attorney24 Then
+attorneyfax2 = att![att24fax]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att9] = -1 _
+And attorneysigns <> att!Attorney9 Then
+attorneyfax2 = att![att9fax]
+
+Else
+attorneyfax2 = ""
+End If
+'MsgBox (attorneyfax2)
+att.Close
+End Function
+Public Function attorneyemail2()
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+
+If [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att1] = -1 _
+And attorneysigns <> att!Attorney1 Then
+attorneyemail2 = att![att1email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att2] = -1 _
+And attorneysigns <> att!Attorney2 Then
+attorneyemail2 = att![att2email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att3] = -1 _
+And attorneysigns <> att!Attorney3 Then
+attorneyemail2 = att![att3email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att4] = -1 _
+And attorneysigns <> att!Attorney34 Then
+attorneyemail2 = att![att34email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att5] = -1 _
+And attorneysigns <> att!attorney17 Then
+attorneyemail2 = att![att17email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att6] = -1 _
+And attorneysigns <> att!Attorney6 Then
+attorneyemail2 = att![att6email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att7] = -1 _
+And attorneysigns <> att!Attorney7 Then
+attorneyemail2 = att![att7email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att8] = -1 _
+And attorneysigns <> att!attorney24 Then
+attorneyemail2 = att![att24email]
+ElseIf [Forms]![foreclosure database screen]![BankruptcySubForm].[Form]![att9] = -1 _
+And attorneysigns <> att!Attorney9 Then
+attorneyemail2 = att![att9email]
+
+Else
+attorneyemail2 = ""
+End If
+'MsgBox (attorneyemail2)
+att.Close
+
+End Function
+Public Function attorneybar2() As String
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+'MsgBox (attorneysigns() & " Attorney2: " & attorneysigns2)
+
+If Forms![foreclosure database screen]![BankruptcySubForm].Form![att1] = -1 _
+And attorneysigns <> att!Attorney1 Then
+If IsNull(att![Attorney1_Bar#]) Then
+attorneybar2 = ""
+Else
+attorneybar2 = att![Attorney1_Bar#]
+End If
+ElseIf Forms![foreclosure database screen]![BankruptcySubForm].Form![att2] = -1 _
+And attorneysigns <> att!Attorney2 Then
+If IsNull(att![Attorney2_Bar#]) Then
+attorneybar2 = ""
+Else
+attorneybar2 = att![Attorney2_Bar#]
+End If
+ElseIf Forms![foreclosure database screen]![BankruptcySubForm].Form![att3] = -1 _
+And attorneysigns <> att!Attorney3 Then
+If IsNull(att![Attorney3_Bar#]) Then
+attorneybar2 = ""
+Else
+attorneybar2 = att![Attorney3_Bar#]
+End If
+ElseIf Forms![foreclosure database screen]![BankruptcySubForm].Form![att4] = -1 _
+And attorneysigns <> att!Attorney34 Then
+If IsNull(att![Attorney34_Bar#]) Then
+attorneybar2 = ""
+Else
+attorneybar2 = att![Attorney34_Bar#]
+End If
+ElseIf Forms![foreclosure database screen]![BankruptcySubForm].Form![att5] = -1 _
+And attorneysigns <> att!attorney17 Then
+If IsNull(att![Attorney17_Bar#]) Then
+attorneybar2 = ""
+Else
+attorneybar2 = att![Attorney17_Bar#]
+End If
+ElseIf Forms![foreclosure database screen]![BankruptcySubForm].Form![att6] = -1 _
+And attorneysigns <> att!Attorney6 Then
+If IsNull(att![Attorney6_Bar#]) Then
+attorneybar2 = ""
+Else
+attorneybar2 = att![Attorney6_Bar#]
+End If
+ElseIf Forms![foreclosure database screen]![BankruptcySubForm].Form![att7] = -1 _
+And attorneysigns <> att!Attorney7 Then
+If IsNull(att![Attorney7_Bar#]) Then
+attorneybar2 = ""
+Else
+attorneybar2 = att![Attorney7_Bar#]
+End If
+ElseIf Forms![foreclosure database screen]![BankruptcySubForm].Form![att8 signs] = -1 _
+And attorneysigns <> att!attorney24 Then
+If IsNull(att![attorney24_bar#]) Then
+attorneybar2 = ""
+Else
+attorneybar2 = att![attorney24_bar#]
+End If
+ElseIf Forms![foreclosure database screen]![BankruptcySubForm].Form![att9] = -1 _
+And attorneysigns <> att!Attorney9 Then
+If IsNull(att![Attorney9_Bar#]) Then
+attorneybar2 = ""
+Else
+attorneybar2 = att![Attorney9_Bar#]
+End If
+
+End If
+att.Close
+End Function
+
+Public Function attorneyOffice() As String
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+
+If attorneysigns() = att!Attorney1 Then
+If IsNull(att![Attorney1_Bar#]) And IsNull(att!MDBar1) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar1) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = "VA"
+End If
+
+ElseIf attorneysigns() = att!Attorney2 Then
+If IsNull(att![Attorney2_Bar#]) And IsNull(att!MDBar2) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar2) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = "VA"
+End If
+
+ElseIf attorneysigns() = att!Attorney3 Then
+If IsNull(att![Attorney3_Bar#]) And IsNull(att!MDBar3) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar3) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney3_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney34 Then
+If IsNull(att![Attorney34_Bar#]) And IsNull(att!MDBar4) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar4) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney34_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney5 Then
+If IsNull(att![Attorney5_Bar#]) And IsNull(att!MDBar5) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar5) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney5_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney6 Then
+If IsNull(att![Attorney6_Bar#]) And IsNull(att!MDBar6) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar6) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney6_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney7 Then
+If IsNull(att![Attorney7_Bar#]) And IsNull(att!MDBar7) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar7) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney7_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney8 Then
+If IsNull(att![Attorney8_Bar#]) And IsNull(att!MDBar8) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar8) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney8_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney9 Then
+If IsNull(att![Attorney9_Bar#]) And IsNull(att!MDBar9) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar9) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney9_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney10 Then
+If IsNull(att![Attorney10_Bar#]) And IsNull(att!MDBar10) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar10) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney10_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney11 Then
+If IsNull(att![Attorney11_Bar#]) And IsNull(att!MDBar11) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar11) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney11_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney12 Then
+If IsNull(att![Attorney12_Bar#]) And IsNull(att!MDBar12) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar12) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney12_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney13 Then
+If IsNull(att![Attorney13_Bar#]) And IsNull(att!MDBar13) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar13) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney13_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney25 Then
+If IsNull(att![attorney25_bar#]) Then
+attorneyOffice = ""
+'ElseIf Not IsNull(att!MDBar25) Then
+'attorneyoffice = att!MDBar25
+Else
+attorneyOffice = att![attorney25_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney15 Then
+If IsNull(att![Attorney15_Bar#]) And IsNull(att!MDBar15) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar15) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney15_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney16 Then
+If IsNull(att![Attorney16_Bar#]) And IsNull(att!MDBar16) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar16) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney16_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney17 Then
+If IsNull(att![Attorney17_Bar#]) And IsNull(att!MDBar17) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar17) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney17_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney18 Then
+If IsNull(att![Attorney18_Bar#]) And IsNull(att!MDBar18) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar18) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney18_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney19 Then
+If IsNull(att![Attorney19_Bar#]) And IsNull(att!MDBar19) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar19) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney19_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney20 Then
+If IsNull(att![attorney20_bar#]) And IsNull(att!MDBar20) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar20) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![attorney20_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney21 Then
+If IsNull(att![attorney21_bar#]) And IsNull(att!MDBar21) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar21) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![attorney21_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney22 Then
+If IsNull(att![attorney22_bar#]) And IsNull(att!MDBar22) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar22) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![attorney22_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney23 Then
+If IsNull(att![attorney23_bar#]) And IsNull(att!MDBar23) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar23) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![attorney23_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney24 Then
+If IsNull(att![attorney24_bar#]) And IsNull(att!MDBar24) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar24) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![attorney24_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney25 Then
+If IsNull(att![attorney25_bar#]) And IsNull(att!MDBar25) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar25) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![attorney25_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney26 Then
+If IsNull(att![attorney26_bar#]) And IsNull(att!MDBar26) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar26) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![attorney26_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney27 Then
+If IsNull(att![attorney27_bar#]) And IsNull(att!MDBar27) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar27) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![attorney27_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney28 Then
+If IsNull(att![attorney28_bar#]) And IsNull(att!MDBar28) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar28) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![attorney28_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney29 Then
+If IsNull(att![attorney29_bar#]) And IsNull(att!MDBar29) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar29) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![attorney29_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney30 Then
+If IsNull(att![attorney30_bar#]) And IsNull(att!MDBar30) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar30) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![attorney30_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney14 Then
+If IsNull(att![Attorney14_Bar#]) And IsNull(att!MDBar14) Then
+attorneyOffice = ""
+ElseIf Not IsNull(att!MDBar14) Then
+attorneyOffice = "MD"
+Else
+attorneyOffice = att![Attorney14_Bar#]
+End If
+
+
+
+
+
+
+End If
+
+
+att.Close
+
+
+
+End Function
+
+Public Function attorneybar() As String
+Dim db As Database
+Dim att As RecordSet
+
+Set db = CurrentDb()
+Set att = db.OpenRecordset("attorneys", dbOpenSnapshot)
+
+
+If attorneysigns() = att!Attorney1 Then
+If IsNull(att![Attorney1_Bar#]) And IsNull(att!MDBar1) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar1) Then
+attorneybar = att!MDBar1
+Else
+attorneybar = att![Attorney1_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney2 Then
+If IsNull(att![Attorney2_Bar#]) And IsNull(att!MDBar2) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar2) Then
+attorneybar = att!MDBar2
+Else
+attorneybar = att![Attorney2_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney3 Then
+If IsNull(att![Attorney3_Bar#]) And IsNull(att!MDBar3) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar3) Then
+attorneybar = att!MDBar3
+Else
+attorneybar = att![Attorney3_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney34 Then
+If IsNull(att![Attorney34_Bar#]) And IsNull(att!MDBar4) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar4) Then
+attorneybar = att!MDBar4
+Else
+attorneybar = att![Attorney34_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney5 Then
+If IsNull(att![Attorney5_Bar#]) And IsNull(att!MDBar5) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar5) Then
+attorneybar = att!MDBar5
+Else
+attorneybar = att![Attorney5_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney6 Then
+If IsNull(att![Attorney6_Bar#]) And IsNull(att!MDBar6) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar6) Then
+attorneybar = att!MDBar6
+Else
+attorneybar = att![Attorney6_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney7 Then
+If IsNull(att![Attorney7_Bar#]) And IsNull(att!MDBar7) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar7) Then
+attorneybar = att!MDBar7
+Else
+attorneybar = att![Attorney7_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney8 Then
+If IsNull(att![Attorney8_Bar#]) And IsNull(att!MDBar8) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar8) Then
+attorneybar = att!MDBar8
+Else
+attorneybar = att![Attorney8_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney9 Then
+If IsNull(att![Attorney9_Bar#]) And IsNull(att!MDBar9) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar9) Then
+attorneybar = att!MDBar9
+Else
+attorneybar = att![Attorney9_Bar#]
+End If
+
+ElseIf attorneysigns() = att!Attorney10 Then
+If IsNull(att![Attorney10_Bar#]) And IsNull(att!MDBar10) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar10) Then
+attorneybar = att!MDBar10
+Else
+attorneybar = att![Attorney10_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney11 Then
+If IsNull(att![Attorney11_Bar#]) And IsNull(att!MDBar11) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar11) Then
+attorneybar = att!MDBar11
+Else
+attorneybar = att![Attorney11_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney12 Then
+If IsNull(att![Attorney12_Bar#]) And IsNull(att!MDBar12) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar12) Then
+attorneybar = att!MDBar12
+Else
+attorneybar = att![Attorney12_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney13 Then
+If IsNull(att![Attorney13_Bar#]) And IsNull(att!MDBar13) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar13) Then
+attorneybar = att!MDBar13
+Else
+attorneybar = att![Attorney13_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney25 Then
+If IsNull(att![attorney25_bar#]) Then
+attorneybar = ""
+'ElseIf Not IsNull(att!MDBar25) Then
+'attorneybar = att!MDBar25
+Else
+attorneybar = att![attorney25_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney15 Then
+If IsNull(att![Attorney15_Bar#]) And IsNull(att!MDBar15) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar15) Then
+attorneybar = att!MDBar15
+Else
+attorneybar = att![Attorney15_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney16 Then
+If IsNull(att![Attorney16_Bar#]) And IsNull(att!MDBar16) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar16) Then
+attorneybar = att!MDBar16
+Else
+attorneybar = att![Attorney16_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney17 Then
+If IsNull(att![Attorney17_Bar#]) And IsNull(att!MDBar17) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar17) Then
+attorneybar = att!MDBar17
+Else
+attorneybar = att![Attorney17_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney18 Then
+If IsNull(att![Attorney18_Bar#]) And IsNull(att!MDBar18) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar18) Then
+attorneybar = att!MDBar18
+Else
+attorneybar = att![Attorney18_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney19 Then
+If IsNull(att![Attorney19_Bar#]) And IsNull(att!MDBar19) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar19) Then
+attorneybar = att!MDBar19
+Else
+attorneybar = att![Attorney19_Bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney20 Then
+If IsNull(att![attorney20_bar#]) And IsNull(att!MDBar20) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar20) Then
+attorneybar = att!MDBar20
+Else
+attorneybar = att![attorney20_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney21 Then
+If IsNull(att![attorney21_bar#]) And IsNull(att!MDBar21) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar21) Then
+attorneybar = att!MDBar21
+Else
+attorneybar = att![attorney21_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney22 Then
+If IsNull(att![attorney22_bar#]) And IsNull(att!MDBar22) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar22) Then
+attorneybar = att!MDBar22
+Else
+attorneybar = att![attorney22_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney23 Then
+If IsNull(att![attorney23_bar#]) And IsNull(att!MDBar23) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar23) Then
+attorneybar = att!MDBar23
+Else
+attorneybar = att![attorney23_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney24 Then
+If IsNull(att![attorney24_bar#]) And IsNull(att!MDBar24) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar24) Then
+attorneybar = att!MDBar24
+Else
+attorneybar = att![attorney24_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney25 Then
+If IsNull(att![attorney25_bar#]) And IsNull(att!MDBar25) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar25) Then
+attorneybar = att!MDBar25
+Else
+attorneybar = att![attorney25_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney26 Then
+If IsNull(att![attorney26_bar#]) And IsNull(att!MDBar26) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar26) Then
+attorneybar = att!MDBar26
+Else
+attorneybar = att![attorney26_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney27 Then
+If IsNull(att![attorney27_bar#]) And IsNull(att!MDBar27) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar27) Then
+attorneybar = att!MDBar27
+Else
+attorneybar = att![attorney27_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney28 Then
+If IsNull(att![attorney28_bar#]) And IsNull(att!MDBar28) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar28) Then
+attorneybar = att!MDBar28
+Else
+attorneybar = att![attorney28_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney29 Then
+If IsNull(att![attorney29_bar#]) And IsNull(att!MDBar29) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar29) Then
+attorneybar = att!MDBar29
+Else
+attorneybar = att![attorney29_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney30 Then
+If IsNull(att![attorney30_bar#]) And IsNull(att!MDBar30) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar30) Then
+attorneybar = att!MDBar30
+Else
+attorneybar = att![attorney30_bar#]
+End If
+
+ElseIf attorneysigns() = att!attorney14 Then
+If IsNull(att![Attorney14_Bar#]) And IsNull(att!MDBar14) Then
+attorneybar = ""
+ElseIf Not IsNull(att!MDBar14) Then
+attorneybar = att!MDBar14
+Else
+attorneybar = att![Attorney14_Bar#]
+End If
+
+
+
+
+
+
+End If
+
+
+att.Close
+
+
+
+End Function
+Function VarTrusteeSelection()
+
+
+strsql = "Select * from jurisdiction where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & " and state = " & """" & Forms![foreclosure database screen]!PropertyState & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+MsgBox ("No Trustee Input for " & Forms![foreclosure database screen]!Propertycounty & " for the State: " & Forms![foreclosure database screen]!PropertyState)
+Exit Function
+Else
+
+If IsNull(Forms![foreclosure database screen]![Trustee].Form![trustee2]) Then
+VarTrustee = 1
+
+
+Else
+
+Dim Vt1, Vt2, Vt3 As String
+Vt1 = rs![Trustee_First] & " " & rs![Trustee]
+Vt2 = rs!trustee2_first & " " & rs![trustee2]
+If IsNull(rs!trustee3) Then
+Vt3 = ""
+Else
+Vt3 = rs!trustee3_first & " " & rs!trustee3
+End If
+
+If IsNull(rs!trustee3) Then
+VarTrustee = InputBox("There is more than 1 Trustee for this Jurisdiction: " & vbCr & _
+"Please Select " & vbCr & "1. " & Vt1 _
+& " or " & vbCr & "2. " & Vt2 _
+& " or " & vbCr & "3. BOTH")
+
+Else
+VarTrustee = InputBox("There is more than 1 Trustee for this Jurisdiction: " & vbCr & _
+"Please Select " & vbCr & "1. " & Vt1 _
+& " or " & vbCr & "2. " & Vt2 _
+& " or " & vbCr & "3. " & Vt3 _
+& " or " & vbCr & "4. BOTH")
+End If
+
+End If
+End If
+
+rs.Close
+
+
+
+End Function
+Function SeniorLienTrusAdd()
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "Select * from brtrustees where trustee_name = " & """" & [Forms]![foreclosure database screen]![Senior Lien SaleSubForm].Form!lender_att & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+rs.Close
+Exit Function
+Else
+If IsNull(rs!trustee_add) Then
+SeniorLienTrusAdd = "_____________________________"
+Else
+SeniorLienTrusAdd = rs!trustee_add
+End If
+End If
+
+rs.Close
+End Function
+Function SeniorLienTrusCSZ()
+Dim rs As RecordSet
+Dim strsql As String
+
+strsql = "Select * from brtrustees where trustee_name = " & """" & [Forms]![foreclosure database screen]![Senior Lien SaleSubForm].Form!lender_att & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+If rs.EOF Then
+rs.Close
+Exit Function
+Else
+If IsNull(rs!trustee_citystatezip) Then
+SeniorLienTrusCSZ = "______________________"
+Else
+
+SeniorLienTrusCSZ = rs!trustee_citystatezip
+End If
+End If
+
+rs.Close
+
+End Function
+

@@ -1,0 +1,487 @@
+Attribute VB_Name = "VirginiaModule"
+Option Compare Database
+Public Function HOALetterPO()
+
+Dim Vselect
+Vselect = InputBox("1. Letter generated from database" & vbCr & "2. Letter Word Merge" & vbCr & vbCr & "enter 1 or 2")
+If Vselect = 1 Then
+DoCmd.OpenReport "HOA LetterPO", acViewPreview
+Else
+Call LtrMergeHOA
+End If
+
+
+End Function
+
+
+
+
+Public Function TimelineVA()
+
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "select * from virginiaaccounting where subfilenum = " & Forms![foreclosure database screen]!filenum & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+If rs.EOF Then
+Set rs = CurrentDb.OpenRecordset("virginiaaccounting")
+With rs
+.AddNew
+!SubFileNum = Forms![foreclosure database screen]!filenum
+.Update
+.Close
+End With
+Else
+rs.Close
+End If
+
+
+    Dim stDocName As String
+    Dim stLinkCriteria As String
+
+    stDocName = "FCDeadlinesVA"
+    
+    stLinkCriteria = "[subFileNum]=" & Forms![foreclosure database screen]!filenum
+    DoCmd.OpenForm stDocName, , , stLinkCriteria
+    
+    
+    DoCmd.Close acForm, "Foreclosure Database Screen"
+    
+    
+
+End Function
+Public Function CtyExecutive()
+
+
+If Forms![foreclosure database screen]!mers = 1 Or Forms![foreclosure database screen]!mers = -1 Then
+Dim VSel
+VSel = InputBox("This appears to be a MERS loan, and this notice is typically not required for MERS loans. Are you sure you want to proceed? (type YES if you would like to proceed)")
+If VSel = "YES" Then
+DoCmd.OpenReport "CountyExective-VA", acViewPreview
+Else
+Exit Function
+End If
+
+Else
+DoCmd.OpenReport "CountyExective-VA", acViewPreview
+
+End If
+
+End Function
+Public Function HOARptGeneration()
+Dim rs As RecordSet
+Dim rs2 As RecordSet
+Dim strsql As String
+Dim strsql2 As String
+
+
+If ([Forms]![pud queue]![mers] = 1 Or [Forms]![pud queue]![mers] = -1) And Forms![pud queue]!PUD = True Then
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+Else
+Call ExportCoExecQueue
+End If
+
+
+Call ExportHOAQUeue
+Call ExportHOAMgmtQueue
+Call ExportHOACo3Queue
+
+
+Call CtyExecutiveQueue
+
+
+End Function
+Public Function HOARefresh()
+DoCmd.Close acForm, "Pud queue"
+
+Wait (5)
+
+DoCmd.OpenForm "Pud queue"
+
+
+
+End Function
+Public Function HOARptGenerationWalz()
+
+Dim rs As RecordSet
+Dim rs2 As RecordSet
+Dim strsql As String
+Dim strsql2 As String
+
+If Forms![pud queue]![PUDName] <> "" Then
+
+VCo = Forms![pud queue]!HOAId
+
+strsql = "Select * from hoamaster where [id] = " & VCo & ";"
+'strsql = "Select * from hoamaster where [business name] = " & """" & Forms![PUD Queue]![PUDName] & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+
+If rs.EOF Then
+MsgBox ("PUD or Additional Address is not in database, please review")
+Exit Function
+End If
+
+End If
+
+
+If ([Forms]![pud queue]![mers] = 1 Or [Forms]![pud queue]![mers] = -1) And Forms![pud queue]!PUD = True Then
+CurrentDb.Execute "DELETE * FROM notices;", dbFailOnError
+
+Else
+Call ExportCoExecQueue
+End If
+
+Call ExportHOAQUeue
+Call ExportHOAMgmtQueue
+Call ExportHOACo3Queue
+
+
+
+Call CtyExecutiveQueueWALZ
+
+
+
+End Function
+
+Public Function CtyExecutiveQueue()
+
+
+
+If ([Forms]![pud queue]![mers] = 1 Or [Forms]![pud queue]![mers] = -1) And Forms![pud queue]!PUD = False Then
+Dim VSel
+VSel = InputBox("This appears to be a MERS loan and the PUD button is not checked, this notice is typically not required for MERS loans. Are you sure you want to proceed? (type YES if you would like to proceed)")
+If VSel = "YES" Then
+DoCmd.OpenReport "CountyExective-VA-Queue", acViewPreview
+Else
+Exit Function
+End If
+
+Else
+DoCmd.OpenReport "CountyExective-VA-Queue", acViewPreview
+
+End If
+End Function
+Public Function CtyExecutiveQueueWALZ()
+
+Dim VSend As String
+GblFilenum = Forms![pud queue]!filenum
+
+Dim VWalz
+
+If ([Forms]![pud queue]![mers] = 1 Or [Forms]![pud queue]![mers] = -1) And Forms![pud queue]!PUD = False Then
+Dim VSel
+VSel = InputBox("This appears to be a MERS loan, and this notice is typically not required for MERS loans. Are you sure you want to proceed? (type YES if you would like to proceed)")
+If VSel = "YES" Then
+DoCmd.OpenReport "CountyExective-VA-Queue", acViewPreview
+VWalz = InputBox("Send to Walz? (type YES to send letter(s)")
+
+If VWalz = "YES" Then
+Call HOAWalz
+MsgBox ("Letter Sent to Walz")
+'-JOURNAL
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = GblFilenum
+!EntryBy = username()
+!EntryDate = Now()
+!Entry = "Sent Post-Sale County Exec Notice to Walz"
+.Update
+.Close
+End With
+'-END JOURNAL
+
+
+End If
+
+VSend = MsgBox("Send Letters to Imaged Docs?", vbYesNo)
+
+If VSend = vbYes Then
+CopyDocToBGWWDocs "CountyExective-VA-Queue", "PUDCtyExeN", "_PUDCtyExeN.PDF"
+End If
+
+
+Else
+Exit Function
+End If
+
+Else
+
+DoCmd.OpenReport "CountyExective-VA-Queue", acViewPreview
+VWalz = InputBox("Send to Walz? (type YES to send letter(s)")
+If VWalz = "YES" Then
+
+Call HOAWalz
+MsgBox ("Letter Sent to Walz")
+'-JOURNAL
+Set rstjournal = CurrentDb.OpenRecordset("Journal", dbOpenDynaset, dbSeeChanges)
+
+With rstjournal
+.AddNew
+!filenum = Forms![pud queue]!filenum
+!EntryBy = username()
+!EntryDate = Now()
+!Entry = "Sent Post-Sale County Exec Notice to Walz"
+.Update
+.Close
+End With
+'-END JOURNAL
+
+
+
+End If
+
+VSend = MsgBox("Send Letters to Imaged Docs?", vbYesNo)
+
+If VSend = vbYes Then
+CopyDocToBGWWDocs "CountyExective-VA-Queue", "PUDCtyExeN", "_PUDCtyExeN.PDF"
+End If
+
+
+End If
+End Function
+
+
+Public Function ETArlAddress()
+ETArlAddress = "2020 N. 14th St., Suite 250"
+End Function
+Public Function ETArlAdd1()
+ETArlAdd1 = "2020 N. 14th St., Suite 250"
+End Function
+Public Function ETArlCSZ()
+ETArlCSZ = "Arlington, VA  22201"
+End Function
+
+
+Public Function RichAddress()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("Attorneys", dbOpenSnapshot)
+RichAddress = rs!Office2_Address & ", " & rs!Office2_Address2 & ", " & rs!Office2_City & ", " & rs!Office2_State & " " & rs!Office2_Zip
+rs.Close
+End Function
+Public Function RichAdd1()
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("Attorneys", dbOpenSnapshot)
+RichAdd1 = rs!Office2_Address
+rs.Close
+End Function
+Public Function RichAdd2()
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("Attorneys", dbOpenSnapshot)
+RichAdd2 = rs!Office2_Address2
+rs.Close
+End Function
+Public Function RichCSZ()
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("Attorneys", dbOpenSnapshot)
+RichCSZ = rs!Office2_City & ", " & rs!Office2_State & " " & rs!Office2_Zip
+rs.Close
+End Function
+Public Function RichPhone()
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("Attorneys", dbOpenSnapshot)
+RichPhone = rs!office2_phone
+rs.Close
+End Function
+
+Public Function equitytrusteesaddNEW()
+equitytrusteesaddNEW = "2101 Wilson Boulevard, Suite 402"
+
+'equitytrusteesaddNEW = " 2020 N. 14th Street, Suite 750"
+End Function
+Public Function equitytrusteescszNEW()
+equitytrusteescszNEW = "Arlington, VA 22201"
+'equitytrusteescszNEW = RichCSZ()
+End Function
+Public Function equitytrusteesphoneNEW()
+equitytrusteesphoneNEW = "703-483-4016"
+'equitytrusteesphoneNEW = RichPhone()
+End Function
+Public Function equitytrusteesadd()
+equitytrusteesadd = "2020 North 14th St., Suite 750"
+End Function
+Public Function equitytrusteescsz()
+equitytrusteescsz = "Arlington, VA 22201"
+End Function
+Public Function equitytrusteesRep()
+'equitytrusteesRep = "James M. Towarnicky"
+End Function
+Public Function equitytrusteesphone()
+Dim rs As RecordSet
+Dim strsql As String
+strsql = "select * from vaaccountingETLink where county = " & """" & Forms![foreclosure database screen]!Propertycounty & """" & ";"
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+
+equitytrusteesphone = rs!WorkPhone
+rs.Close
+
+
+End Function
+Public Function PreparedByAdd1()
+
+PrepBy = InputBox("Prepared by: " & vbCr & "1. Rockville" & vbCr & "2. Richmond" & vbCr & "type in 1 or 2")
+If PrepBy = 1 Then
+PreparedByAdd1 = "6003 Executive Blvd. Suite 101"
+Else
+PreparedByAdd1 = "8100 Three Chopt Rd., Suite 240"
+End If
+
+End Function
+
+Public Function VaAdd1()
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+VaAdd1 = "8100 Three Chopt Rd., Suite 240"
+Else
+VaAdd1 = "6003 Executive Blvd. Suite 101"
+End If
+End Function
+Public Function VAAdd2()
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+VAAdd2 = "Richmond, VA 23229"
+Else
+VAAdd2 = "Rockville, Md 20852"
+End If
+
+End Function
+Public Function VAphone()
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+VAphone = "(804) 282-0463"
+Else
+VAphone = "(301) 961-6555"
+End If
+End Function
+Public Function SignAdd1()
+If StateBK = "VA" Then
+SignAdd1 = "8100 Three Chopt Rd., Suite 240"
+Else
+SignAdd1 = "6003 Executive Blvd. Suite 101"
+End If
+
+
+End Function
+Public Function SignAddPOC1()
+If StatePOC = "VA" Then
+SignAddPOC1 = "8100 Three Chopt Rd., Suite 240"
+Else
+SignAddPOC1 = "6003 Executive Blvd. Suite 101"
+End If
+
+End Function
+
+Public Function SignAdd2()
+If StateBK = "VA" Then
+SignAdd2 = "Richmond, VA 23229"
+Else
+SignAdd2 = "Rockville, Md 20852"
+End If
+
+End Function
+Public Function SignAddPOC2()
+If StatePOC = "VA" Then
+SignAddPOC2 = "Richmond, VA 23229"
+Else
+SignAddPOC2 = "Rockville, Md 20852"
+End If
+
+End Function
+Public Function StatePOC()
+If attorneysignsPOC() Like "*Rich" Or attorneysignsPOC() Like "*Floyd" Or attorneysignsPOC() Like "*Wood" Or attorneysignsPOC() Like "*Dail" Or attorneysignsPOC() Like "*Adamonis" Or attorneysignsPOC() Like "*Relyea" Or attorneysignsPOC() Like "*Lenoir" Then
+StatePOC = "VA"
+Else
+StatePOC = "MD"
+End If
+
+End Function
+Public Function StateBK()
+
+If attorneysignsPOC() Like "*Rich" Or attorneysignsPOC() Like "*Libby" Or _
+attorneysignsPOC() Like "*Kalantar" Or attorneysignsPOC() Like "*Wood" Or _
+attorneysignsPOC() Like "*Adamonis" Or attorneysignsPOC() Like "*Floyd" Or _
+attorneysignsPOC() Like "*Lenoir" Or _
+attorneysignsPOC() Like "*Flaherty" Or attorneysignsPOC() Like "*Dail" Or _
+attorneysignsPOC() Like "*Kellam" Then
+StateBK = "VA"
+Else
+StateBK = "MD"
+End If
+
+
+End Function
+Public Function SignPhone()
+If StateBK = "VA" Then
+SignPhone = "(804) 282-0463"
+Else
+SignPhone = "(301) 961-6555"
+End If
+
+End Function
+Public Function SignPhonePOC()
+If StatePOC = "VA" Then
+SignPhonePOC = "(804) 282-0463"
+Else
+SignPhonePOC = "(301) 961-6555"
+End If
+
+End Function
+
+Public Function SignFax()
+If StateBK = "VA" Then
+SignFax = "(804) 282-0541"
+Else
+SignFax = "(301) 961-6545"
+End If
+
+End Function
+Public Function SignFaxPOC()
+If StatePOC = "VA" Then
+SignFaxPOC = "(804) 282-0541"
+Else
+SignFaxPOC = "(301) 961-6545"
+End If
+
+End Function
+
+Public Function SignAdd12()
+If StateBK = "VA" Then
+SignAdd12 = "8100 Three Chopt Rd., Suite 240"
+Else
+SignAdd12 = "6003 Executive Blvd. Suite 101"
+End If
+
+End Function
+
+Public Function SignAdd22()
+If attorneysigns2() Like "*Wood" Then
+SignAdd22 = "Richmond, VA 23229"
+Else
+SignAdd22 = "Rockville, Md 20852"
+End If
+
+End Function
+
+Public Function SignPhone2()
+If attorneysigns2() Like "*Wood" Then
+SignPhone2 = "(804) 282-0463"
+Else
+SignPhone2 = "(301) 961-6555"
+End If
+
+End Function
+
+Public Function SignFax2()
+If attorneysigns2() Like "*Wood" Then
+SignFax2 = "(804) 282-0541"
+Else
+SignFax2 = "(301) 961-6545"
+End If
+
+End Function
+
+
+

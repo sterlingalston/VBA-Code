@@ -1,0 +1,355 @@
+Attribute VB_Name = "BondModule"
+Option Compare Database
+
+Public Function BondAmtCheck()
+If [Forms]![foreclosure database screen]![Propertycounty] = "Prince George's" And [Forms]![foreclosure database screen]![PostsaleSubForm].[Form]![bondamt] < 25000 Then
+MsgBox ("Bond Amount can not be less than $25000.00")
+End If
+'PLEASE INPUT BOND NUMBER AND BOND DATE
+
+End Function
+Public Function EmailBonds()
+
+ 
+
+Dim VRpt As Integer
+VRpt = InputBox("Do Report by: " & vbCr & vbCr & "1.  Sale Date" & vbCr & "2.  Prepared Bond Date")
+If VRpt = 1 Then
+DoCmd.OpenQuery ("Bondsbulk")
+Else
+DoCmd.OpenQuery ("BondsPreparedBulk")
+End If
+
+VConvRpt = "BondBulk"
+Call ConvertPDFALL
+
+DoCmd.OutputTo acOutputReport, "BondsNotCancelled", acFormatXLS, pathuser() & "\Bonds" & ".xls"
+
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+Dim emailsubject, emailbody As String
+
+Set MyOutlook = New Outlook.Application
+
+
+emailsubject = "Bond Spreadsheet and Bonds in PDF Format"
+emailbody = "Attached please find report in Excel Format and Bonds in PDF."
+
+
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "Vshinsky@lexingtonnational.com"
+
+MyMail.Attachments.ADD pathuser() & "\bonds.xls"
+MyMail.Attachments.ADD pathuser() & "\BondBulk.PDF"
+
+Dim rs As RecordSet
+Set rs = CurrentDb.OpenRecordset("bondscancelled", dbOpenSnapshot)
+If Not rs.EOF Then
+VConvRpt = "CancelledSalesFiledBonds"
+Call ConvertPDFALL
+DoCmd.OutputTo acOutputReport, "BondsCancelled", acFormatXLS, pathuser() & "\CancelledSales" & ".xls"
+MyMail.Attachments.ADD pathuser() & "\CancelledSales.xls"
+MyMail.Attachments.ADD pathuser() & "\CancelledSalesFiledBonds.PDF"
+rs.Close
+End If
+
+MyMail.Subject = emailsubject
+
+
+MyMail.body = emailbody + SigEmail()
+
+
+MyMail.Display
+
+
+Set MyMail = Nothing
+
+Set MyOutlook = Nothing
+
+End Function
+
+Public Function EmailBondsDateRangeDC()
+VarDay = Format(Date, "dddd")
+
+
+
+Dim strsql
+Dim rs As RecordSet
+Dim RsBonds As RecordSet
+Dim BegDate
+Dim EndDate
+
+BegDate = InputBox("Enter Beginning Date")
+EndDate = InputBox("Enter Ending Date")
+
+
+CurrentDb.Execute "DELETE * FROM BONDSDR;", dbFailOnError
+
+strsql = "SELECT DISTINCTROW cases.client, Cases.PropertyCounty, cases.propertycity, cases.propaddress2, " & _
+" cases.propzip, cases.unit_no, cases.status, foreclosure.sale_cancelled, Foreclosure.SaleDate, PostSale.CaseNo, " & _
+" Cases.FirstNameDebtor1, Cases.MiddleNameDebtor1, Cases.Wdebtor1, Cases.LastNameDebtor1, Cases.PropertyState, " & _
+" Cases.PropAddress, Cases.PropertyState, Cases.FileNum " & _
+" FROM ((Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum) " & _
+" INNER JOIN PostSale ON Cases.FileNum = PostSale.SubFileNum) " & _
+" WHERE Foreclosure.SaleDate >= #" & BegDate & "# And foreclosure.saledate <= #" & EndDate & _
+"# and Cases.PropertyState =" & """" & "DC" & """" & " order by cases.propertycounty, foreclosure.saledate;"
+
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+Set RsBonds = CurrentDb.OpenRecordset("BondsDR", dbOpenDynaset, dbSeeChanges)
+
+Dim Vcnt As Integer
+Dim vTrustees As String
+Dim VTrusteeCty As String
+
+
+Vcnt = 0
+
+If Not rs.EOF Then
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+With RsBonds
+.AddNew
+!Count = Vcnt + 1
+Vcnt = Vcnt + 1
+!Propertycounty = rs!Propertycounty
+!CaseNo = rs!CaseNo
+!PropAddress = rs!PropAddress
+!FirstNameDebtor1 = rs!FirstNameDebtor1
+!LastNameDebtor1 = rs!LastNameDebtor1
+!SaleDate = rs!SaleDate
+!filenum = rs!filenum
+!propaddress2 = rs!propaddress2
+!propzip = rs!propzip
+!PropertyCity = rs!PropertyCity
+!State = rs!PropertyState
+!unit_no = rs!unit_no
+!sale_cancelled = rs!sale_cancelled
+
+
+If rs!WDebtor1 = "8 TrusteesDC" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Jason T. Kutcher, Joshua P. Coleman, Joseph A. Delozier, Andrew Brenner and Angela Dawkins"
+ElseIf rs!WDebtor1 = "6 TrusteesDC" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Jason T. Kutcher, Joshua P. Coleman and Joseph A. Delozier"
+ElseIf rs!WDebtor1 Like "2 TrusteesDC" Then
+vTrustees = "Howard N. Bierman and Carrie M. Ward, "
+End If
+
+
+!Trustees = UCase(vTrustees)
+
+
+.Update
+End With
+rs.MoveNext
+Loop
+
+
+End If
+
+rs.Close
+RsBonds.Close
+
+
+VConvRpt = "SalesList"
+Call ConvertPDFALL
+
+'Dim Txtname As String
+Dim sourcefile As String
+Dim destinationfile As String
+
+DoCmd.OutputTo acOutputReport, "BondsCancelledNEW", acFormatXLS, pathuser() & "\Bonds" & ".xls"
+Dim emailsubject, emailbody As String
+
+emailsubject = "Sales Thru: " & BegDate & " and " & EndDate
+
+emailbody = "Attached please find spreadsheet"
+
+Dim Email As String
+Dim emailmessage As String
+
+Dim from, varemailto, varsendemail As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "VShinsky@lexingtonnational.com; kristen.misleh@bww-law.com"
+MyMail.CC = ""
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\bonds.xls"
+MyMail.Attachments.ADD pathuser() & "\SalesList.pdf"
+
+MyMail.Display
+
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+End Function
+
+
+
+Public Function EmailBondsDateRange()
+
+VarDay = Format(Date, "dddd")
+
+Dim strsql
+Dim rs As RecordSet
+Dim RsBonds As RecordSet
+Dim BegDate
+Dim EndDate
+
+BegDate = InputBox("Enter Beginning Date")
+EndDate = InputBox("Enter Ending Date")
+
+
+CurrentDb.Execute "DELETE * FROM BONDSDR;", dbFailOnError
+
+strsql = "SELECT DISTINCTROW cases.client, Cases.PropertyCounty, cases.propertycity, cases.propaddress2, " & _
+" cases.propzip, cases.unit_no, cases.status, foreclosure.sale_cancelled, Foreclosure.SaleDate, PostSale.CaseNo, " & _
+" Cases.FirstNameDebtor1, Cases.MiddleNameDebtor1, Cases.Wdebtor1, Cases.LastNameDebtor1, Cases.PropertyState, " & _
+" Cases.PropAddress, Cases.PropertyState, Cases.FileNum " & _
+" FROM ((Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum) " & _
+" INNER JOIN PostSale ON Cases.FileNum = PostSale.SubFileNum) " & _
+" WHERE Foreclosure.SaleDate >= #" & BegDate & "# And foreclosure.saledate <= #" & EndDate & _
+"# and Cases.PropertyState =" & """" & "MD" & """" & " order by cases.propertycounty, foreclosure.saledate;"
+
+
+Set rs = CurrentDb.OpenRecordset(strsql, dbOpenSnapshot)
+Set RsBonds = CurrentDb.OpenRecordset("BondsDR", dbOpenDynaset, dbSeeChanges)
+
+Dim Vcnt As Integer
+Dim vTrustees As String
+Dim VTrusteeCty As String
+
+
+Vcnt = 0
+
+If Not rs.EOF Then
+rs.MoveFirst
+
+Do While Not rs.EOF
+
+With RsBonds
+.AddNew
+!Count = Vcnt + 1
+Vcnt = Vcnt + 1
+!Propertycounty = IIf(rs!Propertycounty Like "Baltimore Ci*", "City of ", "") & rs!Propertycounty
+!CaseNo = rs!CaseNo
+!PropAddress = rs!PropAddress
+!FirstNameDebtor1 = rs!FirstNameDebtor1
+!LastNameDebtor1 = rs!LastNameDebtor1
+!SaleDate = rs!SaleDate
+!filenum = rs!filenum
+!propaddress2 = rs!propaddress2
+!propzip = rs!propzip
+!PropertyCity = rs!PropertyCity
+!State = rs!PropertyState
+!unit_no = rs!unit_no
+!sale_cancelled = rs!sale_cancelled
+
+If rs!Client Like "JP*" Then
+VTrusteeCty = ""
+Else
+If rs![Propertycounty] = "Dorchester" Or rs![Propertycounty] = "Somerset" Or rs![Propertycounty] = "Wicomico" Or rs![Propertycounty] = "Worcester" Then
+VTrusteeCty = "DAVID SIMPSON"
+ElseIf rs![Propertycounty] = "Garrett" Or rs![Propertycounty] = "Allegany" Then
+VTrusteeCty = "MICHAEL SCOTT COHEN"
+Else
+VTrusteeCty = ""
+End If
+End If
+
+
+If VTrusteeCty = "" Then
+If rs!WDebtor1 = "12 Trustees" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Joshua Coleman, Richard R. Goldsmith, Jr., Ludeen McCartney-Green, Jason Kutcher, Elizabeth C. Jones, Nicholas Derdock, Andrew J. Brenner and Angela M. Dawkins"
+ElseIf rs!WDebtor1 = "10 Trustees" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Joshua Coleman, Richard R. Goldsmith, Jr., Ludeen McCartney-Green, Jason Kutcher, Elizabeth C. Jones and Nicholas Derdock"
+ElseIf rs!WDebtor1 = "9 Trustees" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Tayyaba C. Monto, Joshua Coleman, Richard R. Goldsmith, Jr. and Ludeen McCartney-Green"
+ElseIf rs!WDebtor1 = "6 Trustees" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Tayyaba C. Monto and Joshua Coleman"
+ElseIf rs!WDebtor1 Like "*Ward" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman and Jacob Geesing"
+ElseIf rs!WDebtor1 Like "*Geesing*" Then
+vTrustees = "Howard N. Bierman, Jacob Geesing and Carrie M. Ward"
+End If
+End If
+
+
+
+If VTrusteeCty <> "" Then
+If rs!WDebtor1 = "12 Trustees" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Joshua Coleman, Richard R. Goldsmith, Jr., Ludeen McCartney-Green, Jason Kutcher, Elizabeth C. Jones, Nicholas Derdock, Andrew J. Brenner and Angela M. Dawkins"
+ElseIf rs!WDebtor1 = "10 Trustees" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Joshua Coleman, Richard R. Goldsmith, Jr., Ludeen McCartney-Green, Jason Kutcher, Elizabeth C. Jones and Nicholas Derdock"
+ElseIf rs!WDebtor1 = "9 Trustees" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Tayyaba C. Monto, Joshua Coleman, Richard R. Goldsmith, Jr., Ludeen McCartney-Green and " & VTrusteeCty
+ElseIf rs!WDebtor1 = "6 Trustees" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing, Pratima Lele, Tayyaba C. Monto, Joshua Coleman and " & VTrusteeCty
+ElseIf rs!WDebtor1 Like "*Ward" Then
+vTrustees = "Carrie M. Ward, Howard N. Bierman, Jacob Geesing and " & VTrusteeCty
+ElseIf rs!WDebtor1 Like "*Geesing*" Then
+vTrustees = "Howard N. Bierman, Jacob Geesing, Carrie M. Ward and " & VTrusteeCty
+End If
+End If
+
+
+
+
+!Trustees = UCase(vTrustees)
+
+
+.Update
+End With
+rs.MoveNext
+Loop
+
+
+End If
+
+rs.Close
+RsBonds.Close
+
+
+VConvRpt = "SalesList"
+Call ConvertPDFALL
+
+'Dim Txtname As String
+Dim sourcefile As String
+Dim destinationfile As String
+
+DoCmd.OutputTo acOutputReport, "BondsCancelledNEW", acFormatXLS, pathuser() & "\Bonds" & ".xls"
+Dim emailsubject, emailbody As String
+
+emailsubject = "Sales Thru: " & BegDate & " and " & EndDate
+
+emailbody = "Attached please find spreadsheet"
+
+Dim Email As String
+Dim emailmessage As String
+
+Dim from, varemailto, varsendemail As String
+Dim MyOutlook As Outlook.Application
+Dim MyMail As Outlook.MailItem
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = "VShinsky@lexingtonnational.com; robert.johnson@bww-law.com"
+MyMail.CC = ""
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Attachments.ADD pathuser() & "\bonds.xls"
+MyMail.Attachments.ADD pathuser() & "\SalesList.pdf"
+
+MyMail.Display
+
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+End Function
+

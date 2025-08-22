@@ -1,0 +1,13 @@
+Attribute VB_Name = "RichmondModule"
+Option Compare Database
+
+Public Function ETAddArl()
+
+ETAddArl = "2101 Wilson Boulevard, Suite 402, Arlington, Virginia 22201"
+
+End Function
+Public Function ETAddRich()
+
+ETAddRich = "2101 Wilson Boulevard, Suite 402, Arlington, Virginia 22201"
+
+End Function

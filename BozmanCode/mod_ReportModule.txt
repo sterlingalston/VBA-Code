@@ -1,0 +1,485 @@
+Attribute VB_Name = "ReportModule"
+Option Compare Database
+
+Public Function NoticeReviewReport()
+
+CurrentDb.Execute "Delete * from noticereview;", dbFailOnError
+
+Dim enterstate As Variant: enterstate = InputBox("Enter State", "Enter State")
+
+Dim enterbegdate As Variant: enterbegdate = InputBox("Enter Beginning Sale Date", "Enter Date")
+Dim enterenddate As Variant: enterenddate = InputBox("Enter Ending Sale Date", "Enter Date")
+
+If Len(enterbegdate) = 0 Or Len(enterenddate) = 0 Then Exit Function
+
+With CurrentDb.QueryDefs("noticereviewqry1")
+    .Parameters("Enter Beginning Sale Date") = DateValue(enterbegdate)
+    .Parameters("Enter Ending Sale Date") = DateValue(enterenddate)
+    .Parameters("Enter State") = enterstate
+    .Execute
+End With
+
+With CurrentDb.QueryDefs("noticereviewqry2")
+    .Parameters("Enter Beginning Sale Date") = DateValue(enterbegdate)
+    .Parameters("Enter Ending Sale Date") = DateValue(enterenddate)
+    .Parameters("Enter State") = enterstate
+    .Execute
+End With
+
+'-------DC code--- if maryland include DC
+
+If enterstate = "MD" Then
+'
+With CurrentDb.QueryDefs("noticereviewqry1")
+    .Parameters("Enter Beginning Sale Date") = DateValue(enterbegdate)
+    .Parameters("Enter Ending Sale Date") = DateValue(enterenddate)
+    .Parameters("Enter State") = "dc"
+     .Execute
+End With
+'
+With CurrentDb.QueryDefs("noticereviewqry2")
+    .Parameters("Enter Beginning Sale Date") = DateValue(enterbegdate)
+    .Parameters("Enter Ending Sale Date") = DateValue(enterenddate)
+    .Parameters("Enter State") = "dc"
+    .Execute
+End With
+'
+End If
+
+DoCmd.OpenQuery ("QryNotLienSent")
+DoCmd.OpenReport "Notice Review Report", acViewPreview
+
+End Function
+
+Public Function RegLetters()
+'Begin Reg Forms
+
+Dim VConvRpt
+VConvRpt = ""
+
+If Forms![foreclosure database screen]![Propertycounty] = "Prince George's" Then
+
+VConvRpt = "PGRegLetter"
+Call SetPGReg
+DoCmd.OpenReport VConvRpt, acViewPreview
+
+CopyDocToBGWWDocs VConvRpt, "pgregltr", "_RegLetter.PDF"
+
+MsgBox ("Reg Letter Sent Date has been updated")
+
+End If
+
+If Forms![foreclosure database screen]![PropertyCity] = "Laurel" Then
+
+VTo = "Pratima.Lele@bww-law.com"
+VFROM = "bgw@bww-law.com"
+VCCTo = ""
+
+emailsubject = "BWW#: " & Forms![foreclosure database screen]!filenum & "/ " & Client() & ", CITY OF LAUREL"
+emailmessage = ""
+
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+End If
+
+If Forms![foreclosure database screen]![PropertyCity] = "Poolesville" Then
+
+VConvRpt = "PoolRegLetter"
+GblFilenum = Forms![foreclosure database screen]!filenum
+DoCmd.OpenReport VConvRpt, acViewPreview
+CopyDocToBGWWDocs VConvRpt, "PGRegLtr", "_RegLetter.PDF"
+MsgBox ("Reg Letter sent to Imaged Docs")
+Call SetPGReg
+MsgBox ("Reg Letter Sent Date has been updated")
+VTo = "Pratima.Lele@bww-law.com"
+VFROM = "bgw@bww-law.com"
+VCCTo = ""
+
+emailsubject = "BWW#: " & Forms![foreclosure database screen]!filenum & "/ " & Client() & ", POOLESVILLE"
+emailmessage = ""
+
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+If Forms![foreclosure database screen]![PropertyCity] = "Annapolis" Then
+VConvRpt = "AnnRegLetter"
+Call SetPGReg
+GblFilenum = Forms![foreclosure database screen]!filenum
+DoCmd.OpenReport VConvRpt, acViewPreview
+CopyDocToBGWWDocs VConvRpt, "PGRegLtr", "_RegLetter.PDF"
+MsgBox ("Reg Letter Sent Date has been updated")
+VTo = "Pratima.Lele@bww-law.com"
+VFROM = "bgw@bww-law.com"
+VCCTo = ""
+
+emailsubject = "BWW#: " & Forms![foreclosure database screen]!filenum & "/ " & Client() & ", ANNAPOLIS"
+emailmessage = ""
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+End If
+
+If Forms![foreclosure database screen]![PropertyCity] = "College Park" Then
+VConvRpt = "CPRegLetter"
+Call SetPGReg
+GblFilenum = Forms![foreclosure database screen]!filenum
+DoCmd.OpenReport VConvRpt, acViewPreview
+CopyDocToBGWWDocs VConvRpt, "PGRegLtr", "_RegLetter.PDF"
+MsgBox ("Reg Letter Sent Date has been updated")
+VTo = "Pratima.Lele@bww-law.com"
+VFROM = "bgw@bww-law.com"
+VCCTo = ""
+
+emailsubject = "BWW#: " & Forms![foreclosure database screen]!filenum & "/ " & Client() & ", COLLEGE PARK"
+emailmessage = ""
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+
+End If
+
+If Forms![foreclosure database screen]![PropertyCity] = "Salisbury" Then
+Call Salisbury
+Call SetPGReg
+GblFilenum = Forms![foreclosure database screen]!filenum
+
+MsgBox ("Reg Letter Sent Date has been updated")
+VTo = "Pratima.Lele@bww-law.com"
+VFROM = "bgw@bww-law.com"
+VCCTo = ""
+
+emailsubject = "BWW#: " & Forms![foreclosure database screen]!filenum & "/ " & Client() & ", SALISBURY"
+emailmessage = ""
+
+
+
+Set MyOutlook = New Outlook.Application
+Set MyMail = MyOutlook.CreateItem(olMailItem)
+MyMail.To = VTo
+MyMail.Subject = emailsubject
+MyMail.body = emailmessage
+MyMail.Display
+Set MyMail = Nothing
+Set MyOutlook = Nothing
+
+End If
+
+
+
+End Function
+Public Function NoticeReviewRpt()
+Dim enterstate As String
+Dim BegDate As Date
+Dim EndDate As Date
+Dim sqlstr As String
+Dim foreclosure As String
+Dim rsMd As RecordSet
+Dim rsVA As RecordSet
+Dim rsDC As RecordSet
+Dim sqlstrMD As String
+Dim sqlstrVA As String
+Dim sqlstrDC As String
+Dim sqlstrALL As String
+
+enterstate = InputBox("Enter State")
+BegDate = InputBox("Enter Beginning Sale Date")
+EndDate = InputBox("Enter Ending Sale Date")
+foreclosure = "Foreclosure"
+
+If IsNull(enterstate) Or enterstate = "" Then
+
+enterstate = "MD"
+CurrentDb.Execute "Delete * from noticereview;", dbFailOnError
+
+sql = "INSERT INTO noticereview (LastNameDebtor1, Client, ClientRefNumber, " _
+& " PropAddress, PropertyState, notice_reviewed_by, notice_reviewed, SaleDate, NoticeSent, PropZip, PropertyCity, " _
+& " Status, SaleTime, notice_processor, notice_lien, filenum, walz_mailed_nos ) " _
+& " SELECT DISTINCTROW Cases.LastNameDebtor1, Cases.Client, Cases.ClientRefNumber, " _
+& " Cases.PropAddress, Cases.PropertyState,  foreclosure.notice_reviewed_by, foreclosure.notice_reviewed, Foreclosure.SaleDate, " _
+& " Foreclosure.NoticeSent, Cases.PropZip, Cases.PropertyCity, Cases.Status, " _
+& " Foreclosure.SaleTime, Foreclosure.notice_processor, Foreclosure.notice_lien, Cases.FileNum, Cases.walz_mailed_nos " _
+& " FROM Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+
+sql2 = "INSERT INTO noticereview ( LastNameDebtor1, Client, ClientRefNumber, " _
+& " PropAddress, PropertyState, notice_reviewed_by, notice_reviewed, SaleDate, NoticeSent, PropZip, PropertyCity, " _
+& " Status, SaleTime, notice_processor, notice_lien, filenum, WalzDateMailed, WalzDateRec, walz_mailed_nos )" _
+& " SELECT DISTINCTROW Cases.LastNameDebtor1, Cases.Client, Cases.ClientRefNumber, " _
+& " Cases.PropAddress, Cases.PropertyState,  foreclosure.notice_reviewed_by, foreclosure.notice_reviewed, Foreclosure.SaleDate, Foreclosure.NoticeSent, " _
+& " Cases.PropZip, Cases.PropertyCity, Cases.Status, Foreclosure.SaleTime, " _
+& " Foreclosure.notice_processor, Foreclosure.notice_lien, Cases.FileNum, WalzInfo.WalzDateMailed, " _
+& " WalzInfo.WalzDateRec, Cases.walz_mailed_nos " _
+& " FROM (Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum) " _
+& " INNER JOIN WalzInfo ON Cases.FileNum = WalzInfo.Filenum " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+CurrentDb.Execute sql2
+CurrentDb.Execute sql
+
+
+sqlstrMD = "Select Cases.LastNameDebtor1, Cases.Client, " _
+& " Cases.ClientRefNumber, Cases.PropAddress, Cases.PropertyState, " _
+& " Foreclosure.SaleDate, Foreclosure.NoticeSent, clients.customerid, " _
+& " Cases.PropZip, Cases.PropertyCity, Cases.Status, cases.walz_mailed_nos, Foreclosure.SaleTime" _
+& " FROM (Cases INNER JOIN Foreclosure ON " _
+& " Cases.FileNum = Foreclosure.SubFileNum) " _
+& " INNER JOIN Clients ON Cases.Client = Clients.OrganizationName " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+
+Set rsMd = CurrentDb.OpenRecordset(sqlstrMD)
+
+If rsMd.EOF Then
+MsgBox ("There are No Maryland Files for this/these date(s)")
+Else
+DoCmd.OpenQuery ("QryNotLienSent")
+
+DoCmd.OpenReport "Notice Review ReportMD", acViewPreview
+'MsgBox ("Maryland Notice Review Report sent directly to printer")
+
+End If
+
+enterstate = "VA"
+
+CurrentDb.Execute "Delete * from noticereview;", dbFailOnError
+
+sql = "INSERT INTO noticereview (LastNameDebtor1, Client, ClientRefNumber, " _
+& " PropAddress, PropertyState, notice_reviewed_by, notice_reviewed, SaleDate, NoticeSent, PropZip, PropertyCity, " _
+& " Status, SaleTime, notice_processor, notice_lien, filenum, walz_mailed_nos ) " _
+& " SELECT DISTINCTROW Cases.LastNameDebtor1, Cases.Client, Cases.ClientRefNumber, " _
+& " Cases.PropAddress, Cases.PropertyState,  foreclosure.notice_reviewed_by, foreclosure.notice_reviewed, Foreclosure.SaleDate, " _
+& " Foreclosure.NoticeSent, Cases.PropZip, Cases.PropertyCity, Cases.Status, " _
+& " Foreclosure.SaleTime, Foreclosure.notice_processor, Foreclosure.notice_lien, Cases.FileNum, Cases.walz_mailed_nos " _
+& " FROM Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+
+sql2 = "INSERT INTO noticereview ( LastNameDebtor1, Client, ClientRefNumber, " _
+& " PropAddress, PropertyState, SaleDate, NoticeSent, PropZip, PropertyCity, " _
+& " Status, notice_reviewed_by, notice_reviewed, SaleTime, notice_processor, notice_lien, filenum, WalzDateMailed, WalzDateRec, walz_mailed_nos )" _
+& " SELECT DISTINCTROW Cases.LastNameDebtor1, Cases.Client, Cases.ClientRefNumber, " _
+& " Cases.PropAddress, Cases.PropertyState, Foreclosure.SaleDate, Foreclosure.NoticeSent, " _
+& " Cases.PropZip, Cases.PropertyCity, Cases.Status, foreclosure.notice_reviewed_by, foreclosure.notice_reviewed, Foreclosure.SaleTime, " _
+& " Foreclosure.notice_processor, Foreclosure.notice_lien, Cases.FileNum, WalzInfo.WalzDateMailed, " _
+& " WalzInfo.WalzDateRec, Cases.walz_mailed_nos " _
+& " FROM (Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum) " _
+& " INNER JOIN WalzInfo ON Cases.FileNum = WalzInfo.Filenum " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+CurrentDb.Execute sql2
+CurrentDb.Execute sql
+
+sqlstrVA = "Select Cases.LastNameDebtor1, Cases.Client, " _
+& " Cases.ClientRefNumber, Cases.PropAddress, Cases.PropertyState, " _
+& " Foreclosure.SaleDate, Foreclosure.NoticeSent, clients.customerid, " _
+& " Cases.PropZip, Cases.PropertyCity, Cases.Status, Foreclosure.SaleTime, Cases.walz_mailed_nos " _
+& " FROM (Cases INNER JOIN Foreclosure ON " _
+& " Cases.FileNum = Foreclosure.SubFileNum) " _
+& " INNER JOIN Clients ON Cases.Client = Clients.OrganizationName " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+Set rsVA = CurrentDb.OpenRecordset(sqlstrVA)
+
+'sqlstr = "Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+If rsVA.EOF Then
+MsgBox ("There are No Virginia Files for this/these date(s)")
+Else
+DoCmd.OpenQuery ("QryNotLienSent")
+DoCmd.OpenReport "Notice Review ReportVA", acViewPreview
+'MsgBox ("Virginia Notice Review Report sent directly to printer")
+
+End If
+
+enterstate = "DC"
+
+CurrentDb.Execute "Delete * from noticereview;", dbFailOnError
+
+sql = "INSERT INTO noticereview (LastNameDebtor1, Client, ClientRefNumber, " _
+& " PropAddress, PropertyState, notice_reviewed_by, notice_reviewed, SaleDate, NoticeSent, NoticeSent_lien, PropZip, PropertyCity, " _
+& " Status, SaleTime, notice_processor, notice_lien, filenum, walz_mailed_nos ) " _
+& " SELECT DISTINCTROW Cases.LastNameDebtor1, Cases.Client, Cases.ClientRefNumber, " _
+& " Cases.PropAddress, Cases.PropertyState, foreclosure.notice_reviewed_by, foreclosure.notice_reviewed, Foreclosure.SaleDate, " _
+& " Foreclosure.NoticeSent, Foreclosure.NoticeSent_lien, Cases.PropZip, Cases.PropertyCity, Cases.Status, " _
+& " Foreclosure.SaleTime, Foreclosure.notice_processor, Foreclosure.notice_lien, Cases.FileNum, Cases.walz_mailed_nos " _
+& " FROM Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or Cases.Status = " & """" & "DC Judicial" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+
+sql2 = "INSERT INTO noticereview ( LastNameDebtor1, Client, ClientRefNumber, " _
+& " PropAddress, PropertyState, SaleDate, NoticeSent, NoticeSent_lien, PropZip, PropertyCity, " _
+& " Status, notice_reviewed_by, notice_reviewed, SaleTime, notice_processor, notice_lien, filenum, WalzDateMailed, WalzDateRec, walz_mailed_nos ) " _
+& " SELECT DISTINCTROW Cases.LastNameDebtor1, Cases.Client, Cases.ClientRefNumber, " _
+& " Cases.PropAddress, Cases.PropertyState, Foreclosure.SaleDate, Foreclosure.NoticeSent, Foreclosure.NoticeSent_Lien, " _
+& " Cases.PropZip, Cases.PropertyCity, Cases.Status, foreclosure.notice_reviewed_by, foreclosure.notice_reviewed, Foreclosure.SaleTime, " _
+& " Foreclosure.notice_processor, Foreclosure.notice_lien, Cases.FileNum, WalzInfo.WalzDateMailed, " _
+& " WalzInfo.WalzDateRec, Cases.walz_mailed_nos " _
+& " FROM (Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum) " _
+& " INNER JOIN WalzInfo ON Cases.FileNum = WalzInfo.Filenum " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or cases.status = " & """" & "DC Judicial" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+CurrentDb.Execute sql2
+CurrentDb.Execute sql
+
+sqlstrDC = "Select Cases.LastNameDebtor1, Cases.Client, " _
+& " Cases.ClientRefNumber, Cases.PropAddress, Cases.PropertyState, " _
+& " Foreclosure.SaleDate, foreclosure.noticesent_lien, Foreclosure.NoticeSent, clients.customerid, " _
+& " Cases.PropZip, Cases.PropertyCity, Cases.Status, Foreclosure.SaleTime, Cases.walz_mailed_nos" _
+& " FROM (Cases INNER JOIN Foreclosure ON " _
+& " Cases.FileNum = Foreclosure.SubFileNum) " _
+& " INNER JOIN Clients ON Cases.Client = Clients.OrganizationName " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or cases.status = " & """" & "DC Judicial" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+Set rsDC = CurrentDb.OpenRecordset(sqlstrDC)
+
+If rsDC.EOF Then
+MsgBox ("There are No DC Files for this/these date(s)")
+Else
+DoCmd.OpenReport "Notice Review Report", acViewPreview
+End If
+
+Else
+
+CurrentDb.Execute "Delete * from noticereview;", dbFailOnError
+
+sql = "INSERT INTO noticereview (LastNameDebtor1, Client, ClientRefNumber, " _
+& " PropAddress, PropertyState, notice_reviewed_by, notice_reviewed, SaleDate, NoticeSent, PropZip, PropertyCity, " _
+& " Status, SaleTime, notice_processor, notice_lien, filenum, walz_mailed_nos) " _
+& " SELECT DISTINCTROW Cases.LastNameDebtor1, Cases.Client, Cases.ClientRefNumber, " _
+& " Cases.PropAddress, Cases.PropertyState, foreclosure.notice_reviewed_by, foreclosure.notice_reviewed, Foreclosure.SaleDate, " _
+& " Foreclosure.NoticeSent, Cases.PropZip, Cases.PropertyCity, Cases.Status, " _
+& " Foreclosure.SaleTime, Foreclosure.notice_processor, Foreclosure.notice_lien, Cases.FileNum, Cases.walz_mailed_nos " _
+& " FROM Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or cases.status = " & """" & "DC Judicial" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+
+sql2 = "INSERT INTO noticereview (LastNameDebtor1, Client, ClientRefNumber, " _
+& " PropAddress, PropertyState, SaleDate, NoticeSent, PropZip, PropertyCity, notice_reviewed_by, notice_reviewed, " _
+& " Status, SaleTime, notice_processor, notice_lien, filenum, WalzDateMailed, WalzDateRec, walz_mailed_nos)" _
+& " SELECT DISTINCTROW Cases.LastNameDebtor1, Cases.Client, Cases.ClientRefNumber, " _
+& " Cases.PropAddress, Cases.PropertyState, Foreclosure.SaleDate, Foreclosure.NoticeSent, " _
+& " Cases.PropZip, Cases.PropertyCity, Foreclosure.Notice_reviewed_by, foreclosure.Notice_reviewed, Cases.Status, Foreclosure.SaleTime, " _
+& " Foreclosure.notice_processor, Foreclosure.notice_lien, Cases.FileNum, WalzInfo.WalzDateMailed, " _
+& " WalzInfo.WalzDateRec, Cases.walz_mailed_nos " _
+& " FROM (Cases INNER JOIN Foreclosure ON Cases.FileNum = Foreclosure.SubFileNum) " _
+& " INNER JOIN WalzInfo ON Cases.FileNum = WalzInfo.Filenum " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or cases.status = " & """" & "DC Judicial" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+CurrentDb.Execute sql2
+CurrentDb.Execute sql
+
+sqlstrALL = "Select Cases.LastNameDebtor1, Cases.Client, " _
+& " Cases.ClientRefNumber, Cases.PropAddress, Cases.PropertyState, " _
+& " Foreclosure.SaleDate, Foreclosure.NoticeSent, clients.customerid, " _
+& " Cases.PropZip, Cases.PropertyCity, Cases.Status, Foreclosure.SaleTime, Cases.walz_mailed_nos " _
+& " FROM (Cases INNER JOIN Foreclosure ON " _
+& " Cases.FileNum = Foreclosure.SubFileNum) " _
+& " INNER JOIN Clients ON Cases.Client = Clients.OrganizationName " _
+& " WHERE (Cases.Status= " & """" & "Foreclosure" & """" & "" _
+& " or cases.status = " & """" & "DC Judicial" & """" & "" _
+& " or Cases.Status= " & """" & "Postsale" & """" & ") " _
+& " and Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+Set rs = CurrentDb.OpenRecordset(sqlstrALL)
+
+sqlstr = "Cases.PropertyState = " & """" & enterstate & """" & "" _
+& " AND Foreclosure.SaleDate >= #" & BegDate & " # and " _
+& " foreclosure.saledate <= #" & EndDate & "#"
+
+If rs.EOF Then
+MsgBox ("There are no files for this/these date(s)")
+Else
+
+DoCmd.OpenQuery ("QryNotLienSent")
+DoCmd.OpenReport "Notice Review Report", acViewPreview
+'MsgBox ("Notice Review Report sent directly to printer")
+End If
+
+End If
+End Function
+
+

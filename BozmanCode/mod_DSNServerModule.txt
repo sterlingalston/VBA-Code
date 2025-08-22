@@ -1,0 +1,21 @@
+Attribute VB_Name = "DSNServerModule"
+Option Compare Database
+
+Function ReadDSNserver(DSN As String) As String
+    Dim Shell As Object
+    Dim strKey As String
+    Dim strValue As String
+    strKey = "HKEY_CURRENT_USER\Software\ODBC\ODBC.INI\" & DSN & "\Server"
+    Set Shell = CreateObject("wscript.shell")
+    On Error Resume Next
+    strValue = Shell.regread(strKey)
+    If Err.Number <> 0 Then
+        MsgBox "Error " & Err.Number & ": " & Err.description, , "Error"
+        ReadDSNserver = ""
+    Else
+        ReadDSNserver = strValue
+    End If
+    On Error GoTo 0
+End Function
+
+'Example Usage:  If ReadDSNServer("BGW_Foreclosure") = "devsql" then Me.Backcolor = &H000000FF&

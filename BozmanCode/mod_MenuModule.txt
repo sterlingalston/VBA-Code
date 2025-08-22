@@ -1,0 +1,99 @@
+Attribute VB_Name = "MenuModule"
+Option Compare Database
+Public Function NoticeWalzChk()
+
+VYesNo = 0
+
+If (Forms![foreclosure database screen]!PropertyState = "MD" And IsNull(Forms![foreclosure database screen]!ForeclosureSubForm.Form!Notice_reviewed)) Or _
+(Forms![foreclosure database screen]!PropertyState = "VA" And IsNull(Forms![foreclosure database screen]!ForeclosureSubFormVA.Form!notice_reviewedDATE)) Then
+VYesNo = 1
+Else
+VYesNo = 0
+End If
+
+
+
+If VYesNo = 0 Then
+MsgBox ("Can not Notice(s) to Walz Menu.")
+Exit Function
+End If
+
+
+End Function
+Public Function PS_Default()
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+
+DoCmd.OpenReport "3rd Party Purchaser Default Letter", acViewPreview
+Else
+DoCmd.OpenReport "3rd Party Default Letter", acViewPreview
+
+End If
+
+End Function
+
+Public Function PS_Closing()
+If Forms![foreclosure database screen]!PropertyState = "VA" Then
+DoCmd.OpenReport "3rd Party Purchaser Closing Letter", acViewPreview
+ElseIf Forms![foreclosure database screen]!PropertyState = "DC" Then
+DoCmd.OpenReport "Closing Instruction LetterDC", acViewPreview
+
+Else
+
+DoCmd.OpenReport "Closing Instruction Letter", acViewPreview
+
+End If
+
+End Function
+
+Public Function SOTMenu()
+
+If [Forms]![foreclosure database screen]![Propertycounty] Like "Mont*" And _
+IsNull([Forms]![foreclosure database screen]![ForeclosureSubForm].[Form]![taxidform].[Form]![taxidfield]) Then
+MsgBox ("Montgomery County Needs TAXID! Exiting..")
+Exit Function
+End If
+If [Forms]![foreclosure database screen]![Propertycounty] = "Carroll" And _
+IsNull([Forms]![foreclosure database screen]![ForeclosureSubForm]![orgtrustee]) Then
+MsgBox ("Carroll County Needs Original Trustee Field Filled In! Exiting..")
+Exit Function
+End If
+
+If [Forms]![foreclosure database screen]![PropertyState] = "VA" Then
+
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "DOA-VA-Chase", acViewPreview
+ElseIf Forms![foreclosure database screen]!Client Like "Ocwen*" Or Forms![foreclosure database screen]!Client Like "CitiM*" Or _
+Forms![foreclosure database screen]!Client Like "Bank of Am*" Then
+Call RunDOAMaryland
+Else
+DoCmd.OpenReport "DOA-VA", acViewPreview
+End If
+
+
+'Dim VSendAttach
+'VSendAttach = MsgBox("Preview Cover Sheet?", vbYesNo)
+'If VSendAttach = vbYes Then
+
+'DoCmd.OpenReport "Virginia Attachment", acViewPreview
+'End If
+
+
+Else
+
+If Forms![foreclosure database screen]!Client Like "JP*" Then
+DoCmd.OpenReport "DOA-Md-Chase", acViewPreview
+'ElseIf Forms![foreclosure database Screen]!Client Like "Ocwen*" Then
+'Call RunDOAMaryland
+Else
+DoCmd.OpenReport "DOA-md", acViewPreview
+End If
+
+End If
+
+
+
+End Function
+
+
+
+
